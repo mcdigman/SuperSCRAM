@@ -1,6 +1,7 @@
 import numpy as np
 
 
+
 class survey:
 
     ''' this is the class that will make a particular survey an object. 
@@ -49,6 +50,9 @@ class survey:
             elif opt=='mask':
                 self.mask=optionals[opt]
             
+            elif opt=='galaxy_sample_bias':
+                self.galaxy_sample_bias=optionals[opt]
+                
             
                               
 if __name__=="__main__": 
@@ -71,3 +75,13 @@ if __name__=="__main__":
     print 'redshift bins ', survey_1.z_bins
     print 'geometry type is', survey_1.geo_type
     print 'the galaxy bias type is ', survey_1.gal_bias_type 
+    
+    
+    from SURVEYS import SURVEYS
+    
+    surveys=[survey_1, survey_1]
+    S=SURVEYS(surveys)
+    print 'number of surveys', S.N_surveys
+    print 'total number of surveys', S.N_tot_obs
+    
+    
