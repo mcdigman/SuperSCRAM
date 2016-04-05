@@ -2,6 +2,8 @@ import numpy
 
 
 class SURVEYS:
+    ''' This class holds and returns information for all surveys
+    ''' 
     def __init__(self, surveys):
         self.N_surveys=len(surveys) 
         self.N_tot_obs=0
