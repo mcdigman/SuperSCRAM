@@ -46,16 +46,29 @@ class survey:
 				'YHe' : 0.2453,
 				'z_reio' : 8.8}
 				
-		COSMO=class_obejcts(cosmology) 
+		COSMO=class_objects(cosmology) 
 		 
 	
 		# the number of observables in the survey
 		self.N_obs=len(observables)
 		self.geo_type=geometry['type']
 		self.geo_params=geometry['params']
+		self.O_I=np.zeros(self.N_obs) 
 		
-		for a in observables: 
-			print 'hi joe', a    
+		
+		I=0
+		for obs in observables: 
+			
+			print 'hi joe', obs
+			if obs=='PS_galaxy':
+				k=np.logspace(-1,1,100)
+				P_lin=COSMO.linear_power(k)
+				self.O_I[I]=P_lin 
+			
+			I=I+1
+
+		print self.O_I 
+			  
 		# optional parameters of the survey. 
 		for opt in optionals:
 			if opt=='z_bins':
@@ -105,10 +118,10 @@ if __name__=="__main__":
 	print 'the galaxy bias type is ', survey_1.gal_bias_type 
 	
 	
-	from SURVEYS import SURVEYS
+	from Super_Survey import super_survey
 	
 	surveys=[survey_1, survey_1]
-	S=SURVEYS(surveys)
+	S=super_survey(surveys)
 	print 'number of surveys', S.N_surveys
 	print 'total number of surveys', S.N_tot_obs
 	
