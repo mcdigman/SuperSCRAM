@@ -13,7 +13,6 @@ class super_survey:
         
         
 
-
 from FASTPTcode import FASTPT 
 
 d=np.loadtxt('FASTPTcode/Pk_Planck15.dat') 
