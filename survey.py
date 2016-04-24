@@ -53,7 +53,7 @@ class survey:
 		self.N_obs=len(observables)
 		self.geo_type=geometry['type']
 		self.geo_params=geometry['params']
-		self.O_I=np.zeros(self.N_obs) 
+		self.O_I=[]
 		
 		
 		I=0
@@ -63,7 +63,7 @@ class survey:
 			if obs=='PS_galaxy':
 				k=np.logspace(-1,1,100)
 				P_lin=COSMO.linear_power(k)
-				self.O_I[I]=P_lin 
+				self.O_I=np.append(self.O_I, P_lin) 
 			
 			I=I+1
 
