@@ -103,7 +103,7 @@ class CosmoPie :
                
         d_c=d_crit/self.G_norm(z)
         
-        return d_c 
+        return d_c
         
      
      
@@ -118,6 +118,23 @@ if __name__=="__main__":
     print C.G(1e-10) 
     print C.delta_c(0)   
         
+    z=np.linspace(0,20,80) 
+    D=np.zeros(80)
+    for i in range(80):
+        D[i]=C.D_A(z[i])
         
+        
+    import matplotlib.pyplot as plt
+    
+    ax=plt.subplot(111)
+    ax.set_xlabel(r'$z$', size=20)
+    ax.set_ylabel('Angular Diameter distance [Mpc]', size=20)
+    
+    ax.plot(z, D) 
+    
+    plt.grid()
+    plt.show()
+    
+       
     
     
