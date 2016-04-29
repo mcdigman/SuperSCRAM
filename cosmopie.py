@@ -7,10 +7,12 @@
 ''' 
 
 import numpy as np
+from numpy import pi 
 from scipy.integrate import romberg, quad
 
+eps=np.finfo(float).eps
 
-class cosmopie :
+class CosmoPie :
     
     def __init__(self,cosmology=None):
         # default to Planck 2015 values 
@@ -37,7 +39,9 @@ class cosmopie :
     def Ez(self,z):
         zp1=z + 1
         return np.sqrt(self.Omegam*zp1**3 + self.Omegar*zp1**4 + self.Omegak*zp1**2 + self.OmegaL) 
-        
+      
+    def H(self,z):
+        return self.H_0*Ez(z)  
     
     def D_comov(self,z):
         # the line of sight comoving distance 
@@ -67,15 +71,52 @@ class cosmopie :
         # luminosity distance 
         return (1+z)**2*self.D_A(z)
         
-   
-   
+    
+    def G(self,z):
+        # linear Growth factor (Eqn. 7.77 in Dodelson)
+        # 1 + z = 1/a 
+        # G = 5/2 Omega_m H(z)/H_0 \int_0^a da'/(a'H(a')/H_0)^3
+       
+        def Integrand(a):
+            return 1/(a*self.Ez(1/a-1))**3
+    
+        return 5/2.*self.Omegam*self.Ez(z)*quad(Integrand,eps,1/(1+z))[0]
+        
+    def G_norm(self,z):
+        # the normalized linear growth factor
+        # normalized so the G(0) =1 
+        
+        G_0=self.G(0)
+        return self.G(z)/G_0
+        
+    def delta_c(self,z):
+        # critical threshold for spherical collapse, as given 
+        # in the appendix of NFW 1997 
+        A=0.15*(12.*pi)**(2/3.)
+        
+        if ( (self.Omegam ==1) & (self.OmegaL==0)):
+            d_crit=A
+        if ( (self.Omegam < 1) & (self.OmegaL ==0)):
+            d_crit=A*self.Omegam**(0.0185)
+        if ( (self.Omegam + self.OmegaL)==1.0):
+            d_crit=A*self.Omegam**(0.0055)
+               
+        d_c=d_crit/self.G_norm(z)
+        
+        return d_c 
+        
+     
+     
 if __name__=="__main__": 
 
-    C=cosmopie()
-    z=.1
+    C=CosmoPie()
+    z=3.5
     print C.D_comov(z) 
     print C.D_A(z) 
-    print C.D_L(z)      
+    print C.D_L(z)  
+    print C.G(z) 
+    print C.G(1e-10) 
+    print C.delta_c(0)   
         
         
     

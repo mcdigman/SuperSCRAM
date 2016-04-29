@@ -46,10 +46,10 @@ def R_int(r,n):
 	r_min,r_max=r 
 	
 	def real_I(r):
-		return np.real(r**2*j(n,k))
+		return np.real(r**2*j(n,r))
 	
 	def imag_I(r):
-		return np.imag(r**2*j(n,k))
+		return np.imag(r**2*j(n,r))
 	
 	
 	R= quad(real_I,r_min,r_max)[0]
