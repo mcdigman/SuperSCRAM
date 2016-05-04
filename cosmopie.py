@@ -43,6 +43,8 @@ class CosmoPie :
     def H(self,z):
         return self.H_0*Ez(z)  
     
+    # distances 
+    # -----------------------------------------------------------------------------
     def D_comov(self,z):
         # the line of sight comoving distance 
         I = lambda z : 1/self.Ez(z)
@@ -70,8 +72,10 @@ class CosmoPie :
     def D_L(self,z):
         # luminosity distance 
         return (1+z)**2*self.D_A(z)
-        
+    # -----------------------------------------------------------------------------   
     
+    # Growth functions
+    # -----------------------------------------------------------------------------
     def G(self,z):
         # linear Growth factor (Eqn. 7.77 in Dodelson)
         # 1 + z = 1/a 
@@ -87,8 +91,11 @@ class CosmoPie :
         # normalized so the G(0) =1 
         
         G_0=self.G(0)
-        return self.G(z)/G_0
-        
+        return self.G(z)/G_0    
+    # -----------------------------------------------------------------------------
+     
+    # halo and matter stuff 
+    # -----------------------------------------------------------------------------   
     def delta_c(self,z):
         # critical threshold for spherical collapse, as given 
         # in the appendix of NFW 1997 
@@ -104,6 +111,12 @@ class CosmoPie :
         d_c=d_crit/self.G_norm(z)
         
         return d_c
+    
+    def average_matter(self, z): 
+    
+        
+   
+    # -----------------------------------------------------------------------------
         
      
      
