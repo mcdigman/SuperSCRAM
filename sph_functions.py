@@ -3,7 +3,7 @@
 	spherical Bessel functions
 	the zeros of the Bessel functions
 	the real spherical harmonics 
-	
+	the derivatives of the Bessel function
 	J. E. McEwen (c) 2016
 '''
 
@@ -69,6 +69,8 @@ def sph_Bessel(n,z):
 		return j
 	
 def j_n(n,z):
+	
+	z=np.asarray(z)
 	if(z.size==1):
 		return sph_Bessel(n,z)
 	else:  
@@ -131,17 +133,17 @@ def Y_r(l,m,theta,phi):
 if __name__=="__main__": 
     
     print('check spherical Bessel against mathematica output')
-    print('function values',sph_Bessel(0,2.))
+    print('function values',j_n(0,2.))
     print('mathematica value', 0.454649)
-    print('function values',sph_Bessel(1,2.))
+    print('function values',j_n(1,2.))
     print('mathematica value', 0.435398)
-    print('function values',sph_Bessel(2,2.))
+    print('function values',j_n(2,2.))
     print('mathematica value', 0.198448)
-    print('function values',sph_Bessel(3,2.))
+    print('function values',j_n(3,2.))
     print('mathematica value', 0.0607221)
-    print('function values',sph_Bessel(10,2.))
+    print('function values',j_n(10,2.))
     print('mathematica value', 6.8253e-8)
-    print('function values',sph_Bessel(50,101.5))
+    print('function values',j_n(50,101.5))
     print('mathematica value', -0.0100186)
     
     print('check derivative of Bessel against keisan.casio.com')

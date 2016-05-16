@@ -1,11 +1,11 @@
 import numpy as np
 from numpy import sin,pi 
-from scipy.special import sph_harm as Y_lm, jv
-from scipy.integrate import nquad, dblquad, quad
+from scipy.special import sph_harm as Y_lm
+from sph_functions import Y_r, j_n
+from scipy.integrate import dblquad
 
-# make sure you understand this 
-eps=np.finfo(float).eps
-	
+
+eps=np.finfo(float).eps	
 def a_lm(theta,phi,l,m):
 
 	# returns \int d theta d phi \sin(theta) Y_lm(theta, phi)
@@ -17,50 +17,31 @@ def a_lm(theta,phi,l,m):
 	phi_min, phi_max=phi
 	
 	def integrand(theta,phi):
-		# the scipy spherical harmonic inputs are ordered as 
-		# Y_lm(m,l,phi,theta)
-		return sin(theta)*Y_lm(m,l,phi,theta)
+		# use the real spherical harmonics from sph_functions
+		return sin(theta)*Y_r(l,m,theta,phi)
 	
-	def real_I(theta,phi):
-		return np.real(integrand(theta,phi))
-	
-	def imag_I(theta,phi):
-		return np.imag(integrand(theta,phi)) 
-	
-	R= dblquad(real_I,phi_min, phi_max, lambda theta: theta_min, lambda theta :theta_max)[0]
-	I= dblquad(imag_I,phi_min, phi_max, lambda theta: theta_min, lambda theta :theta_max)[0]
-	
-	if (np.absolute(R) <= eps):
-		R=0.0
-	if (np.absolute(I) <= eps):
-		I=0.0 
-  
-	return R + 1j*I
+	I= dblquad(integrand,phi_min, phi_max, lambda theta: theta_min, lambda theta :theta_max)[0]
 
-def j(n,z):
-	return jv(n + .5,z)*np.sqrt(pi/2./z)
-	
-def R_int(r,n):
-	# returns \int R_n(r) r2 dr
-	# I am using the spherical Bessel function for R_n, but that might change  
-	r_min,r_max=r 
-	
-	def real_I(r):
-		return np.real(r**2*j(n,r))
-	
-	def imag_I(r):
-		return np.imag(r**2*j(n,r))
-	
-	
-	R= quad(real_I,r_min,r_max)[0]
-	I= quad(imag_I,r_min,r_max)[0]
-	
-	if (np.absolute(R) <= eps):
-		R=0.0
 	if (np.absolute(I) <= eps):
 		I=0.0 
   
-	return R + 1j*I 
+	return I
+
+	
+def R_int(k,r_range,n):
+	# returns \int R_n(rk_alpha) r2 dr
+	# I am using the spherical Bessel function for R_n, but that might change  
+	r_min,r_max=r_range 
+	
+	def integrand(r):
+		return r**2*j_n(n,r*k)
+	
+	I= quad(integrand,r_min,r_max)[0]
+	
+	if (np.absolute(I) <= eps):
+		I=0.0 
+  
+	return I
 	
 def delta_alpha_bar(mat,coords):
 	
@@ -119,8 +100,6 @@ if __name__=="__main__":
 	# second value is from mathematica 
 	print a_lm(theta,phi,l,m), -0.293092
 	
-	print j(0,10)
-	print j(3,50)
 	
 	
    
