@@ -1,0 +1,65 @@
+\documentclass[11pt, oneside]{article}   	% use "amsart" instead of "article" for AMSLaTeX format
+\usepackage{geometry}                		% See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   		% ... or a4paper or a5paper or ... 
+%\geometry{landscape}                		% Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    		% Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}				% Use pdf, png, jpg, or eps§ with pdflatex; use eps in DVI mode
+								% TeX will automatically convert eps --> pdf in pdflatex		
+\usepackage{amssymb,amsmath}
+
+\newcommand{\sph}[2]{Y^\text{R}_{l_#1 m_#1}(\hat{#2})}
+\newcommand{\jl}[1]{j_{l_#1}}
+\newcommand{\dk}{\frac{ d^3 \mathbf{k}}{(2 \pi)^3}} 
+\newcommand{ \dkv}[1]{\frac{ d^3 \mathbf{k}_{#1}}{(2 \pi)^3}} 
+
+\title{The $\delta_\alpha$ basis and covariance $\langle \delta_\alpha \delta_\beta \rangle$}
+\author{Joseph E. McEwen}
+%\date{}							% Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+
+\section{Basis functions}
+The basis functions we use are defined in terms of the spherical Bessel function and spherical harmonic
+\begin{align} 
+\psi_\alpha(r, \theta, \phi) = j_{l_\alpha}(k_\alpha r) Y^\text{R}_{l_\alpha m_\alpha}(\theta, \phi) ~, 
+\end{align} 
+where $Y^\text{R}_{lm}(\theta, \phi) $ is the real spherical harmonic. The radial basis function should be zero at the sector boundary. Thus, fiven the maximum radius of the sector $r_\text{max}$ the super wave vector $k_\alpha$ is found by 
+\begin{align}
+ j_{l_\alpha}(k_\alpha r_\text{max})=0.
+ \end{align}
+ 
+\section{Super Survey Matter Field}
+In our basis the super survey mode is defined as 
+\begin{align} 
+\begin{split} 
+\delta_\alpha(k_\alpha)& = \int_\Omega \delta(\mathbf{r}) \jl{\alpha}(k_\alpha r) \sph{\alpha}{r} d^3 \mathbf{r}  \\
+& = \int \dk \delta(\mathbf{k}) \int_0^{r_\text{max}} dr^2 \jl{\alpha}(k_\alpha r) \int d^2 \hat{r} e^{ikr \hat{k} \cdot \hat{r}} \sph{\alpha}{r} \\
+& =4 \pi i^{l_\alpha}\int  \dk \delta(\mathbf{k})  \sph{\alpha}{k}  \int_0^{r_\text{max}} dr^2 \jl{\alpha}(k_\alpha r) \jl{\alpha}(kr)  ~,
+\end{split} 
+\end{align} 
+where in the second equality $\delta(\mathbf{r})=(2\pi)^{-3} \int d^3 \mathbf{k} \exp(i \mathbf{k} \cdot \mathbf{r}) \delta(\mathbf{k})$ was used and in the third equality the following identity was used 
+\begin{align} \int_{S^2} d^2 \hat{r} \sph{\alpha}{r} e^{i \mathbf{k} \cdot \mathbf{r}} = 4 \pi i^{l_\alpha} j_{l_\alpha}(k r)\sph{\alpha}{k}~.
+\end{align}
+Including a normalization\footnote{In our case $N_\alpha$ is 1.} $N_\alpha= \int_\Omega \sph{\alpha}{r} \sph{\alpha}{r} d^3 \mathbf{r} $ we have
+\begin{align} 
+\delta_\alpha= \frac{4 \pi i^{l_\alpha}}{N_\alpha} \int  \dk \delta(\mathbf{k})  \sph{\alpha}{k}  \int_0^{r_\text{max}} dr^2 \jl{\alpha}(k_\alpha r) \jl{\alpha}(kr)  ~.
+\end{align} 
+To get the covariance of the super survey field we take the ensemble average:
+\begin{align} 
+\begin{split} 
+\langle \delta_\alpha \delta_\beta \rangle &= \frac{ (4 \pi)^2}{N_\alpha N_\beta} \int  \dkv{1} \dkv{2} \langle \delta(\mathbf{k}_1) \delta^*(\mathbf{k}_2) \rangle \sph{\alpha}{k_1} \sph{\alpha}{k_2} \\
+& \;\;\; \times   \int_0^{r_\text{max}}  dr r^2 \jl{\alpha}(k_\alpha r) \jl{\alpha}( k_1 r) \int_0^{r_\text{max}}  dr r^2 \jl{\alpha}(k_\alpha r) \jl{\alpha}( k_2 r)  \\
+& \frac{ (4 \pi)^2}{N_\alpha N_\beta} \int \dk P(k) I_\alpha(k, r_\text{max}) \times I_\beta(k, r_\text{max})~,
+\end{split} 
+\end{align} 
+where $(2 \pi)^3 \delta^3_\text{D}( \mathbf{k} + \mathbf{k}') P(k) =  \langle \delta(\mathbf{k}) \delta^*(\mathbf{k}') \rangle$ was used along with the definition 
+\begin{align} 
+\begin{split} 
+I_\alpha(k,  r_\text{max}) & =  \int_0^{r_\text{max}}dr r^2 \jl{\alpha}(k_\alpha r) \jl{\alpha}( k_1 r) \\
+& = \frac{\pi}{2} \sqrt{ \frac{1}{k _ \alpha k_1}} \int_0^{r_\text{max}}dr r J_{l_\alpha+ 1/2}(k_\alpha r)  J_{l_\alpha+ 1/2}( k_1 r) \\
+& = \frac{\pi}{2} \frac{ r_\text{max}}{ \sqrt{ k _ \alpha k_1}}\frac{\left[J_{l_\alpha+ 1/2}( k_1  r_\text{max})J_{l_\alpha+ 1/2}'(k_\alpha  r_\text{max}) - J_{l_\alpha+ 1/2}k_\alpha  r_\text{max})J_{l_\alpha+ 1/2}'(k_1  r_\text{max})\right]}{k_1^2 - k_\alpha^2}~.
+\end{split} 
+\end{align}
+
+\end{document}  
