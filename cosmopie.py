@@ -43,6 +43,11 @@ class CosmoPie :
 	def H(self,z):
 		return self.H0*self.Ez(z)  
 	
+	def dH_da(self,z):
+	    # the derivative of H with respect to a 
+	    a=1/(1+z)
+	    return -self.H0/2./self.Ez(z)*(3*self.Omegam/a**2 +4*self.Omegar/a**3 +2*self.Omegak/a)
+	
 	# distances 
 	# -----------------------------------------------------------------------------
 	def D_comov(self,z):
@@ -80,8 +85,6 @@ class CosmoPie :
 		# linear Growth factor (Eqn. 7.77 in Dodelson)
 		# 1 + z = 1/a 
 		# G = 5/2 Omega_m H(z)/H_0 \int_0^a da'/(a'H(a')/H_0)^3
-	    if (z==0):
-	        return 1 
 		def Integrand(a):
 			return 1/(a*self.Ez(1/a-1))**3
 	
@@ -97,7 +100,7 @@ class CosmoPie :
 	def log_growth(self,z):
 		# using equation 3.2 from Baldauf 2015 
 		a=1/(1+z)
-		return -3/2.*self.Omegam/a**3*self.H0**2/self.H(z)**2 + self.G(0)/self.H(z)**2/a**2/self.G(z)
+		return self.G_norm(0)*a/self.G_norm(z)*self.dH_da(z) + self.G_norm(0)/self.H(z)**2/a**2/self.G_norm(z)
 	# -----------------------------------------------------------------------------
 	 
 	# halo and matter stuff 
