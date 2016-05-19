@@ -45,8 +45,9 @@ class CosmoPie :
 	
 	def dH_da(self,z):
 	    # the derivative of H with respect to a 
-	    a=1/(1+z)
-	    return -self.H0/2./self.Ez(z)*(3*self.Omegam/a**2 +4*self.Omegar/a**3 +2*self.Omegak/a)
+	    zp1=z + 1
+	    
+	    return -(1+z)**2*self.H0/2./self.Ez(z)*(3*self.Omegam*zp1**2 +4*self.Omegar*zp1**3  +2*self.Omegak*zp1 )
 	
 	# distances 
 	# -----------------------------------------------------------------------------
@@ -100,8 +101,9 @@ class CosmoPie :
 	def log_growth(self,z):
 		# using equation 3.2 from Baldauf 2015 
 		a=1/(1+z)
-		return self.G_norm(0)*a/self.G_norm(z)*self.dH_da(z) + self.G_norm(0)/self.H(z)**2/a**2/self.G_norm(z)
-	# -----------------------------------------------------------------------------
+		print 'what I think it is', a/self.H(z)*self.dH_da(z) + 5/2.*self.Omegam*self.G_norm(0)/self.H(z)**2/a**2/self.G_norm(z)
+		return -3/2.*self.Omegam/a**3*self.H0**2/self.H(z)**2 + 1/self.H(z)**2/a**2/self.G_norm(z)
+	# ----------------------------------------------------------------------------
 	 
 	# halo and matter stuff 
 	# -----------------------------------------------------------------------------   
@@ -137,23 +139,26 @@ if __name__=="__main__":
 	print('Luminosity distance', C.D_L(z)) 
 	print('Growth factor', C.G(z)) 
 	print('Growth factor for really small z',C.G(1e-10))
+	z=0.0
 	print('logrithmic growth factor', C.log_growth(z))
 	print('compare logrithmic growth factor to approxiamtion', C.Omegam**(-.6), C.Omegam)
 	print('cirtical overdensity ',C.delta_c(0)  ) 
 		
 	z=np.linspace(0,20,80) 
-	D=np.zeros(80)
+	D1=np.zeros(80)
+	D2=np.zeros(80)
 	for i in range(80):
-		D[i]=C.D_A(z[i])
+		D1[i]=C.D_A(z[i])
+		D2[i]=C.D_L(z[i])
 		
 		
 	import matplotlib.pyplot as plt
 	
 	ax=plt.subplot(111)
 	ax.set_xlabel(r'$z$', size=20)
-	ax.set_ylabel('Angular Diameter distance [Mpc]', size=20)
 	
-	ax.plot(z, D) 
+	ax.plot(z, D1, label='Angular Diameter distance [Mpc]') 
+	#ax.plot(z, D2, label='Luminosity distance [Mpc]') 
 	
 	plt.grid()
 	plt.show()
