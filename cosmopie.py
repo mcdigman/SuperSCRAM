@@ -103,6 +103,17 @@ class CosmoPie :
 		a=1/(1+z)
 		print 'what I think it is', a/self.H(z)*self.dH_da(z) + 5/2.*self.Omegam*self.G_norm(0)/self.H(z)**2/a**2/self.G_norm(z)
 		return -3/2.*self.Omegam/a**3*self.H0**2/self.H(z)**2 + 1/self.H(z)**2/a**2/self.G_norm(z)
+	
+	def G_array(self,z):
+	    # the normalized linear growth factor 
+	    # for an array 
+	    if (type(z)==float):
+	        return np.array([self.G_norm(z)])
+	    result=np.zeros(z.size)
+	    for i in range(z.size):
+	        result[i]=self.G_norm(z[i])
+	    return result 
+	        
 	# ----------------------------------------------------------------------------
 	 
 	# halo and matter stuff 

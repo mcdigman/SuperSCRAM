@@ -14,9 +14,23 @@ def class_objects(cosmology=None):
 
 
 
+if __name__=="__main__":
 
-# test run 
-X=class_objects()
-k=np.logspace(-2,2,1000)
-P=X.linear_power(k) 
+
+    X=class_objects()
+    k=np.logspace(-4,np.log10(5),50)
+    z=np.array([0,1])
+    P=X.linear_power(k) 
+    #P2=X.nl_power(k,z) 
+
+    import matplotlib.pyplot as plt
+    ax=plt.subplot(111)
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    
+    ax.plot(k,P)
+    #ax.plot(k,P2)
+    #ax.plot(k,Pkz[:,0])
+    plt.show()
+
     

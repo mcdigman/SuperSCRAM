@@ -23,35 +23,56 @@ import sys
 from time import time 
 from fastpt_extr import p_window, c_window, pad_left, pad_right
 from matter_power_spt import P_13_reg 
-from scipy.signal import convolve 
+from scipy.signal import convolve , fftconvolve 
+from scipy.interpolate import interp1d
 from gamma_funcs import g_m_vals, gamsn
-
-
+from P_extend import k_extend 
+from scipy.integrate import quad
 
 log2=log(2.)
 class FASTPT:
 	
-	def __init__(self,k,nu,param_mat=None,n_pad=None,verbose=False):
-		self.k_old=k
+	def __init__(self,k,nu,param_mat=None,low_extrap=None,high_extrap=None,n_pad=None,verbose=False):
+	
 		# size of input array must be an even number 
 		if (k.size % 2 != 0):
 			raise ValueError('Input array must contain an even number of elements.')
+		
+		self.extrap=False		
+		if (low_extrap is not None or high_extrap is not None):
+
+			self.EK=k_extend(k,low_extrap,high_extrap)
+			k=self.EK.extrap_k()
+			self.extrap=True
+		self.low_extrap=low_extrap
+		self.high_extrap=high_extrap
+
+	
+		self.k_old=k
+		
 		
 		delta_L=(log(np.max(k))-log(np.min(k)))/(k.size-1)   # need to put in a check to make sure that it is log sampled 
 		
 		if(n_pad !=None):
 			self.id_pad=np.arange(k.size)+n_pad
-			d_logk=delta_L 
-			k_pad=np.log10(k[0])-np.arange(1,n_pad+1)*d_logk
-			k_pad=10**k_pad
+			d_logk=delta_L
+			k_pad=np.log(k[0])-np.arange(1,n_pad+1)*d_logk
+			k_pad=np.exp(k_pad)
 			k_left=k_pad[::-1]
 			
-			k_pad=np.log10(k[-1])+np.arange(1,n_pad+1)*d_logk
-			k_right=10**k_pad
+			k_pad=np.log(k[-1])+np.arange(1,n_pad+1)*d_logk
+			k_right=np.exp(k_pad)
 			k=np.hstack((k_left,k,k_right))
 			
-			if (n_pad < 2): 
-				print('Your results are only good for k > 2k_min')
+			
+			# check to make sure that the n padding sufficient to keep the 
+			# FASTPT k_min less than 1/2 of the input k_min (added a plus 1 to be safe)
+			# actually we really need to change how the padding works, some of it is redundant. 
+			n_pad_check=int(np.log(2)/delta_L) +1
+			if (n_pad < n_pad_check): 
+				print('Warnign, you should consider increasing your zero padding to at least ', n_pad_check, ' .')
+				print('So, that you ensure that k > 2k_min.')
+				print(' k min in the FASTPT univeris is ', k[0], ' while k min input is ', self.k_old[0])
 						
 	
 		if(n_pad == None): 
@@ -138,12 +159,29 @@ class FASTPT:
 			
 				self.two_part_l[i,:]=exp(1j*self.tau_l*log2)
 			
-			# calculate h_l 	
+			# calculate h_l     
 			#arg=(p+1-1j*tau_l)
 			self.h_l[i,:]=gamsn(self.p[i]+1-1j*self.tau_l)
 	
 	def J_k(self,P,P_window=None,C_window=None):
-							
+
+		if(self.low_extrap is not None):
+			P=self.EK.extrap_P_low(P)
+
+		if(self.high_extrap is not None):
+			P=self.EK.extrap_P_high(P)
+
+		# import matplotlib.pyplot as plt
+		# ax=plt.subplot(111)
+		# ax.set_xscale('log')
+		# ax.set_yscale('log')
+
+		# ax.plot(self.k_old[:-1],-np.diff(P)/np.diff(self.k_old))
+		# ax.plot(self.k_old[:-2],-np.diff(P,2)/np.diff(self.k_old,2))
+		# plt.show()
+		#sys.exit()
+
+			
 		P_b=P*self.k_old**(-self.nu)
 		
 		if P_window is not None:
@@ -160,6 +198,9 @@ class FASTPT:
 			P_b=np.pad(P_b, pad_width=(self.n_pad,self.n_pad), mode='constant', constant_values=0)
 	
 		c_m_positive=rfft(P_b)
+		# End point should be divided by two. However, we always filter the Fourier coefficients (the last element is set to 
+		# zero), so this really has no effect. 
+		c_m_positive[-1]=c_m_positive[-1]/2.
 		c_m_negative=np.conjugate(c_m_positive[1:])
 		c_m=np.hstack((c_m_negative[::-1], c_m_positive))/float(self.N)
 		
@@ -170,14 +211,15 @@ class FASTPT:
 			if (self.verbose):
 				print('windowing the Fourier coefficients')
 			c_m=c_m*c_window(self.m,int(C_window*self.N//2.)) 
-	
+			
+		
 		A_out=np.zeros((self.p_size,self.k_size))
 		for i in range(self.p_size):
 	
 			
 			# convolve f_c and g_c 
-			C_l=np.convolve(c_m*self.g_m[i,:],c_m*self.g_n[i,:])
-			#C_l=convolve(c_m*self.g_m[i,:],c_m*self.g_n[i,:])
+			#C_l=np.convolve(c_m*self.g_m[i,:],c_m*self.g_n[i,:])
+			C_l=fftconvolve(c_m*self.g_m[i,:],c_m*self.g_n[i,:])
 	
 			# multiply all l terms together 
 			C_l=C_l*self.h_l[i,:]*self.two_part_l[i]
@@ -198,12 +240,13 @@ class FASTPT:
 		if (self.n_pad !=0):
 			# get rid of the elements created from padding 
 			P_out=P_out[self.id_pad]
-			A_out=A_out[:,self.id_pad]	
+			A_out=A_out[:,self.id_pad] 
+		
 		return P_out, A_out
 		
 	def P22(self,P,P_window=None,C_window=None):
 		
-		Power, mat=self.J_k(P,P_window=P_window,C_window=C_window)	
+		Power, mat=self.J_k(P,P_window=P_window,C_window=C_window)  
 		A=1219/1470.*mat[0,:]
 		B=671/1029.*mat[1,:]
 		C=32/1715.*mat[2,:]
@@ -211,14 +254,58 @@ class FASTPT:
 		E=62/35.*mat[4,:]
 		F=8/35.*mat[5,:]
 		reg=1/3.*mat[6,:]
-	
+
 		return Power, 2*(A+B+C+D+E+F) + reg
 		
 	def one_loop(self,P,P_window=None,C_window=None):
 		Ps,P22=self.P22(P,P_window,C_window)
 		P13=P_13_reg(self.k_old,Ps)
+		if (self.extrap):
+			_,P=self.EK.PK_orginal(P22+P13)
+			return P
 		  
 		return P22+P13
+
+	def P_bias(self,P,P_window=None,C_window=None): 
+		# Quadraric bias Legendre components
+		# See eg section B of Baldauf+ 2012 (arxiv: 1201.4827)
+		# Note pre-factor convention is not standardized
+		# Returns relevant correlations (including Wick contraction factors),
+		# but WITHOUT bias values and other pre-factors.
+		# Uses standard "full initialization" of J terms
+
+		Power, mat=self.J_k(P,P_window=P_window,C_window=C_window)
+		sig4=np.trapz(self.k_old**2*Power**2,x=self.k_old)/(2.*pi**2)
+		
+		#sig2=np.trapz(self.k_old**2*Power,x=self.k_old)/(2.*pi**2)
+		#pkinterp=interp1d(np.log(self.k_old),np.log(Power))
+		#sig4quad=quad(lambda x: np.exp(3.*x)/(2.*pi**2)*np.exp(2.*pkinterp(x))
+		#,np.log(self.k_old[0]),np.log(self.k_old[-1]),limit=2000,epsabs=1.49e-08,epsrel=1.49e-08)[0]
+		#sig2quad=quad(lambda x: np.exp(3.*x)/(2.*pi**2)*np.exp(pkinterp(x))
+		#,np.log(self.k_old[0]),np.log(self.k_old[-1]),limit=2000,epsabs=1.49e-08,epsrel=1.49e-08)[0]
+		
+		#print('k range',self.k_old[0],self.k_old[-1])
+		#print('k range with padding',self.k[0],self.k[-1])
+		#print('sig2=',sig2)
+		#print('sig4=',sig4)
+		#print(sig2/sig2quad-1.)
+		#print(sig4/sig4quad-1.)
+		#sig4=sig4quad
+		Pd1d2=2.*(17./21*mat[0,:]+mat[4,:]+4./21*mat[1,:])
+		Pd2d2=2.*(mat[0,:])
+		Pd1s2=2.*(8./315*mat[0,:]+4./15*mat[4,:]+254./441*mat[1,:]+2./5*mat[5,:]+16./245*mat[2,:])
+		Pd2s2=2.*(2./3*mat[1,:])
+		Ps2s2=2.*(4./45*mat[0,:]+8./63*mat[1,:]+8./35*mat[2,:])
+
+		if (self.extrap):
+			_, Power=self.EK.PK_orginal(Power)
+			_, Pd1d2=self.EK.PK_orginal(Pd1d2)
+			_, Pd2d2=self.EK.PK_orginal(Pd2d2)
+			_, Pd1s2=self.EK.PK_orginal(Pd1s2)
+			_, Pd2s2=self.EK.PK_orginal(Pd2s2)
+			_, Ps2s2=self.EK.PK_orginal(Ps2s2)
+
+		return Power, Pd1d2, Pd2d2, Pd1s2, Pd2s2, Ps2s2, sig4
 		
 
 if __name__ == "__main__":
@@ -233,18 +320,18 @@ if __name__ == "__main__":
 	# set the parameters for the power spectrum window and
 	# Fourier coefficient window 
 	P_window=np.array([.2,.2])  
-	C_window=.75	
+	C_window=.75    
 	
 	# bias parameter and padding length 
 	nu=-2; n_pad=800
-
+	
 	from time import time
 		
-	# initialize the FASTPT class		
-	fastpt=FASTPT(k,nu,n_pad=n_pad) 
+	# initialize the FASTPT class       
+	fastpt=FASTPT(k,nu,low_extrap=-5,high_extrap=5,n_pad=n_pad) 
 	
 	
-	t1=time()	
+	t1=time()   
 	
 	# with out P_windowing (better if you are using zero padding) 
 	P_spt=fastpt.one_loop(P,C_window=C_window) 
