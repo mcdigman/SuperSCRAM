@@ -128,6 +128,11 @@ def Y_r(l,m,theta,phi):
 		if np.absolute(np.real(result)) < eps:
 			result=0
 		return np.real(result)
+		
+
+#Daniel added - radial part of tidal force		
+def S_rr(l,m,theta,phi,k,r):
+	return (Y_r(l,m,theta,phi)/4.) * (2*jn(l,k*r) - jn(l+2,k*r) - jn(l-2,k*r))
 	
 	
 if __name__=="__main__": 
