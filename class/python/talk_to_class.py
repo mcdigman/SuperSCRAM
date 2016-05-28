@@ -62,10 +62,9 @@ class class_interface:
 		self.non_linear_cosmo.compute()
 	
 	def nl_power(self,k,z):
-		P=np.zeros((k.size,z.size))
+		P=np.zeros(k.size)
 		for i in range(k.size):
-			for j in range(z.size):
-				P[i,j]=self.non_linear_cosmo.pk(k[i],z[j])
+			P[i]=self.non_linear_cosmo.pk(k[i],z)
 		return P 
 		
 	def linear_power(self,k):

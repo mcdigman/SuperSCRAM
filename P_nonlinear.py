@@ -35,7 +35,7 @@ class P_nonlinear():
         Power, Pd1d2, Pd2d2, Pd1s2, Pd2s2, Ps2s2, sig4=self.fastpt.P_bias(P,C_window=.65) 
         for i in range(self.G.size):
             #P_out[:,i]=self.G[i]**2*self.P_lin+ self.G[i]**4*P_spt
-            print 'finish this part'
+            print 'finish this part'3
         
     
     
