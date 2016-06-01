@@ -3,6 +3,7 @@
 '''
 from scipy.special import erf
 from numpy import exp, log10 
+from hmf import hmf 
 import numpy as np
 
 class HOD():
