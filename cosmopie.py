@@ -51,7 +51,7 @@ class CosmoPie :
 		self.pc=3.08567758149*1e16 # m 
 		
 		# Newton's constant 
-		self.GN=6.6738*10**(-11) # m^3/kg/s^2
+		self.GN=6.67408*10**(-11) # m^3/kg/s^2
 		
 		# speed of light 
 		self.c        = 2.998*1e5 #km/s
@@ -78,7 +78,7 @@ class CosmoPie :
 	# -----------------------------------------------------------------------------
 	def D_comov(self,z):
 		# the line of sight comoving distance 
-		I = lambda z : 1/self.Ez(z)
+		I = lambda zp : 1/self.Ez(zp)
 		return self.DH*quad(I,0,z)[0]
 		
 	def D_comov_T(self,z):
@@ -104,34 +104,46 @@ class CosmoPie :
 		# luminosity distance 
 		return (1+z)**2*self.D_A(z)
 	
+	def DV(self,z):
+		# comoving volume element, with out the d\Omega 
+		# dV/dz
+		return self.DH*(1+z)**2*self.D_A(z)**2/self.Ez(z)
+	
 	def look_back(self,z):
-	    I = lambda z : 1/self.Ez(z)/(1+z)
-	    return self.tH*quad(I,0,z)[0]
+		I = lambda z : 1/self.Ez(z)/(1+z)
+		return self.tH*quad(I,0,z)[0]
 	# -----------------------------------------------------------------------------   
 	
 	# Growth functions
 	# -----------------------------------------------------------------------------
+# 	def G(self,z):
+# 		# linear Growth factor (Eqn. 7.77 in Dodelson)
+# 		# 1 + z = 1/a 
+# 		# G = 5/2 Omega_m H(z)/H_0 \int_0^a da'/(a'H(a')/H_0)^3
+# 		# Omega_m=Omega_m_z/a^3/H(z)^2
+# 		a=1/float(1+z)
+# 		def Integrand(ap):
+# 		    zp=1/float(ap)-1
+# 		   
+# 		    denominator=float((ap*self.H(zp))**3)
+# 		    
+# 		    return 1/denominator 
+# 	
+# 		return 5/2.*self.Omegam_z(z)*a**2*self.H(z)**3*quad(Integrand,1e-5,a)[0]
+# 		#return 5/2.*self.Omegam_z(z)*a**2*self.H(z)**3*romberg(Integrand,eps,a)
+
 	def G(self,z):
-		# linear Growth factor (Eqn. 7.77 in Dodelson)
-		# 1 + z = 1/a 
-		# G = 5/2 Omega_m H(z)/H_0 \int_0^a da'/(a'H(a')/H_0)^3
-		a=1/float(1+z)
-		def Integrand(ap):
-		    zp=1/float(ap)-1
-		   
-		    denominator=float((ap*self.H(zp))**3)
-		    
-		    return 1/denominator 
-	
-		#return 5/2.*self.Omegam_z(z)*a**2*self.H(z)**3*quad(Integrand,eps,a)[0]
-		return 5/2.*self.Omegam_z(z)*a**2*self.H(z)**3*romberg(Integrand,eps,a)
+		integrand = lambda zp : (1+zp)*self.H0**3/self.H(zp)**3
+		#return 2.5*self.Omegam/self.H0*self.H(z)*romberg(integrand,z,1e4)
+		return 2.5*self.Omegam/self.H0*self.H(z)*quad(integrand,z,1e4)[0]
 		
 	def G_norm(self,z):
 		# the normalized linear growth factor
 		# normalized so the G(0) =1 
 		
 		G_0=self.G(0)
-		return self.G(z)/G_0   
+		return self.G(z)/G_0 
+		
 		
 	def log_growth(self,z):
 		# using equation 3.2 from Baldauf 2015 
@@ -165,11 +177,7 @@ class CosmoPie :
 		if ( (self.Omegam + self.OmegaL)==1.0):
 			d_crit=A*self.Omegam**(0.0055)
 			   
-		d_c=d_crit/self.G_norm(z)
-		print 'this is z', 0, 1, 1.1, z 
-		print 'this is G_norm', self.G_norm(0), self.G_norm(1), self.G_norm(1.1), self.G_norm(z)
-		print 'omegam', self.Omegam_z(1.1)
-		print 'unnormalized', self.G(1.1)
+		d_c=d_crit#/self.G_norm(z)
 		return d_c
 		
 	def delta_v(self,z):
@@ -186,32 +194,33 @@ class CosmoPie :
 		return d_v/self.G_norm(z)
 		
 	def nu(self,z,mass):
-	    # calculates nu=(delta_c/sigma(M))^2
-	    # delta_c is the overdensity for collapse 
-	    return (self.delta_c(z)/self.sigma_m(mass,z))**2
+		# calculates nu=(delta_c/sigma(M))^2
+		# delta_c is the overdensity for collapse 
+		return (self.delta_c(z)/self.sigma_m(mass,z))**2
 	
 	def sigma_m(self,mass,z):
-	    # RMS power on a scale of R(mass)
-	    # rho=mass/volume=mass
-	    R=3/4.*mass/self.rho_bar(z)/pi
-	    R=R**(1/3.)	   
-	    return self.sigma_r(z,R)
+		# RMS power on a scale of R(mass)
+		# rho=mass/volume=mass
+		R=3/4.*mass/self.rho_bar(z)/pi
+		R=R**(1/3.)	   
+		return self.sigma_r(z,R)
 	
 	def sigma_r(self,z,R):
-	    # returns RMS power on scale R
-	    # sigma^2(R)= G^2(z)\int dlogk/(2 pi^2) W^2 P(k) k^3 
-	    if self.P_lin is None:
-	        raise ValueError('You need to provide a linear power spectrum and k to get sigma valeus')
-	    if self.k is None:
-	        raise ValueError('You need to provide a linear power spectrum and k to get sigma valeus')
-	    
-	    W=3.0*(np.sin(self.k*R)/self.k**3/R**3-np.cos(self.k*R)/self.k**2/R**2)
-	    P=self.G_norm(z)**2*self.P_lin
-	    I=trapz(W*W*P*self.k**3,np.log(self.k))/2./pi**2
-	    
-	    return np.sqrt(I)
-	    
-	    
+		# returns RMS power on scale R
+		# sigma^2(R)= \int dlogk/(2 pi^2) W^2 P(k) k^3 
+		# user needs to adjust for growth factor upon return 
+		if self.P_lin is None:
+			raise ValueError('You need to provide a linear power spectrum and k to get sigma valeus')
+		if self.k is None:
+			raise ValueError('You need to provide a linear power spectrum and k to get sigma valeus')
+		
+		W=3.0*(np.sin(self.k*R)/self.k**3/R**3-np.cos(self.k*R)/self.k**2/R**2)
+		#P=self.G_norm(z)**2*self.P_lin
+		P=self.P_lin
+		I=trapz(W*W*P*self.k**3,np.log(self.k))/2./pi**2
+		
+		return np.sqrt(I)
+		
 		
 	# densities as a function of redshift 
 	def Omegam_z(self,z):
@@ -223,17 +232,16 @@ class CosmoPie :
 		return self.OmegaL/self.Ez(z)**2
 	
 	def rho_bar(self,z):
-	    # return average density in units of solar mass and h^2 
-	    return self.rho_crit(z)*self.Omegam_z(z)
+		# return average density in units of solar mass and h^2 
+		return self.rho_crit(z)*self.Omegam_z(z)
 	
 	def rho_crit(self,z):
-	    # return critical density in units of solar mass and h^2 
-	    factor=1e12/self.M_sun*self.pc	   
-	    return 3*self.H(z)**2/8./pi/self.GN*factor/self.h**2
-	#def average_matter(self, z): 
+		# return critical density in units of solar mass and h^2 
+		factor=1e12/self.M_sun*self.pc	   
+		#print 'rho crit [g/cm^3] at z =', z, 3*self.H(z)**2/8./pi/self.GN*1e9/(3.086*10**24)**2/10**2
+		return 3*self.H(z)**2/8./pi/self.GN*factor/self.h**2
 	
-		
-   
+	   
 	# -----------------------------------------------------------------------------
 		
 	 
@@ -241,6 +249,7 @@ if __name__=="__main__":
 
 	C=CosmoPie()
 	z=3.5
+	z=.1
 	print('Comoving distance',C.D_comov(z))
 	print('Angular diameter distance',C.D_A(z))
 	print('Luminosity distance', C.D_L(z)) 
@@ -251,23 +260,30 @@ if __name__=="__main__":
 	print('compare logrithmic growth factor to approxiamtion', C.Omegam**(-.6), C.Omegam)
 	print('cirtical overdensity ',C.delta_c(0)  ) 
 		
-	z=np.linspace(0,20,80) 
+	z=np.linspace(0,5,80) 
 	D1=np.zeros(80)
 	D2=np.zeros(80)
+	D3=np.zeros(80)
 	for i in range(80):
 		D1[i]=C.D_A(z[i])
 		D2[i]=C.D_L(z[i])
-		
+		D3[i]=C.DV(z[i])
 		
 	import matplotlib.pyplot as plt
 	
-	ax=plt.subplot(111)
+	ax=plt.subplot(121)
 	ax.set_xlabel(r'$z$', size=20)
 	
 	ax.plot(z, D1, label='Angular Diameter distance [Mpc]') 
 	#ax.plot(z, D2, label='Luminosity distance [Mpc]') 
-	
 	plt.grid()
+	
+	ax=plt.subplot(122)
+	ax.set_ylim(0,1)
+	ax.plot(z, D3/C.DH**3, label='Angular Diameter distance [Mpc]') 
+	#ax.plot(z, D2, label='Luminosity distance [Mpc]') 
+	plt.grid()
+	
 	plt.show()
 	
 	   

@@ -2,91 +2,118 @@
 	Halo mass function classes
 '''
 import numpy as np
-from numpy import log, log10, exp
+from numpy import log, log10, exp, pi
 from scipy.interpolate import interp1d
 from scipy.integrate import trapz 
 import sys
 
 class ST_hmf():
-	def __init__(self,z,cosmology,CosmoPie):
-		self.z=z    # redshift 
+	def __init__(self,CosmoPie):
 		
 		# log 10 of the minimum and maximum halo mass
 		self.min=6
-		self.max=16
+		self.max=18
 		# number of grid points in M 
 		n_grid=1000
-        # I add an additional point because I will take derivatives latter
-        # and the finite difference scheme misses that last grid point. 
+		# I add an additional point because I will take derivatives latter
+		# and the finite difference scheme misses that last grid point. 
 		dlog_M=(self.max-self.min)/float(n_grid)
 		self.M_grid=10**np.linspace(self.min,self.max+dlog_M, n_grid+1)
 		
 		
 		self.nu_array=np.zeros(n_grid+1)
 		self.sigma=np.zeros(n_grid+1)
-		self.Omegam_0=cosmology['Omegam']
-		self.OmegaL=cosmology['OmegaL']
+		#self.Omegam_0=cosmology['Omegam']
+		#self.OmegaL=cosmology['OmegaL']
 		
 		
-		self.delta_v=CosmoPie.delta_v(z)
-		self.delta_c=CosmoPie.delta_c(z)
-		rho_bar=CosmoPie.rho_bar(z)
+		#self.delta_v=CosmoPie.delta_v(z)
+		self.delta_c=CosmoPie.delta_c(0)
+		self.rho_bar=CosmoPie.rho_bar(0)
+		self.Growth=CosmoPie.G_norm
+		print 'rhos', 0,self.rho_bar/(1e10), CosmoPie.rho_crit(0)/(1e10)
+		
+		#print 'hubble', CosmoPie.H(z)
 		
 		for i in range(self.M_grid.size):
-			self.sigma[i]=CosmoPie.sigma_m(self.M_grid[i],z)
-			
-						
+		    
+		    R=3/4.*self.M_grid[i]/self.rho_bar/pi
+		    R=R**(1/3.)
+		    self.sigma[i]=CosmoPie.sigma_r(0,R)
+	
 		
+		# calculated at z=0        								
 		self.nu_array=(self.delta_c/self.sigma)**2
-		
-		print 'delta_c', self.delta_c
-
-		
-		#self.nu_of_M=interp1d(self.M_grid, self.nu_array)
-		self.M_of_nu=interp1d(self.nu_array,self.M_grid)
-		
-		# Sheth-Tormen parameters
-		A=0.3222; a=0.707; p=0.3
-		
-		f=A*np.sqrt(2*a/np.pi)*(1 + 1/(a*self.nu_array)**p) \
-			*np.sqrt(self.nu_array)*exp(-a*self.nu_array/2.)
-		
 		sigma_inv=self.sigma**(-1)
-		
-		# need to normalize so that \int f dlog(sigma^-1) =1
-		# Since f corresponds to the fraction of collapsed objects in per unit 
-		# interval in dlog(sigma^1) and the halo model assumes all mass is in collapsed 
-		# objects, then the integral must be one. 
-		norm=trapz(f,log(sigma_inv))
-		f=f/norm
-		self.norm=norm
-        # the derivative dlog(sigma^-1)/dM
 		dsigma_dM=np.diff(log(sigma_inv))/(np.diff(self.M_grid))
 		
-		MassFunc=rho_bar/self.M_grid[:-1]*dsigma_dM*f[:-1]
 		
-		# functions for functions below 
-		self.diff_mass_func=interp1d(self.M_grid[:-1],MassFunc)
-		self.mass_func=interp1d(self.M_grid[:-1],f[:-1])
-		self.sigma_inv=interp1d(self.M_grid[:-1],self.sigma[:-1])
+		
+		self.sigma_of_M=interp1d(self.M_grid[:-1],self.sigma[:-1])
+		self.nu_of_M=interp1d(self.M_grid[:-1], self.nu_array[:-1])
+		self.M_of_nu=interp1d(self.nu_array[:-1],self.M_grid[:-1])
+		self.dsigma_dM_of_M=interp1d(self.M_grid[:-1],dsigma_dM)
+		
+	def f_norm(self,z,G):
+		A=0.3222; a=0.707; p=0.3
+		nu=self.nu_array/G**2
+		
+		f=A*np.sqrt(2*a/np.pi)*(1 + (1/a/nu)**p)*np.sqrt(nu)*exp(-a*nu/2.)
+		sigma_inv=(G**2*self.sigma)**(-1)
+		norm=trapz(f,log(sigma_inv))
+		
+# 		d=np.loadtxt('test_data/hmf_test.dat')
+# 		import matplotlib.pyplot as plt
+# 		ax=plt.subplot(111)
+# 		ax.set_xscale('log')
+# 		ax.set_yscale('log')
+# 		
+# 		ax.plot(self.M_grid,f/norm*(.6774**2))
+# 		ax.plot(d[:,0],d[:,2])
+# 		ax.plot(d[:,0],d[:,4])
+# 		plt.grid()
+# 		plt.show()
+		
+		return norm
 
+	def f_sigma(self,M,z):
+		A=0.3222; a=0.707; p=0.3
+		G=self.Growth(z)
+		norm=self.f_norm(z,G)
+		nu=self.nu_of_M(M)/G**2
+		f=A*np.sqrt(2*a/np.pi)*(1 + (1/a/nu)**p)*np.sqrt(nu)*exp(-a*nu/2.)
+# 		
+# 		print 'hello G', G
+# 		d=np.loadtxt('test_data/hmf_test.dat')
+# 		import matplotlib.pyplot as plt
+# 		ax=plt.subplot(111)
+# 		ax.set_xscale('log')
+# 		ax.set_yscale('log')
 		
-	def dn_dM(self,M):
-		return self.diff_mass_func(M)
+# 		ax.plot(M,f*(.6774**2))
+# 		ax.plot(d[:,0],d[:,2])
+# 		ax.plot(d[:,0],d[:,4])
+# 		plt.show()
+		
+		return f/norm
+
+	def mass_func(self,M,z):
+		f=self.f_sigma(M,z)
+		sigma=self.sigma_of_M(M)
+		dsigma_dM=self.dsigma_dM_of_M(M)
+		mf=self.rho_bar/M*dsigma_dM*f
+		# return sigma,f,and the mass function dn/dM
+		return sigma,f,mf 
 	
-	def f_of_M(self,M):
-		return self.mass_func(M)
-	
-	def f_of_sigma_inv(self,M):
-	    f=self.mass_func(M)
-	    return self.sigma_inv(M), f
-	
+	def dndM(self,M,z):
+	    _,_,mf=self.mass_func(M,z)
+	    return mf 
+
 	def M_star(self):
-	    return self.M_of_nu(1.0)
+	    # return the characteristic mass
+ 	    return self.M_of_nu(1.0)
 		
 		
-		
-
 if __name__=="__main__":
 
 	cosmology={'Omegabh2' :0.02230,
@@ -109,23 +136,20 @@ if __name__=="__main__":
 	from cosmopie import CosmoPie
 	CP=CosmoPie(cosmology,P_lin=P,k=k)	
 	
-	z=0; h=.6774
-	rho_bar=CP.rho_bar(z)
-	hmf=ST_hmf(z,cosmology,CP)
+	#z=1.1; h=.6774
+	#rho_bar=CP.rho_bar(z)
+	hmf=ST_hmf(CP)
 	
+	
+	z1=0;z2=1.1;z3=.1
 	#M=np.logspace(8,15,150)
 	M=d[:,0]
-	dndM=hmf.dn_dM(M)
-	M_star=hmf.M_star()
-	a,b=hmf.f_of_sigma_inv(M)
+	_,f1,mf1=hmf.mass_func(M,z1)
+	_,f2,mf2=hmf.mass_func(M,z2)
+	_,f2,mf3=hmf.mass_func(M,z3)
 	
-	z=5
-	hmf=ST_hmf(z,cosmology,CP)
 	
-	dndM2=hmf.dn_dM(M)	
-	c,e=hmf.f_of_sigma_inv(M)
-	
-	#sys.exit()
+	h=.6774
 	import matplotlib.pyplot as plt
 	
 	ax=plt.subplot(121)
@@ -134,12 +158,20 @@ if __name__=="__main__":
 	#ax.set_xlim(9.6,15)
 	#ax.set_ylim(-5.4,0)
 	ax.set_ylabel(r'$\frac{d n}{d \log_{10}(M_h)}$', size=20)
-	ax.plot(M,dndM*M)
-	ax.plot(d[:,0], d[:,1]/h, color='red')
+	ax.plot(M,mf1*M)
+	ax.plot(d[:,0], d[:,1]/h, '--')
 	
-	ax.plot(M,dndM2*M)
-	ax.plot(d[:,0], d[:,3]/h, color='red')
-	plt.axvline(M_star)
+	ax.plot(M,mf2*M)
+	ax.plot(d[:,0], d[:,3]/h**2, '--')
+	
+	zz=np.array([.1,.2,.3,.5,1,2])
+	for i in range(zz.size):
+	    _,_,y=hmf.mass_func(M,zz[i])
+	    ax.plot(M,y*M)
+	    
+	
+	ax.plot(M,mf3*M)
+	#plt.axvline(M_star)
 	
 	
 	plt.grid()
@@ -150,10 +182,10 @@ if __name__=="__main__":
 	ax.set_yscale('log')
 	ax.set_ylabel(r'$f(M_h)}$', size=20)
 		
-	ax.plot(M,b)
+	ax.plot(M,f1)
 	ax.plot(M,d[:,2]/h, color='red')
 	
-	ax.plot(M,e)
+	ax.plot(M,f2)
 	ax.plot(M,d[:,4]/h, color='red')
 	
 	plt.grid()
