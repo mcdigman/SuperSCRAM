@@ -80,6 +80,9 @@ class CosmoPie :
 		# the line of sight comoving distance 
 		I = lambda zp : 1/self.Ez(zp)
 		return self.DH*quad(I,0,z)[0]
+	
+	def D_comov_dz(self,z):
+	    return self.DH/self.Ez(z) 
 		
 	def D_comov_T(self,z):
 		# the transverse comoving distance 
@@ -108,6 +111,21 @@ class CosmoPie :
 		# comoving volume element, with out the d\Omega 
 		# dV/dz
 		return self.DH*(1+z)**2*self.D_A(z)**2/self.Ez(z)
+		
+	def D_A_array(self,z):
+
+	    d=np.zeros_like(z)
+	    for i in range(z.size):
+	        d[i]=self.D_A(z[i])
+	    return d 
+	
+	def D_c_array(self,z):
+
+	    d=np.zeros_like(z)
+	    for i in range(z.size):
+	        d[i]=self.D_comov(z[i])
+	    return d 
+	    
 	
 	def look_back(self,z):
 		I = lambda z : 1/self.Ez(z)/(1+z)
@@ -136,7 +154,11 @@ class CosmoPie :
 		integrand = lambda zp : (1+zp)*self.H0**3/self.H(zp)**3
 		#return 2.5*self.Omegam/self.H0*self.H(z)*romberg(integrand,z,1e4)
 		return 2.5*self.Omegam/self.H0*self.H(z)*quad(integrand,z,1e4)[0]
-		
+
+# 	def G(self,z):
+# 		integrand = lambda zp : 1/(1 + zp)**2/self.H(z)**3 
+# 		return 2.5*self.Omegam_z(z)/(1+z)**2*self.H(z)**3*quad(integrand, z,1e5)[0]
+				
 	def G_norm(self,z):
 		# the normalized linear growth factor
 		# normalized so the G(0) =1 
@@ -193,6 +215,7 @@ class CosmoPie :
 			   
 		return d_v/self.G_norm(z)
 		
+		
 	def nu(self,z,mass):
 		# calculates nu=(delta_c/sigma(M))^2
 		# delta_c is the overdensity for collapse 
@@ -230,6 +253,12 @@ class CosmoPie :
 	def OmegaL_z(self,z):
 		# dark energy density as function of redshift 
 		return self.OmegaL/self.Ez(z)**2
+
+	def Omegak_z(self,z):
+		return 1-self.Omegam_z(z)-self.OmegaL_z(z)
+	
+	def Omega_tot(self,z):
+		return self.Omegak_z(z) + self.OmegaL_z(z) + self.Omegam_L(z)
 	
 	def rho_bar(self,z):
 		# return average density in units of solar mass and h^2 
@@ -265,9 +294,9 @@ if __name__=="__main__":
 	D2=np.zeros(80)
 	D3=np.zeros(80)
 	for i in range(80):
-		D1[i]=C.D_A(z[i])
-		D2[i]=C.D_L(z[i])
-		D3[i]=C.DV(z[i])
+		D1[i]=C.D_A(z[i])/C.DH
+		D2[i]=C.D_L(z[i])/C.DH
+		D3[i]=C.DV(z[i])/C.DH
 		
 	import matplotlib.pyplot as plt
 	

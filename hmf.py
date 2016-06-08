@@ -36,10 +36,10 @@ class ST_hmf():
 		#print 'hubble', CosmoPie.H(z)
 		
 		for i in range(self.M_grid.size):
-		    
-		    R=3/4.*self.M_grid[i]/self.rho_bar/pi
-		    R=R**(1/3.)
-		    self.sigma[i]=CosmoPie.sigma_r(0,R)
+			
+			R=3/4.*self.M_grid[i]/self.rho_bar/pi
+			R=R**(1/3.)
+			self.sigma[i]=CosmoPie.sigma_r(0,R)
 	
 		
 		# calculated at z=0        								
@@ -61,6 +61,31 @@ class ST_hmf():
 		f=A*np.sqrt(2*a/np.pi)*(1 + (1/a/nu)**p)*np.sqrt(nu)*exp(-a*nu/2.)
 		sigma_inv=(G**2*self.sigma)**(-1)
 		norm=trapz(f,log(sigma_inv))
+		
+# 		d=np.loadtxt('test_data/hmf_test.dat')
+# 		import matplotlib.pyplot as plt
+# 		ax=plt.subplot(111)
+# 		ax.set_xscale('log')
+# 		ax.set_yscale('log')
+# 		
+# 		ax.plot(self.M_grid,f/norm*(.6774**2))
+# 		ax.plot(d[:,0],d[:,2])
+# 		ax.plot(d[:,0],d[:,4])
+# 		plt.grid()
+# 		plt.show()
+		
+		return norm
+	
+	def bias_norm(self,z,G):
+	   
+		A=0.3222; a=0.707; p=0.3
+		nu=self.nu_array/G**2
+		
+		bias=(1 + (a*nu-1)/self.delta_c + 2*p/(self.delta_c*(1+(a*nu)**p)))
+		f=A*np.sqrt(2*a/np.pi)*(1 + (1/a/nu)**p)*np.sqrt(nu)*exp(-a*nu/2.)
+		
+		norm=trapz(f*bias,nu)
+		return norm
 		
 # 		d=np.loadtxt('test_data/hmf_test.dat')
 # 		import matplotlib.pyplot as plt
@@ -106,14 +131,21 @@ class ST_hmf():
 		return sigma,f,mf 
 	
 	def dndM(self,M,z):
-	    _,_,mf=self.mass_func(M,z)
-	    return mf 
+		_,_,mf=self.mass_func(M,z)
+		return mf 
 
 	def M_star(self):
-	    # return the characteristic mass
- 	    return self.M_of_nu(1.0)
+		return self.M_of_nu(1.0)
 		
+	def bias(self,M,z):
+		A=0.3222; a=0.707; p=0.3
+		G=self.Growth(z)
+		nu=self.nu_of_M(M)/G**2
+		norm=self.bias_norm(z,G)
+		bias=(1 + (a*nu-1)/self.delta_c + 2*p/(self.delta_c*(1+(a*nu)**p)))
+		return bias/norm
 		
+	
 if __name__=="__main__":
 
 	cosmology={'Omegabh2' :0.02230,
@@ -152,7 +184,7 @@ if __name__=="__main__":
 	h=.6774
 	import matplotlib.pyplot as plt
 	
-	ax=plt.subplot(121)
+	ax=plt.subplot(131)
 	ax.set_xscale('log')
 	ax.set_yscale('log')
 	#ax.set_xlim(9.6,15)
@@ -166,9 +198,9 @@ if __name__=="__main__":
 	
 	zz=np.array([.1,.2,.3,.5,1,2])
 	for i in range(zz.size):
-	    _,_,y=hmf.mass_func(M,zz[i])
-	    ax.plot(M,y*M)
-	    
+		_,_,y=hmf.mass_func(M,zz[i])
+		ax.plot(M,y*M)
+		
 	
 	ax.plot(M,mf3*M)
 	#plt.axvline(M_star)
@@ -176,17 +208,32 @@ if __name__=="__main__":
 	
 	plt.grid()
 	
-	ax=plt.subplot(122)
+	ax=plt.subplot(132)
 	ax.set_xscale('log')
 	#ax.set_xlim(-.2,.4)
 	ax.set_yscale('log')
 	ax.set_ylabel(r'$f(M_h)}$', size=20)
 		
+	
 	ax.plot(M,f1)
 	ax.plot(M,d[:,2]/h, color='red')
 	
 	ax.plot(M,f2)
 	ax.plot(M,d[:,4]/h, color='red')
+	
+	plt.grid()
+	
+	ax=plt.subplot(133)
+	ax.set_xscale('log')
+	#ax.set_xlim(-.2,.4)
+	ax.set_yscale('log')
+	ax.set_ylabel(r'$f(M_h)}$', size=20)
+	
+	b1=hmf.bias(M,0)
+	b2=hmf.bias(M,1)
+		
+	ax.plot(M,b1)
+	ax.plot(M,b2)
 	
 	plt.grid()
 	plt.show()
