@@ -4,7 +4,7 @@ from FASTPTcode import FASTPT
 
 class P_nonlinear():
     
-    def __init__(self,P_lin,z,k,C_pie,types=['fastpt']):
+    def __init__(self,P_lin,k,CosmoPie,types=['fastpt']):
         ''' 
            P_lin : the linear power spectrum for a given cosmology 
            z : an array of redshifts
@@ -12,7 +12,7 @@ class P_nonlinear():
            C_pie : is a class made with cosmopie class that contians relevant things (like growth factor)
         '''
        
-        self.G=C_pie.G_array(z)
+        self.G=CosmoPie.G_array(z)
         self.P_lin=P_lin
         self.k=k
         for i in range(len(types)):
@@ -28,14 +28,14 @@ class P_nonlinear():
         
         return P_out 
     
-    def bias(self,bias_params):
-        #maybe bias params should be a matrix to account for different redshifts. 
-        b1,b2,bs=bias_params
-        P_out=np.zeros((self.k.size,self.G.size))
-        Power, Pd1d2, Pd2d2, Pd1s2, Pd2s2, Ps2s2, sig4=self.fastpt.P_bias(P,C_window=.65) 
-        for i in range(self.G.size):
-            #P_out[:,i]=self.G[i]**2*self.P_lin+ self.G[i]**4*P_spt
-            print 'finish this part'3
+#     def bias(self,bias_params):
+#         #maybe bias params should be a matrix to account for different redshifts. 
+#         b1,b2,bs=bias_params
+#         P_out=np.zeros((self.k.size,self.G.size))
+#         Power, Pd1d2, Pd2d2, Pd1s2, Pd2s2, Ps2s2, sig4=self.fastpt.P_bias(P,C_window=.65) 
+#         for i in range(self.G.size):
+#             #P_out[:,i]=self.G[i]**2*self.P_lin+ self.G[i]**4*P_spt
+#             print 'finish this part'3
         
     
     

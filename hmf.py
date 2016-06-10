@@ -8,7 +8,7 @@ from scipy.integrate import trapz
 import sys
 
 class ST_hmf():
-	def __init__(self,CosmoPie):
+	def __init__(self,CosmoPie, delta_bar=None):
 		
 		# log 10 of the minimum and maximum halo mass
 		self.min=6
@@ -29,6 +29,8 @@ class ST_hmf():
 		
 		#self.delta_v=CosmoPie.delta_v(z)
 		self.delta_c=CosmoPie.delta_c(0)
+		if delta_bar is not None:
+		    self.delta_c=self.delta_c - delta_bar 
 		self.rho_bar=CosmoPie.rho_bar(0)
 		self.Growth=CosmoPie.G_norm
 		print 'rhos', 0,self.rho_bar/(1e10), CosmoPie.rho_crit(0)/(1e10)
