@@ -9,9 +9,10 @@ from time import time
 import pickle 
 import ps2
 import FASTPTcode.FASTPT as FASTPT
+import defaults
 
 class shear_power:
-    def __init__(self,k_in,C,zs,ls,pmodel='halofit_linear',P_in=[]):
+    def __init__(self,k_in,C,zs,ls,pmodel='halofit_linear',P_in=[],cosmology_in={}):
 	self.k_in = k_in
         self.C = C
         self.zs = zs
@@ -38,15 +39,17 @@ class shear_power:
 	self.dchis = np.zeros(self.n_z)
 	self.ps = np.zeros(self.n_z)
 
+        self.cosmology = cosmology_in
+
         for i in range(0,self.n_z):
             self.chis[i] = self.C.D_comov(zs[i])
             self.omegas[i] = self.C.Omegam_z(zs[i])
 
 	    self.k_use[:,i] = self.ls/self.chis[i] 
             if pmodel=='halofit_linear':
-                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,hf.PowerSpectrum(self.zs[i]).D2_L(self.k_in))(self.k_use[:,i])/self.k_use[:,i]**3
+                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,hf.PowerSpectrum(self.zs[i],self.cosmology).D2_L(self.k_in))(self.k_use[:,i])/self.k_use[:,i]**3
             elif pmodel=='halofit_nonlinear':
-                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,hf.PowerSpectrum(self.zs[i]).D2_NL(self.k_in))(self.k_use[:,i])/self.k_use[:,i]**3
+                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,hf.PowerSpectrum(self.zs[i],self.cosmology).D2_NL(self.k_in))(self.k_use[:,i])/self.k_use[:,i]**3
             elif pmodel=='redshift_linear':
                 self.p_dd_use[:,i] = interp1d(self.k_in,P_in*self.C.G_norm(self.zs[i])**2)(self.k_use[:,i])
             elif pmodel=='fastpt_nonlin':
@@ -55,7 +58,7 @@ class shear_power:
             else:
                 if i==0:
                     print("invalid pmodel value \'"+pmodel+"\' using halofit_linear instead")
-                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,hf.PowerSpectrum(self.zs[i]).D2_L(self.k_in))(self.k_use[:,i])/self.k_use[:,i]**3
+                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,hf.PowerSpectrum(self.zs[i],self.cosmology).D2_L(self.k_in))(self.k_use[:,i])/self.k_use[:,i]**3
 
 
 	    self.dchis[i] = (self.C.D_comov(self.zs[i]+self.epsilon)-self.C.D_comov(self.zs[i]))/self.epsilon
@@ -180,7 +183,7 @@ class shear_power:
     
 
 if __name__=='__main__':
-
+    
 	d = np.loadtxt('Pk_Planck15.dat')
 #	xiaod = np.loadtxt('power_spectrum_1.dat')
 #	intd = pickle.load(open('../CosmicShearPython/Cll_camb.pkl',mode='r'))
@@ -188,13 +191,12 @@ if __name__=='__main__':
         k_in = d[:,0]
 #	zs = np.logspace(-2,np.log10(3),50,base=10)
 	zs = np.arange(0.01,3,0.01)
-
 	C=cp.CosmoPie()
 	ls = np.arange(2,3000)
 #	ls = revd[:,0]	
 	t1 = time()
         
-        sp1 = shear_power(k_in,C,zs,ls,pmodel='redshift_linear',P_in=d[:,1])
+        sp1 = shear_power(k_in,C,zs,ls,pmodel='redshift_linear',P_in=d[:,1],cosmology_in=defaults.cosmology)
         #sh_pow1 = sp1.Cll_sh_sh()
         #sp2 = shear_power(k_in,C,zs,ls,pmodel='halofit_linear',P_in=d[:,1])
         #sh_pow2 = sp2.Cll_sh_sh()
