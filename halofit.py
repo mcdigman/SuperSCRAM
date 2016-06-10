@@ -30,7 +30,6 @@ class halofitPk(object):
 					 # day values 
 					 self.h=cosmology['h']
 					 self.sig8=cosmology['sigma8']
-				print self.Omegam, self.OmegaL 
 
 				self.H_0=100*self.h
 				self.z=z 

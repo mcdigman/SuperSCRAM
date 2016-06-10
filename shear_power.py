@@ -47,9 +47,9 @@ class shear_power:
 
 	    self.k_use[:,i] = self.ls/self.chis[i] 
             if pmodel=='halofit_linear':
-                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,hf.PowerSpectrum(self.zs[i],self.cosmology).D2_L(self.k_in))(self.k_use[:,i])/self.k_use[:,i]**3
+                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,hf.halofitPk(self.zs[i],self.cosmology).D2_L(self.k_in))(self.k_use[:,i])/self.k_use[:,i]**3
             elif pmodel=='halofit_nonlinear':
-                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,hf.PowerSpectrum(self.zs[i],self.cosmology).D2_NL(self.k_in))(self.k_use[:,i])/self.k_use[:,i]**3
+                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,hf.halofitPk(self.zs[i],self.cosmology).D2_NL(self.k_in))(self.k_use[:,i])/self.k_use[:,i]**3
             elif pmodel=='redshift_linear':
                 self.p_dd_use[:,i] = interp1d(self.k_in,P_in*self.C.G_norm(self.zs[i])**2)(self.k_use[:,i])
             elif pmodel=='fastpt_nonlin':
@@ -58,7 +58,7 @@ class shear_power:
             else:
                 if i==0:
                     print("invalid pmodel value \'"+pmodel+"\' using halofit_linear instead")
-                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,hf.PowerSpectrum(self.zs[i],self.cosmology).D2_L(self.k_in))(self.k_use[:,i])/self.k_use[:,i]**3
+                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,hf.halofitPk(self.zs[i],self.cosmology).D2_L(self.k_in))(self.k_use[:,i])/self.k_use[:,i]**3
 
 
 	    self.dchis[i] = (self.C.D_comov(self.zs[i]+self.epsilon)-self.C.D_comov(self.zs[i]))/self.epsilon
@@ -198,11 +198,11 @@ if __name__=='__main__':
         
         sp1 = shear_power(k_in,C,zs,ls,pmodel='redshift_linear',P_in=d[:,1],cosmology_in=defaults.cosmology)
         #sh_pow1 = sp1.Cll_sh_sh()
-        #sp2 = shear_power(k_in,C,zs,ls,pmodel='halofit_linear',P_in=d[:,1])
+        #sp2 = shear_power(k_in,C,zs,ls,pmodel='halofit_linear',P_in=d[:,1],cosmology_in=defaults.cosmology)
         #sh_pow2 = sp2.Cll_sh_sh()
-        #sp3 = shear_power(k_in,C,zs,ls,pmodel='halofit_nonlinear',P_in=d[:,1])
+        #sp3 = shear_power(k_in,C,zs,ls,pmodel='halofit_nonlinear',P_in=d[:,1],cosmology_in=defaults.cosmology)
         #sh_pow3 = sp3.Cll_sh_sh()
-        #sp4 = shear_power(k_in,C,zs,ls,pmodel='fastpt_nonlin',P_in=d[:,1])
+        #sp4 = shear_power(k_in,C,zs,ls,pmodel='fastpt_nonlin',P_in=d[:,1],cosmology_in=defaults.cosmology)
         #sh_pow4 = sp4.Cll_sh_sh()
         
         t2 = time()
@@ -234,14 +234,13 @@ if __name__=='__main__':
 	ax.set_xlabel('l',size=20)
 	ax.set_ylabel('C')
         
-      #  lin1=ax.loglog(ls,sp1.Cll_sh_sh(),label='Shear Power Spectrum linear redshifted')
+        #lin1=ax.loglog(ls,sp1.Cll_sh_sh(),label='Shear Power Spectrum linear redshifted')
        # lin1=ax.loglog(ls,sp1.Cll_sh_sh(chi_max1=sp1.chis[10]),label='Shear Power Spectrum linear redshifted')
      #   ax.loglog(ls,sp1.Cll_g_g())
      #   ax.loglog(ls,sp1.Cll_sh_g())
 #        ax.legend(["sh_sh","g_g","sh_g"])
         ax.loglog(ls,cov_ss_gg) 
         ax.loglog(ls,cov_sg_sg) 
-        #ax.loglog(ls,cov_sg_sg2) 
         ax.loglog(ls,cov_sg_ss) 
         ax.loglog(ls,cov_sg_gg) 
         ax.loglog(ls,cov_ss_ss) 
@@ -251,7 +250,7 @@ if __name__=='__main__':
 	#lin3=ax.loglog(ls,sh_pow3,label='Shear Power Spectrum halofit nonlinear')
 	#lin4=ax.loglog(ls,sh_pow4,label='Shear Power Spectrum fastpt nonlinear')
 
- #       ax.legend(["linear redshifted","halofit linear","halofit nonlinear","fastpt nonlinear"])
+        #ax.legend(["linear redshifted","halofit linear","halofit nonlinear","fastpt nonlinear"])
 
 #	ax.loglog(xiaod[:,0],xiaod[:,2])
 #	ax.loglog(intd[1],intd[0][:,3])
