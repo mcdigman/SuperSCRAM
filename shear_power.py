@@ -45,9 +45,9 @@ class shear_power:
         if pmodel=='halofit_redshift_nonlinear':
             p_bar = hf.halofitPk(0.42891513142857135,self.cosmology).D2_NL(self.k_in)
         elif pmodel == 'cosmosis_nonlinear':
-            z_bar = np.loadtxt('demo_output_15/matter_power_nl/z.txt')
-            p_bar = interp2d(k_in,z_bar,np.loadtxt('demo_output_15/matter_power_nl/p_k.txt'))
-            self.chis = interp1d(z_bar,np.loadtxt('demo_output_15/distances/d_m.txt')[::-1])(zs)
+            z_bar = np.loadtxt('test_inputs/proj_1/z.txt')
+            p_bar = interp2d(k_in,z_bar,np.loadtxt('test_inputs/proj_1/p_k.txt'))
+            self.chis = interp1d(z_bar,np.loadtxt('test_inputs/proj_1/d_m.txt')[::-1])(zs)
 
         for i in range(0,self.n_z):
             if pmodel!='cosmosis_nonlinear':
@@ -140,14 +140,19 @@ class shear_power:
         return np.trapz(integrand,self.chis,axis=0)
 
     def Cll_q_q_order2(self,q1s,q2s,corr_param=np.array([])):
-        integrand = np.zeros((self.n_z,self.n_l))
+        integrand1 = np.zeros((self.n_z,self.n_l))
+        integrand2 = np.zeros((self.n_z,self.n_l))
         if corr_param.size !=0: 
             for i in range(0,self.n_z):
-                integrand[i] = q1s.qs[i]*q2s.qs[i]/self.chis[i]**2*self.p_dd_use[:,i]*corr_param[:,i]
+                integrand1[i] = q1s.qs[i]*q2s.qs[i]/self.chis[i]**2*self.p_dd_use[:,i]*corr_param[:,i]
         else:
             for i in range(0,self.n_z):
-                integrand[i] = q1s.qs[i]*q2s.qs[i]/self.chis[i]**2*self.p_dd_use[:,i]
-        return np.trapz(integrand,self.chis,axis=0)
+                integrand1[i] = q1s.qs[i]*q2s.qs[i]/self.chis[i]**2*self.p_dd_use[:,i]
+        for i in range(0,self.n_z-1): #check edge case
+            term1 = self.chis[i]**2/2.*(q1s.rs_d2[i]/q1s.rs[i]+q2s.rs_d2[i]/q2s.rs[i])
+            term2 = self.chis[i]**3/6.*(q1s.rs_d3[i]/q1s.rs[i]+q2s.rs_d3[i]/q2s.rs[i])
+            integrand2[i] = -1./(self.ls+0.5)**2*(term1+term2)*integrand1[i]
+        return np.trapz(integrand1+integrand2,self.chis,axis=0)
     
     def cov_g_diag(self,c_ac,c_ad,c_bd,c_bc,n_ac=0,n_ad=0,n_bd=0,n_bc=0): #only return diagonal because all else are zero by kronecker delta
         cov_diag = np.zeros(self.n_l) #assume same size for now
@@ -191,6 +196,11 @@ class q_weight:
 class q_shear(q_weight):
     def __init__(self,sp,chi_min=0.,chi_max=np.inf,mult=1.):
         qs = 3./2.*(sp.C.H0/sp.C.c)**2*sp.omegas*sp.chis/sp.sc_as*self.gs(sp,chi_max=chi_max,chi_min=chi_min)*mult
+        r_spline = InterpolatedUnivariateSpline(sp.chis,qs/np.sqrt(sp.chis),ext=2) #for calculating to second order
+        self.rs = r_spline(sp.chis)
+        self.rs_d1 = r_spline.derivative(1)(sp.chis)
+        self.rs_d2 = r_spline.derivative(2)(sp.chis)
+        self.rs_d3 = r_spline.derivative(3)(sp.chis)
         q_weight.__init__(self,sp.chis,qs,chi_min=chi_min,chi_max=chi_max) 
 
     def gs(self,sp,chi_max=np.inf,chi_min=0):
@@ -222,6 +232,17 @@ class q_num(q_weight):
                 continue
             else:
                 q[i] = sp.ps[i]*self.b[:,i]
+        self.rs = np.zeros((sp.n_z,sp.n_l))
+
+        self.rs_d1 = np.zeros((sp.n_z,sp.n_l))
+        self.rs_d2 = np.zeros((sp.n_z,sp.n_l))
+        self.rs_d3 = np.zeros((sp.n_z,sp.n_l))
+        for i in range(0,sp.n_l):
+            r_spline = InterpolatedUnivariateSpline(sp.chis,q[:,i]/np.sqrt(sp.chis))
+            self.rs[:,i] = r_spline(sp.chis)
+            self.rs_d1[:,i] = r_spline.derivative(1)(sp.chis)
+            self.rs_d2[:,i] = r_spline.derivative(2)(sp.chis)
+            self.rs_d3[:,i] = r_spline.derivative(3)(sp.chis)
         q_weight.__init__(self,sp.chis,q,chi_min=chi_min,chi_max=chi_max)
 
     def bias(self,sp):
@@ -240,15 +261,15 @@ if __name__=='__main__':
 #        k_in = chompd[:,0]
 	C=cp.CosmoPie(cosmology=defaults.cosmology_cosmosis)
         #k_in = np.logspace(-5,2,200,base=10)
-        k_in = np.loadtxt('demo_output_15/matter_power_nl/k_h.txt')
+        k_in = np.loadtxt('test_inputs/proj_1/k_h.txt')
 #        k_in = np.logspace(-4,5,5000,base=10)
 #	zs = np.logspace(-2,np.log10(3),50,base=10)
 #	zs = np.arange(0.001,1,0.001)
-        zs = np.loadtxt('demo_output_15/matter_power_nl/z.txt')
+        zs = np.loadtxt('test_inputs/proj_1/z.txt')
         zs[0] = 10**-3
         #zs = np.arange(0.005,2,0.0005)
 	#ls = np.arange(2,3000)
-        ls = np.loadtxt('demo_output_15/shear_cl/ell.txt')
+        ls = np.loadtxt('test_inputs/proj_1/ell.txt')
         #ls = np.logspace(np.log10(2),np.log10(10000),3000,base=10)
 	#ls = chompd[:,0]	
 #	ls = revd[:,0]	
@@ -303,18 +324,23 @@ if __name__=='__main__':
 	ax.set_xlabel('l',size=20)
 	ax.set_ylabel('l(l+1)$C^{\gamma\gamma}(2\pi)^{-1}$')
         
-        #lin1=ax.loglog(ls,ls*(ls+1.)*sp1.Cll_sh_sh()/(2.*np.pi),label='Shear Power Spectrum linear redshifted')
+        sh_pow1_order2 = sp7.Cll_q_q_order2(q_shear(sp7),q_shear(sp7))
+        gg_pow1_order2 = sp7.Cll_q_q_order2(q_num(sp7),q_num(sp7))
+        lin1=ax.loglog(ls,ls*(ls+1.)*sp7.Cll_sh_sh()/(2.*np.pi),label='Shear Power Spectrum linear redshifted')
+        lin1=ax.loglog(ls,ls*(ls+1.)*sh_pow1_order2/(2.*np.pi),label='Shear Power Spectrum linear redshifted')
+        lin1=ax.loglog(ls,ls*(ls+1.)*sp7.Cll_g_g()/(2.*np.pi),label='Shear Power Spectrum linear redshifted')
+        lin1=ax.loglog(ls,ls*(ls+1.)*gg_pow1_order2/(2.*np.pi),label='Shear Power Spectrum linear redshifted')
        # lin1=ax.loglog(ls,sp1.Cll_sh_sh(chi_max1=sp1.chis[10]),label='Shear Power Spectrum linear redshifted')
         #ax.loglog(ls,sp1.Cll_g_g())
         #ax.loglog(ls,sp1.Cll_sh_g())
 #        ax.legend(["sh_sh","g_g","sh_g"])
-        ax.loglog(ls,cov_ss_gg) 
-        ax.loglog(ls,cov_sg_sg) 
-        ax.loglog(ls,cov_sg_ss) 
-        ax.loglog(ls,cov_sg_gg) 
-        ax.loglog(ls,cov_ss_ss) 
-        ax.loglog(ls,cov_gg_gg) 
-	ax.legend(["ss_gg","sg_sg","sg_ss","sg_gg","ss_ss","gg_gg"])
+        #ax.loglog(ls,cov_ss_gg) 
+        #ax.loglog(ls,cov_sg_sg) 
+        #ax.loglog(ls,cov_sg_ss) 
+        #ax.loglog(ls,cov_sg_gg) 
+        #ax.loglog(ls,cov_ss_ss) 
+        #ax.loglog(ls,cov_gg_gg) 
+	#ax.legend(["ss_gg","sg_sg","sg_ss","sg_gg","ss_ss","gg_gg"])
         #lin2=ax.loglog(ls,ls*(ls+1.)*sh_pow2/(2.*np.pi),label='Shear Power Spectrum halofit linear')
         #lin3=ax.loglog(ls,ls*(ls+1.)*sh_pow3/(2.*np.pi),label='Shear Power Spectrum halofit nonlinear')
 
