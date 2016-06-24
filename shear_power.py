@@ -1,4 +1,3 @@
-from scipy.integrate import simps
 import numpy as np
 import cosmopie as cp
 import halofit as hf
@@ -6,6 +5,7 @@ from numpy import exp
 #from scipy.integrate import quad
 from scipy.interpolate import interp1d,interp2d
 from scipy.interpolate import InterpolatedUnivariateSpline,SmoothBivariateSpline
+import scipy.special as sp
 from time import time
 import pickle 
 #import ps2
@@ -60,7 +60,7 @@ class shear_power:
 
 	    self.k_use[:,i] = (self.ls+0.5)/self.chis[i] 
             if pmodel=='halofit_linear':
-                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,self.halo.D2_L2(self.k_in,self.zs[i]))(self.k_use[:,i])/self.k_use[:,i]**3
+                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,self.halo.D2_L(self.k_in,self.zs[i]))(self.k_use[:,i])/self.k_use[:,i]**3
             elif pmodel=='halofit_nonlinear':
                 self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,self.halo.D2_NL(self.k_in,self.zs[i]))(self.k_use[:,i])/self.k_use[:,i]**3
             elif pmodel=='halofit_redshift_nonlinear':
@@ -113,6 +113,9 @@ class shear_power:
     
     def Cll_k_k(self,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
         return self.Cll_q_q(q_k(self,chi_max=chi_max1,chi_min=chi_min1),q_k(self,chi_max=chi_max2,chi_min=chi_min2))
+
+    def Cll_k_g(self,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
+        return self.Cll_q_q(q_k(self,chi_max=chi_max1,chi_min=chi_min1),q_num(self,chi_max=chi_max2,chi_min=chi_min2))
 
     def Cll_sh_mag(self,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
         return self.Cll_q_q(q_shear(self,chi_max=chi_max1,chi_min=chi_min1),q_mag(self,chi_max=chi_max2,chi_min=chi_min2))
@@ -180,7 +183,21 @@ class shear_power:
             #fisher matrix sum of covariance eigenvalues divided by delta l, not sure if this is correct
             binned_c[i] = 1./fisher_mat
         return binned_c
-        
+    
+    #stacked tangential shear, note ls must be successive integers to work correctly
+    #note that exact result is necessary if result must be self-consistent (ie tan_shear(theta)=tan_shear(theta+2*pi)) for theta not <<1
+    #see Putter & Takada 2010 arxiv:1007.4809
+    def tan_shear(self,thetas,with_limber=False):
+        n_t = thetas.size
+        tans = np.zeros(n_t)
+        kg_pow = self.Cll_k_g()
+        for i in range(0,n_t):
+            if with_limber:
+                tans[i] = np.trapz((2.*self.ls+1.)/(4.*np.pi*self.ls*(self.ls+1.))*kg_pow*sp.lpmv(2,ls,np.cos(thetas[i])),ls)
+            else:
+                tans[i] = np.trapz(self.ls/(2.*np.pi)*kg_pow*sp.jn(2,thetas[i]*ls),ls)
+
+        return tans
 class q_weight:
     def __init__(self,chis,qs,chi_min=0.,chi_max=np.inf):
         self.chi_min = chi_min
@@ -265,21 +282,23 @@ if __name__=='__main__':
         zs = np.loadtxt('test_inputs/proj_1/z.txt')
         zs[0] = 10**-3
         #zs = np.arange(0.005,2,0.0005)
-	#ls = np.arange(2,3000)
-        ls = np.loadtxt('test_inputs/proj_1/ell.txt')
+        #ls = np.unique(np.logspace(0,4,3000,dtype=int))*1.0	
+        ls = np.arange(1,10000)
+        #ls = np.loadtxt('test_inputs/proj_1/ell.txt')
+
         #ls = np.logspace(np.log10(2),np.log10(10000),3000,base=10)
 	#ls = chompd[:,0]	
 #	ls = revd[:,0]	
 	t1 = time()
         
-        sp1 = shear_power(k_in,C,zs,ls,pmodel='redshift_linear',P_in=d[:,1],cosmology_in=defaults.cosmology)
-        sh_pow1 = sp1.Cll_sh_sh()
-        sp2 = shear_power(k_in,C,zs,ls,pmodel='halofit_linear',P_in=d[:,1],cosmology_in=defaults.cosmology)
+#        sp1 = shear_power(k_in,C,zs,ls,pmodel='redshift_linear',P_in=d[:,1],cosmology_in=defaults.cosmology)
+ #       sh_pow1 = sp1.Cll_sh_sh()
+      #  sp2 = shear_power(k_in,C,zs,ls,pmodel='halofit_linear',P_in=d[:,1],cosmology_in=defaults.cosmology)
         #sp1 = shear_power(k_in,C,zs,ls,pmodel='halofit_linear',P_in=d[:,1],cosmology_in=defaults.cosmology)
-        sh_pow2 = sp2.Cll_sh_sh()
+      #  sh_pow2 = sp2.Cll_sh_sh()
         sp3 = shear_power(k_in,C,zs,ls,pmodel='halofit_nonlinear',P_in=d[:,1],cosmology_in=defaults.cosmology)
         sh_pow3 = sp3.Cll_sh_sh()
-        sp7 = shear_power(k_in,C,zs,ls,pmodel='cosmosis_nonlinear',P_in=d[:,1],cosmology_in=defaults.cosmology)
+       # sp7 = shear_power(k_in,C,zs,ls,pmodel='cosmosis_nonlinear',P_in=d[:,1],cosmology_in=defaults.cosmology)
       #  sh_pow7 = sp7.Cll_sh_sh()
    #     sh_pow7_gg = sp7.Cll_g_g()
    #     sh_pow7_sg = sp7.Cll_sh_g()
@@ -288,8 +307,8 @@ if __name__=='__main__':
    #     sh_pow5 = sp5.Cll_sh_sh()
     #    sp6 = shear_power(k_in,C,zs,ls,pmodel='halofit_nonlinear',P_in=d[:,1],cosmology_in=defaults.cosmology)
      #   sh_pow6 = sp6.Cll_sh_sh()
-     #   sp4 = shear_power(k_in,C,zs,ls,pmodel='fastpt_nonlin',P_in=d[:,1],cosmology_in=defaults.cosmology)
-      #  sh_pow4 = sp4.Cll_sh_sh()
+        #sp4 = shear_power(k_in,C,zs,ls,pmodel='fastpt_nonlin',P_in=d[:,1],cosmology_in=defaults.cosmology)
+        #sh_pow4 = sp4.Cll_sh_sh()
         
         t2 = time()
 
@@ -320,22 +339,25 @@ if __name__=='__main__':
 	ax = plt.subplot(111)
 	ax.set_xlabel('l',size=20)
 	ax.set_ylabel('l(l+1)$C^{\gamma\gamma}(2\pi)^{-1}$')
-        
+        thetas = np.linspace(0.,2.*np.pi,100)
+        tans = sp3.tan_shear(thetas)
+        ax.plot(thetas,tans)
         #ax.loglog(k_in,d[:,1])
         #ax.loglog(k_in,hf.halofitPk(0,defaults.cosmology).D2_L2(k_in)/k_in**3*2.*np.pi**2)
        # ax.loglog(sp7.k_use[:,0],sp7.p_dd_use[:,0])
-        sh_pow_cosm = np.loadtxt('test_inputs/proj_1/ss_pow.txt')
-        lin1=ax.loglog(ls,ls*(ls+1.)*sp1.Cll_sh_sh()/(2.*np.pi))
-        lin1=ax.loglog(ls,ls*(ls+1.)*sp2.Cll_sh_sh()/(2.*np.pi))
-        lin1=ax.loglog(ls,ls*(ls+1.)*sp3.Cll_sh_sh()/(2.*np.pi))
-        lin1=ax.loglog(ls,ls*(ls+1.)*sp7.Cll_sh_sh()/(2.*np.pi))
+     #   sh_pow_cosm = np.loadtxt('test_inputs/proj_1/ss_pow.txt')
+  #      lin1=ax.loglog(ls,ls*(ls+1.)*sp1.Cll_sh_sh()/(2.*np.pi))
+      #  lin1=ax.loglog(ls,ls*(ls+1.)*sp2.Cll_sh_sh()/(2.*np.pi))
+        #lin1=ax.loglog(ls,ls*(ls+1.)*sp3.Cll_sh_sh()/(2.*np.pi))
+       # lin1=ax.loglog(ls,ls*(ls+1.)*sp7.Cll_sh_sh()/(2.*np.pi))
+       # lin1=ax.loglog(ls,ls*(ls+1.)*sp4.Cll_sh_sh()/(2.*np.pi))
        # lin1=ax.loglog(ls,sp2.Cll_sh_sh()/(2.*np.pi))
        # lin1=ax.loglog(ls,sp3.Cll_sh_sh()/(2.*np.pi))
        # lin1=ax.loglog(ls,sp7.Cll_sh_sh()/(2.*np.pi))
    #     lin1=ax.loglog(ls,ls*(ls+1.)*sh_pow_cosm/(2.*np.pi))
        # lin1=ax.loglog(ls,ls*(ls+1.)*(interp1d(ls/C.h,sh_pow1,bounds_error=False,fill_value=-np.inf)(ls))/(2.*np.pi))
     #    lin1=ax.loglog(ls,ls*(ls+1.)*sp4.Cll_sh_sh()/(2.*np.pi))
-        ax.legend(["redshift linear","halofit linear","halofit nonlinear","cosmosis nonlinear","fastpt nonlinear"],loc=2)
+        ax.legend(["halofit linear","halofit nonlinear","cosmosis nonlinear","fastpt nonlinear"],loc=2)
         #sh_pow1_order2 = sp7.Cll_q_q_order2(q_shear(sp7),q_shear(sp7))
         #gg_pow1_order2 = sp7.Cll_q_q_order2(q_num(sp7),q_num(sp7))
         #lin1=ax.loglog(ls,ls*(ls+1.)*sp7.Cll_sh_sh()/(2.*np.pi),label='Shear Power Spectrum linear redshifted')
