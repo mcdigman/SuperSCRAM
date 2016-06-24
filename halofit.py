@@ -1,8 +1,10 @@
 import numpy as np
 from numpy import pi 
 import sys
-
-
+from scipy.interpolate import interp1d
+import cosmopie as cp
+#p_h = np.loadtxt('camb_m_pow_l.dat')#
+#p_interp = interp1d(p_h[:,0],p_h[:,1]*p_h[:,0]**3/(2*np.pi**2))
 
 class halofitPk(object):
 		''' python version of Halofit, orginally presented in Smith 2003. Bibtex entry for Smith 2003
@@ -21,91 +23,67 @@ class halofitPk(object):
 				}
 		
 		'''
-		def __init__(self,z,cosmology):
-				
-				for key in cosmology:
-					 self.Omegam=cosmology['Omegam']
-					 self.OmegaL=cosmology['OmegaL']
-					 # note that capital O in Omegas will correspond to the present
-					 # day values 
-					 self.h=cosmology['h']
-					 self.sig8=cosmology['sigma8']
+                #take an input linear power spectrum at z=0, d2_l and d2_nl will output power spectrum at desired redshit
+		def __init__(self,k_in,p_lin,C=cp.CosmoPie()):
+				self.C = C
+                                self.p_interp = interp1d(k_in,p_lin*k_in**3/(2*np.pi**2))
 
-				self.H_0=100*self.h
-				self.z=z 
 				self.gams=.21# what is the number ?
+                                self.c_threshold = 0.001
+                               #TODO check necessary r_min,r_max,n_r nint in wint are good
+                                r_min = 0.1
+                                r_max = 2.62
+                                n_r = 100
+                                rs = np.linspace(r_min,r_max,n_r)
+                                sigs = np.zeros(n_r)
+                                sig_d1s = np.zeros(n_r)
+                                sig_d2s = np.zeros(n_r)
+                                for i in range(0,n_r):
+                                    sig,d1,d2 = self.wint(rs[i])
+                                    sigs[i] = sig
+                                    sig_d1s[i] = d1
+                                    sig_d2s[i] = d2
+                                self.sigs = sigs 
+                                self.r_grow = interp1d(1./sigs,rs)
+                                self.sig_d1 = interp1d(rs,sig_d1s)
+                                self.sig_d2 = interp1d(rs,sig_d2s)
+                #way of getting parameters without doing the interpolation, old		
+		def spectral_parameters(self,z):
 
-				self.spectral_parameters()
-			
-
-		
-		def spectral_parameters(self):
-
-			# get the evolved omega matter and omega Lambda 
-			self.Om=self.omega_m(self.z)
-			self.OL=self.omega_L(self.z)
-
-			growth=self.G(self.z,self.Om, self.OL)
-			growth_norm=self.G(0,self.Omegam, self.OmegaL)
-
-			#normalize the growth factor 
-			growth=growth/growth_norm
-
-			self.amp=growth/(1 +self.z)
-
-			xlogr1=-2
+			growth=self.C.G_norm(self.z)
+			self.amp=growth
+			xlogr1=-2.0
 			xlogr2=3.5 
-
+                        
 			''' iterate to determine the wavenumber where
 					nonlinear effects become important (rknl), 
 					the effectice spectral index (rneff),
 					the second derivative of the power spectrum at rknl (rncur) 
-			''' 
-			while True:
+			'''
+
+                        diff_last = np.inf
+                        while True:
 				rmid = 10**( 0.5*(xlogr2+xlogr1) )
 						
 				sig,d1,d2 = self.wint(rmid)
-						
+                                sig = sig*growth
 				diff = sig-1.0
-						
-				if diff > 0.001:
+                                diff_frac = abs((diff_last-diff)/diff)
+	                        diff_last = diff	
+				if diff > 0.0001 and diff_frac>self.c_threshold:
 					xlogr1 = np.log10(rmid)
 					continue
-				elif diff < -0.001:
+				elif diff < -0.0001 and diff_frac>self.c_threshold:
 					xlogr2 = np.log10(rmid)
 					continue
 				else:
 					self.rknl = 1./rmid
 					self.rneff = -3-d1
 					self.rncur = -d2
-								
+                                        if abs(diff) > 0.0001:
+                                            warn('halofit may not have converged sufficiently')
 					break
-		
-		def E(self,z):
-			# for a flat universe with no radiation 
-			return self.Omegam*(1+z)**3 + self.OmegaL
-				 
-		def omega_m(self,z):
-			# \Omega_m(z) = \Omega_{m,0}(1+z)^3 H_0^2/H(z)^2
-			#return self.Omegam*(1+z)**3/self.E(z)
-			a = 1./(1.+z)
-			Ok = 1.-self.Omegam-self.OmegaL
-			omega_t = 1.0 - Ok / (Ok + self.OmegaL*a*a + self.Omegam/a)
-			return omega_t * self.Omegam / (self.Omegam + self.OmegaL*a*a*a) 
-		
-		def omega_L(self,z):
-			# \Omega_L(z) = \Omega_{L,0} H_0^2/H(z)^2
-			#return self.OmegaL/self.E(z) 
-			a = 1./(1.+z)
-			Ok = 1.-self.Omegam-self.OmegaL
-			omega_t = 1.0 - Ok / (Ok + self.Omegam*a*a + self.Omegam/a)
-			return omega_t*self.OmegaL / (self.OmegaL+ self.Omegam/a/a/a)
-
-
-		def G(self,z,Om,OL):
-			# Growth factor, using Carrol, Press & Turner (1992) 
-			# approximation 
-			return 2.5*Om/(Om**4/7. - OL + (1 + Om/2.)*(1 + Om/70.))
+ #                       self.amp = growth
 
 		def wint(self,r):
 			'''
@@ -116,16 +94,16 @@ class halofitPk(object):
 			variance, calculated at the nonlinear wavenumber. rncur si the 
 			second derivative of variance at rknl. 
 			'''
-
-			nint=3000.
+                        nint = 1000
+			#nint=3000.
 			t = ( np.arange(nint)+0.5 )/nint
 			y = 1./t - 1.
 			rk = y
-			d2 = self.D2_L(rk)
+			d2 = self.D2_L(rk,0.)
 			x2 = y*y*r*r
 			w1=np.exp(-x2)
-			w2=2*x2*w1
-			w3=4*x2*(1-x2)*w1
+			w2=2.*x2*w1
+			w3=4.*x2*(1.-x2)*w1
 
 			mult = d2/y/t/t
 				
@@ -141,37 +119,53 @@ class halofitPk(object):
 		
 
 
-		def D2_L(self,rk):
+		def D2_L(self,rk,z):
 			# the linear power spectrum 
-			rk=np.asarray(rk)
-			return self.amp*self.amp*self.p_cdm(rk)
-
+                        return self.C.G_norm(z)**2*self.p_interp(rk)
+		#def D2_L(self,rk,z):
+                #	rk=np.asarray(rk)
+	    	#	return self.C.G_norm(z)**2*self.p_cdm(rk)
+                
+                #old way 
 		def p_cdm(self,rk):
 			# unormalized power spectrum 
-
+                        # cf Annu. Rev. Astron. Astrophys. 1994. 32: 319-70 
 			rk = np.asarray(rk)
 			p_index = 1.
 			rkeff=0.172+0.011*np.log(self.gams/0.36)*np.log(self.gams/0.36)
 			q=1.e-20 + rk/self.gams
 			q8=1.e-20 + rkeff/self.gams
-			tk=1/(1+(6.4*q+(3.0*q)**1.5+(1.7*q)**2)**1.13)**(1/1.13)
-			tk8=1/(1+(6.4*q8+(3.0*q8)**1.5+(1.7*q8)**2)**1.13)**(1/1.13)
-			return self.sig8*self.sig8*((q/q8)**(3.+p_index))*tk*tk/tk8/tk8
+			tk=1./(1.+(6.4*q+(3.0*q)**1.5+(1.7*q)**2)**1.13)**(1./1.13)
+			tk8=1./(1.+(6.4*q8+(3.0*q8)**1.5+(1.7*q8)**2)**1.13)**(1./1.13)
+			return self.C.sigma8*self.C.sigma8*((q/q8)**(3.+p_index))*tk*tk/tk8/tk8
 
-		def D2_NL(self,rk,return_components = False):
+		def D2_NL(self,rk,z,return_components = False):
 				"""
 				halo model nonlinear fitting formula as described in 
 				Appendix C of Smith et al. (2002)
 				"""
 				rk = np.asarray(rk)
-				rn    = self.rneff
-				rncur = self.rncur
-				rknl  = self.rknl
-				plin  = self.D2_L(rk)
-				om_m  = self.Om
-				om_v  = self.OL
-				
-				gam=0.86485+0.2989*rn+0.1631*rncur
+				#rn    = self.rneff
+                                
+                                growth = self.C.G_norm(z)
+                                
+                                rmid = self.r_grow(growth)
+                                d1 = self.sig_d1(rmid)
+                                d2 = self.sig_d2(rmid)
+
+                                rknl = 1./rmid
+                                rn = -3-d1
+                                rncur = -d2
+				#rncur = self.rncur
+				#rknl  = self.rknl
+				plin  = self.D2_L(rk,z)
+				om_m  = self.C.Omegam_z(z)
+				om_v  = self.C.OmegaL_z(z)
+			        
+                                #cf Bird, Viel, Haehnelt 2011 for extragam explanation (cosmosis)
+                                extragam = 0.3159-0.0765*rn-0.8350*rncur
+
+				gam=extragam+0.86485+0.2989*rn+0.1631*rncur
 				a=10**(1.4861+1.83693*rn+1.67618*rn*rn+0.7940*rn*rn*rn+\
 							 0.1670756*rn*rn*rn*rn-0.620695*rncur)
 				b=10**(0.9463+0.9466*rn+0.3084*rn*rn-0.940*rncur)
@@ -179,7 +173,9 @@ class halofitPk(object):
 				xmu=10**(-3.54419+0.19086*rn)
 				xnu=10**(0.95897+1.2857*rn)
 				alpha=1.38848+0.3701*rn-0.1452*rn*rn
-				beta=0.8291+0.9854*rn+0.3400*rn**2
+				fnu = 0.0 #for neutrinos later, in cosmosis
+                                beta=0.8291+0.9854*rn+0.3400*rn**2+fnu*(-6.4868+1.4373*rn**2)
+
 				
 				if abs(1-om_m) > 0.01: #omega evolution
 						f1a=om_m**(-0.0732)
@@ -199,9 +195,9 @@ class halofitPk(object):
 
 				y=(rk/rknl)
 				
-				ph = a*y**(f1*3)/(1+b*y**(f2)+(f3*c*y)**(3-gam))
-				ph /= (1+xmu*y**(-1)+xnu*y**(-2))
-				pq = plin*(1+plin)**beta/(1+plin*alpha)*np.exp(-y/4.0-y**2/8.0)
+				ph = a*y**(f1*3.)/(1.+b*y**(f2)+(f3*c*y)**(3.-gam))
+				ph /= (1.+xmu*y**(-1)+xnu*y**(-2))
+				pq = plin*(1.+plin)**beta/(1.+plin*alpha)*np.exp(-y/4.0-y**2/8.0)
 				
 				pnl=pq+ph
 
@@ -210,9 +206,9 @@ class halofitPk(object):
 				else:
 						return pnl
 
-		def P_NL(self,k,return_components = False):
+		def P_NL(self,k,z,return_components = False):
 			if(return_components):
-				pnl,pq,ph,plin=self.D2_NL(k,return_components)
+				pnl,pq,ph,plin=self.D2_NL(k,z,return_components)
 				return pnl/k**3*(2*pi**2), pq, ph, plin/k**3*(2*pi**2)
 			else:
 				return D2_NL(k,return_components)/k**3*(2*pi**2)

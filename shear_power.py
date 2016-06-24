@@ -43,11 +43,14 @@ class shear_power:
             
         #some methods require special handling    
         if pmodel=='halofit_redshift_nonlinear':
-            p_bar = hf.halofitPk(0.42891513142857135,self.cosmology).D2_NL(self.k_in)
+            p_bar = hf.halofitPk(0.42891513142857135,self.C).D2_NL(self.k_in)
         elif pmodel == 'cosmosis_nonlinear':
             z_bar = np.loadtxt('test_inputs/proj_1/z.txt')
-            p_bar = interp2d(k_in,z_bar,np.loadtxt('test_inputs/proj_1/p_k.txt'))
+            k_bar = np.loadtxt('test_inputs/proj_1/k_h.txt')
+            p_bar = interp2d(k_bar,z_bar,np.loadtxt('test_inputs/proj_1/p_k.txt'))
             self.chis = interp1d(z_bar,np.loadtxt('test_inputs/proj_1/d_m.txt')[::-1])(zs)
+        elif pmodel=='halofit_nonlinear' or pmodel=='halofit_linear':
+            self.halo = hf.halofitPk(k_in,P_in,self.C)
 
         for i in range(0,self.n_z):
             if pmodel!='cosmosis_nonlinear':
@@ -57,19 +60,15 @@ class shear_power:
 
 	    self.k_use[:,i] = (self.ls+0.5)/self.chis[i] 
             if pmodel=='halofit_linear':
-                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,hf.halofitPk(self.zs[i],self.cosmology).D2_L(self.k_in))(self.k_use[:,i])/self.k_use[:,i]**3
+                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,self.halo.D2_L2(self.k_in,self.zs[i]))(self.k_use[:,i])/self.k_use[:,i]**3
             elif pmodel=='halofit_nonlinear':
-                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,hf.halofitPk(self.zs[i],self.cosmology).D2_NL(self.k_in))(self.k_use[:,i])/self.k_use[:,i]**3
+                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,self.halo.D2_NL(self.k_in,self.zs[i]))(self.k_use[:,i])/self.k_use[:,i]**3
             elif pmodel=='halofit_redshift_nonlinear':
-                #self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,p_bar*self.C.G_norm(self.zs[i])**2/(self.C.G_norm(0.42891513142857135)**2))(self.k_use[:,i])/self.k_use[:,i]**3
-                self.p_dd_use[:,i] = interp1d(self.k_in,P_in*self.C.G_norm(self.zs[i])**2/self.C.G_norm(0.42891513142857135)**2)(self.k_use[:,i])
+                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,p_bar*self.C.G_norm(self.zs[i])**2/(self.C.G_norm(0.42891513142857135)**2))(self.k_use[:,i])/self.k_use[:,i]**3
             elif pmodel=='redshift_linear':
                 self.p_dd_use[:,i] = interp1d(self.k_in,P_in*self.C.G_norm(self.zs[i])**2)(self.k_use[:,i])
             elif pmodel=='cosmosis_nonlinear':
-                #self.p_dd_use[:,i] = interp1d(self.k_in,P_in*self.C.G_norm(self.zs[i])**2)(self.k_use[:,i])
-               # self.p_dd_use[:,i] = interp1d(self.k_in,p_bar[i])(self.k_use[:,i])
                 self.p_dd_use[:,i] = p_bar(self.k_use[:,i],zs[i])
-                #self.p_dd_use[:,i] = p_bar[i]
             elif pmodel=='fastpt_nonlin':
                 fpt = FASTPT.FASTPT(k_in,-2,low_extrap=-5,high_extrap=5,n_pad=800)
                 self.p_dd_use[:,i] = interp1d(self.k_in,(fpt.one_loop(P_in*self.C.G_norm(self.zs[i])**2,C_window=0.75)+P_in*self.C.G_norm(self.zs[i])**2))(self.k_use[:,i])
@@ -86,7 +85,6 @@ class shear_power:
         self.p_gd_use = self.p_dd_use #temporary for testing purposes
         if ps.size==0:
          #   self.ps[-3] = 1./(self.chis[-2]-self.chis[-3])  #make option, this makes it act like a proper delta function
-           # self.ps[-2] = 1./(self.chis[-1]-self.chis[-2])  #make option, this makes it act like a proper delta function
             self.ps = np.exp(-(self.zs-1.)**2/(2.*(0.4)**2))
        #     self.ps[-1] = 1./(self.C.D_comov(2*zs[-1]-zs[-2])-self.chis[-1])  #make option, this makes it act like a proper delta function
         #self.ps[30] = 1./(self.chis[31]-self.chis[30])  #make option, this makes it act like a proper delta function
@@ -124,9 +122,6 @@ class shear_power:
 
     def Cll_sh_g(self,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
         return self.Cll_q_q(q_shear(self,chi_max=chi_max1,chi_min=chi_min2),q_num(self,chi_max=chi_max2,chi_min=chi_min2),corr_param=self.r_corr())
-
-    #def q_shear(self,chi_max=np.inf,chi_min=0.):
-    #    return 3./2.*(self.C.H0/self.C.c)**2*self.omegas*self.chis/self.sc_as*self.gs(chi_max=chi_max,chi_min=chi_min)
 
 
     def Cll_q_q(self,q1s,q2s,corr_param=np.array([])):
@@ -196,11 +191,11 @@ class q_weight:
 class q_shear(q_weight):
     def __init__(self,sp,chi_min=0.,chi_max=np.inf,mult=1.):
         qs = 3./2.*(sp.C.H0/sp.C.c)**2*sp.omegas*sp.chis/sp.sc_as*self.gs(sp,chi_max=chi_max,chi_min=chi_min)*mult
-        r_spline = InterpolatedUnivariateSpline(sp.chis,qs/np.sqrt(sp.chis),ext=2) #for calculating to second order
-        self.rs = r_spline(sp.chis)
-        self.rs_d1 = r_spline.derivative(1)(sp.chis)
-        self.rs_d2 = r_spline.derivative(2)(sp.chis)
-        self.rs_d3 = r_spline.derivative(3)(sp.chis)
+       # r_spline = InterpolatedUnivariateSpline(sp.chis,qs/np.sqrt(sp.chis),ext=2) #for calculating to second order
+       # self.rs = r_spline(sp.chis)
+       # self.rs_d1 = r_spline.derivative(1)(sp.chis)
+       # self.rs_d2 = r_spline.derivative(2)(sp.chis)
+       # self.rs_d3 = r_spline.derivative(3)(sp.chis)
         q_weight.__init__(self,sp.chis,qs,chi_min=chi_min,chi_max=chi_max) 
 
     def gs(self,sp,chi_max=np.inf,chi_min=0):
@@ -232,17 +227,17 @@ class q_num(q_weight):
                 continue
             else:
                 q[i] = sp.ps[i]*self.b[:,i]
-        self.rs = np.zeros((sp.n_z,sp.n_l))
+      #  self.rs = np.zeros((sp.n_z,sp.n_l))
 
-        self.rs_d1 = np.zeros((sp.n_z,sp.n_l))
-        self.rs_d2 = np.zeros((sp.n_z,sp.n_l))
-        self.rs_d3 = np.zeros((sp.n_z,sp.n_l))
-        for i in range(0,sp.n_l):
-            r_spline = InterpolatedUnivariateSpline(sp.chis,q[:,i]/np.sqrt(sp.chis))
-            self.rs[:,i] = r_spline(sp.chis)
-            self.rs_d1[:,i] = r_spline.derivative(1)(sp.chis)
-            self.rs_d2[:,i] = r_spline.derivative(2)(sp.chis)
-            self.rs_d3[:,i] = r_spline.derivative(3)(sp.chis)
+       # self.rs_d1 = np.zeros((sp.n_z,sp.n_l))
+       # self.rs_d2 = np.zeros((sp.n_z,sp.n_l))
+       # self.rs_d3 = np.zeros((sp.n_z,sp.n_l))
+       # for i in range(0,sp.n_l):
+       #     r_spline = InterpolatedUnivariateSpline(sp.chis,q[:,i]/np.sqrt(sp.chis))
+       #     self.rs[:,i] = r_spline(sp.chis)
+       #     self.rs_d1[:,i] = r_spline.derivative(1)(sp.chis)
+       #     self.rs_d2[:,i] = r_spline.derivative(2)(sp.chis)
+       #     self.rs_d3[:,i] = r_spline.derivative(3)(sp.chis)
         q_weight.__init__(self,sp.chis,q,chi_min=chi_min,chi_max=chi_max)
 
     def bias(self,sp):
@@ -252,19 +247,21 @@ class q_num(q_weight):
     #maybe can get bias and r_corr directly from something else
 if __name__=='__main__':
     
+	C=cp.CosmoPie(cosmology=defaults.cosmology_cosmosis)
         #d_t = np.loadtxt('chomp_pow_nlin.dat')
-	d = np.loadtxt('Pk_Planck15.dat')
+#	d = np.loadtxt('Pk_Planck15.dat')
+	d = np.loadtxt('camb_m_pow_l.dat')
 #	xiaod = np.loadtxt('power_spectrum_1.dat')
 #	intd = pickle.load(open('../CosmicShearPython/Cll_camb.pkl',mode='r'))
         #chompd = np.loadtxt('sh_sh_comp.dat')
 #        revd = np.loadtxt('len_pow1.dat')
 #        k_in = chompd[:,0]
-	C=cp.CosmoPie(cosmology=defaults.cosmology_cosmosis)
         #k_in = np.logspace(-5,2,200,base=10)
-        k_in = np.loadtxt('test_inputs/proj_1/k_h.txt')
+        k_in = d[:,0]
+    #    k_in = np.loadtxt('test_inputs/proj_1/k_h.txt')
 #        k_in = np.logspace(-4,5,5000,base=10)
 #	zs = np.logspace(-2,np.log10(3),50,base=10)
-#	zs = np.arange(0.001,1,0.001)
+#	zs = np.arange(0.01,2.0,0.01)
         zs = np.loadtxt('test_inputs/proj_1/z.txt')
         zs[0] = 10**-3
         #zs = np.arange(0.005,2,0.0005)
@@ -275,15 +272,15 @@ if __name__=='__main__':
 #	ls = revd[:,0]	
 	t1 = time()
         
-        #sp1 = shear_power(k_in,C,zs[0:100],ls,pmodel='redshift_linear',P_in=d[:,1],cosmology_in=defaults.cosmology)
-        #sh_pow1 = sp1.Cll_sh_sh()
-        #sp2 = shear_power(k_in,C,zs,ls,pmodel='halofit_linear',P_in=d[:,1],cosmology_in=defaults.cosmology)
+        sp1 = shear_power(k_in,C,zs,ls,pmodel='redshift_linear',P_in=d[:,1],cosmology_in=defaults.cosmology)
+        sh_pow1 = sp1.Cll_sh_sh()
+        sp2 = shear_power(k_in,C,zs,ls,pmodel='halofit_linear',P_in=d[:,1],cosmology_in=defaults.cosmology)
         #sp1 = shear_power(k_in,C,zs,ls,pmodel='halofit_linear',P_in=d[:,1],cosmology_in=defaults.cosmology)
-        #sh_pow2 = sp2.Cll_sh_sh()
-      #  sp3 = shear_power(k_in,C,zs,ls,pmodel='halofit_nonlinear',P_in=d[:,1],cosmology_in=defaults.cosmology)
-      #  sh_pow3 = sp3.Cll_sh_sh()
-        sp7 = shear_power(k_in,C,zs,ls,pmodel='cosmosis_nonlinear',P_in=d[:,1],cosmology_in=defaults.cosmology_cosmosis)
-        sh_pow7 = sp7.Cll_sh_sh()
+        sh_pow2 = sp2.Cll_sh_sh()
+        sp3 = shear_power(k_in,C,zs,ls,pmodel='halofit_nonlinear',P_in=d[:,1],cosmology_in=defaults.cosmology)
+        sh_pow3 = sp3.Cll_sh_sh()
+        sp7 = shear_power(k_in,C,zs,ls,pmodel='cosmosis_nonlinear',P_in=d[:,1],cosmology_in=defaults.cosmology)
+      #  sh_pow7 = sp7.Cll_sh_sh()
    #     sh_pow7_gg = sp7.Cll_g_g()
    #     sh_pow7_sg = sp7.Cll_sh_g()
    #     sh_pow7_mm = sp7.Cll_mag_mag()
@@ -291,8 +288,8 @@ if __name__=='__main__':
    #     sh_pow5 = sp5.Cll_sh_sh()
     #    sp6 = shear_power(k_in,C,zs,ls,pmodel='halofit_nonlinear',P_in=d[:,1],cosmology_in=defaults.cosmology)
      #   sh_pow6 = sp6.Cll_sh_sh()
-        #sp4 = shear_power(k_in,C,zs,ls,pmodel='fastpt_nonlin',P_in=d[:,1],cosmology_in=defaults.cosmology)
-        #sh_pow4 = sp4.Cll_sh_sh()
+     #   sp4 = shear_power(k_in,C,zs,ls,pmodel='fastpt_nonlin',P_in=d[:,1],cosmology_in=defaults.cosmology)
+      #  sh_pow4 = sp4.Cll_sh_sh()
         
         t2 = time()
 
@@ -300,23 +297,23 @@ if __name__=='__main__':
         #import projected_power as prj
         #pp=prj.projected_power(k_in,d[:,1],C,3)
         #C_EE1=pp.C_EE(3,ls)
-        sh_sh_pow = sp7.Cll_sh_sh()
-        sh_g_pow = sp7.Cll_sh_g()
-        g_g_pow = sp7.Cll_g_g()
-
-        n_ss = sp7.sigma2_e/(2.*sp7.n_gal)
-        n_gg = 1/sp7.n_gal
-        
-        #n_ss = 0
-        #n_gg = 0
-        #ac,ad,bd,bc
-        cov_ss_gg = sp7.cov_g_diag(sh_g_pow,sh_g_pow,sh_g_pow,sh_g_pow)
-        cov_sg_sg = sp7.cov_g_diag(sh_sh_pow,sh_g_pow,g_g_pow,sh_g_pow,n_ss,0,n_gg,0)
-      #  cov_sg_sg2 = sp7.cov_g_diag2([q_shear(sp7),q_num(sp7),q_shear(sp7),q_num(sp7)],[n_ss,0,n_gg,0],r_bd=sp7.r_corr(),r_bc=sp7.r_corr())
-        cov_sg_ss = sp7.cov_g_diag(sh_sh_pow,sh_sh_pow,sh_g_pow,sh_g_pow,n_ss,n_ss,0,0)
-        cov_sg_gg = sp7.cov_g_diag(sh_g_pow,sh_g_pow,g_g_pow,g_g_pow,0,0,n_gg,n_gg)
-        cov_gg_gg = sp7.cov_g_diag(g_g_pow,g_g_pow,g_g_pow,g_g_pow,n_gg,n_gg,n_gg,n_gg)
-        cov_ss_ss = sp7.cov_g_diag(sh_sh_pow,sh_sh_pow,sh_sh_pow,sh_sh_pow,n_ss,n_ss,n_ss,n_ss)
+#        sh_sh_pow = sp7.Cll_sh_sh()
+#        sh_g_pow = sp7.Cll_sh_g()
+#        g_g_pow = sp7.Cll_g_g()
+#
+#        n_ss = sp7.sigma2_e/(2.*sp7.n_gal)
+#        n_gg = 1/sp7.n_gal
+#        
+#        #n_ss = 0
+#        #n_gg = 0
+#        #ac,ad,bd,bc
+#        cov_ss_gg = sp7.cov_g_diag(sh_g_pow,sh_g_pow,sh_g_pow,sh_g_pow)
+#        cov_sg_sg = sp7.cov_g_diag(sh_sh_pow,sh_g_pow,g_g_pow,sh_g_pow,n_ss,0,n_gg,0)
+#      #  cov_sg_sg2 = sp7.cov_g_diag2([q_shear(sp7),q_num(sp7),q_shear(sp7),q_num(sp7)],[n_ss,0,n_gg,0],r_bd=sp7.r_corr(),r_bc=sp7.r_corr())
+#        cov_sg_ss = sp7.cov_g_diag(sh_sh_pow,sh_sh_pow,sh_g_pow,sh_g_pow,n_ss,n_ss,0,0)
+#        cov_sg_gg = sp7.cov_g_diag(sh_g_pow,sh_g_pow,g_g_pow,g_g_pow,0,0,n_gg,n_gg)
+#        cov_gg_gg = sp7.cov_g_diag(g_g_pow,g_g_pow,g_g_pow,g_g_pow,n_gg,n_gg,n_gg,n_gg)
+#        cov_ss_ss = sp7.cov_g_diag(sh_sh_pow,sh_sh_pow,sh_sh_pow,sh_sh_pow,n_ss,n_ss,n_ss,n_ss)
 
         
         import matplotlib.pyplot as plt
@@ -324,12 +321,27 @@ if __name__=='__main__':
 	ax.set_xlabel('l',size=20)
 	ax.set_ylabel('l(l+1)$C^{\gamma\gamma}(2\pi)^{-1}$')
         
-        sh_pow1_order2 = sp7.Cll_q_q_order2(q_shear(sp7),q_shear(sp7))
-        gg_pow1_order2 = sp7.Cll_q_q_order2(q_num(sp7),q_num(sp7))
-        lin1=ax.loglog(ls,ls*(ls+1.)*sp7.Cll_sh_sh()/(2.*np.pi),label='Shear Power Spectrum linear redshifted')
-        lin1=ax.loglog(ls,ls*(ls+1.)*sh_pow1_order2/(2.*np.pi),label='Shear Power Spectrum linear redshifted')
-        lin1=ax.loglog(ls,ls*(ls+1.)*sp7.Cll_g_g()/(2.*np.pi),label='Shear Power Spectrum linear redshifted')
-        lin1=ax.loglog(ls,ls*(ls+1.)*gg_pow1_order2/(2.*np.pi),label='Shear Power Spectrum linear redshifted')
+        #ax.loglog(k_in,d[:,1])
+        #ax.loglog(k_in,hf.halofitPk(0,defaults.cosmology).D2_L2(k_in)/k_in**3*2.*np.pi**2)
+       # ax.loglog(sp7.k_use[:,0],sp7.p_dd_use[:,0])
+        sh_pow_cosm = np.loadtxt('test_inputs/proj_1/ss_pow.txt')
+        lin1=ax.loglog(ls,ls*(ls+1.)*sp1.Cll_sh_sh()/(2.*np.pi))
+        lin1=ax.loglog(ls,ls*(ls+1.)*sp2.Cll_sh_sh()/(2.*np.pi))
+        lin1=ax.loglog(ls,ls*(ls+1.)*sp3.Cll_sh_sh()/(2.*np.pi))
+        lin1=ax.loglog(ls,ls*(ls+1.)*sp7.Cll_sh_sh()/(2.*np.pi))
+       # lin1=ax.loglog(ls,sp2.Cll_sh_sh()/(2.*np.pi))
+       # lin1=ax.loglog(ls,sp3.Cll_sh_sh()/(2.*np.pi))
+       # lin1=ax.loglog(ls,sp7.Cll_sh_sh()/(2.*np.pi))
+   #     lin1=ax.loglog(ls,ls*(ls+1.)*sh_pow_cosm/(2.*np.pi))
+       # lin1=ax.loglog(ls,ls*(ls+1.)*(interp1d(ls/C.h,sh_pow1,bounds_error=False,fill_value=-np.inf)(ls))/(2.*np.pi))
+    #    lin1=ax.loglog(ls,ls*(ls+1.)*sp4.Cll_sh_sh()/(2.*np.pi))
+        ax.legend(["redshift linear","halofit linear","halofit nonlinear","cosmosis nonlinear","fastpt nonlinear"],loc=2)
+        #sh_pow1_order2 = sp7.Cll_q_q_order2(q_shear(sp7),q_shear(sp7))
+        #gg_pow1_order2 = sp7.Cll_q_q_order2(q_num(sp7),q_num(sp7))
+        #lin1=ax.loglog(ls,ls*(ls+1.)*sp7.Cll_sh_sh()/(2.*np.pi),label='Shear Power Spectrum linear redshifted')
+        #lin1=ax.loglog(ls,ls*(ls+1.)*sh_pow1_order2/(2.*np.pi),label='Shear Power Spectrum linear redshifted')
+        #lin1=ax.loglog(ls,ls*(ls+1.)*sp7.Cll_g_g()/(2.*np.pi),label='Shear Power Spectrum linear redshifted')
+        #lin1=ax.loglog(ls,ls*(ls+1.)*gg_pow1_order2/(2.*np.pi),label='Shear Power Spectrum linear redshifted')
        # lin1=ax.loglog(ls,sp1.Cll_sh_sh(chi_max1=sp1.chis[10]),label='Shear Power Spectrum linear redshifted')
         #ax.loglog(ls,sp1.Cll_g_g())
         #ax.loglog(ls,sp1.Cll_sh_g())
