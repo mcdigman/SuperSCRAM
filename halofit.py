@@ -300,13 +300,14 @@ if __name__=="__main__":
 				 'Omegar'   : 0.0 # check this value too
 				 }
 
-		HF=halofitPk(0,cosmology)
 		h=.6774
-		d1=np.loadtxt('test_data/class_halofit_z0.dat')
+		d1=np.loadtxt('camb_m_pow_l.dat')
 		k=d1[:,0]; P1=d1[:,1]
 		#k=np.logspace(-2,2,500)
 		
-		P,pq,ph,Plin=HF.P_NL(k, return_components=True)
+		HF=halofitPk(k,P1)
+		Plin=HF.D2_L(k,0.)*np.pi**2*2/k**3
+		P=HF.D2_NL(k,0.)*np.pi**2*2/k**3
 	
 		import matplotlib.pyplot as plt
 
@@ -316,7 +317,7 @@ if __name__=="__main__":
 					
 		ax.plot(k,P, label='halofit')
 		ax.plot(k,Plin, label='linear')
-		ax.plot(k/h,P1*h**3, label='class halofit')
+		ax.plot(k,P1, label='class halofit')
 		
 		plt.legend(loc=1)
 		plt.grid()
