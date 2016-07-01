@@ -24,16 +24,20 @@ class halofitPk(object):
 		
 		'''
                 #take an input linear power spectrum at z=0, d2_l and d2_nl will output power spectrum at desired redshit
-		def __init__(self,k_in,p_lin,C=cp.CosmoPie()):
-				self.C = C
-                                self.p_interp = interp1d(k_in,p_lin*k_in**3/(2*np.pi**2))
+		def __init__(self,k_in,p_lin=np.array([]),C=cp.CosmoPie()):
 
+				self.C = C
 				self.gams=.21# what is the number ?
+
+                                if p_lin.size==0:
+                                    p_lin=self.p_cdm(k_in)*(2.*np.pi**2)/k_in**3
+                                self.p_interp = interp1d(k_in,p_lin*k_in**3/(2.*np.pi**2))
+
                                 self.c_threshold = 0.001
                                #TODO check necessary r_min,r_max,n_r nint in wint are good
-                                r_min = 0.1
-                                r_max = 2.62
-                                n_r = 100
+                                r_min = 0.05
+                                r_max = 5.
+                                n_r = 500
                                 rs = np.linspace(r_min,r_max,n_r)
                                 sigs = np.zeros(n_r)
                                 sig_d1s = np.zeros(n_r)
@@ -139,7 +143,7 @@ class halofitPk(object):
 			tk8=1./(1.+(6.4*q8+(3.0*q8)**1.5+(1.7*q8)**2)**1.13)**(1./1.13)
 			return self.C.sigma8*self.C.sigma8*((q/q8)**(3.+p_index))*tk*tk/tk8/tk8
 
-		def D2_NL(self,rk,z,return_components = False):
+		def D2_NL_smith(self,rk,z,return_components = False):
 				"""
 				halo model nonlinear fitting formula as described in 
 				Appendix C of Smith et al. (2002)
@@ -206,6 +210,73 @@ class halofitPk(object):
 				else:
 						return pnl
 
+		def D2_NL(self,rk,z,return_components = False):
+				"""
+				halo model nonlinear fitting formula as described in 
+				Appendix C of Smith et al. (2002)
+				"""
+				rk = np.asarray(rk)
+				#rn    = self.rneff
+                                
+                                growth = self.C.G_norm(z)
+                                
+                                rmid = self.r_grow(growth)
+                                d1 = self.sig_d1(rmid)
+                                d2 = self.sig_d2(rmid)
+
+                                rknl = 1./rmid
+                                rn = -3-d1
+                                rncur = -d2
+				#rncur = self.rncur
+				#rknl  = self.rknl
+				plin  = self.D2_L(rk,z)
+				om_m  = self.C.Omegam_z(z)
+				om_v  = self.C.OmegaL_z(z)
+			        #w = -0.758
+                                w=-1.
+                               # #cf Bird, Viel, Haehnelt 2011 for extragam explanation (cosmosis)
+                                #extragam = 0.3159-0.0765*rn-0.8350*rncur
+
+				#gam=extragam+0.86485+0.2989*rn+0.1631*rncur
+                                gam = 0.1971-0.0843*rn+0.8460*rncur
+				a=10**(1.5222+2.8553*rn+2.3706*rn*rn+0.9903*rn*rn*rn+\
+							 0.2250*rn*rn*rn*rn-0.6038*rncur+0.1749*om_v*(1.+w))
+				b=10**(-0.5642+0.5864*rn+0.5716*rn*rn-1.5474*rncur+0.2279*om_v*(1.+w))
+				c=10**(0.3698+2.0404*rn+0.8161*rn*rn+0.5869*rncur)
+				xmu=0.
+                                xnu = 10**(5.2105+3.6902*rn)
+				alpha=abs(6.0835+1.3373*rn-0.1959*rn*rn-5.5274*rncur)
+                                fnu = 0. #neutrinos
+                                beta=2.0379-0.7354*rn+0.3157*rn**2+1.2490*rn**3+0.3980*rn**4-0.1682*rncur+fnu*(1.081+0.395*rn**2)
+				
+				if abs(1-om_m) > 0.01: #omega evolution
+						f1a=om_m**(-0.0732)
+						f2a=om_m**(-0.1423)
+						f3a=om_m**(0.0725)
+						f1b=om_m**(-0.0307)
+						f2b=om_m**(-0.0585)
+						f3b=om_m**(0.0743)       
+						frac=om_v/(1.-om_m) 
+						f1=frac*f1b + (1-frac)*f1a
+						f2=frac*f2b + (1-frac)*f2a
+						f3=frac*f3b + (1-frac)*f3a
+				else:         
+						f1=1.0
+						f2=1.0
+						f3=1.0
+
+				y=(rk/rknl)
+			        #fnu from cosmosis	
+				ph = a*y**(f1*3.)/(1.+b*y**(f2)+(f3*c*y)**(3.-gam))*(1+fnu*0.977)
+				ph /= (1.+xmu*y**(-1)+xnu*y**(-2))
+				pq = plin*(1.+plin)**beta/(1.+plin*alpha)*np.exp(-y/4.0-y**2/8.0)
+				
+				pnl=pq+ph
+
+				if return_components:
+						return pnl,pq,ph,plin
+				else:
+						return pnl
 		def P_NL(self,k,z,return_components = False):
 			if(return_components):
 				pnl,pq,ph,plin=self.D2_NL(k,z,return_components)
