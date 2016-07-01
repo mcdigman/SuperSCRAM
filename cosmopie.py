@@ -9,16 +9,15 @@
 import numpy as np
 from numpy import pi 
 from scipy.integrate import romberg, quad, trapz
+from talk_to_class import class_objects
 import sys
 
 eps=np.finfo(float).eps
 
 class CosmoPie :
 	
-	def __init__(self,cosmology=None, P_lin=None, k=None):
+	def __init__(self,cosmology=None, P_lin=None, k=None,lin_type='class'):
 		# default to Planck 2015 values 
-		self.P_lin=P_lin
-		self.k=k 
 		
 		if cosmology is None:
 		
@@ -44,6 +43,14 @@ class CosmoPie :
 			self.Omegak   = cosmology['Omegak']
 			self.Omegar   = cosmology['Omegar']
 		
+		self.P_lin=P_lin
+		self.k=k    
+		
+		# if lin_type=='class':
+# 		    X=class_objects(cosmology)
+# 		    P=X.linear_power(self.k*self.h)/self.h**3
+# 		    self.P_lin=P
+		     
 		# solar mass
 		self.M_sun=1.9885*1e30 # kg
 		
@@ -270,6 +277,8 @@ class CosmoPie :
 		#print 'rho crit [g/cm^3] at z =', z, 3*self.H(z)**2/8./pi/self.GN*1e9/(3.086*10**24)**2/10**2
 		return 3*self.H(z)**2/8./pi/self.GN*factor/self.h**2
 	
+	def get_P_lin(self):
+	    return self.k, self.P_lin
 	   
 	# -----------------------------------------------------------------------------
 		

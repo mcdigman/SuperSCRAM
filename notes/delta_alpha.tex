@@ -11,6 +11,7 @@
 \newcommand{\jl}[1]{j_{l_#1}}
 \newcommand{\dk}{\frac{ d^3 \mathbf{k}}{(2 \pi)^3}} 
 \newcommand{ \dkv}[1]{\frac{ d^3 \mathbf{k}_{#1}}{(2 \pi)^3}} 
+\newcommand{\obs}{\mathcal{O}}
 
 \title{The $\delta_\alpha$ basis and covariance $\langle \delta_\alpha \delta_\beta \rangle$}
 \author{Joseph E. McEwen}
@@ -19,21 +20,51 @@
 \begin{document}
 \maketitle
 
-\section{Basis functions}
-The basis functions we use are defined in terms of the spherical Bessel function and spherical harmonic
+\section{Spherical basis functions}
+For spherical geometry we use the following basis, composed of the spherical Bessel function and spherical harmonic:
 \begin{align} 
 \psi_\alpha(r, \theta, \phi) = j_{l_\alpha}(k_\alpha r) Y^\text{R}_{l_\alpha m_\alpha}(\theta, \phi) ~, 
 \end{align} 
-where $Y^\text{R}_{lm}(\theta, \phi) $ is the real spherical harmonic. The radial basis function should be zero at the sector boundary. Thus, fiven the maximum radius of the sector $r_\text{max}$ the super wave vector $k_\alpha$ is found by 
+where $Y^\text{R}_{lm}(\theta, \phi) $ is the real spherical harmonic. The real spherical harmonics are defined as 
+
 \begin{align}
- j_{l_\alpha}(k_\alpha r_\text{max})=0.
- \end{align}
+Y^\text{R}_{lm} =
+\begin{cases} \frac{i}{\sqrt{2}} \left( Y_{lm}  - (-1)^m Y_{l-1m} \right)& \text{if }  m < 0 \\
+Y_{l0} & \text{if } m=0 \\
+\frac{1}{\sqrt{2}}\left( Y_{l-m} + (-1)^mY_{lm} & \text{if } m > 0 ~.
+\end{cases}
+\end{align} 
+We write a super survey mode as 
+\begin{align}
+\delta_\alpha(k_\alpha)& = \int \delta(\mathbf{r}) \jl{\alpha}(k_\alpha r) \sph{\alpha}{r} d^3 \mathbf{r}~. 
+\end{align}
+
+\section{Mean background density in a region}
+The mean background density in a region is composed of the super modes:
+
+\begin{align}
+\label{bar_delta}
+\bar{\delta}= \displaystyle \sum_\alpha \frac{3}{r_\text{max}^3 - r_\text{min}^3} \int_{r_\text{max}}^ {r_\text{min} }dr ~ r^2 j_{l_\alpha}(k_\alpha r) \delta_\alpha(k_\alpha) \frac{1}{4\pi \Omega} \underbrace{ \int_{\theta_1}^{\theta_2 }\int_{\phi_1}^{\phi_2} d  \theta d \phi ~\sin(\theta)\sph{\alpha}{r}}_{a_{l_\alpha m_\alpha}} ~,
+\end{align}
+where $\Omega= a_{00}$. 
+
+In practice we are interested in derivatives of observables with respect to the $\delta_\alpha$. This is accomplished by chain rule 
+\begin{align}
+\frac{\partial f}{\partial \delta_\alpha}= \frac{\partial f}{\partial \bar{\delta}} \frac{\partial \bar{\delta}}{\partial \delta_\alpha}~.
+\end{align} 
+The derivative is computed from Eqn.~\ref{bar_delta}
+\begin{align}
+\frac{\partial \bar{\delta} }{ \partial \delta_\alpha}=
+\frac{3}{r_\text{max}^3 - r_\text{min}^3} \int_{r_\text{max}}^ {r_\text{min} }dr ~ r^2 j_{l_\alpha}(k_\alpha r)  \frac{1}{4\pi \Omega}  \int_{\theta_1}^{\theta_2 } \int_{\phi_1}^{\phi_2} d\theta d \phi ~\sin(\theta)\sph{\alpha}{r}~.
+\end{align}
+
+
  
-\section{Super Survey Matter Field}
+\section{Covariance of super modes}
 In our basis the super survey mode is defined as 
 \begin{align} 
 \begin{split} 
-\delta_\alpha(k_\alpha)& = \int_\Omega \delta(\mathbf{r}) \jl{\alpha}(k_\alpha r) \sph{\alpha}{r} d^3 \mathbf{r}  \\
+\delta_\alpha(k_\alpha)& = \int \delta(\mathbf{r}) \jl{\alpha}(k_\alpha r) \sph{\alpha}{r} d^3 \mathbf{r}  \\
 & = \int \dk \delta(\mathbf{k}) \int_0^{r_\text{max}} dr^2 \jl{\alpha}(k_\alpha r) \int d^2 \hat{r} e^{ikr \hat{k} \cdot \hat{r}} \sph{\alpha}{r} \\
 & =4 \pi i^{l_\alpha}\int  \dk \delta(\mathbf{k})  \sph{\alpha}{k}  \int_0^{r_\text{max}} dr^2 \jl{\alpha}(k_\alpha r) \jl{\alpha}(kr)  ~,
 \end{split} 
@@ -50,16 +81,41 @@ To get the covariance of the super survey field we take the ensemble average:
 \begin{split} 
 \langle \delta_\alpha \delta_\beta \rangle &= \frac{ (4 \pi)^2}{N_\alpha N_\beta} \int  \dkv{1} \dkv{2} \langle \delta(\mathbf{k}_1) \delta^*(\mathbf{k}_2) \rangle \sph{\alpha}{k_1} \sph{\alpha}{k_2} \\
 & \;\;\; \times   \int_0^{r_\text{max}}  dr r^2 \jl{\alpha}(k_\alpha r) \jl{\alpha}( k_1 r) \int_0^{r_\text{max}}  dr r^2 \jl{\alpha}(k_\alpha r) \jl{\alpha}( k_2 r)  \\
-& \frac{ (4 \pi)^2}{N_\alpha N_\beta} \int \dk P(k) I_\alpha(k, r_\text{max}) \times I_\beta(k, r_\text{max})~,
+&= \frac{ (4 \pi)^2}{N_\alpha N_\beta} \int \dk P(k) I_\alpha(k, r_\text{max}) \times I_\beta(k, r_\text{max})~,
 \end{split} 
 \end{align} 
 where $(2 \pi)^3 \delta^3_\text{D}( \mathbf{k} + \mathbf{k}') P(k) =  \langle \delta(\mathbf{k}) \delta^*(\mathbf{k}') \rangle$ was used along with the definition 
 \begin{align} 
 \begin{split} 
-I_\alpha(k,  r_\text{max}) & =  \int_0^{r_\text{max}}dr r^2 \jl{\alpha}(k_\alpha r) \jl{\alpha}( k_1 r) \\
-& = \frac{\pi}{2} \sqrt{ \frac{1}{k _ \alpha k_1}} \int_0^{r_\text{max}}dr r J_{l_\alpha+ 1/2}(k_\alpha r)  J_{l_\alpha+ 1/2}( k_1 r) \\
-& = \frac{\pi}{2} \frac{ r_\text{max}}{ \sqrt{ k _ \alpha k_1}}\frac{\left[J_{l_\alpha+ 1/2}( k_1  r_\text{max})J_{l_\alpha+ 1/2}'(k_\alpha  r_\text{max}) - J_{l_\alpha+ 1/2}k_\alpha  r_\text{max})J_{l_\alpha+ 1/2}'(k_1  r_\text{max})\right]}{k_1^2 - k_\alpha^2}~.
+I_\alpha(k,  r_\text{max}) & =  \int_0^{r_\text{max}}dr r^2 \jl{\alpha}(k_\alpha r) \jl{\alpha}( k r) \\
+& = \frac{\pi}{2} \sqrt{ \frac{1}{k _ \alpha k}} \int_0^{r_\text{max}}dr r J_{l_\alpha+ 1/2}(k_\alpha r)  J_{l_\alpha+ 1/2}( k r) \\
+& = \frac{\pi}{2} \frac{ r_\text{max}}{ \sqrt{ k _ \alpha k}}\frac{\left[J_{l_\alpha+ 1/2}( k  r_\text{max})J_{l_\alpha+ 1/2}'(k_\alpha  r_\text{max}) - J_{l_\alpha+ 1/2}(k_\alpha  r_\text{max})J_{l_\alpha+ 1/2}'(k  r_\text{max})\right]}{k^2 - k_\alpha^2}~.
 \end{split} 
 \end{align}
+
+\section{The computation of basis objects}
+The radial basis function should be zero at the sector boundary. Thus, fiven the maximum radius of the sector $r_\text{max}$ the super wave vector $k_\alpha$ is found by 
+\begin{align}
+ j_{l_\alpha}(k_\alpha r_\text{max})=0.
+ \end{align}
+
+\section{How to obtain derivatives by finite differences}
+We need to calculate objects like $\partial \obs_I/ \partial \delta_\alpha$. This is done by applying the chain rule. 
+
+\begin{align} 
+\frac{\partial \obs_I}{ \partial \delta_\alpha} = \frac{\partial \obs_I}{ \partial \Theta^i} \frac{\partial \Theta^i}{\partial \bar{\delta} } \frac{\partial \bar{\delta}}{\delta_\alpha} ~. 
+\end{align}
+When the observable is to complicated that an analytic method for the derivative is not possible, or is too cumbersome to attempt, we can use a finite difference approach. We can take $\bar{\delta}=\pm \epsilon$. As long as $\epsilon$ is small we should be in the linear regime (which is the region we are limiting our analysis too). Then we can take 
+
+\begin{align}
+ \frac{\partial \obs_I}{ \partial \Theta^i} = \frac{ \obs_I(+ \epsilon) - \obs_I(- \epsilon)}{2\delta\Theta^I( \epsilon)} ~,
+ \end{align} 
+and in the above $  \obs_I(+ \epsilon)$ means that the observable is calculated in the separate universe approch, where $\bar{\delta}=\pm\epsilon$ corresponds to a change in cosmological parameters.  The figure below illustrates this approach. The point being, is that we can choose $\epsilon$ arbitrarily (as long as we are in the linear regime) and we will still get the correct derivative, because it is just a slope. 
+ 
+ \begin{figure}[h]
+  \caption{Finite difference approach.}
+  \centering
+    \includegraphics[width=\textwidth]{finite_diff_O.pdf}
+\end{figure}
 
 \end{document}  

@@ -25,30 +25,7 @@ class survey:
 	def __init__(self, observables,geometry, optionals=[], cosmology=None):
 	
 	
-		if (cosmology is None): 
-			# if no cosmology is inputed, then use 
-			# Planck 2015 cosmology 
-			cosmology={
-				'output' : 'tCl lCl,mPk, mTk', 
-				'l_max_scalars' : 2000, 
-				'z_pk' : 0, 
-				'A_s': 2.3e-9, 
-				'n_s' : 0.9624, 
-				'h' : 0.6774,
-				'omega_b' : 0.02230,
-				'omega_cdm': 0.1188, 
-				'k_pivot' : 0.05,
-				'A_s' : 2.142e-9,
-				'n_s' : 0.9667,
-				'P_k_max_1/Mpc' : 500.0,
-				'N_eff' :3.04,
-				'Omega_fld' : 0,
-				'YHe' : 0.2453,
-				'z_reio' : 8.8}
-				
-		COSMO=class_objects(cosmology) 
-		 
-	
+
 		# the number of observables in the survey
 		self.N_obs=len(observables)
 		self.geo_type=geometry['type']
