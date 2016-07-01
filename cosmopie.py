@@ -43,7 +43,8 @@ class CosmoPie :
 			self.h        = cosmology['h']
 			self.Omegak   = cosmology['Omegak']
 			self.Omegar   = cosmology['Omegar']
-		
+               
+
 		# solar mass
 		self.M_sun=1.9885*1e30 # kg
 		
@@ -54,12 +55,14 @@ class CosmoPie :
 		self.GN=6.67408*10**(-11) # m^3/kg/s^2
 		
 		# speed of light 
-		self.c        = 2.998*1e5 #km/s
+		self.c        = 2.997924580*1e5 #km/s
 		
 		self.DH       = self.c/self.H0
 		
 		self.tH= 1/self.H0
 			
+                #curvature
+                self.K = -self.Omegak*(self.H0/self.c)**2
 		
 	def Ez(self,z):
 		zp1=z + 1
@@ -80,6 +83,14 @@ class CosmoPie :
 		# the line of sight comoving distance 
 		I = lambda zp : 1/self.Ez(zp)
 		return self.DH*quad(I,0,z)[0]
+	
+        def D_comov_A(self,z):
+		# the comoving angular diameter distance
+                if self.K ==0:
+                    return self.D_comov(z)
+                else:
+                    sqrtK = np.sqrt(abs(self.K))
+		    return 1./sqrtK*np.sin(sqrtK*self.D_comov(z))
 	
 	def D_comov_dz(self,z):
 	    return self.DH/self.Ez(z) 
