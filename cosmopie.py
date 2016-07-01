@@ -42,7 +42,7 @@ class CosmoPie :
 			self.h        = cosmology['h']
 			self.Omegak   = cosmology['Omegak']
 			self.Omegar   = cosmology['Omegar']
-<<<<<<< HEAD
+
 		
 		self.P_lin=P_lin
 		self.k=k    
@@ -52,10 +52,6 @@ class CosmoPie :
 # 		    P=X.linear_power(self.k*self.h)/self.h**3
 # 		    self.P_lin=P
 		     
-=======
-               
-
->>>>>>> 8a262106a4ddec612c459e51a757ce0e5800196b
 		# solar mass
 		self.M_sun=1.9885*1e30 # kg
 		

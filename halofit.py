@@ -313,9 +313,7 @@ if __name__=="__main__":
 		ax=plt.subplot(111)
 		ax.set_xscale('log')
 		ax.set_yscale('log')
-		
-
-				
+					
 		ax.plot(k,P, label='halofit')
 		ax.plot(k,Plin, label='linear')
 		ax.plot(k/h,P1*h**3, label='class halofit')
