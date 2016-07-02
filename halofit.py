@@ -27,7 +27,7 @@ class halofitPk(object):
 		def __init__(self,k_in,p_lin=np.array([]),C=cp.CosmoPie()):
 
 				self.C = C
-				
+		                self.k_max = max(k_in)		
 				self.gams=.21# what is the number ?
 
                                 if p_lin.size==0:
@@ -99,8 +99,10 @@ class halofitPk(object):
 			variance, calculated at the nonlinear wavenumber. rncur si the 
 			second derivative of variance at rknl. 
 			'''
-                        nint = 1000
-			#nint=3000.
+                        #nint = 1000
+			#nint=np.floor((self.k_max)/2.)
+                        #print self.k_max/2.
+                        nint =min(np.int(self.k_max/2.),1000)
 			t = ( np.arange(nint)+0.5 )/nint
 			y = 1./t - 1.
 			rk = y
@@ -304,7 +306,7 @@ if __name__=="__main__":
 		h=.6774
 		d1=np.loadtxt('camb_m_pow_l.dat')
 		d2=np.loadtxt('Pk_Planck15.dat')
-		k2=d1[:,0]; P2=d2[:,1]
+		k2=d2[:,0]; P2=d2[:,1]
 		k=d1[:,0]; P1=d1[:,1]
 		
 		#k=np.logspace(-2,2,500)
