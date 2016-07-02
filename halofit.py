@@ -27,6 +27,7 @@ class halofitPk(object):
 		def __init__(self,k_in,p_lin=np.array([]),C=cp.CosmoPie()):
 
 				self.C = C
+				
 				self.gams=.21# what is the number ?
 
                                 if p_lin.size==0:
@@ -304,8 +305,8 @@ if __name__=="__main__":
 		d1=np.loadtxt('camb_m_pow_l.dat')
 		k=d1[:,0]; P1=d1[:,1]
 		#k=np.logspace(-2,2,500)
-		
-		HF=halofitPk(k,P1)
+		CP=cp.CosmoPie
+		HF=halofitPk(k,P1,C=CP())
 		Plin=HF.D2_L(k,0.)*np.pi**2*2/k**3
 		P=HF.D2_NL(k,0.)*np.pi**2*2/k**3
 	
@@ -314,10 +315,11 @@ if __name__=="__main__":
 		ax=plt.subplot(111)
 		ax.set_xscale('log')
 		ax.set_yscale('log')
+		ax.set_xlim(1e-3,100)
 					
 		ax.plot(k,P, label='halofit')
 		ax.plot(k,Plin, label='linear')
-		ax.plot(k,P1, label='class halofit')
+		ax.plot(k,P1, label='class ')
 		
 		plt.legend(loc=1)
 		plt.grid()
