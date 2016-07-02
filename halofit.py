@@ -27,23 +27,29 @@ class halofitPk(object):
 		def __init__(self,k_in,p_lin=np.array([]),C=cp.CosmoPie()):
 
 				self.C = C
-		                self.k_max = max(k_in)		
+				self.k_max=k_in[-1]
+
+				
 				self.gams=.21# what is the number ?
 
                                 if p_lin.size==0:
                                     p_lin=self.p_cdm(k_in)*(2.*np.pi**2)/k_in**3
                                 self.p_interp = interp1d(k_in,p_lin*k_in**3/(2.*np.pi**2))
+                                check=p_lin*k_in**3/(2.*np.pi**2)
+                               
 
                                 self.c_threshold = 0.001
                                #TODO check necessary r_min,r_max,n_r nint in wint are good
                                 r_min = 0.05
                                 r_max = 5.
                                 n_r = 500
+                                
                                 rs = np.linspace(r_min,r_max,n_r)
                                 sigs = np.zeros(n_r)
                                 sig_d1s = np.zeros(n_r)
                                 sig_d2s = np.zeros(n_r)
                                 for i in range(0,n_r):
+                                   
                                     sig,d1,d2 = self.wint(rs[i])
                                     sigs[i] = sig
                                     sig_d1s[i] = d1
@@ -99,13 +105,15 @@ class halofitPk(object):
 			variance, calculated at the nonlinear wavenumber. rncur si the 
 			second derivative of variance at rknl. 
 			'''
-                        #nint = 1000
-			#nint=np.floor((self.k_max)/2.)
-                        #print self.k_max/2.
-                        nint =min(np.int(self.k_max/2.),1000)
+                        nint = 1000
+			#nint=3000.
 			t = ( np.arange(nint)+0.5 )/nint
 			y = 1./t - 1.
 			rk = y
+			id=np.where(rk <=self.k_max)[0]
+			rk=rk[id]
+			y=y[id]; t=t[id]
+			
 			d2 = self.D2_L(rk,0.)
 			x2 = y*y*r*r
 			w1=np.exp(-x2)
@@ -128,7 +136,8 @@ class halofitPk(object):
 
 		def D2_L(self,rk,z):
 			# the linear power spectrum 
-                        return self.C.G_norm(z)**2*self.p_interp(rk)
+			           
+			            return self.C.G_norm(z)**2*self.p_interp(rk)
 		#def D2_L(self,rk,z):
                 #	rk=np.asarray(rk)
 	    	#	return self.C.G_norm(z)**2*self.p_cdm(rk)
@@ -282,10 +291,10 @@ class halofitPk(object):
 						return pnl
 		def P_NL(self,k,z,return_components = False):
 			if(return_components):
-				pnl,pq,ph,plin=self.D2_NL(k,z,return_components)
+				pnl,pq,ph,plin=self.D2_NL(k,z,return_components=return_components)
 				return pnl/k**3*(2*pi**2), pq, ph, plin/k**3*(2*pi**2)
 			else:
-				return D2_NL(k,return_components)/k**3*(2*pi**2)
+				return self.D2_NL(k,z,return_components=return_components)/k**3*(2*pi**2)
 
 				
 
@@ -304,15 +313,17 @@ if __name__=="__main__":
 				 }
 
 		h=.6774
-		d1=np.loadtxt('camb_m_pow_l.dat')
-		d2=np.loadtxt('Pk_Planck15.dat')
-		k2=d2[:,0]; P2=d2[:,1]
-		k=d1[:,0]; P1=d1[:,1]
+		dd1=np.loadtxt('camb_m_pow_l.dat')
+		dd2=np.loadtxt('Pk_Planck15.dat')
+		k2=dd2[:,0]; P2=dd2[:,1]
+		k=dd1[:,0]; P1=dd1[:,1]
 		
+
 		#k=np.logspace(-2,2,500)
 		CP=cp.CosmoPie
-		HF2=halofitPk(k2,P2,C=CP())
+		
 		HF=halofitPk(k,P1,C=CP())
+		HF2=halofitPk(k2,P2,C=CP())
 		Plin=HF.D2_L(k,0.)*np.pi**2*2/k**3
 		P=HF.D2_NL(k,0.)*np.pi**2*2/k**3
 		

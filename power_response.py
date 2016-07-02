@@ -36,12 +36,12 @@ class power_response:
         
         P_new=sig_8_new/sig_8*self.P_lin
         
-        hf1=halofit(self.k,p_lin=self.P_lin,C=self.CosmoPie())
-        hf2=halofit(self.k,p_lin=P_new,C=Self.CosmoPie())
+        hf1=halofit(self.k,p_lin=self.P_lin,C=self.CosmoPie)
+        hf2=halofit(self.k,p_lin=P_new,C=self.CosmoPie)
         
-        P_hf=hf1.P_NL(k)
+        P_hf=hf1.P_NL(k,z)
         
-        dphf=(np.log(hf2.P_NL(k))-np.log(P_hf))/(13/21*delta_bar_0)
+        dphf=(np.log(hf2.P_NL(k,z))-np.log(P_hf))/(13/21*delta_bar_0)
         
         dp=(13/21.*dphf + 2 - 1/3.*derv(np.log(k**3*P_hf),np.log(k)))/P_hf
         
@@ -57,8 +57,6 @@ if __name__=="__main__":
     
     CosmoPie=CosmoPie(k=k, P_lin=P)
     print k[-1], P[-1]
-    hf1=halofit(k,p_lin=P)
-    sys.exit()
 
     
     PR=power_response(k,P,CosmoPie)
