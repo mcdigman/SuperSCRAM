@@ -56,7 +56,9 @@ if __name__=="__main__":
     from cosmopie import CosmoPie
     
     CosmoPie=CosmoPie(k=k, P_lin=P)
-    hf1=halofit(k,p_lin=P,C=CosmoPie)
+    print k[-1], P[-1]
+    hf1=halofit(k,p_lin=P)
+    sys.exit()
 
     
     PR=power_response(k,P,CosmoPie)

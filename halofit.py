@@ -303,12 +303,17 @@ if __name__=="__main__":
 
 		h=.6774
 		d1=np.loadtxt('camb_m_pow_l.dat')
+		d2=np.loadtxt('Pk_Planck15.dat')
+		k2=d1[:,0]; P2=d2[:,1]
 		k=d1[:,0]; P1=d1[:,1]
+		
 		#k=np.logspace(-2,2,500)
 		CP=cp.CosmoPie
+		HF2=halofitPk(k2,P2,C=CP())
 		HF=halofitPk(k,P1,C=CP())
 		Plin=HF.D2_L(k,0.)*np.pi**2*2/k**3
 		P=HF.D2_NL(k,0.)*np.pi**2*2/k**3
+		
 	
 		import matplotlib.pyplot as plt
 
@@ -320,6 +325,7 @@ if __name__=="__main__":
 		ax.plot(k,P, label='halofit')
 		ax.plot(k,Plin, label='linear')
 		ax.plot(k,P1, label='class ')
+		ax.plot(k2,HF2.D2_NL(k2,0.)*np.pi**2*2/k2**3, '--')
 		
 		plt.legend(loc=1)
 		plt.grid()
