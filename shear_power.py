@@ -14,7 +14,8 @@ import defaults
 import camb_power as cpow
 import FASTPTcode.matter_power_spt as mps
 from warnings import warn 
-
+import sph
+import re
 class shear_power:
     def __init__(self,k_in,C,zs,ls,pmodel='halofit_linear',P_in=np.array([]),cosmology_in={},ps=np.array([]),P_select=np.array([]),Cs=[],zbar=1.0,sigma=0.4,smodel='gaussian'):
 	self.k_in = k_in
@@ -26,6 +27,7 @@ class shear_power:
         self.omega_s = 5000 #filler, from eifler, in deg^2
         self.n_gal = 10.*3600. #filler, from krause & eifler in galaxies/deg^2 suggested at possible result from DES
 
+        self.pmodel = pmodel
         self.sigma2_e = 0.32 #from eifler
         self.sigma2_mu = 1.2 #eifler says this is uncertain
         
@@ -259,6 +261,26 @@ class shear_power:
             for j in range(0,z_bins.size-1):
                 covs[i,j] = np.diagflat(self.cov_g_diag2([q1s[i],q2s[i],q1s[j],q2s[j]]))
         return covs
+    
+    def dc_ddelta_alpha(self,basis,z_bins,theta,phi,cname1='shear',cname2='shear'):
+        if not re.match('^dc',self.pmodel):
+            warn('pmodel: '+self.pmodel+' not recognized for derivative, dc_ddelta_alpha may give unexpected results')
+        dcs = np.zeros(self.n_l)
+        for i in range(0,z_bins.size-1):
+            chi_min = self.C.D_comov(z_bins[i])
+            chi_max = self.C.D_comov(z_bins[i+1])
+            dcs[i] = basis.D_delta_bar_D_delta_alpha(chi_min,chi_max,theta,phi)
+            if cname1 == 'shear' and cname2 == 'shear':
+                dcs[i] *= self.Cll_sh_sh(chi_max,chi_max,chi_min,chi_min).Cll()
+            elif cname1 == 'shear' and cname2 == 'num':
+                dcs[i] *= self.Cll_sh_g(chi_max,chi_max,chi_min,chi_min).Cll()
+            else:
+                warn('invalid cname1 \''+cname1+'\' or cname2 \''+cname2+'\' using shear shear')
+                cname1 = 'shear'
+                cname2 = 'shear'
+                dcs[i] *= self.Cll_sh_sh(chi_max,chi_max,chi_min,chi_min).Cll()
+        return dcs
+
 class q_weight:
     def __init__(self,chis,qs,chi_min=0.,chi_max=np.inf):
         self.chi_min = chi_min
@@ -488,6 +510,7 @@ def dp_ddelta(k_a,P_a,zbar,C=cp.CosmoPie(),pmodel='linear',epsilon=0.0001,halo_a
         dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2).derivative(1))(k_a) 
         dp = 47./21.*pza-1./3.*k_a*dpdk
     return dp,pza
+
 
 def one_loop_sep(fpt,P,C_window=0.75):
     Ps,P22=fpt.P22(P,None,C_window)
