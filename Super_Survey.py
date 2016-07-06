@@ -94,7 +94,7 @@ class super_survey:
 		            result=DO_n(n_obs,self.zbins_lw,mass,self.CosmoPie,self.basis,self.geo_lw)
 		    
 		
-		return 1 
+		return result  
 		    
 		
 		
