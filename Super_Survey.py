@@ -99,6 +99,7 @@ class super_survey:
 		
 		    
 	def get_O_I(self,k,P_lin):
+	    
 		D_O_I=np.array([],dtype=object)
                 result = np.array([],dtype=object)
 		for i in range(self.N_O_I):
@@ -110,14 +111,15 @@ class super_survey:
                             print key
 		            data=O_I[key]
 		            z_bins=data['z_bins']
+		            ddelta_dalpha=np.zeros(z_bins.size-1,dtype=object)
 		            geo=data['geo']
 		            Theta=geo[0]; Phi=geo[1]
 		            
+		         
 		            ls=data['l']
                             zs = np.arange(0.1,2.0,0.1)
 
                             sp1 = sh_pow.shear_power(k,self.CosmoPie,zs,ls,P_in=P_lin,pmodel='dc_halofit')
-                            sp1.dc_ddelta_alpha(self.basis,z_bins, Theta, Phi)
                             sp2 = sh_pow.shear_power(k,self.CosmoPie,zs,ls,P_in=P_lin,pmodel='halofit_nonlinear')
 
                             dcs = np.zeros((z_bins.size-1,ls.size))
@@ -129,10 +131,13 @@ class super_survey:
                                 chi_max = self.CosmoPie.D_comov(z_bins[j+1])
                                 #sh_pow2 = sh_pow.Cll_sh_sh(sp2,chi_max,chi_max,chi_min,chi_min).Cll()
                                 dcs[j] = sh_pow.Cll_sh_sh(sp1,chi_max,chi_max,chi_min,chi_min).Cll()
+                                ddelta_dalpha[i-1]=self.basis.D_delta_bar_D_delta_alpha(chi_min,chi_max,Theta,Phi)
+		            
                              #   covs = np.append(covs,np.diagflat(sp2.cov_g_diag(sh_pow2,sh_pow2,sh_pow2,sh_pow2))) #TODO support cross z_bin covariance correctly
                             covs = sp2.cov_mats(z_bins,cname1='shear',cname2='shear')
                             result[i][key]['dc_ddelta'] = dcs
                             result[i][key]['covariance'] = covs
+                            result[i][key]['ddelta_dalpha']=ddelta_dalpha
 		            #print n_obs, mass
 		            #result=DO_n(n_obs,self.zbins_lw,mass,self.CosmoPie,self.basis,self.geo_lw)
 		    

@@ -271,14 +271,14 @@ class shear_power:
             chi_max = self.C.D_comov(z_bins[i+1])
             dcs[i] = basis.D_delta_bar_D_delta_alpha(chi_min,chi_max,theta,phi)
             if cname1 == 'shear' and cname2 == 'shear':
-                dcs[i] *= self.Cll_sh_sh(chi_max,chi_max,chi_min,chi_min).Cll()
+                dcs[i] *= Cll_sh_sh(self,chi_max,chi_max,chi_min,chi_min).Cll()
             elif cname1 == 'shear' and cname2 == 'num':
-                dcs[i] *= self.Cll_sh_g(chi_max,chi_max,chi_min,chi_min).Cll()
+                dcs[i] *= Cll_sh_g(self,chi_max,chi_max,chi_min,chi_min).Cll()
             else:
                 warn('invalid cname1 \''+cname1+'\' or cname2 \''+cname2+'\' using shear shear')
                 cname1 = 'shear'
                 cname2 = 'shear'
-                dcs[i] *= self.Cll_sh_sh(chi_max,chi_max,chi_min,chi_min).Cll()
+                dcs[i] *= Cll_sh_sh(self,chi_max,chi_max,chi_min,chi_min).Cll()
         return dcs
 
 class q_weight:
