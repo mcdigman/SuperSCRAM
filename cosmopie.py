@@ -9,7 +9,7 @@
 import numpy as np
 from numpy import pi 
 from scipy.integrate import romberg, quad, trapz
-from talk_to_class import class_objects
+#from talk_to_class import class_objects
 import sys
 
 eps=np.finfo(float).eps

@@ -1,5 +1,5 @@
 import numpy as np
-from talk_to_class import class_objects 
+#from talk_to_class import class_objects 
 from FASTPTcode import FASTPT 
 
 from cosmopie import CosmoPie 
@@ -7,6 +7,7 @@ import sph_basis as basis
 from sph import sph_basis
 from time import time 
 from Dn import DO_n
+import shear_power as sh_pow
 
 import sys
 
@@ -73,16 +74,16 @@ class super_survey:
 		    
 		print('these are number of observables', self.N_O_I, self.N_O_a)
 		self.O_a_data=self.get_O_a()
-		#self.O_I_data=self.g
+		self.O_I_data=self.get_O_I(k,P_lin)
 		
-		sys.exit()
 	
 	
 	def get_O_a(self):
 		D_O_a=np.array([],dtype=object)
+                result = np.array([],dtype=object)
 		for i in range(self.N_O_a):
 		    O_a=self.O_a[i]
-		   
+		    result = np.append(result,{}) 
 		    for key in O_a:
 		        
 		        if key=='number density':
@@ -91,10 +92,47 @@ class super_survey:
 		            n_obs=np.array([data[0],data[1]])
 		            mass=data[2]
 		            print n_obs, mass
-		            result=DO_n(n_obs,self.zbins_lw,mass,self.CosmoPie,self.basis,self.geo_lw)
+		            result[i][key] = DO_n(n_obs,self.zbins_lw,mass,self.CosmoPie,self.basis,self.geo_lw)
 		    
 		
 		return result  
+		    
+	def get_O_I(self,k,P_lin):
+		D_O_I=np.array([],dtype=object)
+                result = np.array([],dtype=object)
+		for i in range(self.N_O_I):
+		    O_I=self.O_I[i] 
+		    result = np.append(result,{}) 
+		    for key in O_I:
+		        result[i][key]={}
+		        if key=='shear_shear':
+                            print key
+		            data=O_I[key]
+		            z_bins=data['z_bins']
+		            ls=data['l']
+                            zs = np.arange(0.1,2.0,0.1)
+
+                            sp1 = sh_pow.shear_power(k,self.CosmoPie,zs,ls,P_in=P_lin,pmodel='dc_halofit')
+                            sp2 = sh_pow.shear_power(k,self.CosmoPie,zs,ls,P_in=P_lin,pmodel='halofit_nonlinear')
+
+                            dcs = np.zeros((z_bins.size-1,ls.size))
+                            #covs = np.array([],dtype=object)
+
+                            #sh_pows = np.array([],dtype=object)
+                            for j in range(0,z_bins.size-1):
+                                chi_min = self.CosmoPie.D_comov(z_bins[j])
+                                chi_max = self.CosmoPie.D_comov(z_bins[j+1])
+                                #sh_pow2 = sh_pow.Cll_sh_sh(sp2,chi_max,chi_max,chi_min,chi_min).Cll()
+                                dcs[j] = sh_pow.Cll_sh_sh(sp1,chi_max,chi_max,chi_min,chi_min).Cll()
+                             #   covs = np.append(covs,np.diagflat(sp2.cov_g_diag(sh_pow2,sh_pow2,sh_pow2,sh_pow2))) #TODO support cross z_bin covariance correctly
+                            covs = sp2.cov_mats(z_bins,cname1='shear',cname2='shear')
+                            result[i][key]['dc_ddelta'] = dcs
+                            result[i][key]['covariance'] = covs
+		            #print n_obs, mass
+		            #result=DO_n(n_obs,self.zbins_lw,mass,self.CosmoPie,self.basis,self.geo_lw)
+		    
+		
+		return result
 		    
 		
 		
@@ -115,8 +153,8 @@ if __name__=="__main__":
 	shear_data1={'z_bins':zbins,'l':l}
 	shear_data2={'z_bins':zbins,'l':l}
 	
-	O_I1={'shear':shear_data1}
-	O_I2={'shear':shear_data2}
+	O_I1={'shear_shear':shear_data1}
+	O_I2={'shear_shear':shear_data2}
 	
 	n_dat1=np.array([1e3,2.5*1e3])
 	n_dat2=np.array([5*1e3,7*1e3])
