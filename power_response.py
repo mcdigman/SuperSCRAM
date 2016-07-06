@@ -34,14 +34,14 @@ class power_response:
         sig_8=self.CosmoPie.sigma_r(0,8)
         sig_8_new=(1+13/21.*delta_bar_0)*sig_8
         
-        P_new=sig_8_new/sig_8*self.P_lin
+        P_new=np.sqrt(sig_8_new/sig_8)*self.P_lin
         
         hf1=halofit(self.k,p_lin=self.P_lin,C=self.CosmoPie)
         hf2=halofit(self.k,p_lin=P_new,C=self.CosmoPie)
         
         P_hf=hf1.P_NL(k,z)
         
-        dphf=(np.log(hf2.P_NL(k,z))-np.log(P_hf))/(13/21*delta_bar_0)
+        dphf=(np.log(hf2.P_NL(k,z))-np.log(P_hf))/np.log(13/21.*delta_bar_0)
         
         dp=(13/21.*dphf + 2 - 1/3.*derv(np.log(k**3*P_hf),np.log(k)))/P_hf
         
@@ -63,6 +63,7 @@ if __name__=="__main__":
     dp_lin=PR.linear_response(0)
     dp_spt,spt=PR.SPT_response(0)
     dp_hf, P_hf=PR.halofit_response(0)
+    print dp_hf, P_hf
     
     import matplotlib.pyplot as plt
     from matplotlib.ticker import ScalarFormatter, FormatStrFormatter
@@ -82,7 +83,7 @@ if __name__=="__main__":
    
     ax.plot(k,dp_lin*P, lw=4, color='black', label='linear')
     ax.plot(k,dp_spt*spt,'--', lw=4, color='black', label='SPT')
-    ax.plot(k,dp_hf*P_hf,lw=2, color='black', label='halofit')
+    ax.plot(k,dp_hf*P_hf,lw=2, color='red', label='halofit')
     
     
     plt.legend(loc=4, fontsize=30)
