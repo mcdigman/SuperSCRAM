@@ -37,7 +37,7 @@ class DO_n:
             r2=CosmoPie.D_comov(z2)
             r_min[i-1]=r1
             r_max[i-1]=r2
-            V1[i-1]=volume(r1,r2,Theta,Phi)
+            V1[i-1]=volume(r1,r2,Theta,Phi) # am I doing this value correctly ? 
             
         
         V2=np.zeros_like(V1)
@@ -58,8 +58,15 @@ class DO_n:
             
         self.DO=(n1/V1 - n2/V2)/n_avg**2*bias*d_delta
         
-        def dn_ddelta(self):
-            return self.DO
+        self.N_ab=1/n_avg*(1/V1 + 1/V2)  # inverse of N_ab
+        
+        self.F_alpha_beta=self.DO*self.N_ab*self.DO
+        
+    def dn_ddelta(self):
+        return self.DO
+        
+    def Fisher_alpha_beta(self):
+        return self.F_alpha_beta 
                 
         
 

@@ -92,10 +92,11 @@ class super_survey:
 		            n_obs=np.array([data[0],data[1]])
 		            mass=data[2]
 		            print n_obs, mass
-		            result[i][key] = DO_n(n_obs,self.zbins_lw,mass,self.CosmoPie,self.basis,self.geo_lw)
-		    
+		            X=DO_n(n_obs,self.zbins_lw,mass,self.CosmoPie,self.basis,self.geo_lw)
+		            result[i][key] = X.Fisher_alpha_beta()
 		
 		return result  
+		
 		    
 	def get_O_I(self,k,P_lin):
 		D_O_I=np.array([],dtype=object)
@@ -109,10 +110,14 @@ class super_survey:
                             print key
 		            data=O_I[key]
 		            z_bins=data['z_bins']
+		            geo=data['geo']
+		            Theta=geo[0]; Phi=geo[1]
+		            
 		            ls=data['l']
                             zs = np.arange(0.1,2.0,0.1)
 
                             sp1 = sh_pow.shear_power(k,self.CosmoPie,zs,ls,P_in=P_lin,pmodel='dc_halofit')
+                            sp1.dc_ddelta_alpha(self.basis,z_bins, Theta, Phi)
                             sp2 = sh_pow.shear_power(k,self.CosmoPie,zs,ls,P_in=P_lin,pmodel='halofit_nonlinear')
 
                             dcs = np.zeros((z_bins.size-1,ls.size))
@@ -150,8 +155,8 @@ if __name__=="__main__":
 	zbins=np.array([.1,.2,.3])
 	l=np.logspace(np.log10(2),np.log10(3000),1000)
 	
-	shear_data1={'z_bins':zbins,'l':l}
-	shear_data2={'z_bins':zbins,'l':l}
+	shear_data1={'z_bins':zbins,'l':l,'geo':geo}
+	shear_data2={'z_bins':zbins,'l':l,'geo':geo}
 	
 	O_I1={'shear_shear':shear_data1}
 	O_I2={'shear_shear':shear_data2}

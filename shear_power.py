@@ -265,7 +265,7 @@ class shear_power:
     def dc_ddelta_alpha(self,basis,z_bins,theta,phi,cname1='shear',cname2='shear'):
         if not re.match('^dc',self.pmodel):
             warn('pmodel: '+self.pmodel+' not recognized for derivative, dc_ddelta_alpha may give unexpected results')
-        dcs = np.zeros(self.n_l)
+        dcs = np.zeros(self.n_l,dtype=object)
         for i in range(0,z_bins.size-1):
             chi_min = self.C.D_comov(z_bins[i])
             chi_max = self.C.D_comov(z_bins[i+1])
