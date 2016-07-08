@@ -23,58 +23,58 @@ class halofitPk(object):
 				}
 		
 		'''
-				#take an input linear power spectrum at z=0, d2_l and d2_nl will output power spectrum at desired redshit
+                #take an input linear power spectrum at z=0, d2_l and d2_nl will output power spectrum at desired redshit
 		def __init__(self,k_in,p_lin=np.array([]),C=cp.CosmoPie()):
 
 				self.C = C
-				
+		                self.k_max = max(k_in)		
 				self.gams=.21# what is the number ?
 
-								if p_lin.size==0:
-									p_lin=self.p_cdm(k_in)*(2.*np.pi**2)/k_in**3
-								self.p_interp = interp1d(k_in,p_lin*k_in**3/(2.*np.pi**2))
+                                if p_lin.size==0:
+                                    p_lin=self.p_cdm(k_in)*(2.*np.pi**2)/k_in**3
+                                self.p_interp = interp1d(k_in,p_lin*k_in**3/(2.*np.pi**2))
 
-								self.c_threshold = 0.001
-							   #TODO check necessary r_min,r_max,n_r nint in wint are good
-								r_min = 0.05
-								r_max = 5.
-								n_r = 500
-								rs = np.linspace(r_min,r_max,n_r)
-								sigs = np.zeros(n_r)
-								sig_d1s = np.zeros(n_r)
-								sig_d2s = np.zeros(n_r)
-								for i in range(0,n_r):
-									sig,d1,d2 = self.wint(rs[i])
-									sigs[i] = sig
-									sig_d1s[i] = d1
-									sig_d2s[i] = d2
-								self.sigs = sigs 
-								self.r_grow = interp1d(1./sigs,rs)
-								self.sig_d1 = interp1d(rs,sig_d1s)
-								self.sig_d2 = interp1d(rs,sig_d2s)
-				#way of getting parameters without doing the interpolation, old		
+                                self.c_threshold = 0.001
+                               #TODO check necessary r_min,r_max,n_r nint in wint are good
+                                r_min = 0.05
+                                r_max = 5.
+                                n_r = 500
+                                rs = np.linspace(r_min,r_max,n_r)
+                                sigs = np.zeros(n_r)
+                                sig_d1s = np.zeros(n_r)
+                                sig_d2s = np.zeros(n_r)
+                                for i in range(0,n_r):
+                                    sig,d1,d2 = self.wint(rs[i])
+                                    sigs[i] = sig
+                                    sig_d1s[i] = d1
+                                    sig_d2s[i] = d2
+                                self.sigs = sigs 
+                                self.r_grow = interp1d(1./sigs,rs)
+                                self.sig_d1 = interp1d(rs,sig_d1s)
+                                self.sig_d2 = interp1d(rs,sig_d2s)
+                #way of getting parameters without doing the interpolation, old		
 		def spectral_parameters(self,z):
 
 			growth=self.C.G_norm(self.z)
 			self.amp=growth
 			xlogr1=-2.0
 			xlogr2=3.5 
-						
+                        
 			''' iterate to determine the wavenumber where
 					nonlinear effects become important (rknl), 
 					the effectice spectral index (rneff),
 					the second derivative of the power spectrum at rknl (rncur) 
 			'''
 
-						diff_last = np.inf
-						while True:
+                        diff_last = np.inf
+                        while True:
 				rmid = 10**( 0.5*(xlogr2+xlogr1) )
 						
 				sig,d1,d2 = self.wint(rmid)
-								sig = sig*growth
+                                sig = sig*growth
 				diff = sig-1.0
-								diff_frac = abs((diff_last-diff)/diff)
-							diff_last = diff	
+                                diff_frac = abs((diff_last-diff)/diff)
+	                        diff_last = diff	
 				if diff > 0.0001 and diff_frac>self.c_threshold:
 					xlogr1 = np.log10(rmid)
 					continue
@@ -85,8 +85,8 @@ class halofitPk(object):
 					self.rknl = 1./rmid
 					self.rneff = -3-d1
 					self.rncur = -d2
-										if abs(diff) > 0.0001:
-											warn('halofit may not have converged sufficiently')
+                                        if abs(diff) > 0.0001:
+                                            warn('halofit may not have converged sufficiently')
 					break
  #                       self.amp = growth
 
@@ -99,8 +99,11 @@ class halofitPk(object):
 			variance, calculated at the nonlinear wavenumber. rncur si the 
 			second derivative of variance at rknl. 
 			'''
-						nint = 1000
-			#nint=3000.
+                        #TODO consider handling upper limit differently
+                        #nint = 1000
+			#nint=np.floor((self.k_max)/2.)
+                        #print self.k_max/2.
+                        nint =min(np.int(self.k_max/2.),1000)
 			t = ( np.arange(nint)+0.5 )/nint
 			y = 1./t - 1.
 			rk = y
@@ -126,15 +129,15 @@ class halofitPk(object):
 
 		def D2_L(self,rk,z):
 			# the linear power spectrum 
-						return self.C.G_norm(z)**2*self.p_interp(rk)
+                        return self.C.G_norm(z)**2*self.p_interp(rk)
 		#def D2_L(self,rk,z):
-				#	rk=np.asarray(rk)
-			#	return self.C.G_norm(z)**2*self.p_cdm(rk)
-				
-				#old way 
+                #	rk=np.asarray(rk)
+	    	#	return self.C.G_norm(z)**2*self.p_cdm(rk)
+                
+                #old way 
 		def p_cdm(self,rk):
 			# unormalized power spectrum 
-						# cf Annu. Rev. Astron. Astrophys. 1994. 32: 319-70 
+                        # cf Annu. Rev. Astron. Astrophys. 1994. 32: 319-70 
 			rk = np.asarray(rk)
 			p_index = 1.
 			rkeff=0.172+0.011*np.log(self.gams/0.36)*np.log(self.gams/0.36)
@@ -151,24 +154,24 @@ class halofitPk(object):
 				"""
 				rk = np.asarray(rk)
 				#rn    = self.rneff
-								
-								growth = self.C.G_norm(z)
-								
-								rmid = self.r_grow(growth)
-								d1 = self.sig_d1(rmid)
-								d2 = self.sig_d2(rmid)
+                                
+                                growth = self.C.G_norm(z)
+                                
+                                rmid = self.r_grow(growth)
+                                d1 = self.sig_d1(rmid)
+                                d2 = self.sig_d2(rmid)
 
-								rknl = 1./rmid
-								rn = -3-d1
-								rncur = -d2
+                                rknl = 1./rmid
+                                rn = -3-d1
+                                rncur = -d2
 				#rncur = self.rncur
 				#rknl  = self.rknl
 				plin  = self.D2_L(rk,z)
 				om_m  = self.C.Omegam_z(z)
 				om_v  = self.C.OmegaL_z(z)
-					
-								#cf Bird, Viel, Haehnelt 2011 for extragam explanation (cosmosis)
-								extragam = 0.3159-0.0765*rn-0.8350*rncur
+			        
+                                #cf Bird, Viel, Haehnelt 2011 for extragam explanation (cosmosis)
+                                extragam = 0.3159-0.0765*rn-0.8350*rncur
 
 				gam=extragam+0.86485+0.2989*rn+0.1631*rncur
 				a=10**(1.4861+1.83693*rn+1.67618*rn*rn+0.7940*rn*rn*rn+\
@@ -179,7 +182,7 @@ class halofitPk(object):
 				xnu=10**(0.95897+1.2857*rn)
 				alpha=1.38848+0.3701*rn-0.1452*rn*rn
 				fnu = 0.0 #for neutrinos later, in cosmosis
-								beta=0.8291+0.9854*rn+0.3400*rn**2+fnu*(-6.4868+1.4373*rn**2)
+                                beta=0.8291+0.9854*rn+0.3400*rn**2+fnu*(-6.4868+1.4373*rn**2)
 
 				
 				if abs(1-om_m) > 0.01: #omega evolution
@@ -218,37 +221,37 @@ class halofitPk(object):
 				"""
 				rk = np.asarray(rk)
 				#rn    = self.rneff
-								
-								growth = self.C.G_norm(z)
-								
-								rmid = self.r_grow(growth)
-								d1 = self.sig_d1(rmid)
-								d2 = self.sig_d2(rmid)
+                                
+                                growth = self.C.G_norm(z)
+                                
+                                rmid = self.r_grow(growth)
+                                d1 = self.sig_d1(rmid)
+                                d2 = self.sig_d2(rmid)
 
-								rknl = 1./rmid
-								rn = -3-d1
-								rncur = -d2
+                                rknl = 1./rmid
+                                rn = -3-d1
+                                rncur = -d2
 				#rncur = self.rncur
 				#rknl  = self.rknl
 				plin  = self.D2_L(rk,z)
 				om_m  = self.C.Omegam_z(z)
 				om_v  = self.C.OmegaL_z(z)
-					#w = -0.758
-								w=-1.
-							   # #cf Bird, Viel, Haehnelt 2011 for extragam explanation (cosmosis)
-								#extragam = 0.3159-0.0765*rn-0.8350*rncur
+			        #w = -0.758
+                                w=-1.
+                               # #cf Bird, Viel, Haehnelt 2011 for extragam explanation (cosmosis)
+                                #extragam = 0.3159-0.0765*rn-0.8350*rncur
 
 				#gam=extragam+0.86485+0.2989*rn+0.1631*rncur
-								gam = 0.1971-0.0843*rn+0.8460*rncur
+                                gam = 0.1971-0.0843*rn+0.8460*rncur
 				a=10**(1.5222+2.8553*rn+2.3706*rn*rn+0.9903*rn*rn*rn+\
 							 0.2250*rn*rn*rn*rn-0.6038*rncur+0.1749*om_v*(1.+w))
 				b=10**(-0.5642+0.5864*rn+0.5716*rn*rn-1.5474*rncur+0.2279*om_v*(1.+w))
 				c=10**(0.3698+2.0404*rn+0.8161*rn*rn+0.5869*rncur)
 				xmu=0.
-								xnu = 10**(5.2105+3.6902*rn)
+                                xnu = 10**(5.2105+3.6902*rn)
 				alpha=abs(6.0835+1.3373*rn-0.1959*rn*rn-5.5274*rncur)
-								fnu = 0. #neutrinos
-								beta=2.0379-0.7354*rn+0.3157*rn**2+1.2490*rn**3+0.3980*rn**4-0.1682*rncur+fnu*(1.081+0.395*rn**2)
+                                fnu = 0. #neutrinos
+                                beta=2.0379-0.7354*rn+0.3157*rn**2+1.2490*rn**3+0.3980*rn**4-0.1682*rncur+fnu*(1.081+0.395*rn**2)
 				
 				if abs(1-om_m) > 0.01: #omega evolution
 						f1a=om_m**(-0.0732)
@@ -267,7 +270,7 @@ class halofitPk(object):
 						f3=1.0
 
 				y=(rk/rknl)
-					#fnu from cosmosis	
+			        #fnu from cosmosis	
 				ph = a*y**(f1*3.)/(1.+b*y**(f2)+(f3*c*y)**(3.-gam))*(1+fnu*0.977)
 				ph /= (1.+xmu*y**(-1)+xnu*y**(-2))
 				pq = plin*(1.+plin)**beta/(1.+plin*alpha)*np.exp(-y/4.0-y**2/8.0)
@@ -303,12 +306,17 @@ if __name__=="__main__":
 
 		h=.6774
 		d1=np.loadtxt('camb_m_pow_l.dat')
+		d2=np.loadtxt('Pk_Planck15.dat')
+		k2=d2[:,0]; P2=d2[:,1]
 		k=d1[:,0]; P1=d1[:,1]
-		#k=np.logspace(-2,2,500)
 		
-		HF=halofitPk(k,P1)
+		#k=np.logspace(-2,2,500)
+		CP=cp.CosmoPie
+		HF2=halofitPk(k2,P2,C=CP())
+		HF=halofitPk(k,P1,C=CP())
 		Plin=HF.D2_L(k,0.)*np.pi**2*2/k**3
 		P=HF.D2_NL(k,0.)*np.pi**2*2/k**3
+		
 	
 		import matplotlib.pyplot as plt
 
@@ -320,6 +328,7 @@ if __name__=="__main__":
 		ax.plot(k,P, label='halofit')
 		ax.plot(k,Plin, label='linear')
 		ax.plot(k,P1, label='class ')
+		ax.plot(k2,HF2.D2_NL(k2,0.)*np.pi**2*2/k2**3, '--')
 		
 		plt.legend(loc=1)
 		plt.grid()
