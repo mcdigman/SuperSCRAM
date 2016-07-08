@@ -56,8 +56,8 @@ class DO_n:
 
                 d_delta[i-1]=basis.D_delta_bar_D_delta_alpha(r_min[i-1],r_max[i-1],Theta,Phi)
         
-        print ' dn number n1, n2, n_avg, bias', n1/V1, n2/V2, n_avg, bias 
-        sys.exit()
+        #print ' dn number n1, n2, n_avg, bias', n1/V1, n2/V2, n_avg, bias 
+        #sys.exit()
             
         self.DO=(n1/V1 - n2/V2)/n_avg**2*bias*d_delta
         

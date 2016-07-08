@@ -19,6 +19,7 @@ class ST_hmf():
 		# and the finite difference scheme misses that last grid point. 
 		dlog_M=(self.max-self.min)/float(n_grid)
 		self.M_grid=10**np.linspace(self.min,self.max+dlog_M, n_grid+1)
+		self.mass_grid=self.M_grid[0:-1]
 		
 		
 		self.nu_array=np.zeros(n_grid+1)
@@ -148,9 +149,9 @@ class ST_hmf():
 		return bias/norm
 		
 	def n_avg(self,M,z):
-		mass=self.M_grid[ self.M_grid <= M]
+		mass=self.mass_grid[ self.mass_grid >= M]
 		mf=self.dndM(mass,z)
-		return trapz(mf,M)
+		return trapz(mf,mass)
 		
 	
 if __name__=="__main__":

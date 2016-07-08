@@ -92,6 +92,7 @@ class super_survey:
 	    
 	    result=np.zeros_like(2,dtype=object)
 	    x=self.O_a_data[0]
+	    x=np.zeros(2)
 	    #print x[0]
 	    #print self.F_0
 	    #print 'here'
@@ -114,6 +115,9 @@ class super_survey:
 	            print T[j]
 	            C_SSC=np.outer(dCdbar[j],dCdbar[j])*a 
 	            print C_SSC
+	            print C_SSC.shape
+	            np.savetxt('covar_SCC_0.dat',C_SSC)
+	            sys.exit()
 	           
 	    sys.exit()
 	    return 1
@@ -209,9 +213,9 @@ if __name__=="__main__":
 	O_I1={'shear_shear':shear_data1}
 	O_I2={'shear_shear':shear_data2}
 	
-	n_dat1=np.array([1e7,2.5*1e7])
-	n_dat2=np.array([5*1e7,7*1e7])
-	M_cut=1e15
+	n_dat1=np.array([1e6,1.01*1e6])
+	n_dat2=np.array([1e5,1.01*1e5])
+	M_cut=10**(12.5)
 	
 	O_a={'number density':np.array([n_dat1,n_dat2,M_cut])}
 	
