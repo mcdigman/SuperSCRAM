@@ -92,6 +92,10 @@ class super_survey:
 	    
 	    result=np.zeros_like(2,dtype=object)
 	    x=self.O_a_data[0]
+	    #print x[0]
+	    #print self.F_0
+	    #print 'here'
+	    #sys.exit()
 	    F_1=x[0] + self.F_0
 	    F_2=x[1] + self.F_0
 	    C_1=np.linalg.pinv(F_1)
@@ -99,11 +103,18 @@ class super_survey:
 	    
 	    print C_1 
 	    print C_1.shape, C_2.shape
+	    C=np.array([C_1,C_2],dtype=object)
 	    
 	    for i in range(2):
 	        x=self.O_I_data[i]
-	        T=x['ddelta_dalpha']
-	        print T.size, 'hi joe'
+	        T=x['shear_shear']['ddelta_dalpha']
+	        dCdbar=x['shear_shear']['dc_ddelta']
+	        for j in range(2):
+	            a=np.dot(T[j],np.dot(C[j],T[j]))
+	            print T[j]
+	            C_SSC=np.outer(dCdbar[j],dCdbar[j])*a 
+	            print C_SSC
+	           
 	    sys.exit()
 	    return 1
 	def get_O_a(self):
@@ -163,7 +174,7 @@ class super_survey:
                                 chi_max = self.CosmoPie.D_comov(z_bins[j+1])
                                 #sh_pow2 = sh_pow.Cll_sh_sh(sp2,chi_max,chi_max,chi_min,chi_min).Cll()
                                 dcs[j] = sh_pow.Cll_sh_sh(sp1,chi_max,chi_max,chi_min,chi_min).Cll()
-                                ddelta_dalpha[i-1]=self.basis.D_delta_bar_D_delta_alpha(chi_min,chi_max,Theta,Phi)
+                                ddelta_dalpha[j]=self.basis.D_delta_bar_D_delta_alpha(chi_min,chi_max,Theta,Phi)
 		            
                              #   covs = np.append(covs,np.diagflat(sp2.cov_g_diag(sh_pow2,sh_pow2,sh_pow2,sh_pow2))) #TODO support cross z_bin covariance correctly
                             covs = sp2.cov_mats(z_bins,cname1='shear',cname2='shear')
@@ -198,8 +209,8 @@ if __name__=="__main__":
 	O_I1={'shear_shear':shear_data1}
 	O_I2={'shear_shear':shear_data2}
 	
-	n_dat1=np.array([1e3,2.5*1e3])
-	n_dat2=np.array([5*1e3,7*1e3])
+	n_dat1=np.array([1e7,2.5*1e7])
+	n_dat2=np.array([5*1e7,7*1e7])
 	M_cut=1e15
 	
 	O_a={'number density':np.array([n_dat1,n_dat2,M_cut])}

@@ -30,7 +30,7 @@ class ST_hmf():
 		#self.delta_v=CosmoPie.delta_v(z)
 		self.delta_c=CosmoPie.delta_c(0)
 		if delta_bar is not None:
-		    self.delta_c=self.delta_c - delta_bar 
+			self.delta_c=self.delta_c - delta_bar 
 		self.rho_bar=CosmoPie.rho_bar(0)
 		self.Growth=CosmoPie.G_norm
 		print 'rhos', 0,self.rho_bar/(1e10), CosmoPie.rho_crit(0)/(1e10)
@@ -146,6 +146,11 @@ class ST_hmf():
 		norm=self.bias_norm(z,G)
 		bias=(1 + (a*nu-1)/self.delta_c + 2*p/(self.delta_c*(1+(a*nu)**p)))
 		return bias/norm
+		
+	def n_avg(self,M,z):
+		mass=self.M_grid[ self.M_grid <= M]
+		mf=self.dndM(mass,z)
+		return trapz(mf,M)
 		
 	
 if __name__=="__main__":
