@@ -121,7 +121,7 @@ class shear_power:
          #       lin_pow= 2*np.pi**2*interp1d(self.k_in,self.halo.D2_L(self.k_in,self.zs[i]))(self.k_use[:,i])/self.k_use[:,i]**3
          #       dpdk =(InterpolatedUnivariateSpline(self.k_use[:,i],lin_pow,ext=2).derivative(1))(self.k_use[:,i]) 
          #       self.p_dd_use[:,i] = 47./21.*lin_pow-1./3.*self.k_use[:,i]*dpdk
-         #       self.p_dd_use[:,i] += 26./21.*interp1d(self.k_in,(fpt.one_loop_sep(P_in*self.C.G_norm(self.zs[i])**2,C_window=0.75)))(self.k_use[:,i])
+         #       self.p_dd_use[:,i] += 26./21.*interp1d(self.k_in,(fpt.one_loop(P_in*self.C.G_norm(self.zs[i])**2,C_window=0.75)))(self.k_use[:,i])
             #elif pmodel=='deltabar_nl':
                 #lin_pow= 2*np.pi**2*interp1d(self.k_in,self.halo.D2_NL(self.k_in,self.zs[i]))(self.k_use[:,i])/self.k_use[:,i]**3
                 #dpdk =(InterpolatedUnivariateSpline(self.k_use[:,i],self.k_use[:,i]**3*lin_pow,ext=2).derivative(1))(self.k_use[:,i]) 
@@ -265,20 +265,20 @@ class shear_power:
     def dc_ddelta_alpha(self,basis,z_bins,theta,phi,cname1='shear',cname2='shear'):
         if not re.match('^dc',self.pmodel):
             warn('pmodel: '+self.pmodel+' not recognized for derivative, dc_ddelta_alpha may give unexpected results')
-        dcs = np.zeros(self.n_l,dtype=object)
+        dcs = np.zeros(self.n_l)
         for i in range(0,z_bins.size-1):
             chi_min = self.C.D_comov(z_bins[i])
             chi_max = self.C.D_comov(z_bins[i+1])
             dcs[i] = basis.D_delta_bar_D_delta_alpha(chi_min,chi_max,theta,phi)
             if cname1 == 'shear' and cname2 == 'shear':
-                dcs[i] *= Cll_sh_sh(self,chi_max,chi_max,chi_min,chi_min).Cll()
+                dcs[i] *= self.Cll_sh_sh(chi_max,chi_max,chi_min,chi_min).Cll()
             elif cname1 == 'shear' and cname2 == 'num':
-                dcs[i] *= Cll_sh_g(self,chi_max,chi_max,chi_min,chi_min).Cll()
+                dcs[i] *= self.Cll_sh_g(chi_max,chi_max,chi_min,chi_min).Cll()
             else:
                 warn('invalid cname1 \''+cname1+'\' or cname2 \''+cname2+'\' using shear shear')
                 cname1 = 'shear'
                 cname2 = 'shear'
-                dcs[i] *= Cll_sh_sh(self,chi_max,chi_max,chi_min,chi_min).Cll()
+                dcs[i] *= self.Cll_sh_sh(chi_max,chi_max,chi_min,chi_min).Cll()
         return dcs
 
 class q_weight:
@@ -485,7 +485,8 @@ def dc_dtheta(zs,zmin,zmax,ls,theta_name='Omegach2',cosmology=defaults.cosmology
 
 def dp_ddelta(k_a,P_a,zbar,C=cp.CosmoPie(),pmodel='linear',epsilon=0.0001,halo_a=None,halo_b=None,fpt=None):
     if pmodel=='linear':
-        pza = P_a**C.G_norm(zbar)**2
+       # pza = P_a
+        pza = P_a*C.G_norm(zbar)**2
         dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2).derivative(1))(k_a) 
         dp = 47./21.*pza-1./3.*k_a*dpdk
     elif pmodel=='halofit':
@@ -499,27 +500,18 @@ def dp_ddelta(k_a,P_a,zbar,C=cp.CosmoPie(),pmodel='linear',epsilon=0.0001,halo_a
         dp = 13./21.*C.sigma8*(pzb-pza)/epsilon+pza-1./3.*k_a*dpdk
     elif pmodel=='fastpt':
         if fpt is None:
-            fpt = FASTPT.FASTPT(k_a,-2,low_extrap=-10,high_extrap=8,n_pad=4000)
-        plin = P_a**C.G_norm(zbar)**2
+            fpt = FASTPT.FASTPT(k_a,-2,low_extrap=None,high_extrap=None,n_pad=1000)
+        plin = P_a*C.G_norm(zbar)**2
+
         pza = plin+fpt.one_loop(plin,C_window=0.75)
         dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2).derivative(1))(k_a) 
-        dp = 47./21.*pza-1./3.*k_a*dpdk+26./21.*one_loop_sep(fpt,plin,C_window=0.75)
+        dp = 47./21.*pza-1./3.*k_a*dpdk+26./21.*fpt.one_loop(plin,C_window=0.75)
     else:
         print('invalid pmodel option \''+str(pmodel)+'\' using linear')
         pza = P_a**C.G_norm(zbar)**2
         dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2).derivative(1))(k_a) 
         dp = 47./21.*pza-1./3.*k_a*dpdk
     return dp,pza
-
-
-def one_loop_sep(fpt,P,C_window=0.75):
-    Ps,P22=fpt.P22(P,None,C_window)
-    P13=mps.P_13_reg(fpt.k_old,Ps)
-    if (fpt.extrap):
-        _,P=fpt.EK.PK_orginal(P22+2.*P13) #TODO check if this is right
-        return P
-    return P22+2.*P13
-
 
     #maybe can get bias and r_corr directly from something else
 if __name__=='__main__':
@@ -587,7 +579,7 @@ if __name__=='__main__':
         #sh_pow3b = sp3b.Cll_sh_sh(chimax,chimax,chimin,chimin)
         #p3a = sp3a.p_dd_use[:,40]
         #p3b = sp3b.p_dd_use[:,40]
-        zbar = 0.
+        zbar = 3.
         #dcalt1,p1a = dp_ddelta(k_a,P_a,zbar,pmodel='linear')
         #dcalt2,p2a = dp_ddelta(k_a,P_a,zbar,pmodel='halofit')
         #dcalt3,p3a = dp_ddelta(k_a,P_a,zbar,pmodel='fastpt')
@@ -612,7 +604,7 @@ if __name__=='__main__':
 #        fpt = FASTPT.FASTPT(k_a,-2,low_extrap=-5,high_extrap=8,n_pad=800)
 #        p3a = p1a+fpt.one_loop(p1a,C_window=0.75)
 #        dpdk3 =(InterpolatedUnivariateSpline(k_a,p3a,ext=2).derivative(1))(k_a) 
-#        dcalt3 = 47./21.*p3a-1./3.*k_a*dpdk3+26./21.*fpt.one_loop_sep(p1a,C_window=0.75)
+#        dcalt3 = 47./21.*p3a-1./3.*k_a*dpdk3+26./21.*fpt.one_loop(p1a,C_window=0.75)
 
        # dcalt1 = 47./21.*p1a-1./3.*k_a*dpdk1
         #dcalt2 = sh_pow3a-1./3.*ls*dpdk
@@ -725,11 +717,14 @@ if __name__=='__main__':
         #ax.loglog(ls,abs(deltabar3))
         #ax.loglog(ls,abs(dclin))
         #ax.loglog(ls,abs(dcalt))
-        #ax.plot(k_a,abs(dcalt1/p1a))
-        #ax.plot(k_a,abs(dcalt2/p2a))
-        #ax.plot(k_a,abs(dcalt3/p3a))
-        #plt.xlim([0.,0.4])
-        #plt.ylim([1,4.])
+#        ax.plot(k_a,abs(dcalt1/p1a))
+#        ax.plot(k_a,abs(dcalt2/p2a))
+#        ax.plot(k_a,abs(dcalt3/p3a))
+        #ax.loglog(k_a,abs(dcalt1/p1a))
+        #ax.loglog(k_a,abs(dcalt2/p2a))
+        #ax.loglog(k_a,abs(dcalt3/p3a))
+ #       plt.xlim([0.,0.4])
+  #      plt.ylim([1.2,3.2])
         #ax.loglog(ls,abs(dcalt3))
         ax.legend(['Linear','Halofit','1 loop fpt'],loc=3)
 #	ax.set_ylabel('l(l+1)$C^{\gamma\gamma}(2\pi)^{-1}$')
