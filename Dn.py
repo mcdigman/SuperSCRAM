@@ -52,9 +52,12 @@ class DO_n:
 
                 z_avg=(zbins[i]+zbins[i-1])/2.
                 bias[i-1]=self.mf.bias(mass,z_avg)
-                n_avg[i-1]=self.mf.dndM(mass,z_avg)
+                n_avg[i-1]=self.mf.n_avg(mass,z_avg)
 
                 d_delta[i-1]=basis.D_delta_bar_D_delta_alpha(r_min[i-1],r_max[i-1],Theta,Phi)
+        
+        print ' dn number n1, n2, n_avg, bias', n1/V1, n2/V2, n_avg, bias 
+        sys.exit()
             
         self.DO=(n1/V1 - n2/V2)/n_avg**2*bias*d_delta
         
