@@ -31,22 +31,22 @@ class power_response:
         return dp/spt, spt 
     
     def halofit_response(self,z,delta_bar_0=0.01):
-        sig_8=self.CosmoPie.sigma_r(0,8)
-        sig_8_new=(1+13/21.*delta_bar_0)*sig_8
-        
-        P_new=np.sqrt(sig_8_new/sig_8)*self.P_lin
-        
-        hf1=halofit(self.k,p_lin=self.P_lin,C=self.CosmoPie)
-        hf2=halofit(self.k,p_lin=P_new,C=self.CosmoPie)
-        
-        P_hf=hf1.P_NL(k,z)
-        
-        dphf=(np.log(hf2.P_NL(k,z))-np.log(P_hf))/np.log(13/21.*delta_bar_0)
-        
-        dp=(13/21.*dphf + 2 - 1/3.*derv(np.log(k**3*P_hf),np.log(k)))/P_hf
-        
-        return dp, P_hf
-        
+        # sig_8=self.CosmoPie.sigma_r(0,8)
+#         sig_8_new=(1+13/21.*delta_bar_0)*sig_8
+#         
+#         P_new=np.sqrt(sig_8_new/sig_8)*self.P_lin
+#         
+#         hf1=halofit(self.k,p_lin=self.P_lin,C=self.CosmoPie)
+#         hf2=halofit(self.k,p_lin=P_new,C=self.CosmoPie)
+#         
+#         P_hf=hf1.P_NL(k,z)
+#         
+#         dphf=(np.log(hf2.P_NL(k,z))-np.log(P_hf))/np.log(13/21.*delta_bar_0)
+#         
+#         dp=(13/21.*dphf + 2 - 1/3.*derv(np.log(k**3*P_hf),np.log(k)))/P_hf
+#         
+#         return dp, P_hf
+#         
         
 if __name__=="__main__":
     

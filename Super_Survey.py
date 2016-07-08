@@ -10,12 +10,14 @@ from Dn import DO_n
 import shear_power as sh_pow
 
 import sys
+from time import time
 
 
 class super_survey:
 	''' This class holds and returns information for all surveys
 	''' 
 	def __init__(self, surveys_sw, surveys_lw, r_max, l, n_zeros,k,cosmology=None,P_lin=None):
+
 	    
 	    '''
 	    1) surveys is an array containing the informaiton for all the surveys.
@@ -23,6 +25,8 @@ class super_survey:
 	    3) l angular super modes
 	    4) cosmology is the comological parameters etc. 
 	    ''' 
+	    
+	    t1=time()
 	    	    
 	    self.N_surveys_sw=surveys_sw.size
 	    self.N_surveys_lw=surveys_lw.size
@@ -75,15 +79,38 @@ class super_survey:
 		print('these are number of observables', self.N_O_I, self.N_O_a)
 		self.O_a_data=self.get_O_a()
 		self.O_I_data=self.get_O_I(k,P_lin)
+		self.F_0=self.basis.get_F_alpha_beta()
+			
+		x=self.get_SSC_covar()	
 		
+		t2=time()
+		print 'all done'
+		print 'run time', t2-t1
 	
 	
+	def get_SSC_covar(self):
+	    
+	    result=np.zeros_like(2,dtype=object)
+	    x=self.O_a_data[0]
+	    F_1=x[0] + self.F_0
+	    F_2=x[1] + self.F_0
+	    C_1=np.linalg.pinv(F_1)
+	    C_2=np.linalg.pinv(F_2)
+	    
+	    print C_1 
+	    print C_1.shape, C_2.shape
+	    
+	    for i in range(2):
+	        x=self.O_I_data[i]
+	        T=x['ddelta_dalpha']
+	        print T.size, 'hi joe'
+	    sys.exit()
+	    return 1
 	def get_O_a(self):
-		D_O_a=np.array([],dtype=object)
-                result = np.array([],dtype=object)
+		D_O_a=np.zeros(self.N_O_a,dtype=object)
+		print 'I have this many long wavelength observables', self.N_O_a 
 		for i in range(self.N_O_a):
 		    O_a=self.O_a[i]
-		    result = np.append(result,{}) 
 		    for key in O_a:
 		        
 		        if key=='number density':
@@ -93,9 +120,14 @@ class super_survey:
 		            mass=data[2]
 		            print n_obs, mass
 		            X=DO_n(n_obs,self.zbins_lw,mass,self.CosmoPie,self.basis,self.geo_lw)
-		            result[i][key] = X.Fisher_alpha_beta()
-		
-		return result  
+		            D_O_a[i] = X.Fisher_alpha_beta()
+		# x=D_O_a[0]
+# 		print x[0]
+# 		print x[1]
+# 		print 'hi joe'
+# 		print x.shape
+# 		sys.exit()
+		return D_O_a  
 		
 		    
 	def get_O_I(self,k,P_lin):

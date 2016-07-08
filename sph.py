@@ -44,30 +44,56 @@ class sph_basis(object):
 		self.k_alpha=np.zeros(l_alpha.size*n_zeros) 
 		
 		
-		self.map_l_to_alpha=np.zeros(self.k_alpha.size)      
+		self.map_l_to_alpha=np.zeros(self.k_alpha.size) 
+		self.lm_map=np.zeros((l_alpha.size,3),dtype=object)  
+		self.lm=np.zeros((l_alpha.size,2),dtype=object)
+		m_size=np.zeros_like(l_alpha)   
+		C_size=0
 		for i in range(l_alpha.size):
-			j=i*n_zeros
-			#print 'this is i , and j', i, j 
-			#print 'this is l_alpha', l_alpha[i]
-			self.k_alpha[j:j+n_zeros]=jn_zeros(l_alpha[i],n_zeros)/r_max
-			self.map_l_to_alpha[j:j+n_zeros]=l_alpha[i]
-			
-	   # define the covariance matrix C_{\alpha \beta} and fill with values 
-		self.C_alpha_beta=np.zeros((self.k_alpha.size,self.k_alpha.size))
-		for alpha in range(self.k_alpha.size):
-			for beta in range(self.k_alpha.size):
-				A=I_alpha(self.k_alpha[alpha],k,r_max,self.map_l_to_alpha[alpha])
-				B=I_alpha(self.k_alpha[beta],k,r_max,self.map_l_to_alpha[beta])
-				self.C_alpha_beta[alpha,beta]=8*trapz(k**2*P_lin*A*B,k)
+		    m=np.arange(-l_alpha[i], l_alpha[i]+1)    
+		    j=i*n_zeros
+		    self.lm_map[i,0]=l_alpha[i]
+		    self.lm_map[i,1]=jn_zeros(l_alpha[i],n_zeros)/r_max
+		    self.lm_map[i,2]=m
+		    C_size=self.lm_map[i,1].size*self.lm_map[i,2].size + C_size
+		    self.k_alpha[j:j+n_zeros]=jn_zeros(l_alpha[i],n_zeros)/r_max
+		    self.map_l_to_alpha[j:j+n_zeros]=l_alpha[i]
+		    self.lm[i,0]=l_alpha[i]
+		    self.lm[i,1]=m
 		
-		# self.z_bins=geometry[0]
-# 		self.r_bins=np.zeros_like(self.z_bins)
-# 		self.Theta=geometry[1]
-# 		self.Phi=geometry[2]
+		self.C_id=np.zeros((C_size,3))
+		id=0
+		for a in range(self.lm_map.shape[0]):
+		    ll=self.lm_map[a,0]
+		    kk=self.lm_map[a,1]
+		    mm=self.lm_map[a,2]
+		    for b in range(kk.size):
+		        for c in range(mm.size):
+		            self.C_id[id,0]=ll
+		            self.C_id[id,1]=kk[b]
+		            self.C_id[id,2]=mm[c]
+		            id=id+1
+		            		    	    
+		self.C_alpha_beta=np.zeros((self.C_id.shape[0],self.C_id.shape[0]))
+		
+		for alpha in range(self.C_id.shape[0]):
+		    for beta in range(self.C_id.shape[0]):
+		        l1=self.C_id[alpha,0]; l2=self.C_id[beta,0]
+		        m1=self.C_id[alpha,2]; m2=self.C_id[beta,2]
+		        k1=self.C_id[alpha,1]; k2=self.C_id[beta,1]
+		        if ( (l1==l2) & (m1==m2)):
+		            A=I_alpha(k1,k,r_max,l1)
+		            B=I_alpha(k2,k,r_max,l2)
+		            self.C_alpha_beta[alpha,beta]=8*trapz(k**2*P_lin*A*B,k)
+		            
+		self.F_alpha_beta=np.linalg.inv(self.C_alpha_beta)
 		
 	def Cov_alpha_beta(self):
-		return self.map_l_to_alpha, self.C_alpha_beta
+		return self.C_alpha_beta
 	
+	def get_F_alpha_beta(self):
+	    return self.F_alpha_beta 
+		
 	def k_LW(self):
 		# return the long-wavelength wave vector k 
 		return self.k_alpha
@@ -108,35 +134,22 @@ class sph_basis(object):
 		return I 
 	
 	def D_delta_bar_D_delta_alpha(self,r_min,r_max,Theta,Phi):
+	    	    
+	    r=np.array([r_min,r_max])
+	    a_00=self.a_lm(Theta,Phi,0,0)
+	    Omega=a_00*np.sqrt(4*pi) 
+	    norm=3/(r_max**3 - r_min**3)/Omega
 	
-		r=np.array([r_min,r_max])
-	
-		a_00=self.a_lm(Theta,Phi,0,0)
-		#aa=np.array([0,2*pi]);bb=np.array([0,pi])
-		#print 'a_00 check', self.a_lm(aa,bb,0,0), 2*sqrt(pi)
-		#print 'sph check', Y_r(0,0,0,0), .5*1/sqrt(pi)
-		
-		Omega=a_00*np.sqrt(4*pi) 
-		norm=3/(r_max**3 - r_min**3)/Omega 
-		print 'this is Omega', Omega, norm, 3/(r_max**3 - r_min**3)
-	
-		result=np.zeros((self.l.size,3),dtype=object)
-		# result will hold l_alpha,{m_\alpha}, {\partial \bar{\delta} /\partial \delta_alpha}
-		for i in range(self.l.size):
-			m=np.asarray(np.arange(-self.l[i],self.l[i]+1))
-			#print m
-			#print self.l[i]
-			result[i,0]=self.l[i]
-			result[i,1]=m
-			
-			hold=np.zeros(m.size)
-		
-			for j in range(m.size):
-			    hold[j]=self.R_int(r,self.k_alpha[i],self.l[i])*self.a_lm(Theta,Phi,self.l[i],m[j])*norm
-			result[i,2]=hold
-		
-		return result
+	    result=np.zeros(self.C_id.shape[0])
+	    for id in range(self.C_id.shape[0]):
+	        ll=self.C_id[id,0]
+	        kk=self.C_id[id,1]
+	        mm=self.C_id[id,2]
+	        
+	        result[id]=self.R_int(r,kk,ll)*self.a_lm(Theta,Phi,ll,mm)*norm
 
+	    return result
+	    
 		 
 if __name__=="__main__":
 

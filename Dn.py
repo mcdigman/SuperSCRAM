@@ -60,7 +60,11 @@ class DO_n:
         
         self.N_ab=1/n_avg*(1/V1 + 1/V2)  # inverse of N_ab
         
-        self.F_alpha_beta=self.DO*self.N_ab*self.DO
+        self.F_alpha_beta=np.zeros(zbins.size-1,dtype=object)
+        for i in range(zbins.size-1):
+            v=self.DO[i]
+            self.F_alpha_beta[i]=np.outer(v,v)*self.N_ab[i]
+           
         
     def dn_ddelta(self):
         return self.DO
