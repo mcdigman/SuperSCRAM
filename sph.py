@@ -4,20 +4,22 @@ from sph_functions import j_n, jn_zeros, dJ_n, Y_r
 from scipy.special import jv
 from scipy.integrate import trapz, quad,dblquad
 import sys 
-
+from time import time
 
 # the smallest value 
 eps=np.finfo(float).eps	
-
+#I_alpha checked
 def I_alpha(k_alpha,k,r_max,l_alpha):
-			# return the integral \int_0^r_max dr r^2 j_laplpha(k_alphar)j_lalpha(kr)
+			# return the integral \int_0^r_{max} dr r^2 j_{\l_alpha}(k_\alpha r)j_{l_\alpha}(k r)
 			
 			a=k_alpha*r_max; b=k*r_max 
 			l=l_alpha+.5
-			return pi/2./sqrt(k_alpha*k)/(k_alpha*82 - k**2)*r_max*(k*jv(l-1,b)*jv(l,a)-k_alpha*jv(l-1,a)*jv(l,b))
-			#return pi/2.*r_max**2/sqrt(k_alpha*k)*(a*jv(l,b)*dJ_n(l,a)-b*jv(l,a)*dJ_n(l,b))/(b**2-a**2)
-			#return pi/2./sqrt(k_alpha*k)*r_max*(k_alpha*jv(l,b)*dJ_n(l,a)-k*jv(l,a)*dJ_n(l,b))/(k**2-k_alpha**2)
+		#	return pi/2./sqrt(k_alpha*k)/(k_alpha*82 - k**2)*r_max*(k*jv(l-1,b)*jv(l,a)-k_alpha*jv(l-1,a)*jv(l,b))
+			return pi/2./sqrt(k_alpha*k)/(k_alpha**2 - k**2)*r_max*(k*jv(l-1,b)*jv(l,a)-k_alpha*jv(l-1,a)*jv(l,b))
+		#	print  pi/2.*r_max**2/sqrt(k_alpha*k)*(a*jv(l,b)*dJ_n(l,a)-b*jv(l,a)*dJ_n(l,b))/(b**2-a**2)
+		#	print pi/2./sqrt(k_alpha*k)*r_max*(k_alpha*jv(l,b)*dJ_n(l,a)-k*jv(l,a)*dJ_n(l,b))/(k**2-k_alpha**2)
 			
+                #        sys.exit()
 
 
 class sph_basis(object): 
@@ -41,6 +43,7 @@ class sph_basis(object):
 		# and also make the map from l_alpha to k_alpha 
 		
 		# this needs to be made faster 
+                t1 = time()
 		self.k_alpha=np.zeros(l_alpha.size*n_zeros) 
 		
 		
@@ -62,32 +65,45 @@ class sph_basis(object):
 		    self.lm[i,1]=m
 		
 		self.C_id=np.zeros((C_size,3))
+		self.C_alpha_beta=np.zeros((self.C_id.shape[0],self.C_id.shape[0]))
 		id=0
+                self.Is = np.zeros((C_size,k.size))
 		for a in range(self.lm_map.shape[0]):
 		    ll=self.lm_map[a,0]
 		    kk=self.lm_map[a,1]
 		    mm=self.lm_map[a,2]
-		    for b in range(kk.size):
-		        for c in range(mm.size):
+		    for c in range(mm.size):
+                        id_k1 = id
+		        for b in range(kk.size):
 		            self.C_id[id,0]=ll
 		            self.C_id[id,1]=kk[b]
 		            self.C_id[id,2]=mm[c]
+                            self.Is[id] = I_alpha(kk[b],k,r_max,ll)
 		            id=id+1
-		            		    	    
-		self.C_alpha_beta=np.zeros((self.C_id.shape[0],self.C_id.shape[0]))
-		
-		for alpha in range(self.C_id.shape[0]):
-		    for beta in range(self.C_id.shape[0]):
-		        l1=self.C_id[alpha,0]; l2=self.C_id[beta,0]
-		        m1=self.C_id[alpha,2]; m2=self.C_id[beta,2]
-		        k1=self.C_id[alpha,1]; k2=self.C_id[beta,1]
-		        if ( (l1==l2) & (m1==m2)):
-		            A=I_alpha(k1,k,r_max,l1)
-		            B=I_alpha(k2,k,r_max,l2)
-		            self.C_alpha_beta[alpha,beta]=8*trapz(k**2*P_lin*A*B,k)
-		            
+                        for b in range(0,kk.size):
+                            A = self.Is[id_k1+b]
+                            for d in range(b,kk.size):
+                                B = self.Is[id_k1+d]
+                                self.C_alpha_beta[id_k1+b,id_k1+d]=2./np.pi*trapz(k**2*P_lin*A*B,k)*(-1.)**ll; #check coefficient
+                                self.C_alpha_beta[id_k1+d,id_k1+b]=self.C_alpha_beta[id_k1+b,id_k1+d];
+		            	    	    	    
+	        #TODO can make more efficient if necessary	
+                t2 = time()
+                print "basis time: ",t2-t1
+		#for alpha in range(self.C_id.shape[0]):
+		#    for beta in range(max(0,alpha-n_zeros),min(alpha+n_zeros,self.C_id.shape[0])):
+		#        l1=self.C_id[alpha,0]; l2=self.C_id[beta,0]
+		#        m1=self.C_id[alpha,2]; m2=self.C_id[beta,2]
+		#        k1=self.C_id[alpha,1]; k2=self.C_id[beta,1]
+		#        if ( (l1==l2) & (m1==m2)):
+		#            #A=I_alpha(k1,k,r_max,l1)
+		#            #B=I_alpha(k2,k,r_max,l2)
+                #            A = self.Is[alpha]
+                #            B = self.Is[beta]
+		#            #self.C_alpha_beta[alpha,beta]=8.*trapz(k**2*P_lin*A*B,k)
+		#            self.C_alpha_beta[alpha,beta]=2./np.pi*trapz(k**2*P_lin*A*B,k)*(-1)**l1;
+		#            
 		self.F_alpha_beta=np.linalg.inv(self.C_alpha_beta)
-		
 	def Cov_alpha_beta(self):
 		return self.C_alpha_beta
 	
@@ -97,7 +113,7 @@ class sph_basis(object):
 	def k_LW(self):
 		# return the long-wavelength wave vector k 
 		return self.k_alpha
-	
+        #slow part, TODO consider caching results	
 	def a_lm(self,Theta,Phi,l,m):    
 		# returns \int d theta d phi \sin(theta) Y_lm(theta, phi)
 		# theta is an array of 2 numbers representing the max and min of theta
@@ -106,7 +122,6 @@ class sph_basis(object):
 		
 		theta_min, theta_max=Theta
 		phi_min, phi_max=Phi
-		
 		def integrand(theta,phi):
 			#print theta, phi 
 			return sin(theta)*Y_r(l,m,theta,phi)
@@ -141,12 +156,21 @@ class sph_basis(object):
 	    norm=3/(r_max**3 - r_min**3)/Omega
 	
 	    result=np.zeros(self.C_id.shape[0])
+            #store alms for current l, m pair because computing them is slow
+            alm_last = 0.
+            ll_last = -1
+            mm_last = 0
 	    for id in range(self.C_id.shape[0]):
 	        ll=self.C_id[id,0]
 	        kk=self.C_id[id,1]
 	        mm=self.C_id[id,2]
-	        
-	        result[id]=self.R_int(r,kk,ll)*self.a_lm(Theta,Phi,ll,mm)*norm
+	        if ll_last == ll and mm_last == mm:
+                    result[id] = self.R_int(r,kk,ll)*alm_last*norm
+                else:
+                    alm_last = self.a_lm(Theta,Phi,ll,mm)
+                    ll_last = ll
+                    mm_last = mm
+                    result[id]=self.R_int(r,kk,ll)*alm_last*norm
 
 	    return result
 	    

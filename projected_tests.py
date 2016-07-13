@@ -25,10 +25,10 @@ class TestCosmosisAgreement1(unittest.TestCase):
 
             sp1 = sp.shear_power(k_in,C,zs,ls,pmodel='cosmosis_nonlinear',cosmology_in=defaults.cosmology_cosmosis)
 
-            sh_pow1 = sp1.Cll_sh_sh()
-            sh_pow1_gg = sp1.Cll_g_g()
-            sh_pow1_sg = sp1.Cll_sh_g()
-            sh_pow1_mm = sp1.Cll_mag_mag()
+            sh_pow1 = sp.Cll_sh_sh(sp1).Cll()
+            sh_pow1_gg = sp.Cll_g_g(sp1).Cll()
+            sh_pow1_sg = sp.Cll_sh_g(sp1).Cll()
+            sh_pow1_mm = sp.Cll_mag_mag(sp1).Cll()
     
             sh_pow_cosm = np.loadtxt('test_inputs/proj_1/ss_pow.txt')
             gal_pow_cosm = np.loadtxt('test_inputs/proj_1/gg_pow.txt')
@@ -102,16 +102,16 @@ class TestCosmosisHalofitAgreement1(unittest.TestCase):
             ls = np.loadtxt('test_inputs/proj_1/ell.txt')
 
             sp1 = sp.shear_power(k_in,C,zs,ls,pmodel='cosmosis_nonlinear',cosmology_in=defaults.cosmology_cosmosis)
-            sh_pow1 = sp1.Cll_sh_sh()
-            sh_pow1_gg = sp1.Cll_g_g()
-            sh_pow1_sg = sp1.Cll_sh_g()
-            sh_pow1_mm = sp1.Cll_mag_mag()
+            sh_pow1 = sp.Cll_sh_sh(sp1).Cll()
+            sh_pow1_gg = sp.Cll_g_g(sp1).Cll()
+            sh_pow1_sg = sp.Cll_sh_g(sp1).Cll()
+            sh_pow1_mm = sp.Cll_mag_mag(sp1).Cll()
    
             sp2 = sp.shear_power(k_in,C,zs,ls,P_in=P_in,pmodel='halofit_nonlinear',cosmology_in=defaults.cosmology_cosmosis)
-            sh_pow2 = sp2.Cll_sh_sh()
-            sh_pow2_gg = sp2.Cll_g_g()
-            sh_pow2_sg = sp2.Cll_sh_g()
-            sh_pow2_mm = sp2.Cll_mag_mag()
+            sh_pow2 = sp.Cll_sh_sh(sp2).Cll()
+            sh_pow2_gg = sp.Cll_g_g(sp2).Cll()
+            sh_pow2_sg = sp.Cll_sh_g(sp2).Cll()
+            sh_pow2_mm = sp.Cll_mag_mag(sp2).Cll()
 
             #get ratio of calculated value to expected value from cosmosis
             #use -np.inf as filler for interpolation when l value is not in ls*C.h,filter it later

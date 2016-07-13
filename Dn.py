@@ -6,7 +6,7 @@ import sys
 def volume(r1,r2,Theta,Phi):
     phi1,phi2=Phi
     theta1,theta2=Theta
-    result=(phi2-phi1)*(np.cos(theta1)- np.cos(theta2))*(r2**3-r1**3)
+    result=(phi2-phi1)*(np.cos(theta1)- np.cos(theta2))*(r2**3-r1**3)/3. #should be this 3
     return result 
 
 class DO_n:
@@ -56,7 +56,7 @@ class DO_n:
 
                 d_delta[i-1]=basis.D_delta_bar_D_delta_alpha(r_min[i-1],r_max[i-1],Theta,Phi)
         
-        #print ' dn number n1, n2, n_avg, bias', n1/V1, n2/V2, n_avg, bias 
+        print ' dn number n1, n2, n_avg, bias', n1/V1, n2/V2, n_avg, bias 
         #sys.exit()
             
         self.DO=(n1/V1 - n2/V2)/n_avg**2*bias*d_delta

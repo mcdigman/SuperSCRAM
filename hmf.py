@@ -40,9 +40,9 @@ class ST_hmf():
 		
 		for i in range(self.M_grid.size):
 			
-			R=3/4.*self.M_grid[i]/self.rho_bar/pi
-			R=R**(1/3.)
-			self.sigma[i]=CosmoPie.sigma_r(0,R)
+			R=3./4.*self.M_grid[i]/self.rho_bar/pi
+			R=R**(1./3.)
+			self.sigma[i]=CosmoPie.sigma_r(0.,R)
 	
 		
 		# calculated at z=0        								

@@ -81,46 +81,51 @@ class super_survey:
 		self.O_I_data=self.get_O_I(k,P_lin)
 		self.F_0=self.basis.get_F_alpha_beta()
 			
-		x=self.get_SSC_covar()	
+		self.cov_mit=self.get_SSC_covar(mitigation=True)	
+		self.cov_no_mit=self.get_SSC_covar(mitigation=False)	
 		
 		t2=time()
 		print 'all done'
 		print 'run time', t2-t1
 	
 	
-	def get_SSC_covar(self):
+	def get_SSC_covar(self,mitigation=True):
 	    
 	    result=np.zeros_like(2,dtype=object)
-	    x=self.O_a_data[0]
-	    x=np.zeros(2)
+            if mitigation:
+	        x=self.O_a_data[0]
+            else:
+                x=np.zeros(2)
 	    #print x[0]
 	    #print self.F_0
 	    #print 'here'
 	    #sys.exit()
 	    F_1=x[0] + self.F_0
 	    F_2=x[1] + self.F_0
+            print "F_1: ",F_1
 	    C_1=np.linalg.pinv(F_1)
 	    C_2=np.linalg.pinv(F_2)
 	    
 	    print C_1 
 	    print C_1.shape, C_2.shape
 	    C=np.array([C_1,C_2],dtype=object)
-	    
+	    Cov_SSC = np.zeros((2,2),dtype=object) 
 	    for i in range(2):
 	        x=self.O_I_data[i]
 	        T=x['shear_shear']['ddelta_dalpha']
 	        dCdbar=x['shear_shear']['dc_ddelta']
 	        for j in range(2):
 	            a=np.dot(T[j],np.dot(C[j],T[j]))
-	            print T[j]
-	            C_SSC=np.outer(dCdbar[j],dCdbar[j])*a 
-	            print C_SSC
-	            print C_SSC.shape
-	            np.savetxt('covar_SCC_0.dat',C_SSC)
-	            sys.exit()
-	           
-	    sys.exit()
-	    return 1
+	            #print T[j]
+                    #print C[j]
+                    print "a is: ",a 
+	            Cov_SSC[i,j]=np.outer(dCdbar[j],dCdbar[j])*a 
+	            print Cov_SSC[i,j]
+	            print Cov_SSC[i,j].shape
+	          #  np.savetxt('covar_SCC_0.dat',C_SSC)
+	        #    sys.exit()
+	    #sys.exit()
+	    return Cov_SSC
 	def get_O_a(self):
 		D_O_a=np.zeros(self.N_O_a,dtype=object)
 		print 'I have this many long wavelength observables', self.N_O_a 
@@ -179,6 +184,9 @@ class super_survey:
                                 #sh_pow2 = sh_pow.Cll_sh_sh(sp2,chi_max,chi_max,chi_min,chi_min).Cll()
                                 dcs[j] = sh_pow.Cll_sh_sh(sp1,chi_max,chi_max,chi_min,chi_min).Cll()
                                 ddelta_dalpha[j]=self.basis.D_delta_bar_D_delta_alpha(chi_min,chi_max,Theta,Phi)
+                                #print ddelta_dalpha[j]
+                                #print self.basis.C_id
+                             
 		            
                              #   covs = np.append(covs,np.diagflat(sp2.cov_g_diag(sh_pow2,sh_pow2,sh_pow2,sh_pow2))) #TODO support cross z_bin covariance correctly
                             covs = sp2.cov_mats(z_bins,cname1='shear',cname2='shear')
@@ -196,7 +204,7 @@ class super_survey:
 		
 if __name__=="__main__":
 
-	z_max=4; l_max=20 
+	z_max=4.0; l_max=20 
 	cp=CosmoPie()
 	r_max=cp.D_comov(z_max)
 	print 'this is r max and l_max', r_max , l_max
@@ -213,8 +221,8 @@ if __name__=="__main__":
 	O_I1={'shear_shear':shear_data1}
 	O_I2={'shear_shear':shear_data2}
 	
-	n_dat1=np.array([1e6,1.01*1e6])
-	n_dat2=np.array([1e5,1.01*1e5])
+	n_dat1=np.array([5.*1e5/1.7458,5.0*1e5*1.4166*0.98546])
+	n_dat2=np.array([1.01*5.*1e5/1.7458,1.01*5.0*1e5*1.4166*0.98546])
 	M_cut=10**(12.5)
 	
 	O_a={'number density':np.array([n_dat1,n_dat2,M_cut])}
@@ -235,7 +243,7 @@ if __name__=="__main__":
 	d=np.loadtxt('Pk_Planck15.dat')
 	k=d[:,0]; P=d[:,1]
 	l=np.arange(0,5)
-	n_zeros=5
+	n_zeros=3
 	
 	print 'this is r_max', r_max 
 	

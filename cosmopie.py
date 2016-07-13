@@ -8,15 +8,16 @@
 
 import numpy as np
 from numpy import pi 
-from scipy.integrate import romberg, quad, trapz
+from scipy.integrate import romberg, quad, trapz,cumtrapz
 #from talk_to_class import class_objects
 import sys
+from scipy.interpolate import interp1d
 
 eps=np.finfo(float).eps
 
 class CosmoPie :
 	
-	def __init__(self,cosmology=None, P_lin=None, k=None,lin_type='class'):
+	def __init__(self,cosmology=None, P_lin=None, k=None,lin_type='class',precompute=True,z_max=4.0,z_space=0.01):
 		# default to Planck 2015 values 
 		
 		if cosmology is None:
@@ -70,7 +71,24 @@ class CosmoPie :
 			
                 #curvature
                 self.K = -self.Omegak*(self.H0/self.c)**2
-		
+
+                #precompute some things for speedups if desired (initially use no precompute)
+	        self.precompute=False
+                if precompute:
+                    z_grid = np.arange(0.,z_max,z_space)
+                    #there are massive savings from precomputing G because of the integral it contains
+                    G_arr = np.zeros(z_grid.size)
+                    #first compute the integral in G for the whole range \int_0^{1e4}(integrand)
+		    integrand1 = lambda zp : (1+zp)*self.H0**3/self.H(zp)**3
+		    G_base = quad(integrand1,0.,1e4)[0]
+                    #subtract the cumulative result from G_base so final result is \int_z^{1e4}(integrand)
+                    integrand2 = (1.+z_grid)*self.H0**3/self.H(z_grid)**3
+                    self.G_p = interp1d(z_grid,2.5*self.Omegam/self.H0*self.H(z_grid)*(G_base-cumtrapz(integrand2,z_grid,initial=0.)))
+               #     for i in range(0,z_grid.size):
+               #         G_arr[i] = self.G(z_grid[i])
+               #     self.G_p = interp1d(z_grid, G_arr)
+                self.precompute=precompute
+                    
 	def Ez(self,z):
 		zp1=z + 1
 		return np.sqrt(self.Omegam*zp1**3 + self.Omegar*zp1**4 + self.Omegak*zp1**2 + self.OmegaL) 
@@ -168,7 +186,11 @@ class CosmoPie :
 # 		return 5/2.*self.Omegam_z(z)*a**2*self.H(z)**3*quad(Integrand,1e-5,a)[0]
 # 		#return 5/2.*self.Omegam_z(z)*a**2*self.H(z)**3*romberg(Integrand,eps,a)
 
+	#TODO support vector z	
 	def G(self,z):
+            if self.precompute:
+                return self.G_p(z)
+            else:
 		integrand = lambda zp : (1+zp)*self.H0**3/self.H(zp)**3
 		#return 2.5*self.Omegam/self.H0*self.H(z)*romberg(integrand,z,1e4)
 		return 2.5*self.Omegam/self.H0*self.H(z)*quad(integrand,z,1e4)[0]
@@ -176,12 +198,10 @@ class CosmoPie :
 # 	def G(self,z):
 # 		integrand = lambda zp : 1/(1 + zp)**2/self.H(z)**3 
 # 		return 2.5*self.Omegam_z(z)/(1+z)**2*self.H(z)**3*quad(integrand, z,1e5)[0]
-				
 	def G_norm(self,z):
 		# the normalized linear growth factor
 		# normalized so the G(0) =1 
-		
-		G_0=self.G(0)
+                G_0=self.G(0.)
 		return self.G(z)/G_0 
 		
 		
@@ -254,7 +274,6 @@ class CosmoPie :
 			raise ValueError('You need to provide a linear power spectrum and k to get sigma valeus')
 		if self.k is None:
 			raise ValueError('You need to provide a linear power spectrum and k to get sigma valeus')
-		
 		W=3.0*(np.sin(self.k*R)/self.k**3/R**3-np.cos(self.k*R)/self.k**2/R**2)
 		#P=self.G_norm(z)**2*self.P_lin
 		P=self.P_lin
