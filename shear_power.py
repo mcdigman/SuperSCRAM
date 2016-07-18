@@ -23,9 +23,12 @@ class shear_power:
         self.zs = zs
         self.ls = ls
         self.epsilon = 0.0001
-        self.delta_l = ls[-1]-ls[0] #maybe not right
-        self.omega_s = 5000 #filler, from eifler, in deg^2
-        self.n_gal = 10.*3600. #filler, from krause & eifler in galaxies/deg^2 suggested at possible result from DES
+       # self.delta_l = ls[-1]-ls[0] #maybe not right
+     #   self.omega_s = 5000 #filler, from eifler, in deg^2
+     #   self.n_gal = 10.*3600. #filler, from krause & eifler in galaxies/deg^2 suggested at possible result from DES
+        self.delta_l = 1.
+        self.omega_s = np.pi/(3.*np.sqrt(2))
+        self.n_gal = 286401.
 
         self.pmodel = pmodel
         self.sigma2_e = 0.32 #from eifler
@@ -518,8 +521,8 @@ if __name__=='__main__':
     
 	C=cp.CosmoPie(cosmology=defaults.cosmology)
         #d_t = np.loadtxt('chomp_pow_nlin.dat')
-	d = np.loadtxt('Pk_Planck15.dat')
-#	d = np.loadtxt('camb_m_pow_l.dat')
+#	d = np.loadtxt('Pk_Planck15.dat')
+	d = np.loadtxt('camb_m_pow_l.dat')
 #	xiaod = np.loadtxt('power_spectrum_1.dat')
 #	intd = pickle.load(open('../CosmicShearPython/Cll_camb.pkl',mode='r'))
         #chompd = np.loadtxt('sh_sh_comp.dat')
@@ -543,11 +546,12 @@ if __name__=='__main__':
 	#ls = chompd[:,0]	
 #	ls = revd[:,0]	
 	t1 = time()
-        cosmo_a = defaults.cosmology.copy()
-        #k_a = d[:,0]
-        #P_a = d[:,1]
-        k_a,P_a = cpow.camb_pow(cosmo_a)
+        #cosmo_a = defaults.cosmology.copy()
+        k_a = d[:,0]
+        P_a = d[:,1]
+        #k_a,P_a = cpow.camb_pow(cosmo_a)
        # P_a = hf.halofitPk(k_a,C=C).D2_L(k_a,0)
+      
         zmin = 0.40
         zmax = 0.41
         chimin = C.D_comov(zmin)
@@ -580,9 +584,9 @@ if __name__=='__main__':
         #p3a = sp3a.p_dd_use[:,40]
         #p3b = sp3b.p_dd_use[:,40]
         zbar = 3.
-        #dcalt1,p1a = dp_ddelta(k_a,P_a,zbar,pmodel='linear')
-        #dcalt2,p2a = dp_ddelta(k_a,P_a,zbar,pmodel='halofit')
-        #dcalt3,p3a = dp_ddelta(k_a,P_a,zbar,pmodel='fastpt')
+        dcalt1,p1a = dp_ddelta(k_a,P_a,zbar,pmodel='linear')
+        dcalt2,p2a = dp_ddelta(k_a,P_a,zbar,pmodel='halofit')
+        dcalt3,p3a = dp_ddelta(k_a,P_a,zbar,pmodel='fastpt')
 #        p1a = P_a**C.G_norm(zbar)**2
         #p1b = hf.halofitPk(k_a,P_a*(1.+epsilon/C.sigma8)**2,C=C).D2_NL(k_a,0.4)
 #        dpdk1 =(InterpolatedUnivariateSpline(k_a,p1a,ext=2).derivative(1))(k_a) 
@@ -665,11 +669,11 @@ if __name__=='__main__':
 #        sp12c = shear_power(k_a,C,zs,ls,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_c]),cosmology_in=defaults.cosmology,P_select=P_select)
 #        sh_pow12c = sp12c.Cll_sh_sh()
 #        div_c4 = abs(sh_pow12-2.*sh_pow8+sh_pow12c)/(2.*epsilon)
-       # sp7 = shear_power(k_in,C,zs,ls,pmodel='cosmosis_nonlinear',P_in=d[:,1],cosmology_in=defaults.cosmology)
-      #  sh_pow7 = sp7.Cll_sh_sh()
-   #     sh_pow7_gg = sp7.Cll_g_g()
-   #     sh_pow7_sg = sp7.Cll_sh_g()
-   #     sh_pow7_mm = sp7.Cll_mag_mag()
+#        sp7 = shear_power(k_in,C,zs,ls,pmodel='cosmosis_nonlinear',P_in=d[:,1],cosmology_in=defaults.cosmology)
+        #sh_pow7 = Cll_sh_sh(sp7).Cll()
+        #sh_pow7_gg = Cll_g_g(sp7).Cll()
+        #sh_pow7_sg = Cll_sh_g(sp7).Cll()
+        #sh_pow7_mm = Cll_mag_mag(sp7).Cll()
   #      sp5 = shear_power(k_in,C,zs[0:50],ls,pmodel='halofit_nonlinear',P_in=d[:,1],cosmology_in=defaults.cosmology)
    #     sh_pow5 = sp5.Cll_sh_sh()
     #    sp6 = shear_power(k_in,C,zs,ls,pmodel='halofit_nonlinear',P_in=d[:,1],cosmology_in=defaults.cosmology)
@@ -683,9 +687,9 @@ if __name__=='__main__':
         #import projected_power as prj
         #pp=prj.projected_power(k_in,d[:,1],C,3)
         #C_EE1=pp.C_EE(3,ls)
-#        sh_sh_pow = sp7.Cll_sh_sh()
-#        sh_g_pow = sp7.Cll_sh_g()
-#        g_g_pow = sp7.Cll_g_g()
+#        sh_sh_pow = Cll_sh_sh(sp7).Cll()
+#        sh_g_pow = Cll_sh_g(sp7).Cll()
+#        g_g_pow = Cll_g_g(sp7).Cll()
 #
 #        n_ss = sp7.sigma2_e/(2.*sp7.n_gal)
 #        n_gg = 1/sp7.n_gal
@@ -695,7 +699,7 @@ if __name__=='__main__':
 #        #ac,ad,bd,bc
 #        cov_ss_gg = sp7.cov_g_diag(sh_g_pow,sh_g_pow,sh_g_pow,sh_g_pow)
 #        cov_sg_sg = sp7.cov_g_diag(sh_sh_pow,sh_g_pow,g_g_pow,sh_g_pow,n_ss,0,n_gg,0)
-#      #  cov_sg_sg2 = sp7.cov_g_diag2([q_shear(sp7),q_num(sp7),q_shear(sp7),q_num(sp7)],[n_ss,0,n_gg,0],r_bd=sp7.r_corr(),r_bc=sp7.r_corr())
+      #  cov_sg_sg2 = sp7.cov_g_diag2([q_shear(sp7),q_num(sp7),q_shear(sp7),q_num(sp7)],[n_ss,0,n_gg,0],r_bd=sp7.r_corr(),r_bc=sp7.r_corr())
 #        cov_sg_ss = sp7.cov_g_diag(sh_sh_pow,sh_sh_pow,sh_g_pow,sh_g_pow,n_ss,n_ss,0,0)
 #        cov_sg_gg = sp7.cov_g_diag(sh_g_pow,sh_g_pow,g_g_pow,g_g_pow,0,0,n_gg,n_gg)
 #        cov_gg_gg = sp7.cov_g_diag(g_g_pow,g_g_pow,g_g_pow,g_g_pow,n_gg,n_gg,n_gg,n_gg)
@@ -710,21 +714,22 @@ if __name__=='__main__':
     	ax.set_xlabel('l',size=20)
         plt.title('gaussian source with $\sigma=0.4$ centered at $z=1.0$')
         ax.set_ylabel('|$\\frac{\partial ln(P(k))}{\partial \\bar{\delta}}$|')
-        ax.loglog(ls,dc_lin)
-        ax.loglog(ls,dc_hf)
-        ax.loglog(ls,dc_fpt)
+#        ax.loglog(ls,cov_ss_gg)
+       # ax.loglog(ls,dc_lin)
+       # ax.loglog(ls,dc_hf)
+       # ax.loglog(ls,dc_fpt)
         #ax.loglog(ls,abs(dcnl))
         #ax.loglog(ls,abs(deltabar3))
         #ax.loglog(ls,abs(dclin))
         #ax.loglog(ls,abs(dcalt))
-#        ax.plot(k_a,abs(dcalt1/p1a))
-#        ax.plot(k_a,abs(dcalt2/p2a))
-#        ax.plot(k_a,abs(dcalt3/p3a))
+        ax.plot(k_a,abs(dcalt1/p1a))
+        ax.plot(k_a,abs(dcalt2/p2a))
+        ax.plot(k_a,abs(dcalt3/p3a))
         #ax.loglog(k_a,abs(dcalt1/p1a))
         #ax.loglog(k_a,abs(dcalt2/p2a))
         #ax.loglog(k_a,abs(dcalt3/p3a))
- #       plt.xlim([0.,0.4])
-  #      plt.ylim([1.2,3.2])
+        plt.xlim([0.,0.4])
+        plt.ylim([1.2,3.2])
         #ax.loglog(ls,abs(dcalt3))
         ax.legend(['Linear','Halofit','1 loop fpt'],loc=3)
 #	ax.set_ylabel('l(l+1)$C^{\gamma\gamma}(2\pi)^{-1}$')
@@ -801,5 +806,5 @@ if __name__=='__main__':
  #       ax.loglog(d[:,0],d[:,1]*C.G_norm(0.429)**2)
        # ax.loglog(d_t[:,0],sp2.q_shear()*d_t[0,1]/sp2.q_shear()[0])
         plt.grid()
-	plt.show()
+	#plt.show()
        # np.savetxt('chis_save.dat',sp3.chis)

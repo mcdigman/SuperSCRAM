@@ -7,7 +7,9 @@ import sph_basis as basis
 from sph import sph_basis
 from time import time 
 from Dn import DO_n
+import Dn
 import shear_power as sh_pow
+from hmf import ST_hmf
 
 import sys
 from time import time
@@ -81,8 +83,8 @@ class super_survey:
 		self.O_I_data=self.get_O_I(k,P_lin)
 		self.F_0=self.basis.get_F_alpha_beta()
 			
-		self.cov_mit=self.get_SSC_covar(mitigation=True)	
-		self.cov_no_mit=self.get_SSC_covar(mitigation=False)	
+		self.cov_mit,self.a_mit=self.get_SSC_covar(mitigation=True)	
+		self.cov_no_mit,self.a_no_mit=self.get_SSC_covar(mitigation=False)	
 		
 		t2=time()
 		print 'all done'
@@ -93,8 +95,10 @@ class super_survey:
 	    
 	    result=np.zeros_like(2,dtype=object)
             if mitigation:
+                print "mit"
 	        x=self.O_a_data[0]
             else:
+                print "no mit"
                 x=np.zeros(2)
 	    #print x[0]
 	    #print self.F_0
@@ -102,30 +106,33 @@ class super_survey:
 	    #sys.exit()
 	    F_1=x[0] + self.F_0
 	    F_2=x[1] + self.F_0
+            print "x[0]: ",x[0]
             print "F_1: ",F_1
 	    C_1=np.linalg.pinv(F_1)
 	    C_2=np.linalg.pinv(F_2)
-	    
-	    print C_1 
-	    print C_1.shape, C_2.shape
+           	    
+	    #print C_1 
+	    #print C_1.shape, C_2.shape
 	    C=np.array([C_1,C_2],dtype=object)
 	    Cov_SSC = np.zeros((2,2),dtype=object) 
+	    a_SSC = np.zeros((2,2)) 
 	    for i in range(2):
 	        x=self.O_I_data[i]
 	        T=x['shear_shear']['ddelta_dalpha']
 	        dCdbar=x['shear_shear']['dc_ddelta']
 	        for j in range(2):
-	            a=np.dot(T[j],np.dot(C[j],T[j]))
-	            #print T[j]
-                    #print C[j]
-                    print "a is: ",a 
-	            Cov_SSC[i,j]=np.outer(dCdbar[j],dCdbar[j])*a 
-	            print Cov_SSC[i,j]
-	            print Cov_SSC[i,j].shape
+	            a_SSC[i,j]=np.dot(T[j],np.dot(C[j],T[j]))
+	            print "max t",max(T[j])
+                    print "max C",np.max(C[j])
+
+                    print "a is: ",a_SSC[i,j]
+	            Cov_SSC[i,j]=np.outer(dCdbar[j],dCdbar[j])*a_SSC[i,j]
+	            #print Cov_SSC[i,j]
+	            #print Cov_SSC[i,j].shape
 	          #  np.savetxt('covar_SCC_0.dat',C_SSC)
 	        #    sys.exit()
 	    #sys.exit()
-	    return Cov_SSC
+	    return Cov_SSC,a_SSC
 	def get_O_a(self):
 		D_O_a=np.zeros(self.N_O_a,dtype=object)
 		print 'I have this many long wavelength observables', self.N_O_a 
@@ -141,6 +148,7 @@ class super_survey:
 		            print n_obs, mass
 		            X=DO_n(n_obs,self.zbins_lw,mass,self.CosmoPie,self.basis,self.geo_lw)
 		            D_O_a[i] = X.Fisher_alpha_beta()
+                            print D_O_a[i]
 		# x=D_O_a[0]
 # 		print x[0]
 # 		print x[1]
@@ -175,6 +183,7 @@ class super_survey:
                             sp2 = sh_pow.shear_power(k,self.CosmoPie,zs,ls,P_in=P_lin,pmodel='halofit_nonlinear')
 
                             dcs = np.zeros((z_bins.size-1,ls.size))
+                            cs = np.zeros((z_bins.size-1,ls.size))
                             #covs = np.array([],dtype=object)
 
                             #sh_pows = np.array([],dtype=object)
@@ -182,6 +191,7 @@ class super_survey:
                                 chi_min = self.CosmoPie.D_comov(z_bins[j])
                                 chi_max = self.CosmoPie.D_comov(z_bins[j+1])
                                 #sh_pow2 = sh_pow.Cll_sh_sh(sp2,chi_max,chi_max,chi_min,chi_min).Cll()
+                                cs[j] = sh_pow.Cll_sh_sh(sp2,chi_max,chi_max,chi_min,chi_min).Cll()
                                 dcs[j] = sh_pow.Cll_sh_sh(sp1,chi_max,chi_max,chi_min,chi_min).Cll()
                                 ddelta_dalpha[j]=self.basis.D_delta_bar_D_delta_alpha(chi_min,chi_max,Theta,Phi)
                                 #print ddelta_dalpha[j]
@@ -190,6 +200,7 @@ class super_survey:
 		            
                              #   covs = np.append(covs,np.diagflat(sp2.cov_g_diag(sh_pow2,sh_pow2,sh_pow2,sh_pow2))) #TODO support cross z_bin covariance correctly
                             covs = sp2.cov_mats(z_bins,cname1='shear',cname2='shear')
+                            result[i][key]['power'] = cs
                             result[i][key]['dc_ddelta'] = dcs
                             result[i][key]['covariance'] = covs
                             result[i][key]['ddelta_dalpha']=ddelta_dalpha
@@ -204,13 +215,16 @@ class super_survey:
 		
 if __name__=="__main__":
 
-	z_max=4.0; l_max=20 
-	cp=CosmoPie()
+	z_max=0.5; l_max=20 
+	#d=np.loadtxt('Pk_Planck15.dat')
+        d=np.loadtxt('camb_m_pow_l.dat')
+	k=d[:,0]; P=d[:,1]
+	cp=CosmoPie(k=k,P_lin=P)
 	r_max=cp.D_comov(z_max)
 	print 'this is r max and l_max', r_max , l_max
 	
-	Theta=[np.pi/4,np.pi/2.]
-	Phi=[0,np.pi/3.]
+	Theta=[np.pi/4.,np.pi/2.]
+	Phi=[0.,np.pi/3.]
 	geo=np.array([Theta,Phi])
 	zbins=np.array([.1,.2,.3])
 	l=np.logspace(np.log10(2),np.log10(3000),1000)
@@ -221,10 +235,22 @@ if __name__=="__main__":
 	O_I1={'shear_shear':shear_data1}
 	O_I2={'shear_shear':shear_data2}
 	
-	n_dat1=np.array([5.*1e5/1.7458,5.0*1e5*1.4166*0.98546])
-	n_dat2=np.array([1.01*5.*1e5/1.7458,1.01*5.0*1e5*1.4166*0.98546])
+
+	#n_dat2=np.array([1.01*5.*1e5/1.7458,1.01*5.0*1e5*1.4166*0.98546])
 	M_cut=10**(12.5)
 	
+        n_avg = np.zeros(2)
+        n_avg[0] = ST_hmf(cp).n_avg(M_cut,0.15)
+        n_avg[1] = ST_hmf(cp).n_avg(M_cut,0.25)
+
+        V1 = Dn.volume(cp.D_comov(0.1),cp.D_comov(0.2),Theta,Phi)
+        V2 = Dn.volume(cp.D_comov(0.2),cp.D_comov(0.3),Theta,Phi)
+        #amplitude of fluctuations within a given radius should be given by something like np.sqrt(np.trapz((3.*(sin(k*R)-k*R*cos(k*R))/(k*R)**3)**2*P*k**2,k)*4.*np.pi/(2.*np.pi)**3), where R is the radius of the bin, R=cp.D_comov(z[i])-cp.D_comov(z[i-1])
+        #cf https://ned.ipac.caltech.edu/level5/March01/Strauss/Strauss2.html
+        #~0.007 for R~400 (check units).
+	n_dat1=np.array([n_avg[0]*V1,n_avg[1]*V2])
+	n_dat2=np.array([1.1*n_avg[0]*V1,1.1*n_avg[1]*V2])
+
 	O_a={'number density':np.array([n_dat1,n_dat2,M_cut])}
 	
 	d_1={'name': 'survey 1', 'area': 18000}
@@ -240,13 +266,23 @@ if __name__=="__main__":
 	survey_3={'details':d_3, 'O_a':O_a, 'zbins':zbins,'geo':geo}
 	surveys_lw=np.array([survey_3])
 	
-	d=np.loadtxt('Pk_Planck15.dat')
-	k=d[:,0]; P=d[:,1]
-	l=np.arange(0,5)
-	n_zeros=3
+        l=np.arange(0,5)
+	n_zeros=8
 	
 	print 'this is r_max', r_max 
 	
 	SS=super_survey(surveys_sw, surveys_lw,r_max,l,n_zeros,k,P_lin=P)
 	
-	
+        print "fractional mitigation: ", SS.a_no_mit/SS.a_mit	
+
+        import matplotlib.pyplot as plt
+        ax = plt.subplot(111)
+	l=np.logspace(np.log10(2),np.log10(3000),1000)
+        cov_ss = np.diag(SS.O_I_data[0]['shear_shear']['covariance'][0,0])
+        c_ss = SS.O_I_data[0]['shear_shear']['power'][0]
+        ax.loglog(l,cov_ss)
+        #ax.loglog(l,np.diag(SS.cov_mit[0,0])/c_ss**2*l/2)
+        ax.loglog(l,(np.diag(SS.cov_mit[0,0])))
+        ax.loglog(l,(np.diag(SS.cov_no_mit[0,0])))
+        ax.legend(['cov','mit','no mit'])
+        plt.show()

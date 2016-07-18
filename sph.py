@@ -14,8 +14,10 @@ def I_alpha(k_alpha,k,r_max,l_alpha):
 			
 			a=k_alpha*r_max; b=k*r_max 
 			l=l_alpha+.5
+          #              print pi/2./sqrt(k_alpha*k)/(k_alpha**2 - k**2)*r_max*(k*jv(l-1,b)*jv(l,a)-k_alpha*jv(l-1,a)*jv(l,b))
+                        return pi/2./sqrt(k_alpha*k)/(k_alpha**2 - k**2)*r_max*(-k_alpha*jv(l-1,a)*jv(l,b))
 		#	return pi/2./sqrt(k_alpha*k)/(k_alpha*82 - k**2)*r_max*(k*jv(l-1,b)*jv(l,a)-k_alpha*jv(l-1,a)*jv(l,b))
-			return pi/2./sqrt(k_alpha*k)/(k_alpha**2 - k**2)*r_max*(k*jv(l-1,b)*jv(l,a)-k_alpha*jv(l-1,a)*jv(l,b))
+	#		return pi/2./sqrt(k_alpha*k)/(k_alpha**2 - k**2)*r_max*(k*jv(l-1,b)*jv(l,a)-k_alpha*jv(l-1,a)*jv(l,b))
 		#	print  pi/2.*r_max**2/sqrt(k_alpha*k)*(a*jv(l,b)*dJ_n(l,a)-b*jv(l,a)*dJ_n(l,b))/(b**2-a**2)
 		#	print pi/2./sqrt(k_alpha*k)*r_max*(k_alpha*jv(l,b)*dJ_n(l,a)-k*jv(l,a)*dJ_n(l,b))/(k**2-k_alpha**2)
 			
@@ -38,7 +40,7 @@ class sph_basis(object):
 		k,P_lin=CosmoPie.get_P_lin()
 		
 		self.l=l_alpha
-		
+	        self.r_max = r_max	
 		# define the super mode wave vector k alpha
 		# and also make the map from l_alpha to k_alpha 
 		
@@ -80,13 +82,13 @@ class sph_basis(object):
 		            self.C_id[id,2]=mm[c]
                             self.Is[id] = I_alpha(kk[b],k,r_max,ll)
 		            id=id+1
+                        #calculate I integrals and make table
                         for b in range(0,kk.size):
                             A = self.Is[id_k1+b]
                             for d in range(b,kk.size):
                                 B = self.Is[id_k1+d]
-                                self.C_alpha_beta[id_k1+b,id_k1+d]=2./np.pi*trapz(k**2*P_lin*A*B,k)*(-1.)**ll; #check coefficient
+                                self.C_alpha_beta[id_k1+b,id_k1+d]=2./(np.pi*self.norm_factor(kk[b],ll)*self.norm_factor(kk[d],ll))*trapz(k**2*P_lin*A*B,k)*(-1.)**ll; #check coefficient
                                 self.C_alpha_beta[id_k1+d,id_k1+b]=self.C_alpha_beta[id_k1+b,id_k1+d];
-		            	    	    	    
 	        #TODO can make more efficient if necessary	
                 t2 = time()
                 print "basis time: ",t2-t1
@@ -103,7 +105,13 @@ class sph_basis(object):
 		#            #self.C_alpha_beta[alpha,beta]=8.*trapz(k**2*P_lin*A*B,k)
 		#            self.C_alpha_beta[alpha,beta]=2./np.pi*trapz(k**2*P_lin*A*B,k)*(-1)**l1;
 		#            
+                print "max c 1",np.max(self.C_alpha_beta)
 		self.F_alpha_beta=np.linalg.inv(self.C_alpha_beta)
+
+        #I_\alpha(k_\alpha,r_{max}) simplified
+        def norm_factor(self,ka,la):
+            return -np.pi*self.r_max**2/(4.*ka)*jv(la+1.5,ka*self.r_max)*jv(la-0.5,ka*self.r_max)
+
 	def Cov_alpha_beta(self):
 		return self.C_alpha_beta
 	
@@ -122,10 +130,12 @@ class sph_basis(object):
 		
 		theta_min, theta_max=Theta
 		phi_min, phi_max=Phi
-		def integrand(theta,phi):
+		#def integrand(theta,phi):
+		def integrand(phi,theta):
 			#print theta, phi 
 			return sin(theta)*Y_r(l,m,theta,phi)
 	
+		#I = dblquad(integrand,theta_min,theta_max, lambda phi: phi_min, lambda phi :phi_max)[0]
 		I = dblquad(integrand,theta_min,theta_max, lambda phi: phi_min, lambda phi :phi_max)[0]
 				
 		if (np.absolute(I) <= eps):
@@ -140,7 +150,8 @@ class sph_basis(object):
 
 		def integrand(r):
 			return r**2*j_n(n,r*k)
-
+                #CHANGED
+		#I= quad(integrand,r_min,r_max)[0]
 		I= quad(integrand,r_min,r_max)[0]
 		
 		if (np.absolute(I) <= eps):
@@ -151,9 +162,12 @@ class sph_basis(object):
 	def D_delta_bar_D_delta_alpha(self,r_min,r_max,Theta,Phi):
 	    	    
 	    r=np.array([r_min,r_max])
+            #TODO Check this
 	    a_00=self.a_lm(Theta,Phi,0,0)
-	    Omega=a_00*np.sqrt(4*pi) 
-	    norm=3/(r_max**3 - r_min**3)/Omega
+	    Omega=np.sqrt(a_00)*4.*np.pi
+            #CHANGED
+	   # Omega=a_00*np.sqrt(4*pi) 
+	    norm=3./(r_max**3 - r_min**3)/Omega
 	
 	    result=np.zeros(self.C_id.shape[0])
             #store alms for current l, m pair because computing them is slow
@@ -165,12 +179,12 @@ class sph_basis(object):
 	        kk=self.C_id[id,1]
 	        mm=self.C_id[id,2]
 	        if ll_last == ll and mm_last == mm:
-                    result[id] = self.R_int(r,kk,ll)*alm_last*norm
+                    result[id] = self.R_int(r,kk,ll)*alm_last*norm*self.norm_factor(kk,ll)
                 else:
                     alm_last = self.a_lm(Theta,Phi,ll,mm)
                     ll_last = ll
                     mm_last = mm
-                    result[id]=self.R_int(r,kk,ll)*alm_last*norm
+                    result[id]=self.R_int(r,kk,ll)*alm_last*norm*self.norm_factor(kk,ll)
 
 	    return result
 	    
