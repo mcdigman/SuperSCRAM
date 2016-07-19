@@ -17,7 +17,7 @@ from warnings import warn
 import sph
 import re
 class shear_power:
-    def __init__(self,k_in,C,zs,ls,pmodel='halofit_linear',P_in=np.array([]),cosmology_in={},ps=np.array([]),P_select=np.array([]),Cs=[],zbar=1.0,sigma=0.4,smodel='gaussian'):
+    def __init__(self,k_in,C,zs,ls,pmodel='halofit_linear',P_in=np.array([]),cosmology_in={},ps=np.array([]),P_select=np.array([]),Cs=[],zbar=1.0,sigma=0.4,smodel='gaussian', n_gal=118000000.,omega_s=np.pi/(3.*np.sqrt(2.)),delta_l=1,sigma2_e=0.32,sigma2_mu=1.2):
 	self.k_in = k_in
         self.C = C
         self.zs = zs
@@ -26,13 +26,18 @@ class shear_power:
        # self.delta_l = ls[-1]-ls[0] #maybe not right
      #   self.omega_s = 5000 #filler, from eifler, in deg^2
      #   self.n_gal = 10.*3600. #filler, from krause & eifler in galaxies/deg^2 suggested at possible result from DES
-        self.delta_l = 1.
-        self.omega_s = np.pi/(3.*np.sqrt(2))
-        self.n_gal = 286401.
-
+        self.delta_l = delta_l
+        
+        #self.omega_s = np.pi/(3.*np.sqrt(2))
+        #self.n_gal = 286401.
+        #118000000 galaxies/rad^2 if 10/arcmin^2 and omega_s is area in radians of field
+        self.omega_s = omega_s
+        self.n_gal = n_gal
         self.pmodel = pmodel
-        self.sigma2_e = 0.32 #from eifler
-        self.sigma2_mu = 1.2 #eifler says this is uncertain
+        #self.sigma2_e = 0.32 #from eifler
+        #self.sigma2_mu = 1.2 #eifler says this is uncertain
+        self.sigma2_e = sigma2_e
+        self.sigma2_mu = sigma2_mu
         
         self.n_k = self.k_in.size
         self.n_l = self.ls.size
@@ -259,10 +264,10 @@ class shear_power:
             else:
                 warn('invalid value \''+cname2+'\' for cname2 using shear instead')
                 q2s[i] = q_shear(self,chi_min,chi_max)
-
+        n_ss = self.sigma2_e/(2.*self.n_gal)
         for i in range(0,z_bins.size-1):
             for j in range(0,z_bins.size-1):
-                covs[i,j] = np.diagflat(self.cov_g_diag2([q1s[i],q2s[i],q1s[j],q2s[j]]))
+                covs[i,j] = np.diagflat(self.cov_g_diag2([q1s[i],q2s[i],q1s[j],q2s[j]],[n_ss,n_ss,n_ss,n_ss]))
         return covs
     
     def dc_ddelta_alpha(self,basis,z_bins,theta,phi,cname1='shear',cname2='shear'):

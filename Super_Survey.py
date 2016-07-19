@@ -249,7 +249,7 @@ if __name__=="__main__":
         #cf https://ned.ipac.caltech.edu/level5/March01/Strauss/Strauss2.html
         #~0.007 for R~400 (check units).
 	n_dat1=np.array([n_avg[0]*V1,n_avg[1]*V2])
-	n_dat2=np.array([1.1*n_avg[0]*V1,1.1*n_avg[1]*V2])
+	n_dat2=np.array([1.01*n_avg[0]*V1,1.01*n_avg[1]*V2])
 
 	O_a={'number density':np.array([n_dat1,n_dat2,M_cut])}
 	
@@ -280,6 +280,10 @@ if __name__=="__main__":
 	l=np.logspace(np.log10(2),np.log10(3000),1000)
         cov_ss = np.diag(SS.O_I_data[0]['shear_shear']['covariance'][0,0])
         c_ss = SS.O_I_data[0]['shear_shear']['power'][0]
+
+        print "(S/N)^2 gaussian: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss))),c_ss)
+        print "(S/N)^2 gaussian+no mitigation: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss)+SS.cov_no_mit[0,0])),c_ss)
+        print "(S/N)^2 gaussian+mitigation: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss)+SS.cov_mit[0,0])),c_ss)
         ax.loglog(l,cov_ss)
         #ax.loglog(l,np.diag(SS.cov_mit[0,0])/c_ss**2*l/2)
         ax.loglog(l,(np.diag(SS.cov_mit[0,0])))
