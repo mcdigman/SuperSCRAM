@@ -65,7 +65,7 @@ class sph_basis(object):
 		    self.map_l_to_alpha[j:j+n_zeros]=l_alpha[i]
 		    self.lm[i,0]=l_alpha[i]
 		    self.lm[i,1]=m
-		
+	        self.C_size = C_size	
 		self.C_id=np.zeros((C_size,3))
 		self.C_alpha_beta=np.zeros((self.C_id.shape[0],self.C_id.shape[0]))
 		id=0
@@ -122,24 +122,23 @@ class sph_basis(object):
 		# return the long-wavelength wave vector k 
 		return self.k_alpha
         #slow part, TODO consider caching results	
-	def a_lm(self,Theta,Phi,l,m):    
+	def a_lm(self,geo,l,m):    
 		# returns \int d theta d phi \sin(theta) Y_lm(theta, phi)
 		# theta is an array of 2 numbers representing the max and min of theta
 		# phi is an array of 2 numbers representing the max and min of phi
 		# l and m are the indices for the spherical harmonics 
 		
-		theta_min, theta_max=Theta
-		phi_min, phi_max=Phi
+		#theta_min, theta_max=Theta
+		#phi_min, phi_max=Phi
 		#def integrand(theta,phi):
 		def integrand(phi,theta):
 			#print theta, phi 
 			return sin(theta)*Y_r(l,m,theta,phi)
 	
 		#I = dblquad(integrand,theta_min,theta_max, lambda phi: phi_min, lambda phi :phi_max)[0]
-		I = dblquad(integrand,theta_min,theta_max, lambda phi: phi_min, lambda phi :phi_max)[0]
+		#I = dblquad(integrand,theta_min,theta_max, lambda phi: phi_min, lambda phi :phi_max)[0]
+                I = geo.surface_integral(integrand)
 				
-		if (np.absolute(I) <= eps):
-			I=0.0 
 		return I
 	
 	def R_int(self,r_range,k,n):
@@ -159,11 +158,12 @@ class sph_basis(object):
 			
 		return I 
 	
-	def D_delta_bar_D_delta_alpha(self,r_min,r_max,Theta,Phi):
+	def D_delta_bar_D_delta_alpha(self,r_min,r_max,geo):
 	    	    
 	    r=np.array([r_min,r_max])
             #TODO Check this
-	    a_00=self.a_lm(Theta,Phi,0,0)
+	    a_00=self.a_lm(geo,0,0)
+            print a_00
 	    Omega=np.sqrt(a_00)*4.*np.pi
             #CHANGED
 	   # Omega=a_00*np.sqrt(4*pi) 
@@ -181,7 +181,7 @@ class sph_basis(object):
 	        if ll_last == ll and mm_last == mm:
                     result[id] = self.R_int(r,kk,ll)*alm_last*norm*self.norm_factor(kk,ll)
                 else:
-                    alm_last = self.a_lm(Theta,Phi,ll,mm)
+                    alm_last = self.a_lm(geo,ll,mm)
                     ll_last = ll
                     mm_last = mm
                     result[id]=self.R_int(r,kk,ll)*alm_last*norm*self.norm_factor(kk,ll)

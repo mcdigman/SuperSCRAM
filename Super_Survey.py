@@ -13,6 +13,7 @@ from hmf import ST_hmf
 
 import sys
 from time import time
+from geo import rect_geo
 
 
 class super_survey:
@@ -30,9 +31,11 @@ class super_survey:
 	    
 	    t1=time()
 	    	    
+            self.surveys_lw = surveys_lw
 	    self.N_surveys_sw=surveys_sw.size
 	    self.N_surveys_lw=surveys_lw.size
-	    self.geo_lw=surveys_lw[0]['geo']	
+	    self.geo1_lw=surveys_lw[0]['geo1']	
+	    self.geo2_lw=surveys_lw[0]['geo2']	
 	    self.zbins_lw=surveys_lw[0]['zbins']
 	    print'this is the number of surveys', self.N_surveys_sw, self.N_surveys_lw
 	      
@@ -146,7 +149,7 @@ class super_survey:
 		            n_obs=np.array([data[0],data[1]])
 		            mass=data[2]
 		            print n_obs, mass
-		            X=DO_n(n_obs,self.zbins_lw,mass,self.CosmoPie,self.basis,self.geo_lw)
+		            X=DO_n(self.surveys_lw[0],mass,self.CosmoPie,self.basis)
 		            D_O_a[i] = X.Fisher_alpha_beta()
                             print D_O_a[i]
 		# x=D_O_a[0]
@@ -173,7 +176,7 @@ class super_survey:
 		            z_bins=data['z_bins']
 		            ddelta_dalpha=np.zeros(z_bins.size-1,dtype=object)
 		            geo=data['geo']
-		            Theta=geo[0]; Phi=geo[1]
+		            #Theta=geo[0]; Phi=geo[1]
 		            
 		         
 		            ls=data['l']
@@ -193,7 +196,7 @@ class super_survey:
                                 #sh_pow2 = sh_pow.Cll_sh_sh(sp2,chi_max,chi_max,chi_min,chi_min).Cll()
                                 cs[j] = sh_pow.Cll_sh_sh(sp2,chi_max,chi_max,chi_min,chi_min).Cll()
                                 dcs[j] = sh_pow.Cll_sh_sh(sp1,chi_max,chi_max,chi_min,chi_min).Cll()
-                                ddelta_dalpha[j]=self.basis.D_delta_bar_D_delta_alpha(chi_min,chi_max,Theta,Phi)
+                                ddelta_dalpha[j]=self.basis.D_delta_bar_D_delta_alpha(chi_min,chi_max,geo)
                                 #print ddelta_dalpha[j]
                                 #print self.basis.C_id
                              
@@ -223,14 +226,21 @@ if __name__=="__main__":
 	r_max=cp.D_comov(z_max)
 	print 'this is r max and l_max', r_max , l_max
 	
-	Theta=[np.pi/4.,np.pi/2.]
-	Phi=[0.,np.pi/3.]
-	geo=np.array([Theta,Phi])
+	Theta1=[np.pi/4.,np.pi/2.]
+	Phi1=[0.,np.pi/3.]
+
+	Theta2=[np.pi/4.,np.pi/2.]
+	Phi2=[2.*np.pi/3.,3.*np.pi/3.]
+	#geo=np.array([Theta,Phi])
+
 	zbins=np.array([.1,.2,.3])
 	l=np.logspace(np.log10(2),np.log10(3000),1000)
 	
-	shear_data1={'z_bins':zbins,'l':l,'geo':geo}
-	shear_data2={'z_bins':zbins,'l':l,'geo':geo}
+	geo1=rect_geo(zbins,Theta1,Phi1,cp)
+	geo2=rect_geo(zbins,Theta2,Phi2,cp)
+
+	shear_data1={'z_bins':zbins,'l':l,'geo':geo1}
+	shear_data2={'z_bins':zbins,'l':l,'geo':geo2}
 	
 	O_I1={'shear_shear':shear_data1}
 	O_I2={'shear_shear':shear_data2}
@@ -242,9 +252,11 @@ if __name__=="__main__":
         n_avg = np.zeros(2)
         n_avg[0] = ST_hmf(cp).n_avg(M_cut,0.15)
         n_avg[1] = ST_hmf(cp).n_avg(M_cut,0.25)
-
-        V1 = Dn.volume(cp.D_comov(0.1),cp.D_comov(0.2),Theta,Phi)
-        V2 = Dn.volume(cp.D_comov(0.2),cp.D_comov(0.3),Theta,Phi)
+        
+        V1 = geo1.volumes[0]
+        V2 = geo1.volumes[1]
+        #V1 = Dn.volume(cp.D_comov(0.1),cp.D_comov(0.2),Theta,Phi)
+        #V2 = Dn.volume(cp.D_comov(0.2),cp.D_comov(0.3),Theta,Phi)
         #amplitude of fluctuations within a given radius should be given by something like np.sqrt(np.trapz((3.*(sin(k*R)-k*R*cos(k*R))/(k*R)**3)**2*P*k**2,k)*4.*np.pi/(2.*np.pi)**3), where R is the radius of the bin, R=cp.D_comov(z[i])-cp.D_comov(z[i-1])
         #cf https://ned.ipac.caltech.edu/level5/March01/Strauss/Strauss2.html
         #~0.007 for R~400 (check units).
@@ -258,12 +270,12 @@ if __name__=="__main__":
 	d_3={'name': 'suvery lw', 'area' :18000}
 	
 	
-	survey_1={'details':d_1,'O_I':O_I1, 'geo':geo}
-	survey_2={'details':d_2,'O_I':O_I2, 'geo':geo}
+	survey_1={'details':d_1,'O_I':O_I1, 'geo':geo1}
+	survey_2={'details':d_2,'O_I':O_I2, 'geo':geo2}
 	
 	surveys_sw=np.array([survey_1, survey_2])
 	
-	survey_3={'details':d_3, 'O_a':O_a, 'zbins':zbins,'geo':geo}
+        survey_3={'details':d_3, 'O_a':O_a, 'zbins':zbins,'geo1':geo1,'geo2':geo2}
 	surveys_lw=np.array([survey_3])
 	
         l=np.arange(0,5)

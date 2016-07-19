@@ -153,7 +153,7 @@ class ST_hmf():
 	    b_array=np.zeros_like(mass)
 	    for i in range(mass.size):
 	        b_array[i]=self.bias(mass[i],z)
-	    return np.avg(b_array) 
+	    return np.average(b_array) 
 	    
 	    
 		
