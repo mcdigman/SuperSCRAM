@@ -3,75 +3,62 @@ from numpy import pi
 from hmf import ST_hmf
 import sys
 
-def volume(r1,r2,Theta,Phi):
-    phi1,phi2=Phi
-    theta1,theta2=Theta
+def volume(r1,r2,geo):
+    if geo['type']='rectangular' :
+        
+    3
     result=(phi2-phi1)*(np.cos(theta1)- np.cos(theta2))*(r2**3-r1**3)/3. 
     return result 
 
 class DO_n:
-    def __init__(self, n_obs,zbins,mass,CosmoPie,basis,geo): 
-        # the n_obs_dict should contain
-        # the following information:
-        # number of objects in z-bins
-        # the sky coverage \Omega_s 
-        # mass is the cutoff mass, will consider the number of objects below mass=mass
+    def __init__(self, data, CosmoPie,basis): 
         
-     
+        '''
+            data should hold: 
+            the redshift and spatial regions 
+            and the minimum masss
+        
+        '''
+        
+        zbins=data['zbins']
+        geo1=data['geo1']
+        geo2=data['geo2']
+        min_mass=data['min_mass']
+            
         self.mf=ST_hmf(CosmoPie)
         n_zbins=zbins.size
         
-        n1=n_obs[0]
-        n2=n_obs[1]
-        Theta=geo[0]; Phi=geo[1]
-        print n1, n2, zbins, Theta, Phi
-          
-        V1=np.zeros(n_zbins-1)
-        
+    
+        self.DO_a=np.zeros(n_zbins-1)
+        self.Nab=np.zeros(n_zbins-1)
+           
         r_min=np.zeros(n_zbins-1)
         r_max=np.zeros(n_zbins-1)
+         
         for i in range(1,n_zbins):
-            z1=zbins[i-1]
-            z2=zbins[i]
-            r1=CosmoPie.D_comov(z1)
-            r2=CosmoPie.D_comov(z2)
-            r_min[i-1]=r1
-            r_max[i-1]=r2
-            V1[i-1]=volume(r1,r2,Theta,Phi) # am I doing this value correctly ? 
+            z_avg=(zbins[i-1] + zbins[i])/2.
             
-        
-        V2=np.zeros_like(V1)
-        V2=V1
-        bias=np.zeros_like(V1)
-        n_avg=np.zeros_like(V1)
-        
-        d_delta=np.zeros(n_zbins-1,dtype=object)
-        for i in range(n_zbins):
+            n_avg=self.mf.n_avg(min_mass, z_avg)
+            x=n_avg*self.mf.bias_avg(min_mass,z_avg)
+            d1=basis.D_delta_bar_D_delta_alpha(r_min[i-1],r_max[i-1],geo1)
+            d2=basis.D_delta_bar_D_delta_alpha(r_min[i-1],r_max[i-1],geo2)
             
-            if i > 0:
-
-                z_avg=(zbins[i]+zbins[i-1])/2.
-                bias[i-1]=self.mf.bias(mass,z_avg)
-                n_avg[i-1]=self.mf.n_avg(mass,z_avg)
-
-                d_delta[i-1]=basis.D_delta_bar_D_delta_alpha(r_min[i-1],r_max[i-1],Theta,Phi)
-        
-        print ' dn number n1, n2, n_avg, bias', n1/V1, n2/V2, n_avg, bias 
-        print ' v1,v2', V1,V2    
-
-        self.DO=(n1/V1 - n2/V2)/n_avg**2*bias*d_delta
-        
-        print self.DO
-        self.N_ab=1/n_avg*(1/V1 + 1/V2)  #  N_ab
-        
+            self.DO_a[i]=x*(d1-d2)
+            
+            V1=volume(r_min[i-1],r_max[i-1],geo1)
+            V2=volume(r_min[i-1],r_max[i-1],geo2)
+            
+            self.Nab=(1/v1+1/v2)/n_avg
+            
+       
         self.F_alpha_beta=np.zeros(zbins.size-1,dtype=object)
         for i in range(zbins.size-1):
-            v=self.DO[i]
+            v=self.DO_a[i]
             self.F_alpha_beta[i]=np.outer(v,v)*1./self.N_ab[i]
            
         
     def dn_ddelta(self):
-        return self.DO
+        return self.DO_a
         
     def Fisher_alpha_beta(self):
         return self.F_alpha_beta 

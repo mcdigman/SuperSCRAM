@@ -147,6 +147,15 @@ class ST_hmf():
 		norm=self.bias_norm(z,G)
 		bias=(1 + (a*nu-1)/self.delta_c + 2*p/(self.delta_c*(1+(a*nu)**p)))
 		return bias/norm
+	
+	def bias_avg(self,min_mass,z):
+	    mass=self.mass_grid[ self.mass_grid >= min_mass]
+	    b_array=np.zeros_like(mass)
+	    for i in range(mass.size):
+	        b_array[i]=self.bias(mass[i],z)
+	    return np.avg(b_array) 
+	    
+	    
 		
 	def n_avg(self,M,z):
 		mass=self.mass_grid[ self.mass_grid >= M]
