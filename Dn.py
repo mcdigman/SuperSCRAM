@@ -36,7 +36,7 @@ class DO_n:
             z_avg=(zbins[i-1] + zbins[i])/2.
             
             n_avg=self.mf.n_avg(min_mass, z_avg)
-            x=n_avg*self.mf.bias_avg(min_mass,z_avg)
+            x=mf.bias_avg(min_mass,z_avg)
             d1=basis.D_delta_bar_D_delta_alpha(geo1.rs[i-1],geo1.rs[i],geo1)
             d2=basis.D_delta_bar_D_delta_alpha(geo1.rs[i-1],geo2.rs[i],geo2)
             
