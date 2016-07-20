@@ -153,7 +153,10 @@ class ST_hmf():
 	    b_array=np.zeros_like(mass)
 	    for i in range(mass.size):
 	        b_array[i]=self.bias(mass[i],z)
-	    return np.average(b_array) 
+	    
+	    mf=self.dnDm(mass,z)	    
+	    
+	    return trapz(b_array*mf,mass) 
 	    
 	    
 		
