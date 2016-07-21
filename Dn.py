@@ -39,7 +39,7 @@ class DO_n:
             x=self.mf.bias_avg(min_mass,z_avg)
             print "x",x
             d1=basis.D_delta_bar_D_delta_alpha(geo1.rs[i-1],geo1.rs[i],geo1)
-            d2=basis.D_delta_bar_D_delta_alpha(geo1.rs[i-1],geo2.rs[i],geo2)
+            d2=basis.D_delta_bar_D_delta_alpha(geo2.rs[i-1],geo2.rs[i],geo2)
             
             self.DO_a[i-1]=x*(d1-d2)
             V1 = geo1.volumes[i-1] 
