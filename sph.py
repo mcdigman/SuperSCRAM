@@ -87,7 +87,7 @@ class sph_basis(object):
                             A = self.Is[id_k1+b]
                             for d in range(b,kk.size):
                                 B = self.Is[id_k1+d]
-                                self.C_alpha_beta[id_k1+b,id_k1+d]=2./(np.pi*self.norm_factor(kk[b],ll)*self.norm_factor(kk[d],ll))*trapz(k**2*P_lin*A*B,k)*(-1.)**ll; #check coefficient
+                                self.C_alpha_beta[id_k1+b,id_k1+d]=2./(np.pi*self.norm_factor(kk[b],ll)*self.norm_factor(kk[d],ll))*trapz(k**2*P_lin*A*B,k); #check coefficient
                                 self.C_alpha_beta[id_k1+d,id_k1+b]=self.C_alpha_beta[id_k1+b,id_k1+d];
 	        #TODO can make more efficient if necessary	
                 t2 = time()
@@ -127,19 +127,26 @@ class sph_basis(object):
 		# theta is an array of 2 numbers representing the max and min of theta
 		# phi is an array of 2 numbers representing the max and min of phi
 		# l and m are the indices for the spherical harmonics 
-		
-		#theta_min, theta_max=Theta
-		#phi_min, phi_max=Phi
+	        Theta = geo.Theta
+                Phi = geo.Phi
+		theta_min, theta_max=Theta
+		phi_min, phi_max=Phi
 		#def integrand(theta,phi):
 		def integrand(phi,theta):
 			#print theta, phi 
 			return sin(theta)*Y_r(l,m,theta,phi)
 	
 		#I = dblquad(integrand,theta_min,theta_max, lambda phi: phi_min, lambda phi :phi_max)[0]
-		#I = dblquad(integrand,theta_min,theta_max, lambda phi: phi_min, lambda phi :phi_max)[0]
-                I = geo.surface_integral(integrand)
-				
-		return I
+		#I1 = dblquad(integrand,theta_min,theta_max, lambda phi: phi_min, lambda phi :phi_max)[0]
+                #TODO I1 tsting purposes only
+                I2 = geo.surface_integral(integrand)
+                #if np.absolute(I1) <= eps:
+                #    I1 = 0.0
+                #if not I1==I2:
+		#    print "I1,I2,eps",I1,I2,eps
+                #    sys.exit()
+
+		return I2
 	
 	def R_int(self,r_range,k,n):
 	# returns \int R_n(rk_alpha) r2 dr
@@ -164,10 +171,13 @@ class sph_basis(object):
             #TODO Check this
 	    a_00=self.a_lm(geo,0,0)
             print a_00
-	    Omega=np.sqrt(a_00)*4.*np.pi
+            print "theta",geo.Theta
+            print "phi",geo.Phi
+	   # Omega=np.sqrt(a_00)*4.*np.pi
             #CHANGED
 	   # Omega=a_00*np.sqrt(4*pi) 
-	    norm=3./(r_max**3 - r_min**3)/Omega
+	   # norm=3./(r_max**3 - r_min**3)/Omega
+	    norm=3./(r_max**3 - r_min**3)/(a_00*2.*np.sqrt(np.pi))
 	
 	    result=np.zeros(self.C_id.shape[0])
             #store alms for current l, m pair because computing them is slow
@@ -178,13 +188,17 @@ class sph_basis(object):
 	        ll=self.C_id[id,0]
 	        kk=self.C_id[id,1]
 	        mm=self.C_id[id,2]
+                #TESTING
+                if self.norm_factor(kk,ll)<0:
+                    warn("critical issue, negative norm factor")
+                    sys.exit()
 	        if ll_last == ll and mm_last == mm:
-                    result[id] = self.R_int(r,kk,ll)*alm_last*norm*self.norm_factor(kk,ll)
+                    result[id] = self.R_int(r,kk,ll)*alm_last*norm#*self.norm_factor(kk,ll)
                 else:
                     alm_last = self.a_lm(geo,ll,mm)
                     ll_last = ll
                     mm_last = mm
-                    result[id]=self.R_int(r,kk,ll)*alm_last*norm*self.norm_factor(kk,ll)
+                    result[id]=self.R_int(r,kk,ll)*alm_last*norm#*self.norm_factor(kk,ll)
 
 	    return result
 	    
@@ -216,6 +230,7 @@ if __name__=="__main__":
 	
 	
 	for i in range(4):
+	    #norm=3./(r_max**3 - r_min**3)/(a_00*2.*np.sqrt(np.pi))
 		print 'l',X[i,0]
 		print 'm',X[i,1]
 		print 'deriv',X[i,2]

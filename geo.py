@@ -3,7 +3,6 @@ import cosmopie as cp
 from scipy.integrate import dblquad
 
 # the smallest value 
-eps=np.finfo(float).eps
 
 class geo:
     def __init__(self,zbins,volumes,v_total,rs,C=cp.CosmoPie()):
@@ -12,6 +11,10 @@ class geo:
         self.volumes = volumes
         self.v_total = v_total
         self.rs = rs
+        self.eps=np.finfo(float).eps
+    def surface_integral(self,function):
+        raise NotImplementedError, "Subclasses of geo should implement surface_integral"
+
 
     #volume ddeltabar_dalpha
 class rect_geo(geo): 
@@ -39,7 +42,7 @@ class rect_geo(geo):
     #function(phi,theta)
     def surface_integral(self,function):
         I=dblquad(function,self.Theta[0],self.Theta[1], lambda phi: self.Phi[0], lambda phi: self.Phi[1])[0]
-        if (np.absolute(I) <= eps):
+        if (np.absolute(I) <= self.eps):
             return 0.0
         else:
             return I

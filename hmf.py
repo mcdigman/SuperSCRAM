@@ -154,7 +154,7 @@ class ST_hmf():
 	    for i in range(mass.size):
 	        b_array[i]=self.bias(mass[i],z)
 	    
-	    mf=self.dnDM(mass,z)	    
+	    mf=self.dndM(mass,z)	    
 	    
 	    return trapz(b_array*mf,mass) 
 	    
