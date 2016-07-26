@@ -1,0 +1,50 @@
+This is BibTeX, Version 0.99d (TeX Live 2013)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: GamePlan.aux
+A level-1 auxiliary file: literature.aux
+A level-1 auxiliary file: trispectrum.aux
+A level-1 auxiliary file: delta_alpha.aux
+A level-1 auxiliary file: separate_universe.aux
+The style file: JHEP.bst
+Database file #1: ssc.bib
+You've used 5 entries,
+            2173 wiz_defined-function locations,
+            557 strings with 4254 characters,
+and the built_in function-call counts, 1435 in all, are:
+= -- 149
+> -- 53
+< -- 0
++ -- 16
+- -- 11
+* -- 102
+:= -- 197
+add.period$ -- 7
+call.type$ -- 5
+change.case$ -- 3
+chr.to.int$ -- 0
+cite$ -- 5
+duplicate$ -- 81
+empty$ -- 133
+format.name$ -- 11
+if$ -- 374
+int.to.chr$ -- 0
+int.to.str$ -- 5
+missing$ -- 16
+newline$ -- 20
+num.names$ -- 5
+pop$ -- 22
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 0
+skip$ -- 58
+stack$ -- 0
+substring$ -- 56
+swap$ -- 37
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 0
+warning$ -- 0
+while$ -- 10
+width$ -- 6
+write$ -- 52

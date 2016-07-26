@@ -1,0 +1,30 @@
+\providecommand{\href}[2]{#2}\begingroup\raggedright\begin{thebibliography}{1}
+
+\bibitem{2013PhRvD..87l3504T}
+M.~{Takada} and W.~{Hu}, \emph{{Power spectrum super-sample covariance}},
+  \href{http://dx.doi.org/10.1103/PhysRevD.87.123504}{\emph{\prd} {\bf 87}
+  (June, 2013) 123504}, [\href{http://arxiv.org/abs/1302.6994}{{\tt
+  1302.6994}}].
+
+\bibitem{2014PhRvD..89h3519L}
+Y.~{Li}, W.~{Hu} and M.~{Takada}, \emph{{Super-sample covariance in
+  simulations}},
+  \href{http://dx.doi.org/10.1103/PhysRevD.89.083519}{\emph{\prd} {\bf 89}
+  (Apr., 2014) 083519}, [\href{http://arxiv.org/abs/1401.0385}{{\tt
+  1401.0385}}].
+
+\bibitem{misner1973gravitation}
+C.~W. Misner, K.~S. Thorne and J.~A. Wheeler, \emph{Gravitation}.
+\newblock Macmillan, 1973.
+
+\bibitem{poisson2004relativist}
+E.~Poisson, \emph{A relativist's toolkit: the mathematics of black-hole
+  mechanics}.
+\newblock Cambridge university press, 2004.
+
+\bibitem{manasse1963fermi}
+F.~Manasse and C.~W. Misner, \emph{Fermi normal coordinates and some basic
+  concepts in differential geometry}, {\emph{Journal of mathematical physics}
+  {\bf 4} (1963) 735--745}.
+
+\end{thebibliography}\endgroup

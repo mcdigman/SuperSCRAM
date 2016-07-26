@@ -95,6 +95,8 @@ if __name__=="__main__":
         k_a,P_a = cpow.camb_pow(cosmo_a)
         
         import matplotlib.pyplot as plt
+        
+        d=np.loadtxt('test_pkdbar.dat')
 
         zbar = 3.
         ax = plt.subplot(221)
@@ -135,6 +137,8 @@ if __name__=="__main__":
         ax.plot(k_a,abs(dcalt1/p1a))
         ax.plot(k_a,abs(dcalt2/p2a))
         ax.plot(k_a,abs(dcalt3/p3a))
+        h=.6774
+        ax.plot(d[:,0], d[:,1], color='black')
         
 
         zbar = 0.
