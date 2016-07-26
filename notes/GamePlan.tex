@@ -1,0 +1,150 @@
+\documentclass[11pt, oneside]{article}   	% use "amsart" instead of "article" for AMSLaTeX format
+\usepackage{geometry}                		% See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   		% ... or a4paper or a5paper or ... 
+%\geometry{landscape}                		% Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    		% Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}				% Use pdf, png, jpg, or eps§ with pdflatex; use eps in DVI mode
+								% TeX will automatically convert eps --> pdf in pdflatex		
+\usepackage{amssymb,amsmath}
+\newcommand{\eqn}[1]{\begin{equation} #1 \end{equation} } 
+
+\newcommand{\dq}[1]{\frac{ d^3 #1}{(2 \pi)^3}}
+\newcommand{\bvec}[1]{\boldsymbol{#1} } 
+\newcommand{\tdelta}{\tilde{\delta}}
+\newcommand{\half}{\frac{1}{2}}
+\newcommand{\tdeltaa}{\tilde{\delta}^{(1)} } 
+\newcommand{\tdeltab}{\tilde{\delta}^{(2)} } 
+\newcommand{\ddirac}{\delta_\rext{D}^3} 
+\newcommand{\obs}{\mathcal{O}}
+
+
+\title{SSC Working Notes }
+\author{Joseph E. McEwen}
+%\date{}							% Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+
+
+\section{Notations}
+We use the following index convention to identify objects:
+\begin{itemize}
+\item{$\alpha, \beta$ are used for the long-wavelength modes of the density field, i.e. for the super mode $\delta_\alpha$;}
+\item{$a, b$ are for the long-wavelength observables, for instance the tangential shear at the survey boundary. These objects are denoted as $\obs_I$;}
+\item{$I,J$ are for the short-wavelength observables, for example the power spectrum. These objects are denoted as $\obs_a$; }
+\item{$i,j$ are used for the cosmological parameters, $p_i=\{ \Omega_mh^2, \Omega_bh^2, n_s ,...\} $} 
+\item{$i_z, j_z$ are used for redshift binning.}
+\end{itemize} 
+\textbf{I also think it is a good idea that we use the same indexing in the code. For instance, when we create a for loop over redshift bins, we should use $i_z$ as the index in the python code.}
+In the code let us try and keep the nomenclature representative of the paper too. For instance we should call $\partial \bar{\delta}/ \partial \delta_\alpha C_{\alpha \beta} \partial \bar{\delta}/ \partial \delta_\beta$= \textbf{sigma2\_SSC} in the code. 
+
+\section{Basic Idea} 
+We first define the linear response of a short-wavelength observable to the long-wavelength super modes 
+\begin{align} 
+\label{lin_response_I}
+\obs_I= \bar{\obs}_{I} + \frac{ \partial \obs_I}{\partial \delta_\alpha} \delta_\alpha =\bar{\obs}_{I} + T_{I\alpha} \delta_\alpha ~,
+\end{align}
+where the  ``bar" designates the observable evaluated with no super modes. We have also defined the transfer function $T_{I\alpha}=\partial \obs_I /\partial \delta_\alpha} $. The covariance matrix is defined by $ C_{IJ} = \langle \obs_I \obs_J \rangle - \langle \obs_I \rangle \langle \obs_J \rangle$.  Using Eq.~ \ref{lin_response_I} the covariance matrix is 
+\begin{align}
+\label{C_IJ} 
+\begin{split}
+C_{IJ} &= \bar{C}_{IJ} + T_{I\alpha} \langle \delta_\alpha \delta_\beta \rangle T_{\beta J}  \\
+& = \bar{C}_{IJ} + T_{I\alpha} C_{\alpha \beta}  T_{\beta J} ~.
+\end{split}
+\end{align}
+Long-wavelength observables can be used to increase the Fisher information content. We first transform the Fisher information of the long-wavelength observables to the $\alpha-\beta$ basis by
+\begin{align} 
+F_{\alpha \beta}=\frac{\partial \obs_a}{\partial \delta_\alpha} C_{ab}^{-1} \frac{\partial \obs_b}{\partial \delta_\beta} ~. 
+\end{align} 
+The information content can be increased by adding Fisher information for each long-wavelength observable 
+\begin{align}
+F_{\alpha \beta} = F^{(0)}_{\alpha \beta} +  F^{(1)}_{\alpha \beta}+ F^{(2)}_{\alpha \beta} + F^{(3)}_{\alpha \beta}+ ... ~,
+\end{align} 
+where each matrix $F^{(i)}_{\alpha \beta}$, $i=1,2,3,...$ is constructed from a different long-wavelength observables in the surveys. The 0th Fisher matrix is reserved for $ F^{(0)}_{\alpha \beta} = C_{\alpha \beta}^{-1} = \langle \delta_\alpha \delta_\beta \rangle^{-1}$. By increasing the information content from each long-wavelength observable, we decrease the covariance 
+\begin{align} 
+C_{\alpha \beta} = \left[ F^{(0)}_{\alpha \beta} +  F^{(1)}_{\alpha \beta}+ F^{(2)}_{\alpha \beta} + F^{(3)}_{\alpha \beta}+ ... \right]^{-1} ~. 
+\end{align}
+The mitigated covariance is now 
+\begin{align} 
+C_{IJ}= \bar{C}_{IJ} +  T_{I\alpha}  \left[ F^{(0)}_{\alpha \beta} +  F^{(1)}_{\alpha \beta}+ F^{(2)}_{\alpha \beta} + F^{(3)}_{\alpha \beta}+ ... \right]^{-1} T_{\beta J}   ~.
+\end{align} 
+The last step in the process is to compute the Fisher information with respect to cosmological parameters 
+\begin{align} 
+F_{ij}= \frac{\partial \obs_I}{\partial p_i} C_{IJ}^{-1}  \frac{\partial \obs_J}{\partial p_j}~. 
+\end{align} 
+
+\section{Code Specific Material}
+
+
+\subsection{cosmopie module}
+The \textbf{cosmopie} module provides cosmology related objects, like the growth factor, distances, and cosmological parameters. This module is usually passed to just about every routine in the code. It is initialized at the beginning and in this way, all objects are referring back to the same cosmology.
+
+\subsection{Halo mass function module}
+The \textbf{hmf} module calculates all objects related to the halo mass function. This includes the halo mass function, average number of collapsed objects, the halo bias. Currently this module can only perform the Sheth-Tormen mass function.
+
+\subsection{The basis module}
+The basis module takes in the following set of parameters:
+\begin{itemize}
+\item{$n$ the number of zeros; }
+\item{$l_\alpha$ the long wavelength angular mode; }
+\item{$R_\text{max}$  the maximum radius of the field (should be larger than the survey depth). 
+\end{itemize}
+To calculate $\langle \delta_\alpha \delta_\beta \rangle $ the basis module considers $\delta_\alpha$ as a one-dimensional array ordered as $\delta_\alpha[ l_\alpha, m_\alpha, n]$, so that the first entries corresponds to $[0,0,0], ...,[0,0,n],[1,-1,1],..,[1,-1,n],[1,0,0],...$ (\textbf{it should be verified that this is the right ordering in the code}).This will be called $\alpha$ ordering. The covariance is ordered in the same way $[l_\alpha, m_\alpha, n] \times [l_\beta, m_\beta, n]$. 
+
+The basis module contains objects:
+\begin{itemize}
+\item{\textbf{Get\_C\_alpha\_beta} returns $C_{\alpha \beta}^{(0)}$, the covariance matrix composed of the long wavelength modes;}
+\item{ \textbf{Get\_F\_alpha\_beta} returns $F_{\alpha \beta}^{(0)}$, the Fisher matrix constructed from the long wavelength modes;}
+\item{ \textbf{ddelta\_bar\_ddelta\_alpha} a function that returns $\partial \bar{\delta}/\partial \delta_\alpha$ given a region of the universe. }
+\end{itemize} 
+
+\subsection{The short wavelength array}
+The $\mathcal{O}_I$ array is ordered as $[x, z_{\text{avg},i_z}]$, where $x$ is any of the following $k,l,\{k,\mu\}$, and this is called $I$ ordering. The covariance matrix built from $\mathcal{O}_I$ follows the same ordering. 
+
+\subsection{The long wavelength array}
+The $\mathcal{O}_a$ array is ordered as $[x, z_{\text{avg},i_z}]$, where $x$ is any of the following $k,l,\{k,\mu\}$, and this is called $a$ ordering. The covariance matrix built from $\mathcal{O}_a$ follows the same ordering. However, all functions that relate to  $\mathcal{O}_a$  build the matrix $F_{\alpha \beta} = \frac{\partial \mathcal{O}_a}{\partial \delta_\alpha} C_{ab}^{-1}  \frac{\partial \mathcal{O}_b}{\partial \delta_\beta}$, which is $\alpha$ ordered. 
+
+\subsection{Increased Fisher Matrix}
+The function \textbf{Get\_SSC\_covar} builds the covariance matrix $C_{IJ}= \bar{C}_{IJ} + T_{I\alpha} C_{\alpha \beta} T_{J\beta}$. This matrix is $I$ ordered. 
+The first routine that \textbf{Get\_SSC\_covar} should build is the Fisher matrices for each long wavelength observable. Each Fisher matrix should then be added and this value should be stored as this should be stored as the object \textbf{F\_alpha\_beta}. The inverse of \textbf{F\_alpha\_beta} is then taken and this object is stored as \textbf{C\_alpha\_beta}. Then for each short wavelength observable $\frac{\partial \bar{\delta}}{\partial \delta_\alpha} C_{\alpha \beta} \frac{\partial \bar{\delta}}{\partial \delta_\beta}$ is calculated. This object is stored as \textbf{sigma2\_SSC}. The final object calculated is 
+$\frac{\partial \obs_I}{\partial \bar{\delta}} \frac{\partial \bar{\delta}}{\partial \delta_\alpha} C_{\alpha \beta} \frac{\partial \bar{\delta}}{\partial \delta_\beta} \frac{\partial \obs_I}{\partial \bar{\delta}}$. This object is stored as \textbf{C\_SSC\_IJ}. 
+
+\subsection{Response of power spectrum to background density} 
+The following relations are used to calculate $ d P(k)/d\bar{\delta}$ for $P(k)$ computed linearly, in standard perturbation theory, and using halo fit. These routines are calculated in the python model \textbf{power\_response.py}. \textbf{We still need to include the form for the HOD power spectrum.} 
+\begin{itemize} 
+\item{linear 
+\begin{align} 
+\frac{ d \log P(k)}{d \bar{\delta}}=\frac{68}{21} - \frac{1}{3} \frac{ d \log k^3 P(k)}{d \log k}~, 
+\end{align} 
+} 
+\item{1-loop perturbation theory
+\begin{align} 
+\frac{ d \log P(k)}{d \bar{\delta}}=\frac{68}{21} - \frac{1}{3} \frac{ d \log k^3 P(k)}{d \log k} + \frac{26}{21} \frac{P_{22}(k) + P_{13}(k)}{P(k)} ~, 
+\end{align} 
+} 
+\item{halo fit power spectrum
+\begin{align} 
+\frac{ d \log P(k)}{d \bar{\delta}}= \frac{13}{21} \frac{ d \log P(k)}{d \log \sigma_8} + 2 - \frac{1}{3} \frac{ d \log k^3 P(k)}{d \log k}~, 
+\end{align} 
+}
+\end{itemize} 
+
+\section{Importance of Super Sample Covariance} 
+\include{literature}
+
+\section{Theory}
+\include{trispectrum}
+\include{delta_alpha}
+\include{separate_universe} 
+
+\bibliographystyle{JHEP}
+\bibliography{ssc}
+
+
+
+ 
+
+
+
+
+\end{document}  

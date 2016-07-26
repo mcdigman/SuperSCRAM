@@ -1,0 +1,22 @@
+%\documentclass[11pt, oneside]{article}   	% use "amsart" instead of "article" for AMSLaTeX format
+%\usepackage{geometry}                		% See geometry.pdf to learn the layout options. There are lots.
+%\geometry{letterpaper}                   		% ... or a4paper or a5paper or ... 
+%\geometry{landscape}                		% Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    		% Activate to begin paragraphs with an empty line rather than an indent
+%\usepackage{graphicx}				% Use pdf, png, jpg, or eps§ with pdflatex; use eps in DVI mode
+%								% TeX will automatically convert eps --> pdf in pdflatex		
+%\usepackage{amssymb,amsmath}
+\newcommand{\sph}[2]{Y^\text{R}_{l_#1 m_#1}(\hat{#2})}
+
+\newcommand{\jl}[1]{j_{l_#1}}
+\newcommand{\dk}{\frac{ d^3 \mathbf{k}}{(2 \pi)^3}} 
+\newcommand{ \dkv}[1]{\frac{ d^3 \mathbf{k}_{#1}}{(2 \pi)^3}} 
+\newcommand{\obs}{\mathcal{O}}
+
+\subsection{Super Sample Covariance in the Literature}
+
+Who been playing SSC? 
+
+\cite{2013PhRvD..87l3504T} showed that the sample variance of the power spectrum is dominated by modes larger than the survey region. They also showed that halo sample variance and super sample covariance are related by the squeezed configurations of the trispectrum. Fig.~3 of their paper shows that the diagonal non-Gaussian covariance in the power spectrum is dominated by the SSC effect, for $k > 1 ~h/$Mpc the SSC is up to two orders of magnitude larger than the trispectrum contribution. 
+
+\cite{2014PhRvD..89h3519L} compared the direct quantification of the SSC effect on the covariance of the power spectrum generated in subvolumes of large simulation to the SSC model of the power spectrum response to the background mode. Fig.~6 of their paper shows that the diagonal non Gaussian covariance in from the sub does matches the SSC model + small boxes, where small boxes are computed with periodic boundary conditions (i.e. they have no SSC-periodic boundary conditions can not capture SSC effects). 
