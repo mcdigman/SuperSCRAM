@@ -17,7 +17,8 @@ from warnings import warn
 import sph
 import re
 class shear_power:
-    def __init__(self,k_in,C,zs,ls,pmodel='halofit_linear',P_in=np.array([]),cosmology_in={},ps=np.array([]),P_select=np.array([]),Cs=[],zbar=1.0,sigma=0.4,smodel='gaussian', n_gal=118000000.,omega_s=np.pi/(3.*np.sqrt(2.)),delta_l=1,sigma2_e=0.32,sigma2_mu=1.2):
+    def __init__(self,k_in,C,zs,ls,pmodel='halofit_linear',P_in=np.array([]),cosmology_in={},ps=np.array([]),P_select=np.array([]),Cs=[],zbar=0.55,sigma=0.4,smodel='gaussian', n_gal=118000000.,omega_s=np.pi/(3.*np.sqrt(2.)),delta_l=1,sigma2_e=0.32,sigma2_mu=1.2):
+
 	self.k_in = k_in
         self.C = C
         self.zs = zs
@@ -309,17 +310,20 @@ class q_shear(q_weight):
     def gs(self,sp,chi_max=np.inf,chi_min=0):
         g_vals = np.zeros(sp.n_z)
         low_mask = (sp.chis>=chi_min)*1. #so only integrate from max(chi,chi_min)
+        high_mask = (sp.chis<=chi_max)*1. #so only integrate from max(chi,chi_min)
+        
+        ps_norm = sp.ps*high_mask*low_mask/np.trapz(sp.ps*low_mask*high_mask,sp.chis) #TODO check normalization
 	for i in range(0,sp.n_z):
             if chi_max<sp.chis[i]:
                 break
             if sp.C.Omegak==0.0:
-                g_vals[i] =np.trapz(low_mask[i:sp.n_z]*sp.ps[i:sp.n_z]*(sp.chis[i:sp.n_z]-sp.chis[i])/sp.chis[i:sp.n_z],sp.chis[i:sp.n_z])
+                g_vals[i] =np.trapz(low_mask[i:sp.n_z]*ps_norm[i:sp.n_z]*(sp.chis[i:sp.n_z]-sp.chis[i])/sp.chis[i:sp.n_z],sp.chis[i:sp.n_z])
             elif sp.C.Omegak>0.0: #TODO handle curvature
                 sqrtK = np.sqrt(sp.C.K)
-                g_vals[i] =np.trapz(low_mask[i:sp.n_z]*sp.ps[i:sp.n_z]*sp.chis[i]*1./sqrtK(1./np.tan(sqrtK*sp.chis[i])-1./np.tan(sqrtK*sp.chis[i:sp.n_z])),sp.chis[i:sp.n_z])
+                g_vals[i] =np.trapz(low_mask[i:sp.n_z]*ps_norm[i:sp.n_z]*sp.chis[i]*1./sqrtK(1./np.tan(sqrtK*sp.chis[i])-1./np.tan(sqrtK*sp.chis[i:sp.n_z])),sp.chis[i:sp.n_z])
             else:
                 sqrtK = np.sqrt(abs(sp.C.K))
-                g_vals[i] =np.trapz(low_mask[i:sp.n_z]*sp.ps[i:sp.n_z]*sp.chis[i]*1./sqrtK(1./np.tanh(sqrtK*sp.chis[i])-1./np.tanh(sqrtK*sp.chis[i:sp.n_z])),sp.chis[i:sp.n_z])
+                g_vals[i] =np.trapz(low_mask[i:sp.n_z]*ps_norm[i:sp.n_z]*sp.chis[i]*1./sqrtK(1./np.tanh(sqrtK*sp.chis[i])-1./np.tanh(sqrtK*sp.chis[i:sp.n_z])),sp.chis[i:sp.n_z])
         return g_vals
 
 class q_mag(q_shear):

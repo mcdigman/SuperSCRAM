@@ -94,6 +94,7 @@ class TestCosmosisHalofitAgreement1(unittest.TestCase):
             TOLERANCE_MEAN = 0.15
             C=cp.CosmoPie(cosmology=defaults.cosmology_cosmosis)
             d = np.loadtxt('test_inputs/proj_1/camb_m_pow_l.dat')
+            #d = np.loadtxt('test_inputs/proj_1/p_k_lin.dat')
             k_in = d[:,0]
             P_in = d[:,1]
             zs = np.loadtxt('test_inputs/proj_1/z.txt')

@@ -104,7 +104,7 @@ class super_survey:
                 print "no mit"
                 x=np.zeros(2)
 	    #print x[0]
-	    #print self.F_0
+	    #print self.F_2.*0
 	    #print 'here'
 	    #sys.exit()
 	    F_1=x[0] + self.F_0
@@ -126,7 +126,10 @@ class super_survey:
 	        for j in range(2):
 	            a_SSC[i,j]=np.dot(T[j],np.dot(C[j],T[j]))
 	            print "max t",max(T[j])
+	            print "min t",min(T[j])
+
                     print "max C",np.max(C[j])
+                    print "min C",np.min(C[j])
 
                     print "a is: ",a_SSC[i,j]
 	            Cov_SSC[i,j]=np.outer(dCdbar[j],dCdbar[j])*a_SSC[i,j]
@@ -151,7 +154,9 @@ class super_survey:
 		            print n_obs, mass
 		            X=DO_n(self.surveys_lw[0],mass,self.CosmoPie,self.basis)
 		            D_O_a[i] = X.Fisher_alpha_beta()
-                            print D_O_a[i]
+                            print "min",np.min(D_O_a[i][0])
+                            print "eig",np.linalg.eigvals(D_O_a[i][0])
+                            print D_O_a[i][0]
 		# x=D_O_a[0]
 # 		print x[0]
 # 		print x[1]
@@ -218,7 +223,7 @@ class super_survey:
 		
 if __name__=="__main__":
 
-	z_max=0.5; l_max=20 
+	z_max=4.0; l_max=20 
 	#d=np.loadtxt('Pk_Planck15.dat')
         d=np.loadtxt('camb_m_pow_l.dat')
 	k=d[:,0]; P=d[:,1]
@@ -229,11 +234,12 @@ if __name__=="__main__":
 	Theta1=[np.pi/4.,np.pi/2.]
 	Phi1=[0.,np.pi/3.]
 
-	Theta2=[np.pi/4.,np.pi/2.]
-	Phi2=[2.*np.pi/3.,3.*np.pi/3.]
+        Theta2=[np.pi/4.,np.pi/2.]
+	Phi2=[np.pi/3.,2.*np.pi/3.]
 	#geo=np.array([Theta,Phi])
 
-	zbins=np.array([.1,.2,.3])
+	#zbins=np.array([.1,.2,.3])
+	zbins=np.array([.2,.6,1.0])
 	l=np.logspace(np.log10(2),np.log10(3000),1000)
 	
 	geo1=rect_geo(zbins,Theta1,Phi1,cp)
@@ -278,8 +284,8 @@ if __name__=="__main__":
         survey_3={'details':d_3, 'O_a':O_a, 'zbins':zbins,'geo1':geo1,'geo2':geo2}
 	surveys_lw=np.array([survey_3])
 	
-        l=np.arange(0,5)
-	n_zeros=8
+        l=np.arange(0,9)
+	n_zeros=30
 	
 	print 'this is r_max', r_max 
 	
@@ -292,6 +298,19 @@ if __name__=="__main__":
 	l=np.logspace(np.log10(2),np.log10(3000),1000)
         cov_ss = np.diag(SS.O_I_data[0]['shear_shear']['covariance'][0,0])
         c_ss = SS.O_I_data[0]['shear_shear']['power'][0]
+
+        try:
+            np.linalg.cholesky(np.diagflat(cov_ss))
+        except Exception:
+            print "gaussian covariance is not positive definite"
+        try:
+            np.linalg.cholesky(np.linalg.inv(SS.cov_no_mit[0,0]))
+        except Exception:
+            print "unmitigated covariance is not positive definite"
+        try:
+            np.linalg.cholesky(np.linalg.inv(SS.cov_mit[0,0]))
+        except Exception:
+            print "mitigated covariance is not positive definite"
 
         print "(S/N)^2 gaussian: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss))),c_ss)
         print "(S/N)^2 gaussian+no mitigation: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss)+SS.cov_no_mit[0,0])),c_ss)
