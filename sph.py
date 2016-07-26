@@ -3,6 +3,7 @@ from numpy import pi, sqrt, sin, cos
 from sph_functions import j_n, jn_zeros, dJ_n, Y_r
 from scipy.special import jv
 from scipy.integrate import trapz, quad,dblquad
+from scipy.interpolate import InterpolatedUnivariateSpline,interp1d
 import sys 
 from time import time
 
@@ -37,8 +38,15 @@ class sph_basis(object):
 			important! no little h in any of the calculations 
 		''' 
 		
-		k,P_lin=CosmoPie.get_P_lin()
-		
+		k_in,P_lin_in=CosmoPie.get_P_lin()
+	        #k = np.logspace(np.log10(np.min(k_in)),np.log10(np.max(k_in))-0.00001,6000000)
+                #k = k_in
+                kmin = 10**-4
+                kmax = 100.0
+
+	        k = np.linspace(kmin,kmax,1000000)
+                P_lin = interp1d(k_in,P_lin_in)(k)
+
 		self.l=l_alpha
 	        self.r_max = r_max	
 		# define the super mode wave vector k alpha
@@ -69,26 +77,43 @@ class sph_basis(object):
 		self.C_id=np.zeros((C_size,3))
 		self.C_alpha_beta=np.zeros((self.C_id.shape[0],self.C_id.shape[0]))
 		id=0
-                self.Is = np.zeros((C_size,k.size))
+
 		for a in range(self.lm_map.shape[0]):
 		    ll=self.lm_map[a,0]
 		    kk=self.lm_map[a,1]
 		    mm=self.lm_map[a,2]
+                    id_m1 = id
+                    #self.Is = np.zeros((kk.size,k.size))
+                    self.norms = np.zeros(k.size)
 		    for c in range(mm.size):
                         id_k1 = id
 		        for b in range(kk.size):
 		            self.C_id[id,0]=ll
 		            self.C_id[id,1]=kk[b]
 		            self.C_id[id,2]=mm[c]
-                            self.Is[id] = I_alpha(kk[b],k,r_max,ll)
+                            if c==0:
+                                #self.Is[b] = I_alpha(kk[b],k,r_max,ll)
+                                self.norms[b] = self.norm_factor(kk[b],ll)
 		            id=id+1
+                        print id,id_m1,id_k1
                         #calculate I integrals and make table
-                        for b in range(0,kk.size):
-                            A = self.Is[id_k1+b]
-                            for d in range(b,kk.size):
-                                B = self.Is[id_k1+d]
-                                self.C_alpha_beta[id_k1+b,id_k1+d]=2./(np.pi*self.norm_factor(kk[b],ll)*self.norm_factor(kk[d],ll))*trapz(k**2*P_lin*A*B,k); #check coefficient
-                                self.C_alpha_beta[id_k1+d,id_k1+b]=self.C_alpha_beta[id_k1+b,id_k1+d];
+                        if c==0:
+                            integrand1 = k*P_lin*jv(ll+0.5,k*self.r_max)**2
+                            for b in range(0,kk.size):
+                                #A = self.Is[b]
+                                print b
+                                for d in range(b,kk.size):
+                                    #B = self.Is[d]
+                                    #coeff = np.pi/(2.*self.norms[b]*self.norms[d])*self.r_max**2*np.sqrt(kk[b]*kk[d])*jv(ll-0.5,kk[b]*self.r_max)*jv(ll-0.5,kk[d]*self.r_max)
+                                    coeff = 8.*np.sqrt(kk[b]*kk[d])*kk[b]*kk[d]/(np.pi*self.r_max**2*jv(ll+1.5,kk[b]*self.r_max)*jv(ll+1.5,kk[d]*self.r_max))
+                                    #self.C_alpha_beta[id_k1+b,id_k1+d]=2./(np.pi*self.norm_factor(kk[b],ll)*self.norm_factor(kk[d],ll))*trapz(k**2*P_lin*A*B,k); #check coefficient
+                                    self.C_alpha_beta[id_k1+b,id_k1+d]=coeff*trapz(integrand1/((k**2-kk[b]**2)*(k**2-kk[d]**2)),k); #check coefficient
+                                    self.C_alpha_beta[id_k1+d,id_k1+b]=self.C_alpha_beta[id_k1+b,id_k1+d];
+                        else:
+                            for b in range(0,kk.size):
+                                for d in range(b,kk.size):
+                                    self.C_alpha_beta[id_k1+b,id_k1+d] = self.C_alpha_beta[id_m1+b,id_m1+d] 
+                                    self.C_alpha_beta[id_k1+d,id_k1+b] = self.C_alpha_beta[id_m1+d,id_m1+b] 
 	        #TODO can make more efficient if necessary	
                 t2 = time()
                 print "basis time: ",t2-t1

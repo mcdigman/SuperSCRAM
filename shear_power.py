@@ -17,7 +17,7 @@ from warnings import warn
 import sph
 import re
 class shear_power:
-    def __init__(self,k_in,C,zs,ls,pmodel='halofit_linear',P_in=np.array([]),cosmology_in={},ps=np.array([]),P_select=np.array([]),Cs=[],zbar=0.55,sigma=0.4,smodel='gaussian', n_gal=118000000.,omega_s=np.pi/(3.*np.sqrt(2.)),delta_l=1,sigma2_e=0.32,sigma2_mu=1.2):
+    def __init__(self,k_in,C,zs,ls,pmodel='halofit_linear',P_in=np.array([]),cosmology_in={},ps=np.array([]),P_select=np.array([]),Cs=[],zbar=0.55,sigma=0.4,smodel='gaussian', n_gal=11800000000.,omega_s=np.pi/(3.*np.sqrt(2.)),delta_l=1,sigma2_e=0.32,sigma2_mu=1.2):
 
 	self.k_in = k_in
         self.C = C

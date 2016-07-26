@@ -112,8 +112,11 @@ class super_survey:
             print "x[0]: ",x[0]
             print "F_1: ",F_1
 	    C_1=np.linalg.pinv(F_1)
+            print "invert 1"
 	    C_2=np.linalg.pinv(F_2)
-           	    
+            print "invert 2"
+            self.C_1 = C_1
+            self.C_2 = C_2
 	    #print C_1 
 	    #print C_1.shape, C_2.shape
 	    C=np.array([C_1,C_2],dtype=object)
@@ -223,7 +226,8 @@ class super_survey:
 		
 if __name__=="__main__":
 
-	z_max=4.0; l_max=20 
+	z_max=0.5; l_max=20 
+
 	#d=np.loadtxt('Pk_Planck15.dat')
         d=np.loadtxt('camb_m_pow_l.dat')
 	k=d[:,0]; P=d[:,1]
@@ -238,8 +242,8 @@ if __name__=="__main__":
 	Phi2=[np.pi/3.,2.*np.pi/3.]
 	#geo=np.array([Theta,Phi])
 
-	#zbins=np.array([.1,.2,.3])
-	zbins=np.array([.2,.6,1.0])
+	zbins=np.array([.1,.2,.3])
+	#zbins=np.array([.2,.6,1.0])
 	l=np.logspace(np.log10(2),np.log10(3000),1000)
 	
 	geo1=rect_geo(zbins,Theta1,Phi1,cp)
@@ -284,8 +288,8 @@ if __name__=="__main__":
         survey_3={'details':d_3, 'O_a':O_a, 'zbins':zbins,'geo1':geo1,'geo2':geo2}
 	surveys_lw=np.array([survey_3])
 	
-        l=np.arange(0,9)
-	n_zeros=30
+        l=np.arange(0,20)
+	n_zeros=49
 	
 	print 'this is r_max', r_max 
 	
