@@ -3,8 +3,8 @@ import numpy as np
 from FASTPTcode import FASTPT 
 
 from cosmopie import CosmoPie 
-import sph_basis as basis
-from sph import sph_basis
+#import sph_basis as basis
+from sph_klim import sph_basis_k
 from time import time 
 from Dn import DO_n
 import Dn
@@ -12,9 +12,8 @@ import shear_power as sh_pow
 from hmf import ST_hmf
 
 import sys
-from time import time
 from geo import rect_geo
-
+from algebra_utils import cholesky_inv, inverse_cholesky 
 
 class super_survey:
 	''' This class holds and returns information for all surveys
@@ -62,8 +61,11 @@ class super_survey:
 		
 		self.CosmoPie=CosmoPie(k=k,P_lin=P_lin)
 	    
-				
-		self.basis=sph_basis(r_max,l,n_zeros,self.CosmoPie)
+		#k_cut = 0.25 #converge to 0.0004
+                k_cut = 0.01
+            
+		#self.basis=sph_basis(r_max,l,n_zeros,self.CosmoPie)
+		self.basis=sph_basis_k(r_max,self.CosmoPie,k_cut)
 				
 		self.N_O_I=0
 		self.N_O_a=0   
@@ -100,39 +102,43 @@ class super_survey:
             if mitigation:
                 print "mit"
 	        x=self.O_a_data[0]
+                F_1 = x[0]+self.F_0
+                F_2 = x[1]+self.F_0
+                print "x[0]: ",x[0]
+                print "F_1: ",F_1
+                #try:
+                #    np.linalg.cholesky(F_1)
+                #except Exception:
+                #    warn("F_1 fails cholesky")
+                chol_1 = inverse_cholesky(F_1)
+	        #C_1=cholesky_inv(F_1)
+                print "invert 1"
+	        #C_2=cholesky_inv(F_2)
+	        chol_2=inverse_cholesky(F_2)
+                print "invert 2"
             else:
                 print "no mit"
-                x=np.zeros(2)
-	    #print x[0]
-	    #print self.F_2.*0
-	    #print 'here'
-	    #sys.exit()
-	    F_1=x[0] + self.F_0
-	    F_2=x[1] + self.F_0
-            print "x[0]: ",x[0]
-            print "F_1: ",F_1
-	    C_1=np.linalg.pinv(F_1)
-            print "invert 1"
-	    C_2=np.linalg.pinv(F_2)
-            print "invert 2"
-            self.C_1 = C_1
-            self.C_2 = C_2
-	    #print C_1 
-	    #print C_1.shape, C_2.shape
-	    C=np.array([C_1,C_2],dtype=object)
+                chol_1 = inverse_cholesky(self.F_0)
+                chol_2 = chol_1
+                #C_1 = self.basis.C_alpha_beta
+                #C_2 = self.basis.C_alpha_beta
+                    
+	    chols=np.array([chol_1,chol_2],dtype=object)
+
 	    Cov_SSC = np.zeros((2,2),dtype=object) 
 	    a_SSC = np.zeros((2,2)) 
+
 	    for i in range(2):
 	        x=self.O_I_data[i]
 	        T=x['shear_shear']['ddelta_dalpha']
 	        dCdbar=x['shear_shear']['dc_ddelta']
 	        for j in range(2):
-	            a_SSC[i,j]=np.dot(T[j],np.dot(C[j],T[j]))
+	            a_SSC[i,j]=np.dot(np.dot(T[j],chols[j].T),np.dot(chols[j],T[j]))
 	            print "max t",max(T[j])
 	            print "min t",min(T[j])
 
-                    print "max C",np.max(C[j])
-                    print "min C",np.min(C[j])
+                    #print "max C",np.max(C[j])
+                    #print "min C",np.min(C[j])
 
                     print "a is: ",a_SSC[i,j]
 	            Cov_SSC[i,j]=np.outer(dCdbar[j],dCdbar[j])*a_SSC[i,j]
@@ -158,7 +164,7 @@ class super_survey:
 		            X=DO_n(self.surveys_lw[0],mass,self.CosmoPie,self.basis)
 		            D_O_a[i] = X.Fisher_alpha_beta()
                             print "min",np.min(D_O_a[i][0])
-                            print "eig",np.linalg.eigvals(D_O_a[i][0])
+#`                            print "eig",np.linalg.eigvals(D_O_a[i][0])
                             print D_O_a[i][0]
 		# x=D_O_a[0]
 # 		print x[0]
@@ -303,18 +309,18 @@ if __name__=="__main__":
         cov_ss = np.diag(SS.O_I_data[0]['shear_shear']['covariance'][0,0])
         c_ss = SS.O_I_data[0]['shear_shear']['power'][0]
 
-        try:
-            np.linalg.cholesky(np.diagflat(cov_ss))
-        except Exception:
-            print "gaussian covariance is not positive definite"
-        try:
-            np.linalg.cholesky(np.linalg.inv(SS.cov_no_mit[0,0]))
-        except Exception:
-            print "unmitigated covariance is not positive definite"
-        try:
-            np.linalg.cholesky(np.linalg.inv(SS.cov_mit[0,0]))
-        except Exception:
-            print "mitigated covariance is not positive definite"
+        #try:
+        #    np.linalg.cholesky(np.diagflat(cov_ss))
+        #except Exception:
+        #    print "gaussian covariance is not positive definite"
+        #try:
+        #    np.linalg.cholesky(np.linalg.inv(SS.cov_no_mit[0,0]))
+        #except Exception:
+        #    print "unmitigated covariance is not positive definite"
+        #try:
+        #    np.linalg.cholesky(np.linalg.inv(SS.cov_mit[0,0]))
+        #except Exception:
+        #    print "mitigated covariance is not positive definite"
 
         print "(S/N)^2 gaussian: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss))),c_ss)
         print "(S/N)^2 gaussian+no mitigation: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss)+SS.cov_no_mit[0,0])),c_ss)

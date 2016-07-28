@@ -18,7 +18,7 @@ from the_mad_house import e_message
 eps =np.finfo(float).eps
 z_cut=1e-2
 
-data=np.loadtxt('spherical_bessel_zeros.dat')
+data=np.loadtxt('spherical_bessel_zeros_long.dat')
 
 def sph_Bessel_down(n,z):
 	n_start=n + int(np.sqrt(n*40)/2.) 
@@ -129,8 +129,11 @@ def dj_n(n,z):
 		c=j_n(n-1,z)
 		return (c-b)/2. -a/2./z
 		
-		
-def jn_zeros(n,n_zeros): 
+#return all zeros in a row smaller than a cut 		
+def jn_zeros_cut(l,q_lim):
+    return data[l,data[l]<q_lim]
+
+def jn_zeros(l,n_zeros): 
 # 	print 'this is n', n 
 # 	# fixed minimum and maximum range for zero finding 
 # 	min=3; max=1e5
@@ -152,7 +155,7 @@ def jn_zeros(n,n_zeros):
 # 		
 # 		zeros[i]=newton(func, guess,tol=tol)	
     
-	return data[n,:n_zeros]
+	return data[l,:n_zeros]
 
 def dJ_n(n,z): 
 	# check this returns correct value for derivative of Big J_n(z)   
