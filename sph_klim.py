@@ -8,6 +8,7 @@ from algebra_utils import cholesky_inv
 import scipy as sp
 import sys 
 from time import time
+import fisher_matrix as fm
 
 # the smallest value 
 eps=np.finfo(float).eps	
@@ -133,7 +134,8 @@ class sph_basis_k(object):
                 t2 = time()
                 print "basis time: ",t2-t1
                 print "max c 1",np.max(self.C_alpha_beta)
-		self.F_alpha_beta=cholesky_inv(self.C_alpha_beta)
+                
+		#self.fisher=fm.fisher_matrix(cholesky_inv(self.C_alpha_beta))
                 t3 = time()
                 print "inverse time: ",t3-t2
 
@@ -145,16 +147,18 @@ class sph_basis_k(object):
 		return self.C_alpha_beta
 	
 	def get_F_alpha_beta(self):
-	    return self.F_alpha_beta 
+	    return cholesky_inv(self.C_alpha_beta)
+
+        def get_fisher(self):
+            return fm.fisher_matrix(cholesky_inv(self.C_alpha_beta))
 		
 	def k_LW(self):
 		# return the long-wavelength wave vector k 
                 return self.C_id[:,1]
 	
-	
-	def D_delta_bar_D_delta_alpha(self,r_min,r_max,geo):
-	    	    
-	    r=np.array([r_min,r_max])
+	#TODO cache R_int, a_lm 
+	def D_delta_bar_D_delta_alpha(self,geo):
+	    #r=np.array([r_min,r_max])
             #TODO Check this
 	    a_00=a_lm(geo,0,0)
             print a_00
@@ -164,9 +168,7 @@ class sph_basis_k(object):
             #CHANGED
 	   # Omega=a_00*np.sqrt(4*pi) 
 	   # norm=3./(r_max**3 - r_min**3)/Omega
-	    norm=3./(r_max**3 - r_min**3)/(a_00*2.*np.sqrt(np.pi))
-	
-	    result=np.zeros(self.C_id.shape[0])
+	    result=np.zeros((geo.rs.size-1,self.C_id.shape[0]))
             #store alms for current l, m pair because computing them is slow
             alm_last = 0.
             ll_last = -1
@@ -180,12 +182,19 @@ class sph_basis_k(object):
                 #    warn("critical issue, negative norm factor")
                 #    sys.exit()
 	        if ll_last == ll and mm_last == mm:
-                    result[id] = R_int(r,kk,ll)*alm_last*norm#*self.norm_factor(kk,ll)
+                    for i in range(0,geo.rs.size-1):
+                        r = np.array([geo.rs[i],geo.rs[i+1]])
+	                norm=3./(r[1]**3 - r[0]**3)/(a_00*2.*np.sqrt(np.pi))
+                        
+                        result[i,id] = R_int(r,kk,ll)*alm_last*norm#*self.norm_factor(kk,ll)
                 else:
                     alm_last = a_lm(geo,ll,mm)
                     ll_last = ll
                     mm_last = mm
-                    result[id]=R_int(r,kk,ll)*alm_last*norm#*self.norm_factor(kk,ll)
+                    for i in range(0,geo.rs.size-1):
+                        r = np.array([geo.rs[i],geo.rs[i+1]])
+	                norm=3./(r[1]**3 - r[0]**3)/(a_00*2.*np.sqrt(np.pi))
+                        result[i,id]=R_int(r,kk,ll)*alm_last*norm#*self.norm_factor(kk,ll)
 
 	    return result
 def R_int(r_range,k,ll):

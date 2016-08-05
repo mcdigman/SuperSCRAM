@@ -11,6 +11,12 @@ class geo:
         self.volumes = volumes
         self.v_total = v_total
         self.rs = rs
+        #list r rbins as [rmin,rmax] pairs for convenience
+        self.rbins = np.zeros((rs.size-1,2))
+        for i in range(0,rs.size-1):
+            self.rbins[i,0] = self.rs[i]
+            self.rbins[i,1] = self.rs[i+1]
+
         self.eps=np.finfo(float).eps
     def surface_integral(self,function):
         raise NotImplementedError, "Subclasses of geo should implement surface_integral"

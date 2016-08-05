@@ -19,7 +19,7 @@ eps =np.finfo(float).eps
 z_cut=1e-2
 
 data=np.loadtxt('spherical_bessel_zeros_long.dat')
-
+l_max_zeros = data.shape[0]-1
 def sph_Bessel_down(n,z):
 	n_start=n + int(np.sqrt(n*40)/2.) 
 	
@@ -130,8 +130,12 @@ def dj_n(n,z):
 		return (c-b)/2. -a/2./z
 		
 #return all zeros in a row smaller than a cut 		
+
 def jn_zeros_cut(l,q_lim):
-    return data[l,data[l]<q_lim]
+    if l<=l_max_zeros:
+        return data[l,data[l]<q_lim]
+    else:
+        raise IndexError('l is greater than the number of ls in the bessel functions lookup table,choose lower ceiling or expand the lookup table')
 
 def jn_zeros(l,n_zeros): 
 # 	print 'this is n', n 
@@ -154,8 +158,10 @@ def jn_zeros(l,n_zeros):
 # 		guess=1 + np.sqrt(2) + i*pi + n + n**(0.4)
 # 		
 # 		zeros[i]=newton(func, guess,tol=tol)	
-    
-	return data[l,:n_zeros]
+        if l<=l_max_zeros:
+	    return data[l,:n_zeros]
+        else:
+            raise IndexError('l is greater than the number of ls in the bessel functions lookup table,choose lower ceiling or expand the lookup table')
 
 def dJ_n(n,z): 
 	# check this returns correct value for derivative of Big J_n(z)   
