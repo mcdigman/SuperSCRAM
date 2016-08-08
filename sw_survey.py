@@ -4,16 +4,17 @@ import defaults
 import re
 from warnings import warn
 import lensing_observables as lo
+from sw_cov_mat import SWCovMat
 class SWSurvey:
-    def __init__(self,geo,ls = np.array([]),C = cp.CosmoPie(),params=defaults.sw_survey_params,observable_list=defaults.sw_observable_list,len_params=defaults.lensing_params):
+    def __init__(self,geo,survey_id,ls = np.array([]),C = cp.CosmoPie(),params=defaults.sw_survey_params,observable_list=defaults.sw_observable_list,len_params=defaults.lensing_params):
         self.geo = geo
         self.params = params
         self.needs_lensing = params['needs_lensing']
         self.C = C
         self.ls = ls
-    
+        self.survey_id = survey_id
         if self.needs_lensing:
-            self.len_pow = lo.LensingPowerBase(self.geo,self.ls,len_params,C)
+            self.len_pow = lo.LensingPowerBase(self.geo,self.ls,survey_id,len_params,C)
             self.len_params = len_params
         else:
             self.len_pow = None
@@ -21,6 +22,8 @@ class SWSurvey:
 
         self.observable_names = generate_observable_names(self.geo,observable_list,params['cross_bins'])
         self.observables = self.names_to_observables(self.observable_names)
+    def get_N_O_I(self):
+        return self.observables.size
 
     def get_O_I_list(self):
         O_I_list = np.zeros(self.observables.size,dtype=object)
@@ -34,6 +37,13 @@ class SWSurvey:
             dO_I_ddelta_bar_list[i] = self.observables[i].get_dO_I_ddelta_bar()
         return dO_I_ddelta_bar_list
 
+    def get_covars(self):
+        cov_mats = np.zeros((self.get_N_O_I(),self.get_N_O_I()),dtype=object)
+        for i in range(0,cov_mats.shape[0]):
+            for j in range(0,cov_mats.shape[1]):
+                cov = SWCovMat(self.observables[i],self.observables[j])
+                cov_mats[i,j] = cov.get_total_covar()
+        return cov_mats
     def names_to_observables(self,names):
         observables = np.zeros(len(names.keys()),dtype=object)
         itr = 0 
@@ -83,7 +93,7 @@ if __name__=='__main__':
     zbins = np.array([0.1,0.8])
     ls = np.arange(2,500)
     geo = rect_geo(zbins,Theta,Phi,C)
-    sw_survey = SWSurvey(geo,ls,C)
+    sw_survey = SWSurvey(geo,'survey1',ls,C)
     O_I_list = sw_survey.get_O_I_list()
     dO_I_ddelta_bar_list = sw_survey.get_dO_I_ddelta_bar_list()
     import matplotlib.pyplot as plt

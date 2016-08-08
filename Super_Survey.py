@@ -17,6 +17,7 @@ from algebra_utils import cholesky_inv, inverse_cholesky
 import defaults
 import fisher_matrix as fm
 import lensing_observables as lo
+from sw_survey import SWSurvey
 class super_survey:
     ''' This class holds and returns information for all surveys
     ''' 
@@ -33,6 +34,7 @@ class super_survey:
         t1=time()
 
         self.surveys_lw = surveys_lw
+        self.surveys_sw = surveys_sw
         self.N_surveys_sw=surveys_sw.size
         self.N_surveys_lw=surveys_lw.size
         self.geo1_lw=surveys_lw[0]['geo1']     
@@ -40,27 +42,6 @@ class super_survey:
         self.zbins_lw=surveys_lw[0]['zbins']
         print'this is the number of surveys', self.N_surveys_sw, self.N_surveys_lw
            
-#              if (cosmology is None): 
-#             cosmology={
-#                    'output' : 'tCl lCl,mPk, mTk', 
-#                    'l_max_scalars' : 2000, 
-#                    'z_pk' : 0, 
-#                    'A_s': 2.3e-9, 
-#                    'n_s' : 0.9624, 
-#                    'h' : 0.6774,
-#                    'omega_b' : 0.02230,
-#                    'omega_cdm': 0.1188, 
-#                    'k_pivot' : 0.05,
-#                    'A_s' : 2.142e-9,
-#                    'n_s' : 0.9667,
-#                    'P_k_max_1/Mpc' : 500.0,
-#                    'N_eff' :3.04,
-#                    'Omega_fld' : 0,
-#                    'YHe' : 0.2453,
-#                    'z_reio' : 8.8}
-                    
-                    
-          
         self.CosmoPie=CosmoPie(k=k,P_lin=P_lin,cosmology=defaults.cosmology)
          
           #k_cut = 0.25 #converge to 0.0004
@@ -76,9 +57,7 @@ class super_survey:
         for i in range(self.N_surveys_sw):
           
             survey=surveys_sw[i]
-            self.N_O_I=self.N_O_I + len(survey['O_I'])              
-            self.O_I=np.append(self.O_I,survey['O_I'])
-            break
+            self.N_O_I=self.N_O_I + survey.get_N_O_I()          
         #TODO temp     
         #for i in range(self.N_surveys_lw):
           
@@ -88,7 +67,8 @@ class super_survey:
               
         print('these are number of observables', self.N_O_I, self.N_O_a)
         #self.O_a_data=self.get_O_a()
-        self.O_I_data=self.get_O_I(k,P_lin)
+        #self.O_I_data=self.get_O_I(k,P_lin)
+        self.O_I_data = self.get_O_I_all()
         #self.F_0=self.basis.get_F_alpha_beta()
         self.F_0 = self.basis.get_fisher()
         #self.cov_mit,self.a_mit=self.get_SSC_covar(mitigation=True)     
@@ -133,23 +113,23 @@ class super_survey:
         #chols=np.array([chol_1,chol_2],dtype=object)
 
         Cov_SSC = np.zeros((2,2),dtype=object) 
-        a_SSC = np.zeros((2,2)) 
+        a_SSC = np.zeros(self.N_surveys_sw) 
 
-        for i in range(1):
-            x=self.O_I_data[i]
-            T=x['shear_shear']['ddelta_dalpha']
-            dCdbar=x['shear_shear']['dc_ddelta']
-            for j in range(1):
-                #a_SSC[i,j]=np.dot(np.dot(T[j],chols[j].T),np.dot(chols[j],T[j]))
-                a_SSC[i,j] = F_loc.contract_covar(T[j],T[j])
-                print "max t",max(T[j])
-                print "min t",min(T[j])
+        for i in range(0,self.N_surveys_sw):
+            survey=self.surveys_sw[i]
+            T=self.basis.D_delta_bar_D_delta_alpha(survey.geo)[0]
+            print "max t",max(T)
+            print "min t",min(T)
+            print T[0]
+            a_SSC[i] = F_loc.contract_covar(T,T)
+            print "a is: ",a_SSC[i]
+            dO_I_ddelta_bar_list = survey.get_dO_I_ddelta_bar_list()
+            for j in range(0,dO_I_ddelta_bar_list.size):
 
                 #print "max C",np.max(C[j])
                 #print "min C",np.min(C[j])
 
-                print "a is: ",a_SSC[i,j]
-                Cov_SSC[i,j]=np.outer(dCdbar[j],dCdbar[j])*a_SSC[i,j]
+                Cov_SSC[i,j]=np.outer(dO_I_ddelta_bar_list[j],dO_I_ddelta_bar_list[j])*a_SSC[i]
                 #print Cov_SSC[i,j]
                 #print Cov_SSC[i,j].shape
               #  np.savetxt('covar_SCC_0.dat',C_SSC)
@@ -181,63 +161,71 @@ class super_survey:
 #           print x.shape
 #           sys.exit()
         return D_O_a  
-          
-              
-    def get_O_I(self,k,P_lin):
-         
-        D_O_I=np.array([],dtype=object)
-        result = np.array([],dtype=object)
-        for i in range(self.N_O_I):
-            O_I=self.O_I[i] 
-            result = np.append(result,{}) 
-            for key in O_I:
-                result[i][key]={}
-                if key=='shear_shear':
-                    print key
-                    data=O_I[key]
-                    z_bins=data['z_bins']
-                    ddelta_dalpha=np.zeros(z_bins.size-1,dtype=object)
-                    geo=data['geo']
-                    #Theta=geo[0]; Phi=geo[1]
-                      
-                   
-                    ls=data['l']
-                    len_pow = lo.LensingPowerBase(geo,ls,params=defaults.lensing_params,C=self.CosmoPie)
-                    #sp1 = sh_pow.shear_power(k,self.CosmoPie,zs,ls,P_in=P_lin,pmodel='dc_halofit')
-                    #sp2 = sh_pow.shear_power(k,self.CosmoPie,zs,ls,P_in=P_lin,pmodel='halofit_nonlinear')
 
-                    dcs = np.zeros((z_bins.size-1,ls.size))
-                    cs = np.zeros((z_bins.size-1,ls.size))
-                    #covs = np.array([],dtype=object)
+    def get_O_I_all(self):
+        O_I_list = np.zeros(self.N_O_I,dtype=object)
+        N_O_I = 0
+        for i in range(0,self.N_surveys_sw):
+            survey = self.surveys_sw[i]
+            N_O_I_survey = survey.get_N_O_I()
+            O_I_list[N_O_I:N_O_I+N_O_I_survey] = survey.get_O_I_list()
+        return O_I_list
 
-                    ddelta_dalpha=self.basis.D_delta_bar_D_delta_alpha(geo)
-                    #sh_pows = np.array([],dtype=object)
-                    for j in range(0,z_bins.size-1):
-                        chi_min = self.CosmoPie.D_comov(z_bins[j])
-                        chi_max = self.CosmoPie.D_comov(z_bins[j+1])
-                        r1 = np.array([chi_min,chi_max])
-                        r2 = np.array([chi_min,chi_max])
-                        #sh_pow2 = sh_pow.Cll_sh_sh(sp2,chi_max,chi_max,chi_min,chi_min).Cll()
-                        obs = lo.ShearShearLensingObservable(len_pow,r1,r2,params=defaults.lensing_params)
-                        cs[j] = obs.get_O_I()
-                        dcs[j] = obs.get_dO_I_ddelta_bar()
-                        #cs[j] = sh_pow.Cll_sh_sh(sp2,chi_max,chi_max,chi_min,chi_min).Cll()
-                        #dcs[j] = sh_pow.Cll_sh_sh(sp1,chi_max,chi_max,chi_min,chi_min).Cll()
-                        #print ddelta_dalpha[j]
-                        #print self.basis.C_id
-                             
-                      
-                 #       covs = np.append(covs,np.diagflat(sp2.cov_g_diag(sh_pow2,sh_pow2,sh_pow2,sh_pow2))) #TODO support cross z_bin covariance correctly
-                    covs = len_pow.C_pow.cov_mats(z_bins,cname1='shear',cname2='shear')
-                    result[i][key]['power'] = cs
-                    result[i][key]['dc_ddelta'] = dcs
-                    result[i][key]['covariance'] = covs
-                    result[i][key]['ddelta_dalpha']=ddelta_dalpha
-                        #print n_obs, mass
-                        #result=DO_n(n_obs,self.zbins_lw,mass,self.CosmoPie,self.basis,self.geo_lw)
-              
-          
-        return result
+#    def get_O_I(self,k,P_lin):
+#         
+#        D_O_I=np.array([],dtype=object)
+#        result = np.array([],dtype=object)
+#        for i in range(self.N_O_I):
+#            O_I=self.O_I[i] 
+#            result = np.append(result,{}) 
+#            for key in O_I:
+#                result[i][key]={}
+#                if key=='shear_shear':
+#                    print key
+#                    data=O_I[key]
+#                    z_bins=data['z_bins']
+#                    ddelta_dalpha=np.zeros(z_bins.size-1,dtype=object)
+#                    geo=data['geo']
+#                    #Theta=geo[0]; Phi=geo[1]
+#                      
+#                   
+#                    ls=data['l']
+#                    len_pow = lo.LensingPowerBase(geo,ls,params=defaults.lensing_params,C=self.CosmoPie)
+#                    #sp1 = sh_pow.shear_power(k,self.CosmoPie,zs,ls,P_in=P_lin,pmodel='dc_halofit')
+#                    #sp2 = sh_pow.shear_power(k,self.CosmoPie,zs,ls,P_in=P_lin,pmodel='halofit_nonlinear')
+#
+#                    dcs = np.zeros((z_bins.size-1,ls.size))
+#                    cs = np.zeros((z_bins.size-1,ls.size))
+#                    #covs = np.array([],dtype=object)
+#
+#                    ddelta_dalpha=self.basis.D_delta_bar_D_delta_alpha(geo)
+#                    #sh_pows = np.array([],dtype=object)
+#                    for j in range(0,z_bins.size-1):
+#                        chi_min = self.CosmoPie.D_comov(z_bins[j])
+#                        chi_max = self.CosmoPie.D_comov(z_bins[j+1])
+#                        r1 = np.array([chi_min,chi_max])
+#                        r2 = np.array([chi_min,chi_max])
+#                        #sh_pow2 = sh_pow.Cll_sh_sh(sp2,chi_max,chi_max,chi_min,chi_min).Cll()
+#                        obs = lo.ShearShearLensingObservable(len_pow,r1,r2,params=defaults.lensing_params)
+#                        cs[j] = obs.get_O_I()
+#                        dcs[j] = obs.get_dO_I_ddelta_bar()
+#                        #cs[j] = sh_pow.Cll_sh_sh(sp2,chi_max,chi_max,chi_min,chi_min).Cll()
+#                        #dcs[j] = sh_pow.Cll_sh_sh(sp1,chi_max,chi_max,chi_min,chi_min).Cll()
+#                        #print ddelta_dalpha[j]
+#                        #print self.basis.C_id
+#                             
+#                      
+#                 #       covs = np.append(covs,np.diagflat(sp2.cov_g_diag(sh_pow2,sh_pow2,sh_pow2,sh_pow2))) #TODO support cross z_bin covariance correctly
+#                    covs = len_pow.C_pow.cov_mats(z_bins,cname1='shear',cname2='shear')
+#                    result[i][key]['power'] = cs
+#                    result[i][key]['dc_ddelta'] = dcs
+#                    result[i][key]['covariance'] = covs
+#                    result[i][key]['ddelta_dalpha']=ddelta_dalpha
+#                        #print n_obs, mass
+#                        #result=DO_n(n_obs,self.zbins_lw,mass,self.CosmoPie,self.basis,self.geo_lw)
+#              
+#          
+#        return result
               
           
           
@@ -261,17 +249,20 @@ if __name__=="__main__":
 
     zbins=np.array([.9,1.0])
     #zbins=np.array([.2,.6,1.0])
-    l=np.logspace(np.log10(2),np.log10(3000),1000)
-    #l = np.arange(2,1000)
+    #l=np.logspace(np.log10(2),np.log10(3000),1000)
+    l_sw = np.arange(2,3000)
     
     geo1=rect_geo(zbins,Theta1,Phi1,cp)
     geo2=rect_geo(zbins,Theta2,Phi2,cp)
 
-    shear_data1={'z_bins':zbins,'l':l,'geo':geo1}
-    shear_data2={'z_bins':zbins,'l':l,'geo':geo2}
+    survey_1 = SWSurvey(geo1,'survey1',l_sw,cp,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=defaults.lensing_params) 
+    survey_2 = SWSurvey(geo1,'survey2',l_sw,cp,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=defaults.lensing_params) 
+
+    #shear_data1={'z_bins':zbins,'l':l_sw,'geo':geo1}
+    #shear_data2={'z_bins':zbins,'l':l_sw,'geo':geo2}
      
-    O_I1={'shear_shear':shear_data1}
-    O_I2={'shear_shear':shear_data2}
+    #O_I1={'shear_shear':shear_data1}
+    #O_I2={'shear_shear':shear_data2}
      
 
     #n_dat2=np.array([1.01*5.*1e5/1.7458,1.01*5.0*1e5*1.4166*0.98546])
@@ -294,33 +285,35 @@ if __name__=="__main__":
 
     O_a={'number density':np.array([n_dat1,n_dat2,M_cut])}
      
-    d_1={'name': 'survey 1', 'area': 18000}
-    d_2={'name': 'survey 2', 'area': 18000}
+    #d_1={'name': 'survey 1', 'area': 18000}
+    #d_2={'name': 'survey 2', 'area': 18000}
     d_3={'name': 'suvery lw', 'area' :18000}
      
      
-    survey_1={'details':d_1,'O_I':O_I1, 'geo':geo1}
-    survey_2={'details':d_2,'O_I':O_I2, 'geo':geo2}
+    #survey_1={'details':d_1,'O_I':O_I1, 'geo':geo1}
+          
+          
+    #survey_2={'details':d_2,'O_I':O_I2, 'geo':geo2}
      
     surveys_sw=np.array([survey_1, survey_2])
+    
      
     survey_3={'details':d_3, 'O_a':O_a, 'zbins':zbins,'geo1':geo1,'geo2':geo2}
     surveys_lw=np.array([survey_3])
      
-    l=np.arange(0,20)
+    l_lw=np.arange(0,20)
     n_zeros=49
      
     print 'this is r_max', r_max 
      
-    SS=super_survey(surveys_sw, surveys_lw,r_max,l,n_zeros,k,P_lin=P)
+    SS=super_survey(surveys_sw, surveys_lw,r_max,l_sw,n_zeros,k,P_lin=P)
      
     #print "fractional mitigation: ", SS.a_no_mit/SS.a_mit     
 
     import matplotlib.pyplot as plt
     ax = plt.subplot(111)
-    l=np.logspace(np.log10(2),np.log10(3000),1000)
-    cov_ss = np.diag(SS.O_I_data[0]['shear_shear']['covariance'][0,0])
-    c_ss = SS.O_I_data[0]['shear_shear']['power'][0]
+    cov_ss = surveys_sw[0].get_covars()[0,0]#np.diag(SS.O_I_data[0]['shear_shear']['covariance'][0,0])
+    c_ss = SS.O_I_data[0]
 
     #try:
     #    np.linalg.cholesky(np.diagflat(cov_ss))
@@ -338,10 +331,10 @@ if __name__=="__main__":
     print "(S/N)^2 gaussian: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss))),c_ss)
     print "(S/N)^2 gaussian+no mitigation: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss)+SS.cov_no_mit[0,0])),c_ss)
     #print "(S/N)^2 gaussian+mitigation: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss)+SS.cov_mit[0,0])),c_ss)
-    ax.loglog(l,cov_ss)
+    ax.loglog(l_sw,cov_ss)
     #ax.loglog(l,np.diag(SS.cov_mit[0,0])/c_ss**2*l/2)
    # ax.loglog(l,(np.diag(SS.cov_mit[0,0])))
-    ax.loglog(l,(np.diag(SS.cov_no_mit[0,0])))
+    ax.loglog(l_sw,(np.diag(SS.cov_no_mit[0,0])))
     #ax.legend(['cov','mit','no mit'])
     plt.show()
     print 'r diffs',np.diff(geo1.rs)

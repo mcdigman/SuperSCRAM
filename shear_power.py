@@ -17,8 +17,7 @@ from warnings import warn
 import sph
 import re
 class shear_power:
-    def __init__(self,k_in,C,zs,ls,pmodel='halofit_linear',P_in=np.array([]),cosmology_in={},ps=np.array([]),P_select=np.array([]),Cs=[],zbar=0.55,sigma=0.4,smodel='gaussian', n_gal=11800000000.,omega_s=np.pi/(3.*np.sqrt(2.)),delta_l=1,sigma2_e=0.32,sigma2_mu=1.2):
-
+    def __init__(self,k_in,C,zs,ls,pmodel='halofit_linear',P_in=np.array([]),cosmology_in={},ps=np.array([]),P_select=np.array([]),Cs=[],zbar=0.55,sigma=0.4,smodel='gaussian', n_gal=118000000.,omega_s=np.pi/(3.*np.sqrt(2.)),delta_l=1,sigma2_e=0.32,sigma2_mu=1.2):
 	self.k_in = k_in
         self.C = C
         self.zs = zs
@@ -40,6 +39,9 @@ class shear_power:
         self.sigma2_e = sigma2_e
         self.sigma2_mu = sigma2_mu
         
+
+        self.n_map = {q_shear:{q_shear:(self.sigma2_e/(2.*self.n_gal))}}
+
         self.n_k = self.k_in.size
         self.n_l = self.ls.size
         self.n_z = self.zs.size
@@ -55,7 +57,7 @@ class shear_power:
 	self.ps = np.zeros(self.n_z)
 
         self.cosmology = cosmology_in
-            
+                    
         #some methods require special handling    
         if pmodel=='halofit_redshift_nonlinear':
             p_bar = hf.halofitPk(0.42891513142857135,self.C).D2_NL(self.k_in)
@@ -193,6 +195,11 @@ class shear_power:
     def r_corr(self):
         return self.p_gd_use/np.sqrt(self.p_dd_use*self.p_gg_use)
     
+    def get_n_chip(self,class_1,class_2):
+        try:
+            return self.n_map[class_1][class_2]
+        except KeyError:
+            return 0.
 
     
     def cov_g_diag(self,c_ac,c_ad,c_bd,c_bc,n_ac=0,n_ad=0,n_bd=0,n_bc=0): #only return diagonal because all else are zero by kronecker delta
@@ -211,7 +218,7 @@ class shear_power:
         c_ad = Cll_q_q(self,qs[0],qs[3],r_ad).Cll()
         c_bc = Cll_q_q(self,qs[1],qs[2],r_bc).Cll()
         
-        #removed the delta l because it should be one here
+        #TODO put back delta l, removed the delta l because it should be one here
         for i in range(0,self.n_l): 
             cov_diag[i] = 2*np.pi/(self.omega_s*self.ls[i])*((c_ac[i]+ns[0])*(c_bd[i]+ns[2])+(c_ad[i]+ns[1])*(c_bc[i]+ns[3]))
         return cov_diag

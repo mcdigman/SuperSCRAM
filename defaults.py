@@ -28,7 +28,7 @@ lensing_params = {  'z_resolution'    :0.1,
                     'z_min_integral'  :0.1,
                     'pmodel_O'        :'halofit_nonlinear',
                     'pmodel_dO_ddelta':'dc_halofit',
-                    'n_gal'           :1180000000,
+                    'n_gal'           :118000000,
                     'omega_s'         :np.pi/(3.*np.sqrt(2.)),
                     'delta_l'         :1.,
                     'sigma2_e'        :0.32,
@@ -39,7 +39,6 @@ lensing_params = {  'z_resolution'    :0.1,
                     'epsilon'         :0.0001} 
 sw_observable_list = ['len_shear_shear']
 sw_survey_params = {    'needs_lensing'     : True,
-                        'cross_bins'        : False,
-                        'observable_list'   : sw_observable_list}
+                        'cross_bins'        : False}
 
 

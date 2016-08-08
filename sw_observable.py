@@ -3,10 +3,11 @@ import cosmopie as cp
 #Methods must be implemented 
 class SWObservable:
     #Takes a geo, dictionary of params, and a cosmopie
-    def __init__(self,geo,params,C=cp.CosmoPie()):
+    def __init__(self,geo,params,survey_id,C=cp.CosmoPie()):
         self.geo = geo
         self.C = C
         self.params = params
+        self.survey_id = survey_id
     #get_O_I must be implemented by subclass, should return a numpy array with the first axis being z bins of geo
     #return array of vectors representing the observable itself
     def get_O_I(self):
@@ -15,4 +16,5 @@ class SWObservable:
     #return array of vectors representing derivative of observable wrt \bar{delta}
     def get_dO_I_ddelta_bar(self):
         raise NotImplementedError('Subclasses of sw_observable must implement get_dO_I_ddelta_bar')
-    
+    def get_survey_id(self):
+        return self.survey_id
