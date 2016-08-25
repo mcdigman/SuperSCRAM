@@ -28,7 +28,7 @@ lensing_params = {  'z_resolution'    :0.1,
                     'z_min_integral'  :0.1,
                     'pmodel_O'        :'halofit_nonlinear',
                     'pmodel_dO_ddelta':'dc_halofit',
-                    'n_gal'           :118000000,
+                    'n_gal'           :118000000,#TODO check omega_s use/normalization on gaussian covariance
                     'omega_s'         :np.pi/(3.*np.sqrt(2.)),
                     'delta_l'         :1.,
                     'sigma2_e'        :0.32,
@@ -40,5 +40,11 @@ lensing_params = {  'z_resolution'    :0.1,
 sw_observable_list = ['len_shear_shear']
 sw_survey_params = {    'needs_lensing'     : True,
                         'cross_bins'        : False}
-
+dn_params = {   'M_cut'  : 10**(12.5)}
+lw_observable_list = ['d_number_density']
+lw_survey_params = {    'cross_bins':   False} 
+basis_params = {    'allow_caching'         :True,
+                    'n_bessel_oversample'   :100000,
+                    'k_max'                 :100.,
+                    'k_min'                 :10**-4}
 

@@ -48,7 +48,7 @@ class SWSurvey:
         observables = np.zeros(len(names.keys()),dtype=object)
         itr = 0 
         for key in names:
-            if self.params and re.match('^len',key):
+            if self.params['needs_lensing'] and re.match('^len',key):
                 r1 = names[key]['r1']
                 r2 = names[key]['r2']
                 if re.match('^len_shear_shear',key):
@@ -90,9 +90,9 @@ if __name__=='__main__':
     d=np.loadtxt('camb_m_pow_l.dat')
     k=d[:,0]; P=d[:,1]
     C=cp.CosmoPie(k=k,P_lin=P)
-    zbins = np.array([0.1,0.8])
+    zs = np.array([0.1,0.8])
     ls = np.arange(2,500)
-    geo = rect_geo(zbins,Theta,Phi,C)
+    geo = rect_geo(zs,Theta,Phi,C)
     sw_survey = SWSurvey(geo,'survey1',ls,C)
     O_I_list = sw_survey.get_O_I_list()
     dO_I_ddelta_bar_list = sw_survey.get_dO_I_ddelta_bar_list()

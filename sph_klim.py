@@ -9,6 +9,7 @@ import scipy as sp
 import sys 
 from time import time
 import fisher_matrix as fm
+import defaults
 
 # the smallest value 
 eps=np.finfo(float).eps	
@@ -30,7 +31,7 @@ def I_alpha(k_alpha,k,r_max,l_alpha):
 
 class sph_basis_k(object): 
 	
-	def __init__(self,r_max,CosmoPie,k_cut = 2.0,l_ceil = 100):#,geometry,CosmoPie):
+	def __init__(self,r_max,CosmoPie,k_cut = 2.0,l_ceil = 100,params = defaults.basis_params):#,geometry,CosmoPie):
 		
 		''' inputs:
 			r_max = the maximum radius of the sector 
@@ -44,10 +45,14 @@ class sph_basis_k(object):
 		k_in,P_lin_in=CosmoPie.get_P_lin()
 	        #k = np.logspace(np.log10(np.min(k_in)),np.log10(np.max(k_in))-0.00001,6000000)
                 #k = k_in
-                kmin = 10**-4
-                kmax = 100.0
+                self.params = params
+                kmin = params['k_min']
+                kmax = params['k_max']
 
-	        k = np.linspace(kmin,kmax,100000)
+                self.allow_caching = params['allow_caching']
+                if self.allow_caching:
+                    self.ddelta_bar_cache = {}
+	        k = np.linspace(kmin,kmax,params['n_bessel_oversample'])
                 P_lin = interp1d(k_in,P_lin_in)(k)
 
 	        self.r_max = r_max	
@@ -95,27 +100,27 @@ class sph_basis_k(object):
 		self.C_id=np.zeros((C_size,3))
 		self.C_alpha_beta=np.zeros((self.C_id.shape[0],self.C_id.shape[0]))
 
-		id=0
+		itr=0
 
 		for a in range(self.lm_map.shape[0]):
 		    ll=self.lm_map[a,0]
 		    kk=self.lm_map[a,1]
 		    mm=self.lm_map[a,2]
 
-                    id_m1 = id
+                    itr_m1 = itr
 
                     self.norms = np.zeros(k.size)
                     for b in range(kk.size):
                         self.norms[b] = self.norm_factor(kk[b],ll)
 
 		    for c in range(mm.size):
-                        id_k1 = id
+                        itr_k1 = itr
 		        for b in range(kk.size):
-		            self.C_id[id,0]=ll
-		            self.C_id[id,1]=kk[b]
-		            self.C_id[id,2]=mm[c]
-		            id=id+1
-                        print id,ll,mm[c],id_k1
+		            self.C_id[itr,0]=ll
+		            self.C_id[itr,1]=kk[b]
+		            self.C_id[itr,2]=mm[c]
+		            itr=itr+1
+                        print itr,ll,mm[c],itr_k1
                         #calculate I integrals and make table
                         if c==0:
                             integrand1 = k*P_lin*jv(ll+0.5,k*self.r_max)**2
@@ -123,13 +128,13 @@ class sph_basis_k(object):
                                 print b
                                 for d in range(b,kk.size):
                                     coeff = 8.*np.sqrt(kk[b]*kk[d])*kk[b]*kk[d]/(np.pi*self.r_max**2*jv(ll+1.5,kk[b]*self.r_max)*jv(ll+1.5,kk[d]*self.r_max))
-                                    self.C_alpha_beta[id_k1+b,id_k1+d]=coeff*trapz(integrand1/((k**2-kk[b]**2)*(k**2-kk[d]**2)),k); #check coefficient
-                                    self.C_alpha_beta[id_k1+d,id_k1+b]=self.C_alpha_beta[id_k1+b,id_k1+d];
+                                    self.C_alpha_beta[itr_k1+b,itr_k1+d]=coeff*trapz(integrand1/((k**2-kk[b]**2)*(k**2-kk[d]**2)),k); #check coefficient
+                                    self.C_alpha_beta[itr_k1+d,itr_k1+b]=self.C_alpha_beta[itr_k1+b,itr_k1+d];
                         else:
                             for b in range(0,kk.size):
                                 for d in range(b,kk.size):
-                                    self.C_alpha_beta[id_k1+b,id_k1+d] = self.C_alpha_beta[id_m1+b,id_m1+d] 
-                                    self.C_alpha_beta[id_k1+d,id_k1+b] = self.C_alpha_beta[id_m1+d,id_m1+b] 
+                                    self.C_alpha_beta[itr_k1+b,itr_k1+d] = self.C_alpha_beta[itr_m1+b,itr_m1+d] 
+                                    self.C_alpha_beta[itr_k1+d,itr_k1+b] = self.C_alpha_beta[itr_m1+d,itr_m1+b] 
 	        #TODO can make more efficient if necessary	
                 t2 = time()
                 print "basis time: ",t2-t1
@@ -157,9 +162,14 @@ class sph_basis_k(object):
                 return self.C_id[:,1]
 	
 	#TODO cache R_int, a_lm 
-	def D_delta_bar_D_delta_alpha(self,geo):
+	def D_delta_bar_D_delta_alpha(self,geo,force_recompute = False):
 	    #r=np.array([r_min,r_max])
             #TODO Check this
+            if self.allow_caching and not force_recompute:
+                result_cache = self.ddelta_bar_cache.get(id(geo))
+                if result_cache is not None:
+                    return result_cache
+
 	    a_00=a_lm(geo,0,0)
             print a_00
             print "theta",geo.Theta
@@ -173,10 +183,10 @@ class sph_basis_k(object):
             alm_last = 0.
             ll_last = -1
             mm_last = 0
-	    for id in range(self.C_id.shape[0]):
-	        ll=self.C_id[id,0]
-	        kk=self.C_id[id,1]
-	        mm=self.C_id[id,2]
+	    for itr in range(self.C_id.shape[0]):
+	        ll=self.C_id[itr,0]
+	        kk=self.C_id[itr,1]
+	        mm=self.C_id[itr,2]
                 #TESTING
                 #if self.norm_factor(kk,ll)<0:
                 #    warn("critical issue, negative norm factor")
@@ -186,7 +196,7 @@ class sph_basis_k(object):
                         r = np.array([geo.rs[i],geo.rs[i+1]])
 	                norm=3./(r[1]**3 - r[0]**3)/(a_00*2.*np.sqrt(np.pi))
                         
-                        result[i,id] = R_int(r,kk,ll)*alm_last*norm#*self.norm_factor(kk,ll)
+                        result[i,itr] = R_int(r,kk,ll)*alm_last*norm#*self.norm_factor(kk,ll)
                 else:
                     alm_last = a_lm(geo,ll,mm)
                     ll_last = ll
@@ -194,8 +204,9 @@ class sph_basis_k(object):
                     for i in range(0,geo.rs.size-1):
                         r = np.array([geo.rs[i],geo.rs[i+1]])
 	                norm=3./(r[1]**3 - r[0]**3)/(a_00*2.*np.sqrt(np.pi))
-                        result[i,id]=R_int(r,kk,ll)*alm_last*norm#*self.norm_factor(kk,ll)
-
+                        result[i,itr]=R_int(r,kk,ll)*alm_last*norm#*self.norm_factor(kk,ll)
+            if self.allow_caching:
+                self.ddelta_bar_cache[id(geo)] = result
 	    return result
 def R_int(r_range,k,ll):
     # returns \int R_n(rk_alpha) r2 dr
@@ -247,7 +258,7 @@ if __name__=="__main__":
 	d=np.loadtxt('Pk_Planck15.dat')
 	k=d[:,0]; P=d[:,1]
 	
-	z_bins=np.array([.1,.2,.3])
+	zs=np.array([.1,.2,.3])
 	Theta=[np.pi/4,np.pi/2.]
 	Phi=[0,np.pi/3.]
 	
@@ -255,7 +266,7 @@ if __name__=="__main__":
 	from cosmopie import CosmoPie
 	cp=CosmoPie(k=k,P_lin=P)
 
-	geometry=geo.rect_geo(z_bins,Theta,Phi,cp)
+	geometry=geo.rect_geo(zs,Theta,Phi,cp)
 	
 	r_max=cp.D_comov(0.5)
 	

@@ -16,14 +16,14 @@ class TestAlmMathematicaAgree1(unittest.TestCase):
         alm_math = np.loadtxt(test_base+'alm_mathematica.dat')
         lm_table = np.loadtxt(test_base+'lm_table.dat')
     
-        z_bins=np.array([.1,.2,.3])
+        zs=np.array([.1,.2,.3])
         Theta=[np.pi/4,np.pi/2.]
         Phi=[0,np.pi/3.+np.sqrt(2.)/100.]
     
     
         from cosmopie import CosmoPie
         cp=CosmoPie()
-        geo1 = rect_geo(z_bins,Theta,Phi,cp)
+        geo1 = rect_geo(zs,Theta,Phi,cp)
     
         alm_py = np.zeros_like(alm_math)
         for i in range(0,lm_table.shape[0]):
@@ -44,43 +44,43 @@ class TestAlmMathematicaAgree1(unittest.TestCase):
         self.assertTrue(max_diff<MAX_TOLERANCE)
         self.assertTrue(zero_max_diff<ZERO_TOLERANCE)
 
-    def test_alm_match2(self):
-        AVG_TOLERANCE = 10e-8
-        MAX_TOLERANCE = 10e-7
-        ZERO_TOLERANCE = 10e-8
-
-        
-        test_base = './test_inputs/sph1/'
-        alm_math = np.loadtxt(test_base+'alm_mathematica2.dat')
-        lm_table = np.loadtxt(test_base+'lm_table2.dat')
-    
-        z_bins=np.array([.1,.2,.3])
-        Theta=[np.pi/4,np.pi/2.]
-        Phi=[0,np.pi/3.+np.sqrt(2.)/100.]
-    
-    
-        from cosmopie import CosmoPie
-        cp=CosmoPie()
-        geo1 = rect_geo(z_bins,Theta,Phi,cp)
-    
-        alm_py = np.zeros_like(alm_math)
-        for i in range(0,lm_table.shape[0]):
-            alm_py[i] = sph.a_lm(geo1,lm_table[i,0],lm_table[i,1])
-       
-        alm_math1 = alm_math[alm_math>0]
-        alm_py1 = alm_py[alm_math>0]
-        avg_diff = np.average(abs(alm_math1-alm_py1)/alm_math1)
-        max_diff = np.max(abs(alm_math1-alm_py1)/alm_math1)
-            
-        if any(alm_math==0):
-            zero_max_diff = np.max(alm_py1[alm_math==0.])
-        else:
-            zero_max_diff = 0.
-        print "n nonzero",alm_math1.size
-        print "avg,max diff:",avg_diff,max_diff
-        self.assertTrue(avg_diff<AVG_TOLERANCE)
-        self.assertTrue(max_diff<MAX_TOLERANCE)
-        self.assertTrue(zero_max_diff<ZERO_TOLERANCE)
+#    def test_alm_match2(self):
+#        AVG_TOLERANCE = 10e-8
+#        MAX_TOLERANCE = 10e-7
+#        ZERO_TOLERANCE = 10e-8
+#
+#        
+#        test_base = './test_inputs/sph1/'
+#        alm_math = np.loadtxt(test_base+'alm_mathematica2.dat')
+#        lm_table = np.loadtxt(test_base+'lm_table2.dat')
+#    
+#        zs=np.array([.1,.2,.3])
+#        Theta=[np.pi/4,np.pi/2.]
+#        Phi=[0,np.pi/3.+np.sqrt(2.)/100.]
+#    
+#    
+#        from cosmopie import CosmoPie
+#        cp=CosmoPie()
+#        geo1 = rect_geo(zs,Theta,Phi,cp)
+#    
+#        alm_py = np.zeros_like(alm_math)
+#        for i in range(0,lm_table.shape[0]):
+#            alm_py[i] = sph.a_lm(geo1,lm_table[i,0],lm_table[i,1])
+#       
+#        alm_math1 = alm_math[alm_math>0]
+#        alm_py1 = alm_py[alm_math>0]
+#        avg_diff = np.average(abs(alm_math1-alm_py1)/alm_math1)
+#        max_diff = np.max(abs(alm_math1-alm_py1)/alm_math1)
+#            
+#        if any(alm_math==0):
+#            zero_max_diff = np.max(alm_py1[alm_math==0.])
+#        else:
+#            zero_max_diff = 0.
+#        print "n nonzero",alm_math1.size
+#        print "avg,max diff:",avg_diff,max_diff
+#        self.assertTrue(avg_diff<AVG_TOLERANCE)
+#        self.assertTrue(max_diff<MAX_TOLERANCE)
+#        self.assertTrue(zero_max_diff<ZERO_TOLERANCE)
 #class TestRIntMatchesExact1(unittest.TestCase):
     def test_rint_match(self):
         ZERO_TOLERANCE = 10e-14

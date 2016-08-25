@@ -2,7 +2,8 @@ import numpy as np
 from numpy import pi 
 from hmf import ST_hmf
 import sys
-from lw_observable import lw_observable
+from lw_observable import LWObservable
+from fisher_matrix import fisher_matrix
 
 #def volume(r1,r2,geo):
 #    if geo['type']='rectangular' :
@@ -11,8 +12,8 @@ from lw_observable import lw_observable
 #    result=(phi2-phi1)*(np.cos(theta1)- np.cos(theta2))*(r2**3-r1**3)/3. 
 #    return result 
 
-class DO_n(lw_observable):
-    def __init__(self, data, min_mass, CosmoPie,basis): 
+class DNumberDensityObservable(LWObservable):
+    def __init__(self,bins,geos,params,survey_id, C,ddelta_bar_ddelta_alpha_list): 
         
         '''
             data should hold: 
@@ -20,57 +21,52 @@ class DO_n(lw_observable):
             and the minimum masss
         
         '''
+     
+        min_mass = params['M_cut']
+        LWObservable.__init__(self,geos,params,survey_id,C)
         
-        lw_observable.__init__(self,CosmoPie)
-
-        zbins=data['zbins']
-        geo1=data['geo1']
-        geo2=data['geo2']
+        geo1 = geos[0]
+        geo2 = geos[1]
     
-
+        bin1 = bins[0]
+        bin2 = bins[1]
         self.mf=ST_hmf(self.C)
-        n_zbins=zbins.size
-        
+         
     
-        self.DO_a=np.zeros((n_zbins-1,basis.C_size))
-        self.Nab=np.zeros(n_zbins-1)
+        self.DO_a=np.zeros(ddelta_bar_ddelta_alpha_list.size)
            
-        self.dn_ddelta_bar = np.zeros(n_zbins-1)
-        d1s = basis.D_delta_bar_D_delta_alpha(geo1)
-        d2s = basis.D_delta_bar_D_delta_alpha(geo2)
-        for i in range(1,n_zbins):
-            z_avg=(zbins[i-1] + zbins[i])/2.
+        d1s = ddelta_bar_ddelta_alpha_list[0]
+        d2s = ddelta_bar_ddelta_alpha_list[1]
+        z_avg=(geo1.zbins[bin1][0] + geo1.zbins[bin1][1])/2.
             
-            n_avg=self.mf.n_avg(min_mass, z_avg)
-            self.dn_ddelta_bar[i-1]=self.mf.bias_avg(min_mass,z_avg)
-            print "x",self.dn_ddelta_bar[i-1]
-            #d1=basis.D_delta_bar_D_delta_alpha(geo1.rs[i-1],geo1.rs[i],geo1)
-            #d2=basis.D_delta_bar_D_delta_alpha(geo2.rs[i-1],geo2.rs[i],geo2)
+        n_avg=self.mf.n_avg(min_mass, z_avg)
+        self.dn_ddelta_bar=self.mf.bias_avg(min_mass,z_avg)
+        print "x",self.dn_ddelta_bar
+        #d1=basis.D_delta_bar_D_delta_alpha(geo1.rs[i-1],geo1.rs[i],geo1)
+        #d2=basis.D_delta_bar_D_delta_alpha(geo2.rs[i-1],geo2.rs[i],geo2)
             
-            self.DO_a[i-1]=self.dn_ddelta_bar[i-1]*(d1s[i]-d2s[i])
-            V1 = geo1.volumes[i-1] 
-            V2 = geo2.volumes[i-1] 
+        self.DO_a=self.dn_ddelta_bar*(d1s[bin1]-d2s[bin2])
+        V1 = geo1.volumes[bin1]
+        V2 = geo2.volumes[bin2]
           #  V1=volume(r_min[i-1],r_max[i-1],geo1)
           #  V2=volume(r_min[i-1],r_max[i-1],geo2)
             
-            self.Nab[i-1]=(1/V1+1/V2)/n_avg
+        self.Nab=(1/V1+1/V2)/n_avg
             
        
-        self.F_alpha_beta=np.zeros(zbins.size-1,dtype=object)
-        for i in range(zbins.size-1):
-            v=self.DO_a[i]
-            self.F_alpha_beta[i]=np.outer(v,v)*1./self.Nab[i]
+        self.v=self.DO_a
+        #self.F_alpha_beta=np.outer(v,v)*1./self.Nab 
         
            
     #TODO check zbins        
    # def get_dO_a_ddelta_bar():
    #     return self.dn_ddelta_bar
 
-    def dn_ddelta(self):
+    def get_dO_a_ddelta_bar(self):
         return self.DO_a
         
-    def Fisher_alpha_beta(self):
-        return self.F_alpha_beta 
+    def get_F_alpha_beta(self):
+        return np.outer(self.v,self.v)*1./self.Nab
                 
         
 
@@ -79,7 +75,7 @@ if __name__=="__main__":
     print 'hello'
     
     from defaults import cosmology 
-    from cosmopie import CosmoPie
+    from cosmopie import C
     d=np.loadtxt('Pk_Planck15.dat')
     k=d[:,0]; P=d[:,1]
     

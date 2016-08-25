@@ -14,7 +14,7 @@ class LensingPowerBase():
         z_step = params['z_resolution']
         z_min = params['z_min_integral']
 
-        zs = np.arange(z_step,geo.zbins[-1],z_step)
+        zs = np.arange(z_step,geo.zs[-1],z_step)
         self.C_pow = sp.shear_power(C.k,C,zs,ls,pmodel=params['pmodel_O'],P_in=C.P_lin)
         self.dC_ddelta = sp.shear_power(C.k,C,zs,ls,pmodel=params['pmodel_dO_ddelta'],P_in=C.P_lin)
 

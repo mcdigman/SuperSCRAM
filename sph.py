@@ -233,10 +233,10 @@ if __name__=="__main__":
 	d=np.loadtxt('Pk_Planck15.dat')
 	k=d[:,0]; P=d[:,1]
 	
-	z_bins=np.array([.1,.2,.3])
+	zs=np.array([.1,.2,.3])
 	Theta=[np.pi/4,np.pi/2.]
 	Phi=[0,np.pi/3.]
-	geometry=np.array([z_bins,Theta,Phi])
+	geometry=np.array([zs,Theta,Phi])
 	
 	from cosmopie import CosmoPie
 	cp=CosmoPie(k=k,P_lin=P)
