@@ -6,7 +6,7 @@ from warnings import warn
 import lensing_observables as lo
 from sw_cov_mat import SWCovMat
 class SWSurvey:
-    def __init__(self,geo,survey_id,ls = np.array([]),C = cp.CosmoPie(),params=defaults.sw_survey_params,observable_list=defaults.sw_observable_list,len_params=defaults.lensing_params):
+    def __init__(self,geo,survey_id,C,ls = np.array([]),params=defaults.sw_survey_params,observable_list=defaults.sw_observable_list,len_params=defaults.lensing_params):
         self.geo = geo
         self.params = params
         self.needs_lensing = params['needs_lensing']
@@ -14,7 +14,7 @@ class SWSurvey:
         self.ls = ls
         self.survey_id = survey_id
         if self.needs_lensing:
-            self.len_pow = lo.LensingPowerBase(self.geo,self.ls,survey_id,len_params,C)
+            self.len_pow = lo.LensingPowerBase(self.geo,self.ls,survey_id,C=C,params=len_params)
             self.len_params = len_params
         else:
             self.len_pow = None
@@ -93,7 +93,7 @@ if __name__=='__main__':
     zs = np.array([0.1,0.8])
     ls = np.arange(2,500)
     geo = rect_geo(zs,Theta,Phi,C)
-    sw_survey = SWSurvey(geo,'survey1',ls,C)
+    sw_survey = SWSurvey(geo,'survey1',C,ls)
     O_I_list = sw_survey.get_O_I_list()
     dO_I_ddelta_bar_list = sw_survey.get_dO_I_ddelta_bar_list()
     import matplotlib.pyplot as plt

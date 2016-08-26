@@ -24,7 +24,7 @@ class halofitPk(object):
 		
 		'''
                 #take an input linear power spectrum at z=0, d2_l and d2_nl will output power spectrum at desired redshit
-		def __init__(self,k_in,p_lin=np.array([]),C=cp.CosmoPie()):
+		def __init__(self,C,k_in,p_lin=np.array([])):
 
 				self.C = C
 		                self.k_max = max(k_in)		
@@ -311,9 +311,9 @@ if __name__=="__main__":
 		k=d1[:,0]; P1=d1[:,1]
 		
 		#k=np.logspace(-2,2,500)
-		CP=cp.CosmoPie
-		HF2=halofitPk(k2,P2,C=CP())
-		HF=halofitPk(k,P1,C=CP())
+		CP=cp.CosmoPie()
+		HF2=halofitPk(CP,k2,P2)
+		HF=halofitPk(CP,k,P1)
 		Plin=HF.D2_L(k,0.)*np.pi**2*2/k**3
 		P=HF.D2_NL(k,0.)*np.pi**2*2/k**3
 		

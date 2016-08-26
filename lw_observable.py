@@ -3,7 +3,7 @@ import cosmopie as cp
 #Methods must be implemented 
 class LWObservable:
     #Takes a numpy array of geos, dictionary of params, and a cosmopie
-    def __init__(self,geos,params,survey_id,C=cp.CosmoPie()):
+    def __init__(self,geos,params,survey_id,C):
         self.geos = geos
         self.C = C
         self.params = params

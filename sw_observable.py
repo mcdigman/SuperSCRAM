@@ -3,7 +3,7 @@ import cosmopie as cp
 #Methods must be implemented 
 class SWObservable:
     #Takes a geo, dictionary of params, and a cosmopie
-    def __init__(self,geo,params,survey_id,C=cp.CosmoPie()):
+    def __init__(self,geo,params,survey_id,C):
         self.geo = geo
         self.C = C
         self.params = params

@@ -22,8 +22,9 @@ class TestCosmosisAgreement1(unittest.TestCase):
             zs[0] = 10**-3
 
             ls = np.loadtxt('test_inputs/proj_1/ell.txt')
-
-            sp1 = sp.shear_power(k_in,C,zs,ls,pmodel='cosmosis_nonlinear',cosmology_in=defaults.cosmology_cosmosis)
+    
+            omega_s = np.pi/(3.*np.sqrt(2.))
+            sp1 = sp.shear_power(k_in,C,zs,ls,omega_s=omega_s,pmodel='cosmosis_nonlinear')
 
             sh_pow1 = sp.Cll_sh_sh(sp1).Cll()
             sh_pow1_gg = sp.Cll_g_g(sp1).Cll()
@@ -34,7 +35,8 @@ class TestCosmosisAgreement1(unittest.TestCase):
             gal_pow_cosm = np.loadtxt('test_inputs/proj_1/gg_pow.txt')
             sg_pow_cosm = np.loadtxt('test_inputs/proj_1/sg_pow.txt')
             mm_pow_cosm = np.loadtxt('test_inputs/proj_1/mm_pow.txt')
-    
+            
+
 #            import matplotlib.pyplot as plt
     
 #            ax = plt.subplot(111)
@@ -101,14 +103,14 @@ class TestCosmosisHalofitAgreement1(unittest.TestCase):
             zs[0] = 10**-3
 
             ls = np.loadtxt('test_inputs/proj_1/ell.txt')
-
-            sp1 = sp.shear_power(k_in,C,zs,ls,pmodel='cosmosis_nonlinear',cosmology_in=defaults.cosmology_cosmosis)
+            omega_s=np.pi/(3.*np.sqrt(2.))
+            sp1 = sp.shear_power(k_in,C,zs,ls,omega_s=omega_s,pmodel='cosmosis_nonlinear')
             sh_pow1 = sp.Cll_sh_sh(sp1).Cll()
             sh_pow1_gg = sp.Cll_g_g(sp1).Cll()
             sh_pow1_sg = sp.Cll_sh_g(sp1).Cll()
             sh_pow1_mm = sp.Cll_mag_mag(sp1).Cll()
    
-            sp2 = sp.shear_power(k_in,C,zs,ls,P_in=P_in,pmodel='halofit_nonlinear',cosmology_in=defaults.cosmology_cosmosis)
+            sp2 = sp.shear_power(k_in,C,zs,ls,omega_s=omega_s,P_in=P_in,pmodel='halofit_nonlinear')
             sh_pow2 = sp.Cll_sh_sh(sp2).Cll()
             sh_pow2_gg = sp.Cll_g_g(sp2).Cll()
             sh_pow2_sg = sp.Cll_sh_g(sp2).Cll()

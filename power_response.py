@@ -6,20 +6,22 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 import defaults
 import camb_power as cpow
 
-def dp_ddelta(k_a,P_a,zbar,C=cp.CosmoPie(),pmodel='linear',epsilon=0.0001,halo_a=None,halo_b=None,fpt=None):
+def dp_ddelta(k_a,P_a,zbar,C,pmodel='linear',epsilon=0.0001,halo_a=None,halo_b=None,fpt=None):
     if pmodel=='linear':
        # pza = P_a
         pza = P_a*C.G_norm(zbar)**2
-        dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2).derivative(1))(k_a) 
+        #checked equality
+        #dp1 = 68./21.*pza-1./3.*(InterpolatedUnivariateSpline(np.log(k_a),np.log(pza*k_a**3)).derivative(1))(np.log(k_a))*pza
+        dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2,k=1).derivative(1))(k_a) 
         dp = 47./21.*pza-1./3.*k_a*dpdk
     elif pmodel=='halofit':
         if halo_a is None:
-            halo_a = hf.halofitPk(k_a,P_a,C=C)
+            halo_a = hf.halofitPk(C,k_a,P_a)
         if halo_b is None:
-            halo_b = hf.halofitPk(k_a,P_a*(1.+epsilon/C.sigma8)**2,C=C)
+            halo_b = hf.halofitPk(C,k_a,P_a*(1.+epsilon/C.sigma8)**2)
         pza = halo_a.D2_NL(k_a,zbar)*2.*np.pi**2/k_a**3
         pzb = halo_b.D2_NL(k_a,zbar)*2.*np.pi**2/k_a**3
-        dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2).derivative(1))(k_a) 
+        dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2,k=1).derivative(1))(k_a) 
         dp = 13./21.*C.sigma8*(pzb-pza)/epsilon+pza-1./3.*k_a*dpdk
     elif pmodel=='fastpt':
         if fpt is None:
@@ -27,7 +29,7 @@ def dp_ddelta(k_a,P_a,zbar,C=cp.CosmoPie(),pmodel='linear',epsilon=0.0001,halo_a
         plin = P_a*C.G_norm(zbar)**2
 
         pza = plin+fpt.one_loop(plin,C_window=0.75)
-        dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2).derivative(1))(k_a) 
+        dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2,k=1).derivative(1))(k_a) 
         dp = 47./21.*pza-1./3.*k_a*dpdk+26./21.*fpt.one_loop(plin,C_window=0.75)
     else:
         print('invalid pmodel option \''+str(pmodel)+'\' using linear')

@@ -5,7 +5,7 @@ from scipy.integrate import dblquad
 # the smallest value 
 
 class geo:
-    def __init__(self,zs,volumes,v_total,rs,C=cp.CosmoPie()):
+    def __init__(self,zs,volumes,v_total,rs,C):
         self.zs = zs
         self.C = C
         self.volumes = volumes
@@ -24,10 +24,12 @@ class geo:
     def surface_integral(self,function):
         raise NotImplementedError, "Subclasses of geo should implement surface_integral"
 
+    def angular_area(self):
+        return self.surface_integral(lambda theta,phi: 1.0)
 
     #volume ddeltabar_dalpha
 class rect_geo(geo): 
-    def __init__(self,zs,Theta,Phi,C=cp.CosmoPie()):
+    def __init__(self,zs,Theta,Phi,C):
             self.Theta = Theta
             self.Phi = Phi
             
