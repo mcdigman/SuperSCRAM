@@ -2,42 +2,40 @@ import numpy as np
 import cosmopie as cp
 import halofit as hf
 from numpy import exp
-#from scipy.integrate import quad
 from scipy.interpolate import interp1d,interp2d
 from scipy.interpolate import InterpolatedUnivariateSpline,SmoothBivariateSpline
 import scipy.special as sp
 from time import time
-import pickle 
-#import ps2
 import FASTPTcode.FASTPT as FASTPT
 import defaults
 import camb_power as cpow
 import FASTPTcode.matter_power_spt as mps
 from warnings import warn 
+from power_response import dp_ddelta
 import sph
 import re
 class shear_power:
-    def __init__(self,k_in,C,zs,ls,pmodel='halofit_linear',P_in=np.array([]),cosmology_in={},ps=np.array([]),P_select=np.array([]),Cs=[],zbar=0.55,sigma=0.4,smodel='gaussian', n_gal=118000000.,omega_s=np.pi/(3.*np.sqrt(2.)),delta_l=1,sigma2_e=0.32,sigma2_mu=1.2):
+    def __init__(self,k_in,C,zs,ls,omega_s,pmodel='halofit_linear',P_in=np.array([]),ps=np.array([]),P_select=np.array([]),Cs=[],params=defaults.lensing_params):
 	self.k_in = k_in
         self.C = C
         self.zs = zs
         self.ls = ls
-        self.epsilon = 0.0001
+        self.epsilon = params['epsilon']
        # self.delta_l = ls[-1]-ls[0] #maybe not right
      #   self.omega_s = 5000 #filler, from eifler, in deg^2
      #   self.n_gal = 10.*3600. #filler, from krause & eifler in galaxies/deg^2 suggested at possible result from DES
-        self.delta_l = delta_l
+        self.delta_l = params['delta_l']
         
         #self.omega_s = np.pi/(3.*np.sqrt(2))
         #self.n_gal = 286401.
         #118000000 galaxies/rad^2 if 10/arcmin^2 and omega_s is area in radians of field
         self.omega_s = omega_s
-        self.n_gal = n_gal
+        self.n_gal = params['n_gal']
         self.pmodel = pmodel
         #self.sigma2_e = 0.32 #from eifler
         #self.sigma2_mu = 1.2 #eifler says this is uncertain
-        self.sigma2_e = sigma2_e
-        self.sigma2_mu = sigma2_mu
+        self.sigma2_e = params['sigma2_e']
+        self.sigma2_mu = params['sigma2_mu']
         
 
         self.n_map = {q_shear:{q_shear:(self.sigma2_e/(2.*self.n_gal))}}
@@ -56,11 +54,11 @@ class shear_power:
 	self.dchis = np.zeros(self.n_z)
 	self.ps = np.zeros(self.n_z)
 
-        self.cosmology = cosmology_in
+        self.params = params
                     
         #some methods require special handling    
         if pmodel=='halofit_redshift_nonlinear':
-            p_bar = hf.halofitPk(0.42891513142857135,self.C).D2_NL(self.k_in)
+            p_bar = hf.halofitPk(self.C,k_in,P_in).D2_NL(self.k_in)
         elif pmodel == 'cosmosis_nonlinear':
             z_bar = np.loadtxt('test_inputs/proj_1/z.txt')
             k_bar = np.loadtxt('test_inputs/proj_1/k_h.txt')
@@ -68,15 +66,15 @@ class shear_power:
             self.chis = interp1d(z_bar,np.loadtxt('test_inputs/proj_1/d_m.txt')[::-1])(zs)
             self.chi_As = self.chis
         elif pmodel=='halofit_nonlinear' or pmodel=='halofit_linear':
-            self.halo = hf.halofitPk(k_in,P_in,self.C)
+            self.halo = hf.halofitPk(self.C,k_in,P_in)
         elif pmodel=='halofit_var_redshift':
             self.halos = []
             for i in range(0,(P_in.shape)[0]):
-                self.halos.append(hf.halofitPk(k_in,P_in[i],C=Cs[i]))
+                self.halos.append(hf.halofitPk(Cs[i],k_in,P_in[i]))
         elif pmodel=='halofit_var_redshift_lin':
             self.halos = []
             for i in range(0,(P_in.shape)[0]):
-                self.halos.append(hf.halofitPk(k_in,P_in[i],C=Cs[i]))
+                self.halos.append(hf.halofitPk(Cs[i],k_in,P_in[i]))
 
         elif pmodel=='fastpt_nonlin' or pmodel =='dc_fastpt':
             fpt = FASTPT.FASTPT(k_in,-2,low_extrap=-5,high_extrap=5,n_pad=800)
@@ -84,8 +82,8 @@ class shear_power:
         #    fpt = FASTPT.FASTPT(k_in,-2,low_extrap=-5,high_extrap=5,n_pad=800)
         #    self.halo = hf.halofitPk(k_in,P_in,self.C)
         elif pmodel=='dc_halofit':
-            self.halo_a = hf.halofitPk(k_in,P_in,C=C)
-            self.halo_b = hf.halofitPk(k_in,P_in*(1.+self.epsilon/C.sigma8)**2,C=C)
+            self.halo_a = hf.halofitPk(C,k_in,P_in)
+            self.halo_b = hf.halofitPk(C,k_in,P_in*(1.+self.epsilon/C.sigma8)**2)
         elif pmodel=='dc_fastpt':
             fpt = FASTPT.FASTPT(k_a,-2,low_extrap=-10,high_extrap=8,n_pad=800)
 
@@ -98,27 +96,27 @@ class shear_power:
 
 	    self.k_use[:,i] = (self.ls+0.5)/self.chi_As[i] 
             if pmodel=='halofit_linear':
-                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,self.halo.D2_L(self.k_in,self.zs[i]))(self.k_use[:,i])/self.k_use[:,i]**3
+                self.p_dd_use[:,i] = 2*np.pi**2*InterpolatedUnivariateSpline(self.k_in,self.halo.D2_L(self.k_in,self.zs[i]),k=1)(self.k_use[:,i])/self.k_use[:,i]**3
             elif pmodel=='halofit_nonlinear':
-                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,self.halo.D2_NL(self.k_in,self.zs[i]))(self.k_use[:,i])/self.k_use[:,i]**3
+                self.p_dd_use[:,i] = 2*np.pi**2*InterpolatedUnivariateSpline(self.k_in,self.halo.D2_NL(self.k_in,self.zs[i]),k=1)(self.k_use[:,i])/self.k_use[:,i]**3
             elif pmodel=='halofit_redshift_nonlinear':
-                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,p_bar*self.C.G_norm(self.zs[i])**2/(self.C.G_norm(0.42891513142857135)**2))(self.k_use[:,i])/self.k_use[:,i]**3
+                self.p_dd_use[:,i] = 2*np.pi**2*InterpolatedUnivariateSpline(self.k_in,p_bar*self.C.G_norm(self.zs[i])**2/(self.C.G_norm(0.42891513142857135)**2),k=1)(self.k_use[:,i])/self.k_use[:,i]**3
             elif pmodel=='redshift_linear':
-                self.p_dd_use[:,i] = interp1d(self.k_in,P_in*self.C.G_norm(self.zs[i])**2)(self.k_use[:,i])
+                self.p_dd_use[:,i] = InterpolatedUnivariateSpline(self.k_in,P_in*self.C.G_norm(self.zs[i])**2,k=1)(self.k_use[:,i])
             elif pmodel=='cosmosis_nonlinear':
                 self.p_dd_use[:,i] = p_bar(self.k_use[:,i],zs[i])
             elif pmodel=='fastpt_nonlin':
-                self.p_dd_use[:,i] = interp1d(self.k_in,(fpt.one_loop(P_in*self.C.G_norm(self.zs[i])**2,C_window=0.75)+P_in*self.C.G_norm(self.zs[i])**2))(self.k_use[:,i])
+                self.p_dd_use[:,i] = InterpolatedUnivariateSpline(self.k_in,(fpt.one_loop(P_in*self.C.G_norm(self.zs[i])**2,C_window=0.75)+P_in*self.C.G_norm(self.zs[i])**2),k=1)(self.k_use[:,i])
             elif pmodel=='halofit_var_redshift':
-                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,self.halos[P_select[i]].D2_NL(self.k_in,self.zs[i]))(self.k_use[:,i])/self.k_use[:,i]**3
+                self.p_dd_use[:,i] = 2*np.pi**2*InterpolatedUnivariateSpline(self.k_in,self.halos[P_select[i]].D2_NL(self.k_in,self.zs[i]),k=1)(self.k_use[:,i])/self.k_use[:,i]**3
             elif pmodel=='halofit_var_redshift_lin':
-                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,self.halos[P_select[i]].D2_L(self.k_in,self.zs[i]))(self.k_use[:,i])/self.k_use[:,i]**3
+                self.p_dd_use[:,i] = 2*np.pi**2*InterpolatedUnivariateSpline(self.k_in,self.halos[P_select[i]].D2_L(self.k_in,self.zs[i]),k=1)(self.k_use[:,i])/self.k_use[:,i]**3
             elif pmodel=='dc_halofit':
-                self.p_dd_use[:,i] = interp1d(k_in,dp_ddelta(k_in,P_in,zs[i],pmodel='halofit',epsilon=self.epsilon,halo_a=self.halo_a,halo_b=self.halo_b)[0])(self.k_use[:,i])
+                self.p_dd_use[:,i] = InterpolatedUnivariateSpline(k_in,dp_ddelta(k_in,P_in,zs[i],C=self.C,pmodel='halofit',epsilon=self.epsilon,halo_a=self.halo_a,halo_b=self.halo_b)[0],k=1)(self.k_use[:,i])
             elif pmodel=='dc_linear':
-                self.p_dd_use[:,i] = interp1d(k_in,dp_ddelta(k_in,P_in,zs[i],pmodel='linear')[0])(self.k_use[:,i])
+                self.p_dd_use[:,i] = InterpolatedUnivariateSpline(k_in,dp_ddelta(k_in,P_in,zs[i],C=self.C,pmodel='linear')[0],k=1)(self.k_use[:,i])
             elif pmodel=='dc_fastpt':
-                self.p_dd_use[:,i] = interp1d(k_in,dp_ddelta(k_in,P_in,zs[i],pmodel='fastpt',fpt=fpt)[0])(self.k_use[:,i])
+                self.p_dd_use[:,i] = InterpolatedUnivariateSpline(k_in,dp_ddelta(k_in,P_in,zs[i],C=self.C,pmodel='fastpt',fpt=fpt)[0],k=1)(self.k_use[:,i])
 
          #   elif pmodel=='deltabar':
          #       lin_pow= 2*np.pi**2*interp1d(self.k_in,self.halo.D2_L(self.k_in,self.zs[i]))(self.k_use[:,i])/self.k_use[:,i]**3
@@ -141,7 +139,7 @@ class shear_power:
             else:
                 if i==0:
                     warn("invalid pmodel value \'"+pmodel+"\' using halofit_linear instead")
-                self.p_dd_use[:,i] = 2*np.pi**2*interp1d(self.k_in,hf.halofitPk(self.zs[i],self.cosmology).D2_L(self.k_in))(self.k_use[:,i])/self.k_use[:,i]**3
+                self.p_dd_use[:,i] = 2*np.pi**2*InterpolatedUnivariateSpline(self.k_in,hf.halofitPk(C,k_in,P_in).D2_L(self.k_in,self.zs[i]),k=1)(self.k_use[:,i])/self.k_use[:,i]**3
 
 
 	    self.dchis[i] = (self.C.D_comov(self.zs[i]+self.epsilon)-self.C.D_comov(self.zs[i]))/self.epsilon
@@ -149,9 +147,9 @@ class shear_power:
 
         self.p_gg_use = self.p_dd_use #temporary for testing purposes
         self.p_gd_use = self.p_dd_use #temporary for testing purposes
-       
+        smodel = params['smodel'] 
         if smodel == 'gaussian': 
-            self.gaussian_z_source(zbar,sigma)
+            self.gaussian_z_source(params['zbar'],params['sigma'])
         elif smodel == 'constant':
             self.constant_z_source()
         elif smodel == 'cosmolike':
@@ -450,12 +448,12 @@ class Cll_q_q_order2(Cll_q_q):
         self.integrand=integrand1+integrand2
         self.chis=sp.chis
 
-def dc_ddelta(zs,zmin,zmax,ls,cosmology=defaults.cosmology,C=cp.CosmoPie(),epsilon=0.0001,model='halofit_var_redshift'):
+def dc_ddelta(zs,zmin,zmax,ls,C,cosmology=defaults.cosmology,epsilon=0.0001,model='halofit_var_redshift'):
     cosmo_a = cosmology.copy()
     k_a,P_a = cpow.camb_pow(cosmo_a)
     #P_a = hf.halofitPk(k_a,C=cp.CosmoPie(cosmo_a)).D2_L(k_a,0.)
     P_select = np.zeros(zs.size,dtype=np.int)
-    sp1 = shear_power(k_a,C,zs,ls,pmodel=model,P_in=np.array([P_a]),cosmology_in=cosmology,P_select=P_select,Cs=[cp.CosmoPie(cosmo_a)])
+    sp1 = shear_power(k_a,C,zs,ls,pmodel=model,P_in=np.array([P_a]),P_select=P_select,Cs=[cp.CosmoPie(cosmo_a)])
     sh_pow1 = Cll_sh_sh(sp1,chi_min1=C.D_comov(zmin),chi_max1=C.D_comov(zmax),chi_min2=C.D_comov(zmin),chi_max2=C.D_comov(zmax)).Cll()
     domegam = dc_dtheta(zs,zmin,zmax,ls,'Omegam',cosmology,C,epsilon,P_a=P_a,k_a=k_a,model=model,sh_pow1=sh_pow1)
     domegal = dc_dtheta(zs,zmin,zmax,ls,'OmegaL',cosmology,C,epsilon,P_a=P_a,k_a=k_a,model=model,sh_pow1=sh_pow1)
@@ -465,7 +463,7 @@ def dc_ddelta(zs,zmin,zmax,ls,cosmology=defaults.cosmology,C=cp.CosmoPie(),epsil
     #https://arxiv.org/pdf/astro-ph/0006089v3.pdf eq 4
     return C.Omegam*(C.Omegam+2./3.*f0)*domegam-2./3.*f0*domegak+(1-C.Omegam)*(C.Omegam+2./3.*f0)*domegal-C.h*(C.Omegam/2.+f0/3.)*dh
 
-def dc_dtheta(zs,zmin,zmax,ls,theta_name='Omegach2',cosmology=defaults.cosmology,C=cp.CosmoPie(),epsilon=0.0001,P_a=np.array([]),k_a=np.array([]),model='halofit_var_redshift',sh_pow1=None):
+def dc_dtheta(zs,zmin,zmax,ls,C,theta_name='Omegach2',cosmology=defaults.cosmology,epsilon=0.0001,P_a=np.array([]),k_a=np.array([]),model='halofit_var_redshift',sh_pow1=None):
     cosmo_a = cosmology.copy()
     cosmo_b = cosmology.copy()
     cosmo_b[theta_name]+= epsilon
@@ -496,41 +494,41 @@ def dc_dtheta(zs,zmin,zmax,ls,theta_name='Omegach2',cosmology=defaults.cosmology
 
     P_select[(zs>=zmin)&(zs<=zmax)] = 1
 
-    sp2 = shear_power(k_a,C,zs,ls,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_b]),cosmology_in=cosmology,P_select=P_select,Cs=Cs)
+    sp2 = shear_power(k_a,C,zs,ls,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_b]),P_select=P_select,Cs=Cs)
 
     chi_max = C.D_comov(zmax)
     chi_min = C.D_comov(zmin)
     return (Cll_sh_sh(sp2,chi_max,chi_max,chi_min,chi_min)-sh_pow1).Cll()/epsilon
 
-def dp_ddelta(k_a,P_a,zbar,C=cp.CosmoPie(),pmodel='linear',epsilon=0.0001,halo_a=None,halo_b=None,fpt=None):
-    if pmodel=='linear':
-       # pza = P_a
-        pza = P_a*C.G_norm(zbar)**2
-        dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2).derivative(1))(k_a) 
-        dp = 47./21.*pza-1./3.*k_a*dpdk
-    elif pmodel=='halofit':
-        if halo_a is None:
-            halo_a = hf.halofitPk(k_a,P_a,C=C)
-        if halo_b is None:
-            halo_b = hf.halofitPk(k_a,P_a*(1.+epsilon/C.sigma8)**2,C=C)
-        pza = halo_a.D2_NL(k_a,zbar)*2.*np.pi**2/k_a**3
-        pzb = halo_b.D2_NL(k_a,zbar)*2.*np.pi**2/k_a**3
-        dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2).derivative(1))(k_a) 
-        dp = 13./21.*C.sigma8*(pzb-pza)/epsilon+pza-1./3.*k_a*dpdk
-    elif pmodel=='fastpt':
-        if fpt is None:
-            fpt = FASTPT.FASTPT(k_a,-2,low_extrap=None,high_extrap=None,n_pad=1000)
-        plin = P_a*C.G_norm(zbar)**2
-
-        pza = plin+fpt.one_loop(plin,C_window=0.75)
-        dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2).derivative(1))(k_a) 
-        dp = 47./21.*pza-1./3.*k_a*dpdk+26./21.*fpt.one_loop(plin,C_window=0.75)
-    else:
-        print('invalid pmodel option \''+str(pmodel)+'\' using linear')
-        pza = P_a**C.G_norm(zbar)**2
-        dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2).derivative(1))(k_a) 
-        dp = 47./21.*pza-1./3.*k_a*dpdk
-    return dp,pza
+#def dp_ddelta(k_a,P_a,zbar,C=cp.CosmoPie(),pmodel='linear',epsilon=0.0001,halo_a=None,halo_b=None,fpt=None):
+#    if pmodel=='linear':
+#       # pza = P_a
+#        pza = P_a*C.G_norm(zbar)**2
+#        dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2).derivative(1))(k_a) 
+#        dp = 47./21.*pza-1./3.*k_a*dpdk
+#    elif pmodel=='halofit':
+#        if halo_a is None:
+#            halo_a = hf.halofitPk(k_a,P_a,C=C)
+#        if halo_b is None:
+#            halo_b = hf.halofitPk(k_a,P_a*(1.+epsilon/C.sigma8)**2,C=C)
+#        pza = halo_a.D2_NL(k_a,zbar)*2.*np.pi**2/k_a**3
+#        pzb = halo_b.D2_NL(k_a,zbar)*2.*np.pi**2/k_a**3
+#        dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2).derivative(1))(k_a) 
+#        dp = 13./21.*C.sigma8*(pzb-pza)/epsilon+pza-1./3.*k_a*dpdk
+#    elif pmodel=='fastpt':
+#        if fpt is None:
+#            fpt = FASTPT.FASTPT(k_a,-2,low_extrap=None,high_extrap=None,n_pad=1000)
+#        plin = P_a*C.G_norm(zbar)**2
+#
+#        pza = plin+fpt.one_loop(plin,C_window=0.75)
+#        dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2).derivative(1))(k_a) 
+#        dp = 47./21.*pza-1./3.*k_a*dpdk+26./21.*fpt.one_loop(plin,C_window=0.75)
+#    else:
+#        print('invalid pmodel option \''+str(pmodel)+'\' using linear')
+#        pza = P_a**C.G_norm(zbar)**2
+#        dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2).derivative(1))(k_a) 
+#        dp = 47./21.*pza-1./3.*k_a*dpdk
+#    return dp,pza
 
     #maybe can get bias and r_corr directly from something else
 if __name__=='__main__':
@@ -567,23 +565,24 @@ if __name__=='__main__':
         P_a = d[:,1]
         #k_a,P_a = cpow.camb_pow(cosmo_a)
        # P_a = hf.halofitPk(k_a,C=C).D2_L(k_a,0)
+        omega_s=np.pi/(3.*np.sqrt(2.))
       
         zmin = 0.40
         zmax = 0.41
         chimin = C.D_comov(zmin)
         chimax = C.D_comov(zmax)
-      #  sp1 = shear_power(k_a,C,zs,ls,pmodel='halofit_linear',P_in=P_a,cosmology_in=defaults.cosmology)
+      #  sp1 = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit_linear',P_in=P_a)
       #  sh_pow1 = sp1.Cll_sh_sh(chi_max,chi_max,chi_min,chi_min)
       #  dpdl =(InterpolatedUnivariateSpline(ls,sh_pow1,ext=2).derivative(1))(ls)
       #  deltabar3 = 47./21.*sh_pow1-1./3.*dpdl*ls
         #for i in range(0,zs.size):
         #    sp.sph_jn(ls,zs[i])
-#        sp1 = shear_power(k_in,C,zs,ls,pmodel='redshift_linear',P_in=d[:,1],cosmology_in=defaults.cosmology)
+#        sp1 = shear_power(k_in,C,zs,ls,omega_s,pmodel='redshift_linear',P_in=d[:,1])
  #       sh_pow1 = sp1.Cll_sh_sh()
-      #  sp2 = shear_power(k_in,C,zs,ls,pmodel='halofit_linear',P_in=d[:,1],cosmology_in=defaults.cosmology)
-        #sp1 = shear_power(k_in,C,zs,ls,pmodel='halofit_linear',P_in=d[:,1],cosmology_in=defaults.cosmology)
+      #  sp2 = shear_power(k_in,C,zs,ls,omega_s,pmodel='halofit_linear',P_in=d[:,1])
+        #sp1 = shear_power(k_in,C,zs,ls,omega_s,pmodel='halofit_linear',P_in=d[:,1])
       #  sh_pow2 = sp2.Cll_sh_sh()
-        #sp3 = shear_power(k_in,C,zs,ls,pmodel='halofit_nonlinear',P_in=d[:,1],cosmology_in=defaults.cosmology)
+        #sp3 = shear_power(k_in,C,zs,ls,omega_s,pmodel='halofit_nonlinear',P_in=d[:,1])
         #sh_pow_limber = sp3.Cll_sh_sh()
         #sh_pow_nolimber = sp3.Cll_q_q_nolimber(q_shear(sp3),q_shear(sp3))
         #sh_pow3 = sp3.Cll_sh_sh()
@@ -591,18 +590,18 @@ if __name__=='__main__':
         #cosmo_b = defaults.cosmology.copy()
         #cosmo_c = defaults.cosmology.copy()
         #epsilon = 0.001
-        #sp_alt = shear_power(k_a,C,zs,ls,pmodel='deltabar',P_in=P_a,cosmology_in=defaults.cosmology)
+        #sp_alt = shear_power(k_a,C,zs,ls,omega_s,pmodel='deltabar',P_in=P_a)
         #dcalt = sp_alt.Cll_sh_sh(chimax,chimax,chimin,chimin)
-        #sp3a = shear_power(k_a,C,zs,ls,pmodel='halofit_nonlinear',P_in=P_a,cosmology_in=defaults.cosmology)
-        #sp3b = shear_power(k_a,C,zs,ls,pmodel='halofit_nonlinear',P_in=(1.+epsilon/C.sigma8)**2*P_a,cosmology_in=defaults.cosmology)
+        #sp3a = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit_nonlinear',P_in=P_a)
+        #sp3b = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit_nonlinear',P_in=(1.+epsilon/C.sigma8)**2*P_a)
         #sh_pow3a = sp3a.Cll_sh_sh(chimax,chimax,chimin,chimin)
         #sh_pow3b = sp3b.Cll_sh_sh(chimax,chimax,chimin,chimin)
         #p3a = sp3a.p_dd_use[:,40]
         #p3b = sp3b.p_dd_use[:,40]
         zbar = 3.
-        dcalt1,p1a = dp_ddelta(k_a,P_a,zbar,pmodel='linear')
-        dcalt2,p2a = dp_ddelta(k_a,P_a,zbar,pmodel='halofit')
-        dcalt3,p3a = dp_ddelta(k_a,P_a,zbar,pmodel='fastpt')
+        dcalt1,p1a = dp_ddelta(k_a,P_a,zbar,C,pmodel='linear')
+        dcalt2,p2a = dp_ddelta(k_a,P_a,zbar,C,pmodel='halofit')
+        dcalt3,p3a = dp_ddelta(k_a,P_a,zbar,C,pmodel='fastpt')
 #        p1a = P_a**C.G_norm(zbar)**2
         #p1b = hf.halofitPk(k_a,P_a*(1.+epsilon/C.sigma8)**2,C=C).D2_NL(k_a,0.4)
 #        dpdk1 =(InterpolatedUnivariateSpline(k_a,p1a,ext=2).derivative(1))(k_a) 
@@ -612,12 +611,12 @@ if __name__=='__main__':
 #        p2b = hf.halofitPk(k_a,P_a*(1.+epsilon/C.sigma8)**2,C=C).D2_NL(k_a,zbar)*2.*np.pi**2/k_a**3
 #        dpdk2 =(InterpolatedUnivariateSpline(k_a,p2a,ext=2).derivative(1))(k_a) 
 #        dcalt2 = 13./21.*C.sigma8*(p2b-p2a)/epsilon+p2a-1./3.*k_a*dpdk2
-        sp_hf = shear_power(k_in,C,zs,ls,pmodel='dc_halofit',P_in=d[:,1],cosmology_in=defaults.cosmology) 
+        sp_hf = shear_power(k_in,C,zs,ls,omega_s,pmodel='dc_halofit',P_in=d[:,1]) 
         dc_hf = Cll_sh_sh(sp_hf,chimax,chimax,chimin,chimin).Cll()
-        sp_fpt = shear_power(k_in,C,zs,ls,pmodel='dc_fastpt',P_in=d[:,1],cosmology_in=defaults.cosmology) 
+        sp_fpt = shear_power(k_in,C,zs,ls,omega_s,pmodel='dc_fastpt',P_in=d[:,1]) 
         dc_fpt = Cll_sh_sh(sp_fpt,chimax,chimax,chimin,chimin).Cll()
         
-        sp_lin = shear_power(k_in,C,zs,ls,pmodel='dc_linear',P_in=d[:,1],cosmology_in=defaults.cosmology) 
+        sp_lin = shear_power(k_in,C,zs,ls,omega_s,pmodel='dc_linear',P_in=d[:,1]) 
         dc_lin = Cll_sh_sh(sp_lin,chimax,chimax,chimin,chimin).Cll()
 
 
@@ -628,9 +627,9 @@ if __name__=='__main__':
 
        # dcalt1 = 47./21.*p1a-1./3.*k_a*dpdk1
         #dcalt2 = sh_pow3a-1./3.*ls*dpdk
-        #sp_alt3 = shear_power(k_a,C,zs,ls,pmodel='deltabar_fpt',P_in=P_a,cosmology_in=defaults.cosmology)
+        #sp_alt3 = shear_power(k_a,C,zs,ls,omega_s,pmodel='deltabar_fpt',P_in=P_a)
         #dcalt3 = sp_alt3.Cll_sh_sh(chimax,chimax,chimin,chimin)
-        #sp_alt4 = shear_power(k_a,C,zs,ls,pmodel='deltabar_hnl',P_in=P_a,cosmology_in=defaults.cosmology)
+        #sp_alt4 = shear_power(k_a,C,zs,ls,omega_s,pmodel='deltabar_hnl',P_in=P_a)
         #dcalt4 = sp_alt4.Cll_sh_sh(chimax,chimax,chimin,chimin)
         #dcnl = dc_ddelta(zs,zmin,zmax,ls,model='halofit_var_redshift')
         #dclin = dc_ddelta(zs,zmin,zmax,ls,model='halofit_var_redshift_lin')
@@ -652,49 +651,50 @@ if __name__=='__main__':
 #            cosmo_b['Omegach2']+=epsilon
 #            omegachs[i] = cosmo_b['Omegach2']
 #            k_b,P_b = cpow.camb_pow(cosmo_b)
-#            sp8 = shear_power(k_a,C,zs,ls,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_b]),cosmology_in=defaults.cosmology,P_select=P_select)
+#            sp8 = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_b]),P_select=P_select)
+    
 #            sh_pow8 = sp8.Cll_sh_sh()
 #            p10s[i] = sh_pow8[10]
 #            p100s[i] = sh_pow8[100]
 #            p1000s[i] = sh_pow8[1000]
-           # sp8 = shear_power(k_a,C,zs,ls,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_b]),cosmology_in=defaults.cosmology,P_select=P_select)
+           # sp8 = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_b]),P_select=P_select)
             #sh_pow8 = sp8.Cll_sh_sh()
-#        sp9 = shear_power(k_a,C,zs,ls,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_b]),cosmology_in=defaults.cosmology,P_select=P_select)
+#        sp9 = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_b]),P_select=P_select)
 #        sh_pow9 = sp9.Cll_sh_sh()
-#        sp9c = shear_power(k_a,C,zs,ls,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_c]),cosmology_in=defaults.cosmology,P_select=P_select)
+#        sp9c = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_c]),P_select=P_select)
 #        sh_pow9c = sp9c.Cll_sh_sh()
 #        div_c1 = abs(sh_pow9-sh_pow9c)/(2.*epsilon)
 #        P_select[0:10] = 0
 #        P_select[94:104] = 1
-#        sp10 = shear_power(k_a,C,zs,ls,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_b]),cosmology_in=defaults.cosmology,P_select=P_select)
+#        sp10 = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_b]),P_select=P_select)
 #        sh_pow10 = sp10.Cll_sh_sh()
-#        sp10c = shear_power(k_a,C,zs,ls,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_c]),cosmology_in=defaults.cosmology,P_select=P_select)
+#        sp10c = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_c]),P_select=P_select)
 #        sh_pow10c = sp10c.Cll_sh_sh()
 #        div_c2 = abs(sh_pow10-2.*sh_pow8+sh_pow10c)/(2.*epsilon)
 #        P_select[94:104] = 0
 #        P_select[188:198] = 1
-#        sp11 = shear_power(k_a,C,zs,ls,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_b]),cosmology_in=defaults.cosmology,P_select=P_select)
+#        sp11 = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_b]),P_select=P_select)
 #        sh_pow11 = sp11.Cll_sh_sh()
-#        sp11c = shear_power(k_a,C,zs,ls,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_c]),cosmology_in=defaults.cosmology,P_select=P_select)
+#        sp11c = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_c]),P_select=P_select)
 #        sh_pow11c = sp11c.Cll_sh_sh()
 #        div_c3 = abs(sh_pow11-2.*sh_pow8+sh_pow11c)/(2.*epsilon)
 #        P_select[188:198] = 0
 #        P_select[45:55] = 1
-#        sp12 = shear_power(k_a,C,zs,ls,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_b]),cosmology_in=defaults.cosmology,P_select=P_select)
+#        sp12 = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_b]),P_select=P_select)
 #        sh_pow12 = sp12.Cll_sh_sh()
-#        sp12c = shear_power(k_a,C,zs,ls,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_c]),cosmology_in=defaults.cosmology,P_select=P_select)
+#        sp12c = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit_var_redshift',P_in=np.array([P_a,P_c]),P_select=P_select)
 #        sh_pow12c = sp12c.Cll_sh_sh()
 #        div_c4 = abs(sh_pow12-2.*sh_pow8+sh_pow12c)/(2.*epsilon)
-#        sp7 = shear_power(k_in,C,zs,ls,pmodel='cosmosis_nonlinear',P_in=d[:,1],cosmology_in=defaults.cosmology)
+#        sp7 = shear_power(k_in,C,zs,ls,omega_s,pmodel='cosmosis_nonlinear',P_in=d[:,1])
         #sh_pow7 = Cll_sh_sh(sp7).Cll()
         #sh_pow7_gg = Cll_g_g(sp7).Cll()
         #sh_pow7_sg = Cll_sh_g(sp7).Cll()
         #sh_pow7_mm = Cll_mag_mag(sp7).Cll()
-  #      sp5 = shear_power(k_in,C,zs[0:50],ls,pmodel='halofit_nonlinear',P_in=d[:,1],cosmology_in=defaults.cosmology)
+  #      sp5 = shear_power(k_in,C,zs[0:50],ls,omega_s,pmodel='halofit_nonlinear',P_in=d[:,1])
    #     sh_pow5 = sp5.Cll_sh_sh()
-    #    sp6 = shear_power(k_in,C,zs,ls,pmodel='halofit_nonlinear',P_in=d[:,1],cosmology_in=defaults.cosmology)
+    #    sp6 = shear_power(k_in,C,zs,ls,omega_s,pmodel='halofit_nonlinear',P_in=d[:,1])
      #   sh_pow6 = sp6.Cll_sh_sh()
-        #sp4 = shear_power(k_in,C,zs,ls,pmodel='fastpt_nonlin',P_in=d[:,1],cosmology_in=defaults.cosmology)
+        #sp4 = shear_power(k_in,C,zs,ls,omega_s,pmodel='fastpt_nonlin',P_in=d[:,1])
         #sh_pow4 = sp4.Cll_sh_sh()
         
         t2 = time()

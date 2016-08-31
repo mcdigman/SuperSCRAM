@@ -7,7 +7,7 @@ from sw_cov_mat import SWCovMat
 from Dn import DNumberDensityObservable
 
 class LWSurvey:
-    def __init__(self,geos,survey_id,basis,ls = np.array([]),C = cp.CosmoPie(),params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params):
+    def __init__(self,geos,survey_id,basis,C,ls = np.array([]),params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params):
         self.geos = geos
         self.params = params
         self.C = C

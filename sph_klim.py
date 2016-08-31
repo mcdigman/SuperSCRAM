@@ -31,7 +31,7 @@ def I_alpha(k_alpha,k,r_max,l_alpha):
 
 class sph_basis_k(object): 
 	
-	def __init__(self,r_max,CosmoPie,k_cut = 2.0,l_ceil = 100,params = defaults.basis_params):#,geometry,CosmoPie):
+	def __init__(self,r_max,C,k_cut = 2.0,l_ceil = 100,params = defaults.basis_params):#,geometry,CosmoPie):
 		
 		''' inputs:
 			r_max = the maximum radius of the sector 
@@ -42,7 +42,7 @@ class sph_basis_k(object):
 			important! no little h in any of the calculations 
 		''' 
 		
-		k_in,P_lin_in=CosmoPie.get_P_lin()
+		k_in,P_lin_in=C.get_P_lin()
 	        #k = np.logspace(np.log10(np.min(k_in)),np.log10(np.max(k_in))-0.00001,6000000)
                 #k = k_in
                 self.params = params
@@ -264,19 +264,19 @@ if __name__=="__main__":
 	
 
 	from cosmopie import CosmoPie
-	cp=CosmoPie(k=k,P_lin=P)
+	C=CosmoPie(k=k,P_lin=P)
 
-	geometry=geo.rect_geo(zs,Theta,Phi,cp)
+	geometry=geo.rect_geo(zs,Theta,Phi,C)
 	
-	r_max=cp.D_comov(0.5)
+	r_max=C.D_comov(0.5)
 	
         k_cut = 0.010
         l_ceil = 100
-	R=sph_basis_k(r_max,cp,k_cut,l_ceil)
+	R=sph_basis_k(r_max,C,k_cut,l_ceil)
         print R.C_size	
 	
-	r_min=cp.D_comov(.1)
-	r_max=cp.D_comov(.2)
+	r_min=C.D_comov(.1)
+	r_max=C.D_comov(.2)
 	
 	print 'this is r range', r_min, r_max 
 	#X=R.D_delta_bar_D_delta_alpha(r_min,r_max,geometry)

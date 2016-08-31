@@ -5,7 +5,7 @@ import defaults
 import shear_power as sp
 #Handle a lensing power observable as implemented in shear_power.py, get methods must be specified in subclasses
 class LensingPowerBase():
-    def __init__(self,geo,ls,survey_id,params=defaults.lensing_params,C=cp.CosmoPie()):
+    def __init__(self,geo,ls,survey_id,C,params=defaults.lensing_params):
         self.C=C
         self.geo = geo
         self.params = params
@@ -15,8 +15,10 @@ class LensingPowerBase():
         z_min = params['z_min_integral']
 
         zs = np.arange(z_step,geo.zs[-1],z_step)
-        self.C_pow = sp.shear_power(C.k,C,zs,ls,pmodel=params['pmodel_O'],P_in=C.P_lin)
-        self.dC_ddelta = sp.shear_power(C.k,C,zs,ls,pmodel=params['pmodel_dO_ddelta'],P_in=C.P_lin)
+        omega_s = self.geo.angular_area()
+        self.C_pow = sp.shear_power(C.k,C,zs,ls,omega_s=omega_s,pmodel=params['pmodel_O'],P_in=C.P_lin)
+        self.dC_ddelta = sp.shear_power(C.k,C,zs,ls,omega_s=omega_s,pmodel=params['pmodel_dO_ddelta'],P_in=C.P_lin)
+        
 
 #Generic lensing signal, subclass must define a function handle self.len_handle for which obserable to use
 class LensingObservable(SWObservable):

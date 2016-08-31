@@ -12,38 +12,25 @@ from scipy.integrate import romberg, quad, trapz,cumtrapz
 #from talk_to_class import class_objects
 import sys
 from scipy.interpolate import interp1d
-
+import defaults
 eps=np.finfo(float).eps
 
 class CosmoPie :
 	
-	def __init__(self,cosmology=None, P_lin=None, k=None,lin_type='class',precompute=True,z_max=4.0,z_space=0.01):
+	def __init__(self,cosmology=defaults.cosmology, P_lin=None, k=None,lin_type='class',precompute=True,z_max=4.0,z_space=0.01):
 		# default to Planck 2015 values 
-		
-		if cosmology is None:
-		
-			self.Omegabh2 = 0.02230
-			self.Omegach2 = 0.1188
-			self.Omegamh2 = 0.14170
-			self.OmegaL   = .6911
-			self.Omegam   = .3089
-			self.H0       = 67.74 
-			self.sigma8   = .8159 
-			self.h        = .6774 
-			self.Omegak   = 0.0 # check on this value 
-			self.Omegar   = 0.0 # check this value too
-		else :
-			self.Omegabh2 = cosmology['Omegabh2']
-			self.Omegach2 = cosmology['Omegach2']
-			self.Omegamh2 = cosmology['Omegamh2']
-			self.OmegaL   = cosmology['OmegaL']
-			self.Omegam   = cosmology['Omegam']
-			self.H0       = cosmology['H0']
-			self.sigma8   = cosmology['sigma8']
-			self.h        = cosmology['h']
-			self.Omegak   = cosmology['Omegak']
-			self.Omegar   = cosmology['Omegar']
-
+	        print "COSMO START"	
+		self.Omegabh2 = cosmology['Omegabh2']
+		self.Omegach2 = cosmology['Omegach2']
+		self.Omegamh2 = cosmology['Omegamh2']
+		self.OmegaL   = cosmology['OmegaL']
+		self.Omegam   = cosmology['Omegam']
+		self.H0       = cosmology['H0']
+		self.sigma8   = cosmology['sigma8']
+		self.h        = cosmology['h']
+		self.Omegak   = cosmology['Omegak']
+		self.Omegar   = cosmology['Omegar']
+                self.cosmology=cosmology
 		
 		self.P_lin=P_lin
 		self.k=k    
@@ -317,7 +304,7 @@ class CosmoPie :
 	 
 if __name__=="__main__": 
 
-	C=CosmoPie()
+	C=CosmoPie(cosmology=defaults.cosmology)
 	z=3.5
 	z=.1
 	print('Comoving distance',C.D_comov(z))

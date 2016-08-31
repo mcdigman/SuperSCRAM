@@ -22,7 +22,7 @@ from lw_survey import LWSurvey
 class super_survey:
     ''' This class holds and returns information for all surveys
     ''' 
-    def __init__(self, surveys_sw, surveys_lw, r_max, l, n_zeros,k,basis,cosmology=defaults.cosmology,P_lin=None):
+    def __init__(self, surveys_sw, surveys_lw, r_max, l, n_zeros,k,basis,C,P_lin=None):
     
       
         '''
@@ -43,7 +43,7 @@ class super_survey:
         #self.zs_lw=surveys_lw[0]['zs']
         print'this is the number of surveys', self.N_surveys_sw, self.N_surveys_lw
            
-        self.CosmoPie=CosmoPie(k=k,P_lin=P_lin,cosmology=defaults.cosmology)
+        self.C=C
          
           #k_cut = 0.25 #converge to 0.0004
         self.basis = basis 
@@ -122,7 +122,7 @@ class super_survey:
                     n_obs=np.array([data[0],data[1]])
                     mass=data[2]
                     print n_obs, mass
-                    X=DNumberDensityObservable(self.surveys_lw[0],defaults.dn_params,'lw1',self.CosmoPie,self.basis)
+                    X=DNumberDensityObservable(self.surveys_lw[0],defaults.dn_params,'lw1',self.C,self.basis)
                     D_O_a[i] = X.Fisher_alpha_beta()
                     print "min",np.min(D_O_a[i][0])
                     print D_O_a[i][0]
@@ -145,8 +145,8 @@ if __name__=="__main__":
     #d=np.loadtxt('Pk_Planck15.dat')
     d=np.loadtxt('camb_m_pow_l.dat')
     k=d[:,0]; P=d[:,1]
-    cp=CosmoPie(k=k,P_lin=P)
-    r_max=cp.D_comov(z_max)
+    C=CosmoPie(k=k,P_lin=P,cosmology=defaults.cosmology)
+    r_max=C.D_comov(z_max)
     print 'this is r max and l_max', r_max , l_max
     
     Theta1=[np.pi/4.,5.*np.pi/16.]
@@ -160,11 +160,11 @@ if __name__=="__main__":
     #l=np.logspace(np.log10(2),np.log10(3000),1000)
     l_sw = np.arange(2,3000)
     
-    geo1=rect_geo(zs,Theta1,Phi1,cp)
-    geo2=rect_geo(zs,Theta2,Phi2,cp)
+    geo1=rect_geo(zs,Theta1,Phi1,C)
+    geo2=rect_geo(zs,Theta2,Phi2,C)
 
-    survey_1 = SWSurvey(geo1,'survey1',l_sw,cp,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=defaults.lensing_params) 
-    survey_2 = SWSurvey(geo1,'survey2',l_sw,cp,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=defaults.lensing_params) 
+    survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=defaults.lensing_params) 
+    survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=defaults.lensing_params) 
 
     #shear_data1={'z_bins':zbins,'l':l_sw,'geo':geo1}
     #shear_data2={'z_bins':zbins,'l':l_sw,'geo':geo2}
@@ -177,15 +177,15 @@ if __name__=="__main__":
     M_cut=10**(12.5)
      
     n_avg = np.zeros(2)
-    n_avg[0] = ST_hmf(cp).n_avg(M_cut,0.15)
-    n_avg[1] = ST_hmf(cp).n_avg(M_cut,0.25)
+    n_avg[0] = ST_hmf(C).n_avg(M_cut,0.15)
+    n_avg[1] = ST_hmf(C).n_avg(M_cut,0.25)
         
     V1 = geo1.volumes[0]
     #V2 = geo1.volumes[1]
     V2 = 0
-    #V1 = Dn.volume(cp.D_comov(0.1),cp.D_comov(0.2),Theta,Phi)
-    #V2 = Dn.volume(cp.D_comov(0.2),cp.D_comov(0.3),Theta,Phi)
-    #amplitude of fluctuations within a given radius should be given by something like np.sqrt(np.trapz((3.*(sin(k*R)-k*R*cos(k*R))/(k*R)**3)**2*P*k**2,k)*4.*np.pi/(2.*np.pi)**3), where R is the radius of the bin, R=cp.D_comov(z[i])-cp.D_comov(z[i-1])
+    #V1 = Dn.volume(C.D_comov(0.1),C.D_comov(0.2),Theta,Phi)
+    #V2 = Dn.volume(C.D_comov(0.2),C.D_comov(0.3),Theta,Phi)
+    #amplitude of fluctuations within a given radius should be given by something like np.sqrt(np.trapz((3.*(sin(k*R)-k*R*cos(k*R))/(k*R)**3)**2*P*k**2,k)*4.*np.pi/(2.*np.pi)**3), where R is the radius of the bin, R=C.D_comov(z[i])-C.D_comov(z[i-1])
     #cf https://ned.ipac.caltech.edu/level5/March01/Strauss/Strauss2.html
     #~0.007 for R~400 (check units).
     n_dat1=np.array([n_avg[0]*V1,n_avg[1]*V2])
@@ -210,17 +210,17 @@ if __name__=="__main__":
     geos = np.array([geo1,geo2])
     l_lw=np.arange(0,20)
     n_zeros=49
-    k_cut = 0.01
+    k_cut = 0.005
             
     #self.basis=sph_basis(r_max,l,n_zeros,self.CosmoPie)
-    basis=sph_basis_k(r_max,cp,k_cut,l_ceil=100)
-    survey_3 = LWSurvey(geos,'lw_survey1',basis,ls = l_lw,C=cp,params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params)
+    basis=sph_basis_k(r_max,C,k_cut,l_ceil=100)
+    survey_3 = LWSurvey(geos,'lw_survey1',basis,C=C,ls = l_lw,params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params)
     surveys_lw=np.array([survey_3])
      
      
     print 'this is r_max', r_max 
      
-    SS=super_survey(surveys_sw, surveys_lw,r_max,l_sw,n_zeros,k,basis,P_lin=P)
+    SS=super_survey(surveys_sw, surveys_lw,r_max,l_sw,n_zeros,k,basis,P_lin=P,C=C)
      
     #print "fractional mitigation: ", SS.a_no_mit/SS.a_mit     
 
@@ -244,7 +244,7 @@ if __name__=="__main__":
 
     print "(S/N)^2 gaussian: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss))),c_ss)
     print "(S/N)^2 gaussian+no mitigation: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss)+SS.cov_no_mit[0,0])),c_ss)
-    #print "(S/N)^2 gaussian+mitigation: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss)+SS.cov_mit[0,0])),c_ss)
+    print "(S/N)^2 gaussian+mitigation: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss)+SS.cov_mit[0,0])),c_ss)
     #ax.loglog(l_sw,cov_ss)
     #ax.loglog(l,np.diag(SS.cov_mit[0,0])/c_ss**2*l/2)
    # ax.loglog(l,(np.diag(SS.cov_mit[0,0])))
