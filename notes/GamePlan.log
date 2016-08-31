@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013) (format=pdflatex 2013.5.30)  26 JUL 2016 00:07
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013) (format=pdflatex 2013.5.30)  26 JUL 2016 18:37
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -152,8 +152,11 @@ LaTeX Font Info:    Redeclaring font encoding OMS on input line 567.
 LaTeX Info: Redefining \[ on input line 2665.
 LaTeX Info: Redefining \] on input line 2666.
 )
-(./GamePlan.aux (./literature.aux) (./trispectrum.aux) (./delta_alpha.aux)
-(./separate_universe.aux))
+(./GamePlan.aux (./literature.aux) (./trispectrum.aux) (./delta_alpha.aux
+
+LaTeX Warning: Label `fig:field' multiply defined.
+
+) (./separate_universe.aux))
 \openout1 = `GamePlan.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 25.
@@ -270,31 +273,30 @@ LaTeX Font Info:    Try loading font information for U+msb on input line 26.
 (/usr/local/texlive/2013/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-LaTeX Font Info:    Try loading font information for OMS+cmr on input line 32.
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 30.
 
 (/usr/local/texlive/2013/texmf-dist/tex/latex/base/omscmr.fd
 File: omscmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
 )
 LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10.95> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 32.
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 30.
+ [1
 
-./GamePlan.tex:47: Extra }, or forgotten $.
-l.47 ...}=\partial \obs_I /\partial \delta_\alpha}
+{/usr/local/texlive/2013/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
+./GamePlan.tex:57: Extra }, or forgotten $.
+l.57 ...}=\partial \obs_I /\partial \delta_\alpha}
                                                    $. The covariance matrix ...
 
 ? 
-[1
-
-{/usr/local/texlive/2013/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
 [2]
-./GamePlan.tex:91: Missing } inserted.
+./GamePlan.tex:101: Missing } inserted.
 <inserted text> 
                 }
-l.91 \end{itemize}
-                  
+l.101 \end{itemize}
+                   
 ? 
 
-Overfull \hbox (51.23334pt too wide) in paragraph at lines 92--93
+Overfull \hbox (51.23334pt too wide) in paragraph at lines 102--103
 \OML/cmm/m/it/10.95 ^^N[]\OT1/cmr/m/n/10.95 [\OML/cmm/m/it/10.95 l[]; m[]; n\OT
 1/cmr/m/n/10.95 ]$, so that the first en-tries cor-re-sponds to $[0\OML/cmm/m/i
 t/10.95 ; \OT1/cmr/m/n/10.95 0\OML/cmm/m/it/10.95 ; \OT1/cmr/m/n/10.95 0]\OML/c
@@ -308,7 +310,13 @@ cmm/m/it/10.95 ; n\OT1/cmr/m/n/10.95 ]\OML/cmm/m/it/10.95 ; \OT1/cmr/m/n/10.95
 10.95 0]\OML/cmm/m/it/10.95 ; :::$
  []
 
-[3] [4]
+[3] [4] <ps_response_1.png, id=27, 985.0401pt x 644.6484pt>
+File: ps_response_1.png Graphic file (type png)
+
+<use ps_response_1.png>
+Package pdftex.def Info: ps_response_1.png used on input line 144.
+(pdftex.def)             Requested size: 430.00462pt x 281.41328pt.
+ [5 <./ps_response_1.png>]
 \openout2 = `literature.aux'.
 
  (./literature.tex
@@ -323,9 +331,9 @@ Type  H <return>  for immediate help.
 l.14 \newcommand{\obs}{\mathcal{O}}
                                    
 ? 
-) [5
+) [6
 
-] [6
+] [7
 
 ]
 \openout2 = `trispectrum.aux'.
@@ -398,7 +406,7 @@ l.21 \end{align}
 l.21 \end{align}
                 
 ? 
-) [7
+) [8
 
 ]
 \openout2 = `delta_alpha.aux'.
@@ -459,10 +467,10 @@ Type  H <return>  for immediate help.
 l.14 \newcommand{\obs}{\mathcal{O}}
                                    
 ? 
-[8
+[9
 
 
-] <field.pdf, id=41, 722.7pt x 722.7pt>
+] <field.pdf, id=47, 722.7pt x 722.7pt>
 File: field.pdf Graphic file (type pdf)
  <use field.pdf>
 Package pdftex.def Info: field.pdf used on input line 66.
@@ -472,16 +480,16 @@ Overfull \hbox (24.72833pt too wide) in paragraph at lines 113--113
 [] 
  []
 
-[9]
+[10]
 Overfull \vbox (132.7003pt too high) has occurred while \output is active []
 
 
-[10 <./field.pdf>]
+[11 <./field.pdf>]
 Overfull \hbox (20.57281pt too wide) in paragraph at lines 122--122
 [] 
  []
 
-) [11]
+) [12]
 \openout2 = `separate_universe.aux'.
 
  (./separate_universe.tex
@@ -497,15 +505,15 @@ l.74 \end{align}
 l.74 \end{align}
                 
 ? 
-<manifolds.png, id=84, 1156.32pt x 722.7pt>
+<manifolds.png, id=90, 1156.32pt x 722.7pt>
 File: manifolds.png Graphic file (type png)
  <use manifolds.png>
 Package pdftex.def Info: manifolds.png used on input line 84.
 (pdftex.def)             Requested size: 430.00462pt x 268.75119pt.
- [12
+ [13
 
 
-] [13 <./manifolds.png>] [14]) [15] (./GamePlan.bbl
+] [14 <./manifolds.png>] [15]) [16] (./GamePlan.bbl
 ./GamePlan.bbl:6: Undefined control sequence.
 <recently read> \prd 
                      
@@ -518,39 +526,48 @@ l.6   (June, 2013) 123504}
 l.13   (Apr., 2014) 083519}
                            , [\href{http://arxiv.org/abs/1401.0385}{{\tt
 ? 
-) [16
+./GamePlan.bbl:20: Undefined control sequence.
+<recently read> \prd 
+                     
+l.20   (Mar., 2016) 063507}
+                           , [\href{http://arxiv.org/abs/1511.01454}{{\tt
+? 
+) [17
 
 ] (./GamePlan.aux (./literature.aux) (./trispectrum.aux)
-(./delta_alpha.aux) (./separate_universe.aux)) ) 
+(./delta_alpha.aux) (./separate_universe.aux))
+
+LaTeX Warning: There were multiply-defined labels.
+
+ ) 
 Here is how much of TeX's memory you used:
- 2959 strings out of 493315
- 39930 string characters out of 6137904
- 123202 words of memory out of 5000000
- 6337 multiletter control sequences out of 15000+600000
+ 2965 strings out of 493315
+ 40055 string characters out of 6137904
+ 123245 words of memory out of 5000000
+ 6342 multiletter control sequences out of 15000+600000
  12487 words of font info for 47 fonts, out of 8000000 for 9000
  957 hyphenation exceptions out of 8191
- 38i,23n,26p,656b,225s stack positions out of 5000i,500n,10000p,200000b,80000s
-</usr/local/texlive/2013/texmf-
-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/local/texlive/2013/texmf-d
-ist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2013/texmf-di
-st/fonts/type1/public/amsfonts/cm/cmbx8.pfb></usr/local/texlive/2013/texmf-dist
-/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/texlive/2013/texmf-dist/
-fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2013/texmf-dist/f
-onts/type1/public/amsfonts/cm/cmmi6.pfb></usr/local/texlive/2013/texmf-dist/fon
-ts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2013/texmf-dist/fonts
-/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2013/texmf-dist/fonts/t
-ype1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2013/texmf-dist/fonts/typ
-e1/public/amsfonts/cm/cmr17.pfb></usr/local/texlive/2013/texmf-dist/fonts/type1
-/public/amsfonts/cm/cmr6.pfb></usr/local/texlive/2013/texmf-dist/fonts/type1/pu
-blic/amsfonts/cm/cmr8.pfb></usr/local/texlive/2013/texmf-dist/fonts/type1/publi
-c/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2013/texmf-dist/fonts/type1/public
-/amsfonts/cm/cmsy8.pfb></usr/local/texlive/2013/texmf-dist/fonts/type1/public/a
-msfonts/cm/cmti10.pfb></usr/local/texlive/2013/texmf-dist/fonts/type1/public/am
-sfonts/cm/cmtt10.pfb>
-Output written on GamePlan.pdf (16 pages, 332835 bytes).
+ 38i,23n,26p,711b,225s stack positions out of 5000i,500n,10000p,200000b,80000s
+</usr/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb
+></usr/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb>
+</usr/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb></
+usr/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></u
+sr/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></us
+r/local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/
+local/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/lo
+cal/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/loca
+l/texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/
+texlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/local/te
+xlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/local/texli
+ve/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/
+2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2
+013/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texlive/201
+3/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local/texlive/2013
+/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
+Output written on GamePlan.pdf (17 pages, 423152 bytes).
 PDF statistics:
- 156 PDF objects out of 1000 (max. 8388607)
- 100 compressed objects within 1 object stream
+ 162 PDF objects out of 1000 (max. 8388607)
+ 102 compressed objects within 2 object streams
  0 named destinations out of 1000 (max. 500000)
- 11 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 16 words of extra memory for PDF output out of 10000 (max. 10000000)
 
