@@ -151,8 +151,10 @@ class CosmoPie :
 	    
 	
 	def look_back(self,z):
-		I = lambda z : 1/self.Ez(z)/(1+z)
-		return self.tH*quad(I,0,z)[0]
+	    f1=3.086e19  # conversion  Mpc to km 
+	    f2=3.154e7   # conversion seconds to years
+	    I = lambda z : 1/self.Ez(z)/(1+z)
+	    return self.tH*quad(I,0,z)[0]*f1/f2
 	# -----------------------------------------------------------------------------   
 	
 	# Growth functions

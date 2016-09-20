@@ -10,7 +10,7 @@ class SWSurvey:
         self.geo = geo
         self.params = params
         self.needs_lensing = params['needs_lensing']
-        self.C = C
+        self.C = C # cosmopie 
         self.ls = ls
         self.survey_id = survey_id
         if self.needs_lensing:
