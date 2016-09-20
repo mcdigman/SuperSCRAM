@@ -21,6 +21,6 @@ def camb_pow(cosmology):
         results = camb.get_results(pars)
         kh, z, pk = results.get_matter_power_spectrum(minkh=1.1*1e-5, maxkh=1e5, npoints = 3000)
 
-        return kh,pk[0]*cosmology['sigma8']**2/results.get_sigma8()**2
+        return kh*cosmology['h'],pk[0]*cosmology['sigma8']**2/results.get_sigma8()**2/cosmology['h']**3
 if __name__=='__main__':
     kh,pk = camb_pow(defaults.cosmology)

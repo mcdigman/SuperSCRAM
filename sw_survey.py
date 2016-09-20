@@ -91,8 +91,9 @@ if __name__=='__main__':
     k=d[:,0]; P=d[:,1]
     C=cp.CosmoPie(k=k,P_lin=P)
     zs = np.array([0.1,0.8])
+    z_fine = np.arange(0.01,np.max(zs),0.01)
     ls = np.arange(2,500)
-    geo = rect_geo(zs,Theta,Phi,C)
+    geo = rect_geo(zs,Theta,Phi,C,z_fine)
     sw_survey = SWSurvey(geo,'survey1',C,ls)
     O_I_list = sw_survey.get_O_I_list()
     dO_I_ddelta_bar_list = sw_survey.get_dO_I_ddelta_bar_list()

@@ -19,10 +19,10 @@ class SWCovMat:
                 #under current assumptions only need sh_pow1
                 sh_pow1 = O_I_1.len_pow.C_pow
                 sh_pow2 = O_I_2.len_pow.C_pow
-                n_ac = sh_pow1.get_n_chip(class_a,class_c)
-                n_ad = sh_pow1.get_n_chip(class_a,class_d)
-                n_bd = sh_pow1.get_n_chip(class_b,class_d)
-                n_bc = sh_pow1.get_n_chip(class_b,class_c)
+                n_ac = sh_pow1.get_n_shape(class_a,class_c)
+                n_ad = sh_pow1.get_n_shape(class_a,class_d)
+                n_bd = sh_pow1.get_n_shape(class_b,class_d)
+                n_bc = sh_pow1.get_n_shape(class_b,class_c)
                 ns = np.array([n_ac,n_ad,n_bd,n_bc])
                 print ns
 

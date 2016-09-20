@@ -17,13 +17,14 @@ class TestAlmMathematicaAgree1(unittest.TestCase):
         lm_table = np.loadtxt(test_base+'lm_table.dat')
     
         zs=np.array([.1,.2,.3])
+        z_fine = np.arange(0.01,0.3,0.001)
         Theta=[np.pi/4,np.pi/2.]
         Phi=[0,np.pi/3.+np.sqrt(2.)/100.]
     
     
         from cosmopie import CosmoPie
-        cp=CosmoPie()
-        geo1 = rect_geo(zs,Theta,Phi,cp)
+        C=CosmoPie()
+        geo1 = rect_geo(zs,Theta,Phi,C,z_fine)
     
         alm_py = np.zeros_like(alm_math)
         for i in range(0,lm_table.shape[0]):

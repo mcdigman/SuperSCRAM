@@ -94,19 +94,32 @@ class super_survey:
             print "no mit"
 
         Cov_SSC = np.zeros((2,2),dtype=object) 
-        a_SSC = np.zeros(self.N_surveys_sw) 
+        a_SSC = np.zeros(self.N_surveys_sw,dtype=object) 
 
         for i in range(0,self.N_surveys_sw):
             survey=self.surveys_sw[i]
-            T=self.basis.D_delta_bar_D_delta_alpha(survey.geo)[0]
-            print "max t",max(T)
-            print "min t",min(T)
-            print T[0]
-            a_SSC[i] = F_loc.contract_covar(T,T)
-            print "a is: ",a_SSC[i]
             dO_I_ddelta_bar_list = survey.get_dO_I_ddelta_bar_list()
+            #dO_I_ddelta_alpha_list = np.zeros(dO_I_ddelta_bar_list.size,dtype=object)
+        
+            #TODO probably move this loop elsewhere
             for j in range(0,dO_I_ddelta_bar_list.size):
-                Cov_SSC[i,j]=np.outer(dO_I_ddelta_bar_list[j],dO_I_ddelta_bar_list[j])*a_SSC[i]
+                print "Calc d delta alpha"
+                T = self.basis.D_O_I_D_delta_alpha(survey.geo,dO_I_ddelta_bar_list[j])
+                print T.shape
+                print F_loc.get_covar().shape
+                Cov_SSC[i,j] = np.dot(T.T,np.dot(F_loc.get_covar(),T))
+                
+                #a_SSC[i][j] = F_loc.contract_covar(T,T)
+            #TODO put this behavior back maybe
+            T=self.basis.D_delta_bar_D_delta_alpha(survey.geo,tomography=True)[0]
+            a_SSC[i]=F_loc.contract_covar(T,T)
+            #print "max t",max(T)
+            #print "min t",min(T)
+            #print T[0]
+            print "a is: ",a_SSC[i]
+            #TODO what is this j index doing?
+            #for j in range(0,dO_I_ddelta_bar_list.size):
+            #    Cov_SSC[i,j]=np.outer(dO_I_ddelta_bar_list[j],dO_I_ddelta_bar_list[j])*a_SSC[i]
         return Cov_SSC,a_SSC
 
     def get_O_a(self):
@@ -140,7 +153,7 @@ class super_survey:
           
 if __name__=="__main__":
 
-    z_max=1.05; l_max=20 
+    z_max=1.25; l_max=20 
 
     #d=np.loadtxt('Pk_Planck15.dat')
     d=np.loadtxt('camb_m_pow_l.dat')
@@ -149,19 +162,20 @@ if __name__=="__main__":
     r_max=C.D_comov(z_max)
     print 'this is r max and l_max', r_max , l_max
     
-    Theta1=[np.pi/4.,5.*np.pi/16.]
-    Phi1=[0.,np.pi/12.]
+    Theta1=[0,np.pi/4.]
+    Phi1=[0.,np.pi/3.]
     Theta2=[np.pi/4.,np.pi/2.]
     Phi2=[np.pi/3.,2.*np.pi/3.]
     #geo=np.array([Theta,Phi])
 
-    zs=np.array([.9,1.0])
+    zs=np.array([.4,0.8,1.2])
+    z_fine = np.arange(defaults.lensing_params['z_min_integral'],np.max(zs),defaults.lensing_params['z_resolution'])
     #zbins=np.array([.2,.6,1.0])
     #l=np.logspace(np.log10(2),np.log10(3000),1000)
-    l_sw = np.arange(2,3000)
+    l_sw = np.logspace(np.log(20),np.log(5000),base=np.exp(1.),num=20)
     
-    geo1=rect_geo(zs,Theta1,Phi1,C)
-    geo2=rect_geo(zs,Theta2,Phi2,C)
+    geo1=rect_geo(zs,Theta1,Phi1,C,z_fine)
+    geo2=rect_geo(zs,Theta2,Phi2,C,z_fine)
 
     survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=defaults.lensing_params) 
     survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=defaults.lensing_params) 
@@ -210,7 +224,7 @@ if __name__=="__main__":
     geos = np.array([geo1,geo2])
     l_lw=np.arange(0,20)
     n_zeros=49
-    k_cut = 0.005
+    k_cut = 0.012
             
     #self.basis=sph_basis(r_max,l,n_zeros,self.CosmoPie)
     basis=sph_basis_k(r_max,C,k_cut,l_ceil=100)

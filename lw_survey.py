@@ -16,7 +16,7 @@ class LWSurvey:
         self.basis = basis
         self.ddelta_bar_ddelta_alpha_list = np.zeros(self.geos.size,dtype = object)
         for i in range(0,self.geos.size):
-            self.ddelta_bar_ddelta_alpha_list[i] = self.basis.D_delta_bar_D_delta_alpha(self.geos[i])
+            self.ddelta_bar_ddelta_alpha_list[i] = self.basis.D_delta_bar_D_delta_alpha(self.geos[i],tomography=True)
         self.dn_params = defaults.dn_params
         self.observable_names = generate_observable_names(self.geos,observable_list,params['cross_bins'])
         self.observables = self.names_to_observables(self.observable_names)

@@ -2,34 +2,50 @@ import numpy as np
 import cosmopie as cp
 from scipy.integrate import dblquad
 
-# the smallest value 
+
+#Abstract class defining a geometry for a survey. 
+#At the moment, a geometry must 
+#1) Have a definite coarse z bin structure (for tomography)
+#2) Have a definite fine z bin structure (for integrating over z)
+#3) Be able to compute some kind of surface integral
+#Most of the behavior should be defined in subclasses
 
 class geo:
-    def __init__(self,zs,volumes,v_total,rs,C):
-        self.zs = zs
-        self.C = C
-        self.volumes = volumes
-        self.v_total = v_total
-        self.rs = rs
-        #list r rbins as [rmin,rmax] pairs for convenience
-        self.rbins = np.zeros((rs.size-1,2))
-        self.zbins = np.zeros((zs.size-1,2))
-        for i in range(0,rs.size-1):
+    def __init__(self,z_coarse,volumes,v_total,r_coarse,C,z_fine):
+        self.zs = z_coarse #index of the starts of the tomography bins
+        self.C = C #cosmopie
+        self.volumes = volumes #volume of each tomography bin
+        self.v_total = v_total #total volume of geo
+        self.rs = r_coarse #comoving distances associated with the zs (TODO: just calculate from zs)
+        self.z_fine = z_fine
+        self.r_fine = np.zeros(self.z_fine.size)
+        for i in range(0,self.r_fine.size):
+            self.r_fine[i] = self.C.D_comov(self.z_fine[i])
+        #list r and  z bins as [rmin,rmax] pairs (min in bin, max in bin) for convenience
+        self.rbins = np.zeros((self.rs.size-1,2)) 
+        self.zbins = np.zeros((self.zs.size-1,2))
+        for i in range(0,self.rs.size-1):
             self.rbins[i,0] = self.rs[i]
             self.rbins[i,1] = self.rs[i+1]
             self.zbins[i,0] = self.zs[i]
             self.zbins[i,1] = self.zs[i+1]
-
+        #smalles possible difference for a sum
         self.eps=np.finfo(float).eps
+    #integrate a function over the surface of the geo (interpretation of the meaning of the "surface" is up to the subclass)
+    #mainly used for calculating area and a_lm at the moment
+    #TODO: consider making specific to a tomography bin (or just let subclasses do that?)
     def surface_integral(self,function):
         raise NotImplementedError, "Subclasses of geo should implement surface_integral"
 
+    #get the angular area (in square radians) occupied by the geometry using the surface integral TODO: consider option to return in degrees or fsky
     def angular_area(self):
         return self.surface_integral(lambda theta,phi: 1.0)
 
     #volume ddeltabar_dalpha
+
+#class implementing a geometry of rectangles (on the surface of a sphere, defined by theta,phi coordinates of vertices)
 class rect_geo(geo): 
-    def __init__(self,zs,Theta,Phi,C):
+    def __init__(self,zs,Theta,Phi,C,z_fine):
             self.Theta = Theta
             self.Phi = Phi
             
@@ -48,7 +64,7 @@ class rect_geo(geo):
             v_total=(phi2-phi1)*(np.cos(theta1)- np.cos(theta2))*(rs[-1]**3-rs[0]**3)/3.
 
 
-            geo.__init__(self,zs,volumes,v_total,rs,C)
+            geo.__init__(self,zs,volumes,v_total,rs,C,z_fine)
 
     #function(phi,theta)
     def surface_integral(self,function):
@@ -58,3 +74,4 @@ class rect_geo(geo):
         else:
             return I
 
+#TODO: Implement polygon_geo, allowing arbitrary polygons, using either healpix, boundary conditions, or both ways

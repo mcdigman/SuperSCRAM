@@ -1,4 +1,5 @@
 import cosmopie as cp
+from camb_power import camb_pow
 import numpy as np
 from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
 import shear_power as sp
@@ -17,24 +18,28 @@ class TestCosmosisAgreement1(unittest.TestCase):
             TOLERANCE_MEAN = 0.05
 
             C=cp.CosmoPie(cosmology=defaults.cosmology_cosmosis)
-            k_in = np.loadtxt('test_inputs/proj_1/k_h.txt')
-            zs = np.loadtxt('test_inputs/proj_1/z.txt')
+            k_in = np.loadtxt('test_inputs/proj_2/k_h.txt')*C.h
+            zs = np.loadtxt('test_inputs/proj_2/z.txt')
             zs[0] = 10**-3
 
-            ls = np.loadtxt('test_inputs/proj_1/ell.txt')
+            ls = np.loadtxt('test_inputs/proj_2/ell.txt')
     
             omega_s = np.pi/(3.*np.sqrt(2.))
-            sp1 = sp.shear_power(k_in,C,zs,ls,omega_s=omega_s,pmodel='cosmosis_nonlinear')
+            params = defaults.lensing_params.copy()
+            params['zbar']=1.0
+            params['sigma']=0.4
+            params['smodel']='gaussian'
+            sp1 = sp.shear_power(k_in,C,zs,ls,omega_s=omega_s,pmodel='cosmosis_nonlinear',params=params)
 
             sh_pow1 = sp.Cll_sh_sh(sp1).Cll()
             sh_pow1_gg = sp.Cll_g_g(sp1).Cll()
             sh_pow1_sg = sp.Cll_sh_g(sp1).Cll()
             sh_pow1_mm = sp.Cll_mag_mag(sp1).Cll()
     
-            sh_pow_cosm = np.loadtxt('test_inputs/proj_1/ss_pow.txt')
-            gal_pow_cosm = np.loadtxt('test_inputs/proj_1/gg_pow.txt')
-            sg_pow_cosm = np.loadtxt('test_inputs/proj_1/sg_pow.txt')
-            mm_pow_cosm = np.loadtxt('test_inputs/proj_1/mm_pow.txt')
+            sh_pow_cosm = np.loadtxt('test_inputs/proj_2/ss_pow.txt')
+            gal_pow_cosm = np.loadtxt('test_inputs/proj_2/gg_pow.txt')
+            sg_pow_cosm = np.loadtxt('test_inputs/proj_2/sg_pow.txt')
+            mm_pow_cosm = np.loadtxt('test_inputs/proj_2/mm_pow.txt')
             
 
 #            import matplotlib.pyplot as plt
@@ -54,11 +59,11 @@ class TestCosmosisAgreement1(unittest.TestCase):
     
             #get ratio of calculated value to expected value from cosmosis
             #use -np.inf as filler for interpolation when l value is not in ls*C.h,filter it later
-            ss_rat = (sh_pow_cosm-(interp1d(ls*C.h,sh_pow1/C.h**3,bounds_error=False,fill_value=-np.inf)(ls)))/sh_pow_cosm
+            ss_rat = (sh_pow_cosm-(interp1d(ls,sh_pow1,bounds_error=False,fill_value=-np.inf)(ls)))/sh_pow_cosm
     
-            gg_rat = (gal_pow_cosm-(interp1d(ls*C.h,sh_pow1_gg/C.h**3,bounds_error=False,fill_value=-np.inf)(ls)))/gal_pow_cosm
-            sg_rat = (sg_pow_cosm-(interp1d(ls*C.h,sh_pow1_sg/C.h**3,bounds_error=False,fill_value=-np.inf)(ls)))/sg_pow_cosm
-            mm_rat = (mm_pow_cosm-(interp1d(ls*C.h,sh_pow1_mm/C.h**2,bounds_error=False,fill_value=-np.inf)(ls)))/mm_pow_cosm 
+            gg_rat = (gal_pow_cosm-(interp1d(ls,sh_pow1_gg,bounds_error=False,fill_value=-np.inf)(ls)))/gal_pow_cosm
+            sg_rat = (sg_pow_cosm-(interp1d(ls,sh_pow1_sg,bounds_error=False,fill_value=-np.inf)(ls)))/sg_pow_cosm
+            mm_rat = (mm_pow_cosm-(interp1d(ls,sh_pow1_mm*C.h,bounds_error=False,fill_value=-np.inf)(ls)))/mm_pow_cosm 
             ###TODO### examine discrepancy in powers of h (comes from magnification_prefactor)
 
             mean_ss_err = np.mean(abs(ss_rat)[abs(ss_rat)<np.inf])
@@ -92,25 +97,30 @@ class TestCosmosisHalofitAgreement1(unittest.TestCase):
     #assuming gaussian matter distribution with sigma=0.4 and average z=1
     #use halofit power spectrum grid
     def test_cosmosis_match(self): 
-            TOLERANCE_MAX = 0.15
-            TOLERANCE_MEAN = 0.15
+            TOLERANCE_MAX = 0.2
+            TOLERANCE_MEAN = 0.2
             C=cp.CosmoPie(cosmology=defaults.cosmology_cosmosis)
-            d = np.loadtxt('test_inputs/proj_1/camb_m_pow_l.dat')
+            #d = np.loadtxt('test_inputs/proj_1/camb_m_pow_l.dat')
             #d = np.loadtxt('test_inputs/proj_1/p_k_lin.dat')
-            k_in = d[:,0]
-            P_in = d[:,1]
-            zs = np.loadtxt('test_inputs/proj_1/z.txt')
+            #k_in = d[:,0]
+            #P_in = d[:,1]
+            k_in,P_in = camb_pow(defaults.cosmology_cosmosis)
+            zs = np.loadtxt('test_inputs/proj_2/z.txt')
             zs[0] = 10**-3
 
-            ls = np.loadtxt('test_inputs/proj_1/ell.txt')
+            ls = np.loadtxt('test_inputs/proj_2/ell.txt')
             omega_s=np.pi/(3.*np.sqrt(2.))
-            sp1 = sp.shear_power(k_in,C,zs,ls,omega_s=omega_s,pmodel='cosmosis_nonlinear')
+            params = defaults.lensing_params.copy()
+            params['zbar']=1.0
+            params['sigma']=0.40
+            params['smodel']='gaussian'
+            sp1 = sp.shear_power(k_in,C,zs,ls,omega_s=omega_s,pmodel='cosmosis_nonlinear',params=params)
             sh_pow1 = sp.Cll_sh_sh(sp1).Cll()
             sh_pow1_gg = sp.Cll_g_g(sp1).Cll()
             sh_pow1_sg = sp.Cll_sh_g(sp1).Cll()
             sh_pow1_mm = sp.Cll_mag_mag(sp1).Cll()
    
-            sp2 = sp.shear_power(k_in,C,zs,ls,omega_s=omega_s,P_in=P_in,pmodel='halofit_nonlinear')
+            sp2 = sp.shear_power(k_in,C,zs,ls,omega_s=omega_s,P_in=P_in,pmodel='halofit_nonlinear',params=params)
             sh_pow2 = sp.Cll_sh_sh(sp2).Cll()
             sh_pow2_gg = sp.Cll_g_g(sp2).Cll()
             sh_pow2_sg = sp.Cll_sh_g(sp2).Cll()

@@ -12,6 +12,8 @@ import camb_power as cpow
 import FASTPTcode.matter_power_spt as mps
 from warnings import warn 
 from power_response import dp_ddelta
+from lensing_weight import q_shear,q_mag,q_num,q_k
+#from lensing_source_distribution import GaussianZSource,ConstantZSource,CosmolikeZSource #TODO link this in
 import sph
 import re
 class shear_power:
@@ -21,10 +23,6 @@ class shear_power:
         self.zs = zs
         self.ls = ls
         self.epsilon = params['epsilon']
-       # self.delta_l = ls[-1]-ls[0] #maybe not right
-     #   self.omega_s = 5000 #filler, from eifler, in deg^2
-     #   self.n_gal = 10.*3600. #filler, from krause & eifler in galaxies/deg^2 suggested at possible result from DES
-        self.delta_l = params['delta_l']
         
         #self.omega_s = np.pi/(3.*np.sqrt(2))
         #self.n_gal = 286401.
@@ -32,14 +30,12 @@ class shear_power:
         self.omega_s = omega_s
         self.n_gal = params['n_gal']
         self.pmodel = pmodel
-        #self.sigma2_e = 0.32 #from eifler
-        #self.sigma2_mu = 1.2 #eifler says this is uncertain
         self.sigma2_e = params['sigma2_e']
         self.sigma2_mu = params['sigma2_mu']
         
 
         self.n_map = {q_shear:{q_shear:(self.sigma2_e/(2.*self.n_gal))}}
-
+        print self.n_map[q_shear][q_shear]
         self.n_k = self.k_in.size
         self.n_l = self.ls.size
         self.n_z = self.zs.size
@@ -60,10 +56,10 @@ class shear_power:
         if pmodel=='halofit_redshift_nonlinear':
             p_bar = hf.halofitPk(self.C,k_in,P_in).D2_NL(self.k_in)
         elif pmodel == 'cosmosis_nonlinear':
-            z_bar = np.loadtxt('test_inputs/proj_1/z.txt')
-            k_bar = np.loadtxt('test_inputs/proj_1/k_h.txt')
-            p_bar = interp2d(k_bar,z_bar,np.loadtxt('test_inputs/proj_1/p_k.txt'))
-            self.chis = interp1d(z_bar,np.loadtxt('test_inputs/proj_1/d_m.txt')[::-1])(zs)
+            z_bar = np.loadtxt('test_inputs/proj_2/z.txt')
+            k_bar = np.loadtxt('test_inputs/proj_2/k_h.txt')*C.h
+            p_bar = interp2d(k_bar,z_bar,np.loadtxt('test_inputs/proj_2/p_k.txt')/C.h**3)
+            self.chis = interp1d(z_bar,np.loadtxt('test_inputs/proj_2/d_m.txt')[::-1])(zs)
             self.chi_As = self.chis
         elif pmodel=='halofit_nonlinear' or pmodel=='halofit_linear':
             self.halo = hf.halofitPk(self.C,k_in,P_in)
@@ -78,9 +74,6 @@ class shear_power:
 
         elif pmodel=='fastpt_nonlin' or pmodel =='dc_fastpt':
             fpt = FASTPT.FASTPT(k_in,-2,low_extrap=-5,high_extrap=5,n_pad=800)
-        #elif pmodel=='deltabar_fpt':
-        #    fpt = FASTPT.FASTPT(k_in,-2,low_extrap=-5,high_extrap=5,n_pad=800)
-        #    self.halo = hf.halofitPk(k_in,P_in,self.C)
         elif pmodel=='dc_halofit':
             self.halo_a = hf.halofitPk(C,k_in,P_in)
             self.halo_b = hf.halofitPk(C,k_in,P_in*(1.+self.epsilon/C.sigma8)**2)
@@ -92,7 +85,6 @@ class shear_power:
                 self.chis[i] = self.C.D_comov(zs[i])
                 self.chi_As[i] = self.C.D_comov_A(zs[i])
             self.omegas[i] = self.C.Omegam
-       #     self.omegas[i] = self.C.Omegam_z(zs[i])
 
 	    self.k_use[:,i] = (self.ls+0.5)/self.chi_As[i] 
             if pmodel=='halofit_linear':
@@ -117,25 +109,6 @@ class shear_power:
                 self.p_dd_use[:,i] = InterpolatedUnivariateSpline(k_in,dp_ddelta(k_in,P_in,zs[i],C=self.C,pmodel='linear')[0],k=1)(self.k_use[:,i])
             elif pmodel=='dc_fastpt':
                 self.p_dd_use[:,i] = InterpolatedUnivariateSpline(k_in,dp_ddelta(k_in,P_in,zs[i],C=self.C,pmodel='fastpt',fpt=fpt)[0],k=1)(self.k_use[:,i])
-
-         #   elif pmodel=='deltabar':
-         #       lin_pow= 2*np.pi**2*interp1d(self.k_in,self.halo.D2_L(self.k_in,self.zs[i]))(self.k_use[:,i])/self.k_use[:,i]**3
-         #       dpdk =(InterpolatedUnivariateSpline(self.k_use[:,i],lin_pow,ext=2).derivative(1))(self.k_use[:,i]) 
-         #       self.p_dd_use[:,i] = 47./21.*lin_pow-1./3.*self.k_use[:,i]*dpdk
-         #   elif pmodel=='deltabar_hnl':
-         #       lin_pow= 2*np.pi**2*interp1d(self.k_in,self.halo.D2_NL(self.k_in,self.zs[i]))(self.k_use[:,i])/self.k_use[:,i]**3
-         #       dpdk =(InterpolatedUnivariateSpline(self.k_use[:,i],lin_pow,ext=2).derivative(1))(self.k_use[:,i]) 
-         #       self.p_dd_use[:,i] = lin_pow-1./3.*self.k_use[:,i]*dpdk
-         #   elif pmodel=='deltabar_fpt':
-         #       lin_pow= 2*np.pi**2*interp1d(self.k_in,self.halo.D2_L(self.k_in,self.zs[i]))(self.k_use[:,i])/self.k_use[:,i]**3
-         #       dpdk =(InterpolatedUnivariateSpline(self.k_use[:,i],lin_pow,ext=2).derivative(1))(self.k_use[:,i]) 
-         #       self.p_dd_use[:,i] = 47./21.*lin_pow-1./3.*self.k_use[:,i]*dpdk
-         #       self.p_dd_use[:,i] += 26./21.*interp1d(self.k_in,(fpt.one_loop(P_in*self.C.G_norm(self.zs[i])**2,C_window=0.75)))(self.k_use[:,i])
-            #elif pmodel=='deltabar_nl':
-                #lin_pow= 2*np.pi**2*interp1d(self.k_in,self.halo.D2_NL(self.k_in,self.zs[i]))(self.k_use[:,i])/self.k_use[:,i]**3
-                #dpdk =(InterpolatedUnivariateSpline(self.k_use[:,i],self.k_use[:,i]**3*lin_pow,ext=2).derivative(1))(self.k_use[:,i]) 
-                #self.p_dd_use[:,i] = 13./21.*lin_pow-1./3.*self.k_use[:,i]*dpdk
-
             else:
                 if i==0:
                     warn("invalid pmodel value \'"+pmodel+"\' using halofit_linear instead")
@@ -147,6 +120,7 @@ class shear_power:
 
         self.p_gg_use = self.p_dd_use #temporary for testing purposes
         self.p_gd_use = self.p_dd_use #temporary for testing purposes
+
         smodel = params['smodel'] 
         if smodel == 'gaussian': 
             self.gaussian_z_source(params['zbar'],params['sigma'])
@@ -154,9 +128,9 @@ class shear_power:
             self.constant_z_source()
         elif smodel == 'cosmolike':
             self.cosmolike_z_source()
-        elif smodel=='custom':
+        elif smodel=='custom_z':
             if ps.size == self.n_z:
-                self.ps = ps
+                self.ps = self.dz_to_dchi(ps)
             else:
                 warn("Invalid size of input source distribution, using constant distribution instead")
                 self.constant_z_source()
@@ -164,9 +138,17 @@ class shear_power:
             warn("invalid smodel value\'"+smodel+"\', using constant distribution instead")
             self.constant_z_source()
 
+    def dz_to_dchi(self,p_in):
+        ps = np.zeros(p_in.size)
+        for i in range(0,self.n_z-1): #compensate for different bin sizes
+           ps[i] = p_in[i]/(self.chis[i+1]-self.chis[i])
+        ps[-1] = ps[-1]/(self.C.D_comov(2*self.zs[-1]-self.zs[-2])-self.chis[-1]) #patch for last value
+        return ps/np.trapz(ps,self.chis) #normalize galaxy probability distribution
+    
+        
     #gaussian source distribution
     def gaussian_z_source(self,zbar=1.0,sigma=0.4):
-        self.ps = np.exp(-(self.zs-1.)**2/(2.*(0.4)**2))
+        self.ps = np.exp(-(self.zs-zbar)**2/(2.*(sigma)**2))
         for i in range(0,self.n_z-1): #compensate for different bin sizes
            self.ps[i] = self.ps[i]/(self.chis[i+1]-self.chis[i])
         self.ps[-1] = self.ps[-1]/(self.C.D_comov(2*self.zs[-1]-self.zs[-2])-self.chis[-1]) #patch for last value
@@ -193,7 +175,7 @@ class shear_power:
     def r_corr(self):
         return self.p_gd_use/np.sqrt(self.p_dd_use*self.p_gg_use)
     
-    def get_n_chip(self,class_1,class_2):
+    def get_n_shape(self,class_1,class_2):
         try:
             return self.n_map[class_1][class_2]
         except KeyError:
@@ -203,22 +185,35 @@ class shear_power:
     def cov_g_diag(self,c_ac,c_ad,c_bd,c_bc,n_ac=0,n_ad=0,n_bd=0,n_bc=0): #only return diagonal because all else are zero by kronecker delta
         cov_diag = np.zeros(self.n_l) #assume same size for now
         for i in range(0,self.n_l):
-            cov_diag[i] = 2*np.pi/(self.omega_s*self.ls[i]*self.delta_l)*((c_ac[i]+n_ac)*(c_bd[i]+n_bd)+(c_ad[i]+n_ad)*(c_bc[i]+n_bc))
+            cov_diag[i] = 4.*np.pi/(self.omega_s*(2.*self.ls[i]+1.)*self.delta_l)*((c_ac[i]+n_ac)*(c_bd[i]+n_bd)+(c_ad[i]+n_ad)*(c_bc[i]+n_bc))
         return cov_diag
     
     
     #take as an array of qs, ns, and rs instead of the matrices themselves
     #ns is [n_ac,n_ad,n_bd,n_bc]
-    def cov_g_diag2(self,qs,ns=[0,0,0,0],r_ac=np.array([]),r_ad=np.array([]),r_bd=np.array([]),r_bc=np.array([])):
+    def cov_g_diag2(self,qs,ns_in=[0,0,0,0],r_ac=np.array([]),r_ad=np.array([]),r_bd=np.array([]),r_bc=np.array([]),delta_ls=None,ls=None):
         cov_diag = np.zeros(self.n_l)
-        c_ac = Cll_q_q(self,qs[0],qs[2],r_ac).Cll()
-        c_bd = Cll_q_q(self,qs[1],qs[3],r_bd).Cll()
-        c_ad = Cll_q_q(self,qs[0],qs[3],r_ad).Cll()
-        c_bc = Cll_q_q(self,qs[1],qs[2],r_bc).Cll()
-        
+        if delta_ls is None:
+            delta_ls = np.zeros(self.ls.size)
+            delta_ls[0:(self.ls.size-1)] = np.diff(self.ls) #todo check extrapolation
+            delta_ls[-1] = np.exp(2.*np.log(self.ls[-1])-np.log(self.ls[-2]))-self.ls[-1]
+        if ls is None:
+            ls = self.ls
+        ns = np.zeros(ns_in.size)
+        #TODO handle varying bin sizes better
+        ns[0] = ns_in[0]/np.trapz((1.*(self.chis>=qs[0].chi_min)*(self.chis<=qs[0].chi_max)*self.ps),self.chis)
+        ns[1] = ns_in[1]/np.trapz((1.*(self.chis>=qs[1].chi_min)*(self.chis<=qs[1].chi_max)*self.ps),self.chis)
+        ns[2] = ns_in[2]/np.trapz((1.*(self.chis>=qs[2].chi_min)*(self.chis<=qs[2].chi_max)*self.ps),self.chis)
+        ns[3] = ns_in[3]/np.trapz((1.*(self.chis>=qs[3].chi_min)*(self.chis<=qs[3].chi_max)*self.ps),self.chis)
+        c_ac = Cll_q_q(self,qs[0],qs[2],r_ac).Cll()#*np.sqrt(4.*np.pi)
+        c_bd = Cll_q_q(self,qs[1],qs[3],r_bd).Cll()#*np.sqrt(4.*np.pi) 
+        c_ad = Cll_q_q(self,qs[0],qs[3],r_ad).Cll()#*np.sqrt(4.*np.pi) 
+        c_bc = Cll_q_q(self,qs[1],qs[2],r_bc).Cll()#*np.sqrt(4.*np.pi) 
         #TODO put back delta l, removed the delta l because it should be one here
         for i in range(0,self.n_l): 
-            cov_diag[i] = 2*np.pi/(self.omega_s*self.ls[i])*((c_ac[i]+ns[0])*(c_bd[i]+ns[2])+(c_ad[i]+ns[1])*(c_bc[i]+ns[3]))
+            cov_diag[i] = 1./(self.omega_s*(2.*self.ls[i]+1.)*delta_ls[i])*((c_ac[i]+ns[0])*(c_bd[i]+ns[2])+(c_ad[i]+ns[1])*(c_bc[i]+ns[3]))
+            #(C13*C24+ C13*N24+N13*C24 + C14*C23+C14*N23+N14*C23+N13*N24+N14*N23)
+            #cov_diag[i] = 1./(self.omega_s*(2.*ls[i]+1.)*delta_ls[i])*(c_ac[i]*c_bd[i]+c_ac[i]*ns[2]+ns[0]*c_bd[i]+c_ad[i]*c_bc[i]+ns[3]*c_ad[i]+ns[1]*c_bc[i]+ns[0]*ns[2]+ns[1]*ns[3])
         return cov_diag
 
     def bin_cov_by_l(self,cov_diag,l_starts): 
@@ -295,78 +290,6 @@ class shear_power:
                 dcs[i] *= self.Cll_sh_sh(chi_max,chi_max,chi_min,chi_min).Cll()
         return dcs
 
-class q_weight:
-    def __init__(self,chis,qs,chi_min=0.,chi_max=np.inf):
-        self.chi_min = chi_min
-        self.chi_max = chi_max
-        self.qs = qs
-       # self.q_spline = InterpolatedUnivariateSpline(chis,self.qs,ext=2)
-       # self.r_spline = InterpolatedUnivariateSpline(chis,self.qs/np.sqrt(chis),ext=2) #for calculating to second order
-class q_shear(q_weight):
-    def __init__(self,sp,chi_min=0.,chi_max=np.inf,mult=1.):
-        qs = 3./2.*(sp.C.H0/sp.C.c)**2*sp.omegas*sp.chi_As/sp.sc_as*self.gs(sp,chi_max=chi_max,chi_min=chi_min)*mult
-       # r_spline = InterpolatedUnivariateSpline(sp.chis,qs/np.sqrt(sp.chis),ext=2) #for calculating to second order
-       # self.rs = r_spline(sp.chis)
-       # self.rs_d1 = r_spline.derivative(1)(sp.chis)
-       # self.rs_d2 = r_spline.derivative(2)(sp.chis)
-       # self.rs_d3 = r_spline.derivative(3)(sp.chis)
-        q_weight.__init__(self,sp.chis,qs,chi_min=chi_min,chi_max=chi_max) 
-
-    def gs(self,sp,chi_max=np.inf,chi_min=0):
-        g_vals = np.zeros(sp.n_z)
-        low_mask = (sp.chis>=chi_min)*1. #so only integrate from max(chi,chi_min)
-        high_mask = (sp.chis<=chi_max)*1. #so only integrate from max(chi,chi_min)
-        
-        ps_norm = sp.ps*high_mask*low_mask/np.trapz(sp.ps*low_mask*high_mask,sp.chis) #TODO check normalization
-	for i in range(0,sp.n_z):
-            if chi_max<sp.chis[i]:
-                break
-            if sp.C.Omegak==0.0:
-                g_vals[i] =np.trapz(low_mask[i:sp.n_z]*ps_norm[i:sp.n_z]*(sp.chis[i:sp.n_z]-sp.chis[i])/sp.chis[i:sp.n_z],sp.chis[i:sp.n_z])
-            elif sp.C.Omegak>0.0: #TODO handle curvature
-                sqrtK = np.sqrt(sp.C.K)
-                g_vals[i] =np.trapz(low_mask[i:sp.n_z]*ps_norm[i:sp.n_z]*sp.chis[i]*1./sqrtK(1./np.tan(sqrtK*sp.chis[i])-1./np.tan(sqrtK*sp.chis[i:sp.n_z])),sp.chis[i:sp.n_z])
-            else:
-                sqrtK = np.sqrt(abs(sp.C.K))
-                g_vals[i] =np.trapz(low_mask[i:sp.n_z]*ps_norm[i:sp.n_z]*sp.chis[i]*1./sqrtK(1./np.tanh(sqrtK*sp.chis[i])-1./np.tanh(sqrtK*sp.chis[i:sp.n_z])),sp.chis[i:sp.n_z])
-        return g_vals
-
-class q_mag(q_shear):
-    def __init__(self,sp,chi_max=np.inf,chi_min=0.):
-        q_shear.__init__(self,sp,chi_max=chi_max,chi_min=chi_min,mult=2.)
-
-
-class q_k(q_shear):
-    def __init__(self,sp,chi_max=np.inf,chi_min=0.):
-        q_shear.__init__(self,sp,chi_max=chi_max,chi_min=chi_min,mult=1.)
-
-class q_num(q_weight):
-    def __init__(self,sp,chi_max=np.inf,chi_min=0.):
-        q = np.zeros((sp.n_z,sp.n_l))
-        self.b = self.bias(sp)
-        for i in range(0,sp.n_z):
-            if sp.chis[i]>chi_max:
-                break
-            elif sp.chis[i]<chi_min:
-                continue
-            else:
-                q[i] = sp.ps[i]*self.b[:,i]
-      #  self.rs = np.zeros((sp.n_z,sp.n_l))
-
-       # self.rs_d1 = np.zeros((sp.n_z,sp.n_l))
-       # self.rs_d2 = np.zeros((sp.n_z,sp.n_l))
-       # self.rs_d3 = np.zeros((sp.n_z,sp.n_l))
-       # for i in range(0,sp.n_l):
-       #     r_spline = InterpolatedUnivariateSpline(sp.chis,q[:,i]/np.sqrt(sp.chis))
-       #     self.rs[:,i] = r_spline(sp.chis)
-       #     self.rs_d1[:,i] = r_spline.derivative(1)(sp.chis)
-       #     self.rs_d2[:,i] = r_spline.derivative(2)(sp.chis)
-       #     self.rs_d3[:,i] = r_spline.derivative(3)(sp.chis)
-        q_weight.__init__(self,sp.chis,q,chi_min=chi_min,chi_max=chi_max)
-
-    def bias(self,sp):
-        return np.sqrt(sp.p_gg_use/sp.p_dd_use)
-
 
 class Cll_q_q:
     def __init__(self,sp,q1s,q2s,corr_param=np.array([])):
@@ -378,9 +301,13 @@ class Cll_q_q:
         else:
             for i in range(0,sp.n_z):
                 self.integrand[i] = q1s.qs[i]*q2s.qs[i]/sp.chi_As[i]**2*sp.p_dd_use[:,i]
-    def Cll(self):
-        return np.trapz(self.integrand,self.chis,axis=0)
+    def Cll(self,chi_min=0,chi_max=np.inf):
+        high_mask = (self.chis<=chi_max)*1.
+        low_mask = (self.chis>=chi_min)*1.
+        return np.trapz((high_mask*low_mask*self.integrand.T).T,self.chis,axis=0)
 
+    def Cll_integrand(self):
+        return self.integrand
 
 class Cll_sh_sh(Cll_q_q):
     def __init__(self,sp,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
@@ -500,37 +427,6 @@ def dc_dtheta(zs,zmin,zmax,ls,C,theta_name='Omegach2',cosmology=defaults.cosmolo
     chi_min = C.D_comov(zmin)
     return (Cll_sh_sh(sp2,chi_max,chi_max,chi_min,chi_min)-sh_pow1).Cll()/epsilon
 
-#def dp_ddelta(k_a,P_a,zbar,C=cp.CosmoPie(),pmodel='linear',epsilon=0.0001,halo_a=None,halo_b=None,fpt=None):
-#    if pmodel=='linear':
-#       # pza = P_a
-#        pza = P_a*C.G_norm(zbar)**2
-#        dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2).derivative(1))(k_a) 
-#        dp = 47./21.*pza-1./3.*k_a*dpdk
-#    elif pmodel=='halofit':
-#        if halo_a is None:
-#            halo_a = hf.halofitPk(k_a,P_a,C=C)
-#        if halo_b is None:
-#            halo_b = hf.halofitPk(k_a,P_a*(1.+epsilon/C.sigma8)**2,C=C)
-#        pza = halo_a.D2_NL(k_a,zbar)*2.*np.pi**2/k_a**3
-#        pzb = halo_b.D2_NL(k_a,zbar)*2.*np.pi**2/k_a**3
-#        dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2).derivative(1))(k_a) 
-#        dp = 13./21.*C.sigma8*(pzb-pza)/epsilon+pza-1./3.*k_a*dpdk
-#    elif pmodel=='fastpt':
-#        if fpt is None:
-#            fpt = FASTPT.FASTPT(k_a,-2,low_extrap=None,high_extrap=None,n_pad=1000)
-#        plin = P_a*C.G_norm(zbar)**2
-#
-#        pza = plin+fpt.one_loop(plin,C_window=0.75)
-#        dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2).derivative(1))(k_a) 
-#        dp = 47./21.*pza-1./3.*k_a*dpdk+26./21.*fpt.one_loop(plin,C_window=0.75)
-#    else:
-#        print('invalid pmodel option \''+str(pmodel)+'\' using linear')
-#        pza = P_a**C.G_norm(zbar)**2
-#        dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2).derivative(1))(k_a) 
-#        dp = 47./21.*pza-1./3.*k_a*dpdk
-#    return dp,pza
-
-    #maybe can get bias and r_corr directly from something else
 if __name__=='__main__':
     
 	C=cp.CosmoPie(cosmology=defaults.cosmology)

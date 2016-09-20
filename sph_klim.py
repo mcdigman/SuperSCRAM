@@ -160,13 +160,23 @@ class sph_basis_k(object):
 	def k_LW(self):
 		# return the long-wavelength wave vector k 
                 return self.C_id[:,1]
-	
+
+        #get the partial derivatives of an sw observable wrt the basis given an integrand with elements at each r_fine i.e.  \frac{\partial O_i}{\partial \bar(\delta)(r_{fine})}
+        #TODO this may not be very efficient
+        def D_O_I_D_delta_alpha(self,geo,integrand,force_recompute = False):
+            d_delta_bar = self.D_delta_bar_D_delta_alpha(geo,force_recompute,tomography=False)
+            result = np.zeros((d_delta_bar.shape[1],integrand.shape[1]))
+            for alpha in range(0,d_delta_bar.shape[1]):
+                for ll in range(0, integrand.shape[1]):
+                    result[alpha,ll] = trapz(d_delta_bar[:,alpha]*integrand[:,ll],geo.r_fine) 
+            return result
+
 	#TODO cache R_int, a_lm 
-	def D_delta_bar_D_delta_alpha(self,geo,force_recompute = False):
+	def D_delta_bar_D_delta_alpha(self,geo,force_recompute = False,tomography=True):
 	    #r=np.array([r_min,r_max])
             #TODO Check this
             if self.allow_caching and not force_recompute:
-                result_cache = self.ddelta_bar_cache.get(id(geo))
+                result_cache = self.ddelta_bar_cache.get(str(id(geo))+","+str(tomography))
                 if result_cache is not None:
                     return result_cache
 
@@ -178,11 +188,19 @@ class sph_basis_k(object):
             #CHANGED
 	   # Omega=a_00*np.sqrt(4*pi) 
 	   # norm=3./(r_max**3 - r_min**3)/Omega
-	    result=np.zeros((geo.rs.size-1,self.C_id.shape[0]))
+	    #result=np.zeros((geo.rs.size-1,self.C_id.shape[0]))
+            r_cache = {} 
             #store alms for current l, m pair because computing them is slow
             alm_last = 0.
             ll_last = -1
             mm_last = 0
+            if tomography:
+                rs = geo.rs
+	        result=np.zeros((geo.rs.size-1,self.C_id.shape[0]))
+            else:
+                rs = np.hstack((0.,geo.r_fine))
+	        result=np.zeros((geo.r_fine.size,self.C_id.shape[0]))
+
 	    for itr in range(self.C_id.shape[0]):
 	        ll=self.C_id[itr,0]
 	        kk=self.C_id[itr,1]
@@ -191,22 +209,43 @@ class sph_basis_k(object):
                 #if self.norm_factor(kk,ll)<0:
                 #    warn("critical issue, negative norm factor")
                 #    sys.exit()
-	        if ll_last == ll and mm_last == mm:
-                    for i in range(0,geo.rs.size-1):
-                        r = np.array([geo.rs[i],geo.rs[i+1]])
-	                norm=3./(r[1]**3 - r[0]**3)/(a_00*2.*np.sqrt(np.pi))
-                        
-                        result[i,itr] = R_int(r,kk,ll)*alm_last*norm#*self.norm_factor(kk,ll)
+                if (str(kk)+","+str(ll)) in r_cache:
+                    r_part = r_cache[(str(kk)+","+str(ll))]
                 else:
+                    r_part = np.zeros(rs.size-1)
+                    for i in range(0,rs.size-1):
+                        r = np.array([rs[i],rs[i+1]])
+	                norm=3./(r[1]**3 - r[0]**3)/(a_00*2.*np.sqrt(np.pi))   
+                        r_part[i] = R_int(r,kk,ll)*norm
+                    r_cache[(str(kk)+","+str(ll))] = r_part 
+	        if ll_last == ll and mm_last == mm:
+                    result[:,itr] = r_part*alm_last
+                    #for i in range(0,rs.size-1):
+                    #    r = np.array([rs[i],rs[i+1]])
+	            #    norm=3./(r[1]**3 - r[0]**3)/(a_00*2.*np.sqrt(np.pi))   
+                    #    result[i,itr] = R_int(r,kk,ll)*alm_last*norm#*self.norm_factor(kk,ll)
+                    #behavior obsolete, kept temporarily for compatibility
+                    #for i in range(0,geo.rs.size-1):
+                    #    r = np.array([geo.rs[i],geo.rs[i+1]])
+	            #    norm=3./(r[1]**3 - r[0]**3)/(a_00*2.*np.sqrt(np.pi))   
+                    #    result[i,itr] = R_int(r,kk,ll)*alm_last*norm#*self.norm_factor(kk,ll)
+                else:
+                    print "Computing at l,m: ",ll,",",mm
                     alm_last = a_lm(geo,ll,mm)
                     ll_last = ll
                     mm_last = mm
-                    for i in range(0,geo.rs.size-1):
-                        r = np.array([geo.rs[i],geo.rs[i+1]])
-	                norm=3./(r[1]**3 - r[0]**3)/(a_00*2.*np.sqrt(np.pi))
-                        result[i,itr]=R_int(r,kk,ll)*alm_last*norm#*self.norm_factor(kk,ll)
+                    result[:,itr] = r_part*alm_last
+                    #for i in range(0,rs.size-1):
+                    #    r = np.array([rs[i],rs[i+1]])
+	            #    norm=3./(r[1]**3 - r[0]**3)/(a_00*2.*np.sqrt(np.pi))
+                    #    result[i,itr]=R_int(r,kk,ll)*alm_last*norm#*self.norm_factor(kk,ll)
+                    #behavior obsolete, kept temporarily for compatibility
+                    #for i in range(0,geo.rs.size-1):
+                    #    r = np.array([geo.rs[i],geo.rs[i+1]])
+	            #    norm=3./(r[1]**3 - r[0]**3)/(a_00*2.*np.sqrt(np.pi))
+                    #    result[i,itr]=R_int(r,kk,ll)*alm_last*norm#*self.norm_factor(kk,ll)
             if self.allow_caching:
-                self.ddelta_bar_cache[id(geo)] = result
+                self.ddelta_bar_cache[str(id(geo))+","+str(tomography)] = result
 	    return result
 def R_int(r_range,k,ll):
     # returns \int R_n(rk_alpha) r2 dr
@@ -259,6 +298,7 @@ if __name__=="__main__":
 	k=d[:,0]; P=d[:,1]
 	
 	zs=np.array([.1,.2,.3])
+        z_fine = np.arange(0.01,np.max(zs),0.01)
 	Theta=[np.pi/4,np.pi/2.]
 	Phi=[0,np.pi/3.]
 	
@@ -266,7 +306,7 @@ if __name__=="__main__":
 	from cosmopie import CosmoPie
 	C=CosmoPie(k=k,P_lin=P)
 
-	geometry=geo.rect_geo(zs,Theta,Phi,C)
+	geometry=geo.rect_geo(zs,Theta,Phi,C,z_fine)
 	
 	r_max=C.D_comov(0.5)
 	
