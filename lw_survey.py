@@ -36,7 +36,7 @@ class LWSurvey:
     def fisher_accumulate(self,fisher_0):
         for i in range(0,self.get_N_O_a()):
             
-            print "fisher", np.linalg.eigvals(self.observables[i].get_F_alpha_beta())[0]
+            #print "fisher", np.linalg.eigvals(self.observables[i].get_F_alpha_beta())[0]
             fisher_0.add_fisher(self.observables[i].get_F_alpha_beta())
 
     def names_to_observables(self,names):

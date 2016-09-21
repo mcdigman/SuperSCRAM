@@ -2,17 +2,38 @@ import numpy as np
 from scipy.linalg import solve_triangular,solve
 
 #compute inverse of positive definite matrix using cholesky decomposition
-def cholesky_inv(A):
+#TODO give better name (returns inverse using cholesky, not inverse of cholesky)
+def cholesky_inv(A,return_cholesky=False,cholesky_given=False):
     #chol = np.linalg.cholesky(A)
     #chol_inv = np.linalg.solve(np.linalg.cholesky(A),np.identity(A.shape[0]))
-    chol_inv = solve_triangular(np.linalg.cholesky(A),np.identity(A.shape[0]),lower=True,overwrite_b=True)
+    if cholesky_given:
+        chol_inv = A
+    else:
+        chol_inv = solve_triangular(np.linalg.cholesky(A),np.identity(A.shape[0]),lower=True,overwrite_b=True)
 
-    return np.dot(chol_inv.T,chol_inv)
-def cholesky_inv_contract(A,vec1,vec2):
-    #chol = np.linalg.cholesky(A)
+    if return_cholesky:
+        return np.dot(chol_inv.T,chol_inv),chol_inv
+    else:
+        return np.dot(chol_inv.T,chol_inv)
+
+def cholesky_inv_contract(A,vec1,vec2,return_cholesky=False,cholesky_given=False,identical_inputs=False):
+    if cholesky_given:
+        chol_inv = A
+    else:
+        chol_inv = solve_triangular(np.linalg.cholesky(A),np.identity(A.shape[0]),lower=True,overwrite_b=True)
     #chol_inv = np.linalg.solve(np.linalg.cholesky(A),np.identity(A.shape[0]))
-    chol_inv = solve_triangular(np.linalg.cholesky(A),np.identity(A.shape[0]),lower=True,overwrite_b=True)
-    return np.dot(np.dot(vec1,chol_inv.T),np.dot(chol_inv,vec2))
+
+    #Save some time if inputs are identical
+    if identical_inputs:
+        right_side = np.dot(chol_inv,vec2)
+        result = np.dot(right_side.T,right_side)
+    else:
+        result = np.dot(np.dot(vec1,chol_inv.T),np.dot(chol_inv,vec2))
+
+    if return_cholesky:
+        return result,chol_inv
+    else:
+        return result
 
 def inverse_cholesky(A):
     return solve_triangular(np.linalg.cholesky(A),np.identity(A.shape[0]),lower=True,overwrite_b=True)

@@ -41,7 +41,7 @@ class sph_basis_k(object):
 			P = the linear power specturm 
 			important! no little h in any of the calculations 
 		''' 
-		
+	        print "sph_klim: begin initializing basis id: ",id(self)	
 		k_in,P_lin_in=C.get_P_lin()
 	        #k = np.logspace(np.log10(np.min(k_in)),np.log10(np.max(k_in))-0.00001,6000000)
                 #k = k_in
@@ -57,11 +57,8 @@ class sph_basis_k(object):
 
 	        self.r_max = r_max	
 		# define the super mode wave vector k alpha
-		# and also make the map from l_alpha to k_alpha 
-		
-		# this needs to be made faster 
+		# and also make the map from l_alpha to k_alpha 	
                 t1 = time()
-		#self.k_alpha=np.zeros(l_alpha.size*#n_zeros) 
 		self.k_num = np.zeros(l_ceil+1,dtype=np.int)
                 self.k_zeros = np.zeros(l_ceil+1,dtype=object)
                 n_l = 0
@@ -69,7 +66,7 @@ class sph_basis_k(object):
                     k_alpha = jn_zeros_cut(ll,k_cut*r_max)/r_max
                     #once there are no zeros above the cut, skip higher l
                     if k_alpha.size == 0:
-                        print "cutting off l>=",ll
+                        print "sph_klim: cutting off all l>=",ll
                         break
                     else:
                         self.k_num[ll] = k_alpha.size
@@ -94,14 +91,15 @@ class sph_basis_k(object):
 		   # self.map_l_to_alpha[j:j+self.k_num[i]]=l_alpha[i]
 		    self.lm[i,0]=l_alpha[i]
 		    self.lm[i,1]=m
-                    print "l,n_zeros",l_alpha[i],self.k_num[i]
+                    #print "l,n_zeros",l_alpha[i],self.k_num[i]
 	        self.C_size = C_size	
-                print "size ",self.C_size
+                print "sph_klim: number of basis element ",self.C_size
 		self.C_id=np.zeros((C_size,3))
 		self.C_alpha_beta=np.zeros((self.C_id.shape[0],self.C_id.shape[0]))
 
-		itr=0
 
+                print "sph_klim: begin constructing covariance matrix. basis id: ",id(self)
+		itr=0
 		for a in range(self.lm_map.shape[0]):
 		    ll=self.lm_map[a,0]
 		    kk=self.lm_map[a,1]
@@ -112,7 +110,7 @@ class sph_basis_k(object):
                     self.norms = np.zeros(k.size)
                     for b in range(kk.size):
                         self.norms[b] = self.norm_factor(kk[b],ll)
-
+                    print "sph_klim: calculating covariance elements with l=",ll
 		    for c in range(mm.size):
                         itr_k1 = itr
 		        for b in range(kk.size):
@@ -120,12 +118,12 @@ class sph_basis_k(object):
 		            self.C_id[itr,1]=kk[b]
 		            self.C_id[itr,2]=mm[c]
 		            itr=itr+1
-                        print itr,ll,mm[c],itr_k1
+                        #print itr,ll,mm[c],itr_k1
                         #calculate I integrals and make table
                         if c==0:
                             integrand1 = k*P_lin*jv(ll+0.5,k*self.r_max)**2
                             for b in range(0,kk.size):
-                                print b
+                                #print b
                                 for d in range(b,kk.size):
                                     coeff = 8.*np.sqrt(kk[b]*kk[d])*kk[b]*kk[d]/(np.pi*self.r_max**2*jv(ll+1.5,kk[b]*self.r_max)*jv(ll+1.5,kk[d]*self.r_max))
                                     self.C_alpha_beta[itr_k1+b,itr_k1+d]=coeff*trapz(integrand1/((k**2-kk[b]**2)*(k**2-kk[d]**2)),k); #check coefficient
@@ -137,12 +135,9 @@ class sph_basis_k(object):
                                     self.C_alpha_beta[itr_k1+d,itr_k1+b] = self.C_alpha_beta[itr_m1+d,itr_m1+b] 
 	        #TODO can make more efficient if necessary	
                 t2 = time()
-                print "basis time: ",t2-t1
-                print "max c 1",np.max(self.C_alpha_beta)
-                
-		#self.fisher=fm.fisher_matrix(cholesky_inv(self.C_alpha_beta))
-                t3 = time()
-                print "inverse time: ",t3-t2
+                print "sph_klim: basis time: ",t2-t1
+                print "sph_klim: maximum element of covariance matrix: ",np.max(self.C_alpha_beta)
+	        print "sph_klim: finished initializing basis id: ",id(self)	
 
         #I_\alpha(k_\alpha,r_{max}) simplified
         def norm_factor(self,ka,la):
@@ -154,8 +149,8 @@ class sph_basis_k(object):
 	def get_F_alpha_beta(self):
 	    return cholesky_inv(self.C_alpha_beta)
 
-        def get_fisher(self):
-            return fm.fisher_matrix(cholesky_inv(self.C_alpha_beta))
+        def get_fisher(self,allow_caching=False):
+            return fm.fisher_matrix(cholesky_inv(self.C_alpha_beta),allow_caching)
 		
 	def k_LW(self):
 		# return the long-wavelength wave vector k 
@@ -171,14 +166,49 @@ class sph_basis_k(object):
                     result[alpha,ll] = trapz(d_delta_bar[:,alpha]*integrand[:,ll],geo.r_fine) 
             return result
 
-	#TODO cache R_int, a_lm 
-	def D_delta_bar_D_delta_alpha(self,geo,force_recompute = False,tomography=True):
+        #Calculate D_delta_bar_D_delta_alpha. 
+        #tomography: if true use tomographic (coarse) bins, otherwise use resolution (fine) bins for r integrals
+        #force_recompute: clears the cache: use this if geo has changed.
+        #Note: the basis has an allow_caching setting for whether to allow cacheing between function calls for the same geo
+        #Caching is potentially dangerous if the geo changes, so it should not be allowed to. #TODO add cache_good flag to geo
+        #cache_alm permits caching alm for future function calls. 
+        #Note that this function will cache alm and R_int internally as needed regardless of cache_alm or allow_caching, but it won't save the results for future function calls if caching is prohibited
+	def D_delta_bar_D_delta_alpha(self,geo,force_recompute = False,tomography=True,cache_alm=True):
 	    #r=np.array([r_min,r_max])
             #TODO Check this
+            print "sph_klim: begin D_delta_bar_D_delta_alpha with geo id: ",id(geo)," basis id: ",id(self)
+
+            #Caching implements significant speedup, check caches
             if self.allow_caching and not force_recompute:
-                result_cache = self.ddelta_bar_cache.get(str(id(geo))+","+str(tomography))
+                result_cache = self.ddelta_bar_cache.get(str(id(geo)))
                 if result_cache is not None:
-                    return result_cache
+                    if tomography and ('tomo' in result_cache):
+                        print "sph_klim: tomographic bins retrieved from cache for geo id: ",id(geo)
+                        return result_cache['tomo']
+                    elif (not tomography) and ('fine' in result_cache):
+                        print "sph_klim: fine bins retrieved from cache for geo id: ",id(geo)
+                        return result_cache['fine']
+                    elif cache_alm and ('alm' in result_cache):
+                        #Can get here if only ever run with the other value of tomography before.
+                        #Note: Storing alm from different values of tomography wouldn't work if alm were r dependent 
+                        alm_cache = result_cache['alm']
+                        print "sph_klim: alm retrieved from cache for geo id: ",id(geo)
+                    elif cache_alm:
+                        #If it gets here, a previous run didn't store alm, which is not necessarily an error, but isn't the way the code works now.
+                        warn("sph_klim: alm cache missed but cache miss not expected here. Calculating alm as usual. geo id: ", id(geo)," basis id: ",id(self))
+                        alm_cache = {}
+                    else:
+                        #Get here if never run before or cache has been cleared
+                        print "sph_klim: cache miss with nonempty cache for geo id: ",id(geo)," basis id: ",id(self)
+                        alm_cache = {}
+                        
+                else:
+                    print "sph_klim: cache miss with empty cache for geo id: ",id(geo)," basis id: ",id(self)
+                    self.ddelta_bar_cache[str(id(geo))] = {}
+                    alm_cache = {}
+            else:
+                alm_cache = {}
+
 
 	    a_00=a_lm(geo,0,0)
             print a_00
@@ -194,21 +224,22 @@ class sph_basis_k(object):
             alm_last = 0.
             ll_last = -1
             mm_last = 0
+
+            #TODO move r binning to geo 
             if tomography:
                 rs = geo.rs
 	        result=np.zeros((geo.rs.size-1,self.C_id.shape[0]))
+                print "sph_klim: calculating with tomographic (coarse) bins"
             else:
                 rs = np.hstack((0.,geo.r_fine))
 	        result=np.zeros((geo.r_fine.size,self.C_id.shape[0]))
+                print "sph_klim: calculating with resolution (fine) slices"
 
 	    for itr in range(self.C_id.shape[0]):
 	        ll=self.C_id[itr,0]
 	        kk=self.C_id[itr,1]
 	        mm=self.C_id[itr,2]
-                #TESTING
-                #if self.norm_factor(kk,ll)<0:
-                #    warn("critical issue, negative norm factor")
-                #    sys.exit()
+
                 if (str(kk)+","+str(ll)) in r_cache:
                     r_part = r_cache[(str(kk)+","+str(ll))]
                 else:
@@ -220,32 +251,22 @@ class sph_basis_k(object):
                     r_cache[(str(kk)+","+str(ll))] = r_part 
 	        if ll_last == ll and mm_last == mm:
                     result[:,itr] = r_part*alm_last
-                    #for i in range(0,rs.size-1):
-                    #    r = np.array([rs[i],rs[i+1]])
-	            #    norm=3./(r[1]**3 - r[0]**3)/(a_00*2.*np.sqrt(np.pi))   
-                    #    result[i,itr] = R_int(r,kk,ll)*alm_last*norm#*self.norm_factor(kk,ll)
-                    #behavior obsolete, kept temporarily for compatibility
-                    #for i in range(0,geo.rs.size-1):
-                    #    r = np.array([geo.rs[i],geo.rs[i+1]])
-	            #    norm=3./(r[1]**3 - r[0]**3)/(a_00*2.*np.sqrt(np.pi))   
-                    #    result[i,itr] = R_int(r,kk,ll)*alm_last*norm#*self.norm_factor(kk,ll)
                 else:
-                    print "Computing at l,m: ",ll,",",mm
-                    alm_last = a_lm(geo,ll,mm)
+                    alm_last = alm_cache.get(str(ll)+","+str(mm))
+                    if alm_last is None:
+                        alm_last = a_lm(geo,ll,mm)
+                        alm_cache[str(ll)+","+str(mm)] = alm_last
                     ll_last = ll
                     mm_last = mm
                     result[:,itr] = r_part*alm_last
-                    #for i in range(0,rs.size-1):
-                    #    r = np.array([rs[i],rs[i+1]])
-	            #    norm=3./(r[1]**3 - r[0]**3)/(a_00*2.*np.sqrt(np.pi))
-                    #    result[i,itr]=R_int(r,kk,ll)*alm_last*norm#*self.norm_factor(kk,ll)
-                    #behavior obsolete, kept temporarily for compatibility
-                    #for i in range(0,geo.rs.size-1):
-                    #    r = np.array([geo.rs[i],geo.rs[i+1]])
-	            #    norm=3./(r[1]**3 - r[0]**3)/(a_00*2.*np.sqrt(np.pi))
-                    #    result[i,itr]=R_int(r,kk,ll)*alm_last*norm#*self.norm_factor(kk,ll)
             if self.allow_caching:
-                self.ddelta_bar_cache[str(id(geo))+","+str(tomography)] = result
+                if tomography:
+                    self.ddelta_bar_cache[str(id(geo))]['tomo'] = result
+                else:
+                    self.ddelta_bar_cache[str(id(geo))]['fine'] = result
+                if cache_alm: 
+                    self.ddelta_bar_cache[str(id(geo))]['alm'] = alm_cache
+            print "sph_klim: finished d_delta_bar_d_delta_alpha for geo id: ",id(geo)," basis id: ",id(self)
 	    return result
 def R_int(r_range,k,ll):
     # returns \int R_n(rk_alpha) r2 dr

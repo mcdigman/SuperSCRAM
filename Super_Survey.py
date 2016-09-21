@@ -17,6 +17,7 @@ from algebra_utils import cholesky_inv, inverse_cholesky
 import defaults
 import fisher_matrix as fm
 import lensing_observables as lo
+import copy
 from sw_survey import SWSurvey
 from lw_survey import LWSurvey
 class super_survey:
@@ -67,8 +68,9 @@ class super_survey:
         #self.O_I_data=self.get_O_I(k,P_lin)
         self.O_I_data = self.get_O_I_all()
         #self.F_0=self.basis.get_F_alpha_beta()
-        self.F_0 = self.basis.get_fisher()
+        self.F_0 = self.basis.get_fisher(allow_caching=True)
         self.cov_no_mit,self.a_no_mit=self.get_SSC_covar(mitigation=False)     
+        self.F_0.clear_cache()
         self.cov_mit,self.a_mit=self.get_SSC_covar(mitigation=True)     
           
         t2=time()
@@ -83,7 +85,8 @@ class super_survey:
         if mitigation:
             print "mit"
             #x = self.O_a_data[0]
-            F_loc = self.basis.get_fisher()
+            F_loc = copy.deepcopy(self.F_0)
+            #F_loc = self.basis.get_fisher(allow_caching=True)
             for i in range(0,self.N_surveys_lw):
                 self.surveys_lw[i].fisher_accumulate(F_loc)
             #F_loc.add_fisher(x[0])
@@ -107,12 +110,13 @@ class super_survey:
                 T = self.basis.D_O_I_D_delta_alpha(survey.geo,dO_I_ddelta_bar_list[j])
                 print T.shape
                 print F_loc.get_covar().shape
-                Cov_SSC[i,j] = np.dot(T.T,np.dot(F_loc.get_covar(),T))
+                Cov_SSC[i,j] = F_loc.contract_covar(T.T,T,identical_inputs=True)
+                #Cov_SSC[i,j] = np.dot(T.T,np.dot(F_loc.get_covar(),T))
                 
                 #a_SSC[i][j] = F_loc.contract_covar(T,T)
             #TODO put this behavior back maybe
             T=self.basis.D_delta_bar_D_delta_alpha(survey.geo,tomography=True)[0]
-            a_SSC[i]=F_loc.contract_covar(T,T)
+            a_SSC[i]=F_loc.contract_covar(T,T,identical_inputs=True)
             #print "max t",max(T)
             #print "min t",min(T)
             #print T[0]
@@ -264,7 +268,7 @@ if __name__=="__main__":
    # ax.loglog(l,(np.diag(SS.cov_mit[0,0])))
     ax.loglog(l_sw,(np.diag(SS.cov_no_mit[0,0])/cov_ss))
     #ax.legend(['cov','mit','no mit'])
-    plt.show()
+    #plt.show()
     print 'r diffs',np.diff(geo1.rs)
     print 'theta width',(geo1.rs[1]+geo1.rs[0])/2.*(Theta1[1]-Theta1[0])
     print 'phi width',(geo1.rs[1]+geo1.rs[0])/2.*(Phi1[1]-Phi1[0])
