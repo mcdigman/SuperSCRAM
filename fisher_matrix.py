@@ -10,7 +10,7 @@ class fisher_matrix:
         if self.allow_caching:
             self.chol_cache_good = False
             self.cholesky_cache = None
-        print "fisher_matrix ",id(self)," created fisher matrix"
+        print("fisher_matrix "+str(id(self))+" created fisher matrix")
 
     def add_fisher(self,F_n):
         print "fisher_matrix ",id(self)," added fisher matrix"
@@ -22,7 +22,7 @@ class fisher_matrix:
     def get_covar(self):
         if self.allow_caching:
             if self.chol_cache_good:
-                print "fisher_matrix ",id(self)," cholesky decomposition retrieved from cache for calculating inverse in get_covar"
+                print("fisher_matrix "+str(id(self))+" cholesky decomposition retrieved from cache for calculating inverse in get_covar")
                 cov = cholesky_inv(self.cholesky_cache,return_cholesky=False,cholesky_given=True)
             else:
                 print "fisher_matrix ",id(self)," cholesky decomposition cache miss for calculating inverse in get_covar"

@@ -19,7 +19,7 @@ class CosmoPie :
 	
 	def __init__(self,cosmology=defaults.cosmology, P_lin=None, k=None,lin_type='class',precompute=True,z_max=4.0,z_space=0.01):
 		# default to Planck 2015 values 
-	        print "COSMO START"	
+                print "cosmopie "+str(id(self))+": begin initialization"	
 		self.Omegabh2 = cosmology['Omegabh2']
 		self.Omegach2 = cosmology['Omegach2']
 		self.Omegamh2 = cosmology['Omegamh2']
@@ -75,6 +75,7 @@ class CosmoPie :
                #         G_arr[i] = self.G(z_grid[i])
                #     self.G_p = interp1d(z_grid, G_arr)
                 self.precompute=precompute
+                print "cosmopie "+str(id(self))+": finished initialization"	
                     
 	def Ez(self,z):
 		zp1=z + 1

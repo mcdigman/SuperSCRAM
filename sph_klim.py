@@ -41,7 +41,7 @@ class sph_basis_k(object):
 			P = the linear power specturm 
 			important! no little h in any of the calculations 
 		''' 
-	        print "sph_klim: begin initializing basis id: ",id(self)	
+	        print "sph_klim: begin init basis id: ",id(self)	
 		k_in,P_lin_in=C.get_P_lin()
 	        #k = np.logspace(np.log10(np.min(k_in)),np.log10(np.max(k_in))-0.00001,6000000)
                 #k = k_in
@@ -93,7 +93,7 @@ class sph_basis_k(object):
 		    self.lm[i,1]=m
                     #print "l,n_zeros",l_alpha[i],self.k_num[i]
 	        self.C_size = C_size	
-                print "sph_klim: number of basis element ",self.C_size
+                print "sph_klim: basis size: ",self.C_size
 		self.C_id=np.zeros((C_size,3))
 		self.C_alpha_beta=np.zeros((self.C_id.shape[0],self.C_id.shape[0]))
 
@@ -110,7 +110,7 @@ class sph_basis_k(object):
                     self.norms = np.zeros(k.size)
                     for b in range(kk.size):
                         self.norms[b] = self.norm_factor(kk[b],ll)
-                    print "sph_klim: calculating covariance elements with l=",ll
+                    print "sph_klim: calculating covar for l=",ll
 		    for c in range(mm.size):
                         itr_k1 = itr
 		        for b in range(kk.size):
@@ -136,8 +136,8 @@ class sph_basis_k(object):
 	        #TODO can make more efficient if necessary	
                 t2 = time()
                 print "sph_klim: basis time: ",t2-t1
-                print "sph_klim: maximum element of covariance matrix: ",np.max(self.C_alpha_beta)
-	        print "sph_klim: finished initializing basis id: ",id(self)	
+                #print "sph_klim: maximum element of covariance matrix: ",np.max(self.C_alpha_beta)
+	        print "sph_klim: finished init basis id: ",id(self)	
 
         #I_\alpha(k_\alpha,r_{max}) simplified
         def norm_factor(self,ka,la):
@@ -176,34 +176,34 @@ class sph_basis_k(object):
 	def D_delta_bar_D_delta_alpha(self,geo,force_recompute = False,tomography=True,cache_alm=True):
 	    #r=np.array([r_min,r_max])
             #TODO Check this
-            print "sph_klim: begin D_delta_bar_D_delta_alpha with geo id: ",id(geo)," basis id: ",id(self)
+            print "sph_klim: begin D_delta_bar_D_delta_alpha with geo id: ",id(geo)
 
             #Caching implements significant speedup, check caches
             if self.allow_caching and not force_recompute:
                 result_cache = self.ddelta_bar_cache.get(str(id(geo)))
                 if result_cache is not None:
                     if tomography and ('tomo' in result_cache):
-                        print "sph_klim: tomographic bins retrieved from cache for geo id: ",id(geo)
+                        print "sph_klim: tomographic bins retrieved from cache"
                         return result_cache['tomo']
                     elif (not tomography) and ('fine' in result_cache):
-                        print "sph_klim: fine bins retrieved from cache for geo id: ",id(geo)
+                        print "sph_klim: fine bins retrieved from cache"
                         return result_cache['fine']
                     elif cache_alm and ('alm' in result_cache):
                         #Can get here if only ever run with the other value of tomography before.
                         #Note: Storing alm from different values of tomography wouldn't work if alm were r dependent 
                         alm_cache = result_cache['alm']
-                        print "sph_klim: alm retrieved from cache for geo id: ",id(geo)
+                        print "sph_klim: alm retrieved from cache"
                     elif cache_alm:
                         #If it gets here, a previous run didn't store alm, which is not necessarily an error, but isn't the way the code works now.
-                        warn("sph_klim: alm cache missed but cache miss not expected here. Calculating alm as usual. geo id: ", id(geo)," basis id: ",id(self))
+                        warn("sph_klim: alm cache missed but cache miss not expected here. Calculating alm as usual. geo id: "+str(id(geo))+" basis id: "+str(id(basis)))
                         alm_cache = {}
                     else:
                         #Get here if never run before or cache has been cleared
-                        print "sph_klim: cache miss with nonempty cache for geo id: ",id(geo)," basis id: ",id(self)
+                        print "sph_klim: cache miss with nonempty cache"
                         alm_cache = {}
                         
                 else:
-                    print "sph_klim: cache miss with empty cache for geo id: ",id(geo)," basis id: ",id(self)
+                    print "sph_klim: cache miss with empty cache"
                     self.ddelta_bar_cache[str(id(geo))] = {}
                     alm_cache = {}
             else:
@@ -211,9 +211,9 @@ class sph_basis_k(object):
 
 
 	    a_00=a_lm(geo,0,0)
-            print a_00
-            print "theta",geo.Theta
-            print "phi",geo.Phi
+            print "sph_klim: a_00="+str(a_00)
+            print "sph_klim: theta: "+str(geo.Theta)
+            print "sph_klim: phi: "+str(geo.Phi)
 	   # Omega=np.sqrt(a_00)*4.*np.pi
             #CHANGED
 	   # Omega=a_00*np.sqrt(4*pi) 
@@ -239,7 +239,7 @@ class sph_basis_k(object):
 	        ll=self.C_id[itr,0]
 	        kk=self.C_id[itr,1]
 	        mm=self.C_id[itr,2]
-
+                #TODO clean up these conditionals
                 if (str(kk)+","+str(ll)) in r_cache:
                     r_part = r_cache[(str(kk)+","+str(ll))]
                 else:
@@ -266,7 +266,7 @@ class sph_basis_k(object):
                     self.ddelta_bar_cache[str(id(geo))]['fine'] = result
                 if cache_alm: 
                     self.ddelta_bar_cache[str(id(geo))]['alm'] = alm_cache
-            print "sph_klim: finished d_delta_bar_d_delta_alpha for geo id: ",id(geo)," basis id: ",id(self)
+            print "sph_klim: finished d_delta_bar_d_delta_alpha for geo id: ",id(geo)
 	    return result
 def R_int(r_range,k,ll):
     # returns \int R_n(rk_alpha) r2 dr

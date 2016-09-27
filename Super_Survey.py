@@ -23,7 +23,7 @@ from lw_survey import LWSurvey
 class super_survey:
     ''' This class holds and returns information for all surveys
     ''' 
-    def __init__(self, surveys_sw, surveys_lw, r_max, l, n_zeros,k,basis,C,P_lin=None):
+    def __init__(self, surveys_sw, surveys_lw, r_max, l, n_zeros,k,basis,C,P_lin=None,get_a=False):
     
       
         '''
@@ -35,6 +35,8 @@ class super_survey:
                          
         t1=time()
 
+        self.get_a = get_a
+
         self.surveys_lw = surveys_lw
         self.surveys_sw = surveys_sw
         self.N_surveys_sw=surveys_sw.size
@@ -42,7 +44,7 @@ class super_survey:
         #self.geo1_lw=surveys_lw[0]['geo1']     
         #self.geo2_lw=surveys_lw[0]['geo2']     
         #self.zs_lw=surveys_lw[0]['zs']
-        print'this is the number of surveys', self.N_surveys_sw, self.N_surveys_lw
+        print'Super_Survey: this is the number of surveys', self.N_surveys_sw, self.N_surveys_lw
            
         self.C=C
          
@@ -63,19 +65,23 @@ class super_survey:
             self.N_O_a=self.N_O_a + survey.get_N_O_a()
             #self.O_a=np.append(self.O_a,survey['O_a'])
               
-        print('these are number of observables', self.N_O_I, self.N_O_a)
+        print('Super_Survey: there are '+str(self.N_O_I)+' short wavelength and '+str(self.N_O_a)+' long wavelength observables')
         #self.O_a_data=self.get_O_a()
         #self.O_I_data=self.get_O_I(k,P_lin)
         self.O_I_data = self.get_O_I_all()
         #self.F_0=self.basis.get_F_alpha_beta()
         self.F_0 = self.basis.get_fisher(allow_caching=True)
-        self.cov_no_mit,self.a_no_mit=self.get_SSC_covar(mitigation=False)     
-        self.F_0.clear_cache()
-        self.cov_mit,self.a_mit=self.get_SSC_covar(mitigation=True)     
-          
+        if self.get_a:
+            self.cov_no_mit,self.a_no_mit=self.get_SSC_covar(mitigation=False)     
+            self.F_0.clear_cache()
+            self.cov_mit,self.a_mit=self.get_SSC_covar(mitigation=True)     
+        else:
+            self.cov_no_mit=self.get_SSC_covar(mitigation=False)     
+            self.F_0.clear_cache()
+            self.cov_mit=self.get_SSC_covar(mitigation=True)     
         t2=time()
-        print 'all done'
-        print 'run time', t2-t1
+        print 'Super_Survey: all done'
+        print 'Super_Survey: run time', t2-t1
      
      
     def get_SSC_covar(self,mitigation=True):
@@ -83,7 +89,7 @@ class super_survey:
         result=np.zeros_like(2,dtype=object)
         #TODO handle F_loc differently
         if mitigation:
-            print "mit"
+            print "Super_Survey: getting SSC covar with mitigation"
             #x = self.O_a_data[0]
             F_loc = copy.deepcopy(self.F_0)
             #F_loc = self.basis.get_fisher(allow_caching=True)
@@ -94,10 +100,11 @@ class super_survey:
             #print "x[0]: ",x[0]
         else:
             F_loc = self.F_0
-            print "no mit"
+            print "Super_Survey: getting SSC covar without mitigation"
 
         Cov_SSC = np.zeros((2,2),dtype=object) 
-        a_SSC = np.zeros(self.N_surveys_sw,dtype=object) 
+        if self.get_a:
+            a_SSC = np.zeros(self.N_surveys_sw,dtype=object) 
 
         for i in range(0,self.N_surveys_sw):
             survey=self.surveys_sw[i]
@@ -106,43 +113,41 @@ class super_survey:
         
             #TODO probably move this loop elsewhere
             for j in range(0,dO_I_ddelta_bar_list.size):
-                print "Calc d delta alpha"
+                print "Super_Survey: Calc d delta alpha for survey #"+str(i)+" observable #"+str(j)
                 T = self.basis.D_O_I_D_delta_alpha(survey.geo,dO_I_ddelta_bar_list[j])
-                print T.shape
-                print F_loc.get_covar().shape
+                print "Super_Survey: T shape: "+str(T.shape)
+                print "Super_Survey: covar shape: "+str(F_loc.get_covar().shape)
                 Cov_SSC[i,j] = F_loc.contract_covar(T.T,T,identical_inputs=True)
                 #Cov_SSC[i,j] = np.dot(T.T,np.dot(F_loc.get_covar(),T))
                 
                 #a_SSC[i][j] = F_loc.contract_covar(T,T)
-            #TODO put this behavior back maybe
-            T=self.basis.D_delta_bar_D_delta_alpha(survey.geo,tomography=True)[0]
-            a_SSC[i]=F_loc.contract_covar(T,T,identical_inputs=True)
-            #print "max t",max(T)
-            #print "min t",min(T)
-            #print T[0]
-            print "a is: ",a_SSC[i]
-            #TODO what is this j index doing?
+            if self.get_a:
+                T=self.basis.D_delta_bar_D_delta_alpha(survey.geo,tomography=True)[0]
+                a_SSC[i]=F_loc.contract_covar(T,T,identical_inputs=True)
+                print "Super_Survey: a is "+str(a_SSC[i])+" for survey #"+str(i)
             #for j in range(0,dO_I_ddelta_bar_list.size):
             #    Cov_SSC[i,j]=np.outer(dO_I_ddelta_bar_list[j],dO_I_ddelta_bar_list[j])*a_SSC[i]
-        return Cov_SSC,a_SSC
+        if self.get_a:
+            return Cov_SSC,a_SSC
+        else:
+            return Cov_SSC
 
     def get_O_a(self):
         D_O_a=np.zeros(self.N_O_a,dtype=object)
-        print 'I have this many long wavelength observables', self.N_O_a 
+        print 'Super_Survey: I have this many long wavelength observables', self.N_O_a 
         for i in range(self.N_O_a):
             O_a=self.O_a[i]
             for key in O_a:
                   
                 if key=='number density':
-                    print 'hello there'
                     data=O_a['number density']
                     n_obs=np.array([data[0],data[1]])
                     mass=data[2]
                     print n_obs, mass
                     X=DNumberDensityObservable(self.surveys_lw[0],defaults.dn_params,'lw1',self.C,self.basis)
                     D_O_a[i] = X.Fisher_alpha_beta()
-                    print "min",np.min(D_O_a[i][0])
-                    print D_O_a[i][0]
+                    print "Super_Survey: min D_O_a element for lw observable #"+str(i)+": "+str(np.min(D_O_a[i][0]))
+                    print "Super_Survey: D_O_a for lw observable #"+str(i)+": ",D_O_a[i][0]
         return D_O_a  
 
     def get_O_I_all(self):
@@ -166,13 +171,14 @@ if __name__=="__main__":
     r_max=C.D_comov(z_max)
     print 'this is r max and l_max', r_max , l_max
     
-    Theta1=[0,np.pi/4.]
-    Phi1=[0.,np.pi/3.]
-    Theta2=[np.pi/4.,np.pi/2.]
-    Phi2=[np.pi/3.,2.*np.pi/3.]
+    Theta1=[0,np.pi/8.]
+    Phi1=[0.,np.pi/6.]
+    Theta2=[np.pi/8.,np.pi/4.]
+    Phi2=[np.pi/6.,np.pi/3.]
     #geo=np.array([Theta,Phi])
 
-    zs=np.array([.4,0.8,1.2])
+    #zs=np.array([.4,0.8,1.2])
+    zs=np.array([.4,1.2])
     z_fine = np.arange(defaults.lensing_params['z_min_integral'],np.max(zs),defaults.lensing_params['z_resolution'])
     #zbins=np.array([.2,.6,1.0])
     #l=np.logspace(np.log10(2),np.log10(3000),1000)
@@ -221,14 +227,14 @@ if __name__=="__main__":
           
     #survey_2={'details':d_2,'O_I':O_I2, 'geo':geo2}
      
-    surveys_sw=np.array([survey_1, survey_2])
+    surveys_sw=np.array([survey_1])
     
      
     #survey_3={'details':d_3, 'O_a':O_a, 'zs':zs,'geo1':geo1,'geo2':geo2}
     geos = np.array([geo1,geo2])
     l_lw=np.arange(0,20)
     n_zeros=49
-    k_cut = 0.012
+    k_cut = 0.016
             
     #self.basis=sph_basis(r_max,l,n_zeros,self.CosmoPie)
     basis=sph_basis_k(r_max,C,k_cut,l_ceil=100)
@@ -236,7 +242,7 @@ if __name__=="__main__":
     surveys_lw=np.array([survey_3])
      
      
-    print 'this is r_max', r_max 
+    print 'main: this is r_max: '+str(r_max)
      
     SS=super_survey(surveys_sw, surveys_lw,r_max,l_sw,n_zeros,k,basis,P_lin=P,C=C)
      
