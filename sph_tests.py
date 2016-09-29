@@ -129,7 +129,7 @@ class TestAlmMathematicaAgree1(unittest.TestCase):
                     n_count+=1
                     diff_tot+=diff
                     if diff>MAX_TOLERANCE:
-                        print "test_rint_match_scipy: error outside tolerance at l,k,numeric,scipy: ",ll,ks[i],r_int_compute,r_int_exact
+                        print "test_rint_match_scipy: error outside tolerance at l,k,numeric,scipy,scipy error est: ",ll,ks[i],r_int_compute,r_int_exact,sp.hyp1f2(1.5+ll/2.,2.5+ll/2.,1.5+ll,-1./4*ks[i]**2*r2**2)[1]
                         bad_count+=1
                     diff_max = max(diff_max,diff)
                 else:
