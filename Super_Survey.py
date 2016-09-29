@@ -235,6 +235,7 @@ if __name__=="__main__":
     l_lw=np.arange(0,20)
     n_zeros=49
     k_cut = 0.016
+    k_cut = 0.01 
             
     #self.basis=sph_basis(r_max,l,n_zeros,self.CosmoPie)
     basis=sph_basis_k(r_max,C,k_cut,l_ceil=100)
