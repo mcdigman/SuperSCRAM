@@ -53,8 +53,8 @@ cosmology_cosmosis={'Omegabh2' :0.049,
 				'Omegak'   : 0.0, # check on this value 
 				'Omegar'   : 0.0,
                                 'ns'       : 0.9681} #guess
-lensing_params = {  'z_resolution'    :0.01, #fine resolution
-                    'z_min_integral'  :0.01, #lowest z
+lensing_params = {  'z_resolution'    :0.05, #fine resolution
+                    'z_min_integral'  :0.05, #lowest z
                     'z_max_integral'  :2,#highes z
                     'pmodel_O'        :'halofit_nonlinear', #default method for finding p grid
                     'pmodel_dO_ddelta':'dc_halofit', #default method for finding dp/ddeltabar grid

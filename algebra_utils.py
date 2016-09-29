@@ -1,6 +1,10 @@
 import numpy as np
 from scipy.linalg import solve_triangular,solve
 
+#Get the inverse of the cholesky decomposition
+def get_cholesky_inv(A):
+    return solve_triangular(np.linalg.cholesky(A),np.identity(A.shape[0]),lower=True,overwrite_b=True)
+
 #compute inverse of positive definite matrix using cholesky decomposition
 #TODO give better name (returns inverse using cholesky, not inverse of cholesky)
 def cholesky_inv(A,return_cholesky=False,cholesky_given=False):
