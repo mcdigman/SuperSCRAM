@@ -38,14 +38,29 @@ class fisher_matrix:
         if self.allow_caching:
             if self.chol_cache_good:
                 print "fisher_matrix ",id(self)," cholesky decomposition retrieved from cache for calculating contract_covar"
-                result = cholesky_inv_contract(self.cholesky_cache,v1,v2,cholesky_given=True,return_cholesky=False,identical_inputs=identical_inputs)
             else:
+                result = cholesky_inv_contract(self.cholesky_cache,v1,v2,cholesky_given=True,return_cholesky=False,identical_inputs=identical_inputs)
                 print "fisher_matrix ",id(self)," cholesky decomposition cache miss for calculating contract_covar"
                 result,self.cholesky_cache = cholesky_inv_contract(self.F_alpha_beta,v1,v2,cholesky_given=False,return_cholesky=True,identical_inputs=identical_inputs)
         else:
             warn("fisher_matrix ",id(self)," did not cache")
             result = cholesky_inv_contract(self.F_alpha_beta,v1,v2,identical_inputs=identical_inputs)
         return result
+    
+    def get_cov_cholesky(self):
+        if self.allow_caching:
+            if self.chol_cache_good:
+                print "fisher_matrix ",id(self)," cholesky decomposition retrieved from cache"
+                return self.cholesky_cache
+            else:
+                print "fisher_matrix ",id(self)," cholesky decomposition cache miss"
+                self.cholseky_cache = get_cholesky_inv(self.F_alpha_beta)
+                self.chol_cache_good = True
+                return self.cholesky_cache 
+        else:
+            print "fisher_matrix ",id(self)," calculating cholesky decomposition, caching disabled"
+            return get_cholesky_inv(self.F_alpha_beta)
+
 
     def get_F_alpha_beta(self):
         print "fisher_matrix ",id(self)," retrieved fisher matrix"

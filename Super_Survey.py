@@ -23,7 +23,7 @@ from lw_survey import LWSurvey
 class super_survey:
     ''' This class holds and returns information for all surveys
     ''' 
-    def __init__(self, surveys_sw, surveys_lw, r_max, l, n_zeros,k,basis,C,P_lin=None,get_a=False):
+    def __init__(self, surveys_sw, surveys_lw, r_max, l, n_zeros,k,basis,C,P_lin=None,get_a=False,do_mitigated=True,do_unmitigated=True):
     
       
         '''
@@ -36,6 +36,8 @@ class super_survey:
         t1=time()
 
         self.get_a = get_a
+        self.do_mitigated = do_mitigated
+        self.do_unmitigated = do_unmitigated
 
         self.surveys_lw = surveys_lw
         self.surveys_sw = surveys_sw
@@ -53,6 +55,7 @@ class super_survey:
         self.N_O_I=0
         self.N_O_a=0   
         self.O_I=np.array([], dtype=object)
+    
         #self.O_a=np.array([], dtype=object)
         for i in range(self.N_surveys_sw):
           
@@ -72,13 +75,19 @@ class super_survey:
         #self.F_0=self.basis.get_F_alpha_beta()
         self.F_0 = self.basis.get_fisher(allow_caching=True)
         if self.get_a:
-            self.cov_no_mit,self.a_no_mit=self.get_SSC_covar(mitigation=False)     
-            self.F_0.clear_cache()
-            self.cov_mit,self.a_mit=self.get_SSC_covar(mitigation=True)     
+            if self.do_unmitigated:
+                self.cov_no_mit,self.a_no_mit=self.get_SSC_covar(mitigation=False)     
+                print "Super_Survey: unmitigated run gave a="+str(self.a_no_mit)
+            if self.do_mitigated:
+                self.F_0.clear_cache()
+                self.cov_mit,self.a_mit=self.get_SSC_covar(mitigation=True)     
+                print "Super_Survey: mitigated run gave a="+str(self.a_mit)
         else:
-            self.cov_no_mit=self.get_SSC_covar(mitigation=False)     
-            self.F_0.clear_cache()
-            self.cov_mit=self.get_SSC_covar(mitigation=True)     
+            if self.do_unmitigated:
+                self.cov_no_mit=self.get_SSC_covar(mitigation=False)     
+            if self.do_mitigated:
+                self.F_0.clear_cache()
+                self.cov_mit=self.get_SSC_covar(mitigation=True)     
         t2=time()
         print 'Super_Survey: all done'
         print 'Super_Survey: run time', t2-t1
@@ -123,7 +132,7 @@ class super_survey:
                 #a_SSC[i][j] = F_loc.contract_covar(T,T)
             if self.get_a:
                 T=self.basis.D_delta_bar_D_delta_alpha(survey.geo,tomography=True)[0]
-                a_SSC[i]=F_loc.contract_covar(T,T,identical_inputs=True)
+                a_SSC[i]=F_loc.contract_covar(T.T,T,identical_inputs=True)
                 print "Super_Survey: a is "+str(a_SSC[i])+" for survey #"+str(i)
             #for j in range(0,dO_I_ddelta_bar_list.size):
             #    Cov_SSC[i,j]=np.outer(dO_I_ddelta_bar_list[j],dO_I_ddelta_bar_list[j])*a_SSC[i]
@@ -162,7 +171,7 @@ class super_survey:
           
 if __name__=="__main__":
 
-    z_max=1.25; l_max=20 
+    z_max=1.05; l_max=20 
 
     #d=np.loadtxt('Pk_Planck15.dat')
     d=np.loadtxt('camb_m_pow_l.dat')
@@ -171,14 +180,14 @@ if __name__=="__main__":
     r_max=C.D_comov(z_max)
     print 'this is r max and l_max', r_max , l_max
     
-    Theta1=[0,np.pi/8.]
-    Phi1=[0.,np.pi/6.]
+    Theta1=[np.pi/4,5.*np.pi/16.]
+    Phi1=[0.,np.pi/12.]
     Theta2=[np.pi/8.,np.pi/4.]
     Phi2=[np.pi/6.,np.pi/3.]
     #geo=np.array([Theta,Phi])
 
     #zs=np.array([.4,0.8,1.2])
-    zs=np.array([.4,1.2])
+    zs=np.array([.9,1.])
     z_fine = np.arange(defaults.lensing_params['z_min_integral'],np.max(zs),defaults.lensing_params['z_resolution'])
     #zbins=np.array([.2,.6,1.0])
     #l=np.logspace(np.log10(2),np.log10(3000),1000)
@@ -187,9 +196,11 @@ if __name__=="__main__":
     geo1=rect_geo(zs,Theta1,Phi1,C,z_fine)
     geo2=rect_geo(zs,Theta2,Phi2,C,z_fine)
 
-    survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=defaults.lensing_params) 
-    survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=defaults.lensing_params) 
-
+    #survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=defaults.lensing_params) 
+    #survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=defaults.lensing_params) 
+ 
+    survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = np.array([]),len_params=defaults.lensing_params) 
+    survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = np.array([]),len_params=defaults.lensing_params) 
     #shear_data1={'z_bins':zbins,'l':l_sw,'geo':geo1}
     #shear_data2={'z_bins':zbins,'l':l_sw,'geo':geo2}
      
@@ -234,8 +245,12 @@ if __name__=="__main__":
     geos = np.array([geo1,geo2])
     l_lw=np.arange(0,20)
     n_zeros=49
+<<<<<<< HEAD
     k_cut = 0.016
     k_cut = 0.01 
+=======
+    k_cut = 0.02
+>>>>>>> 1151c226b01dbe5b341032b9652f5f11b0b512e4
             
     #self.basis=sph_basis(r_max,l,n_zeros,self.CosmoPie)
     basis=sph_basis_k(r_max,C,k_cut,l_ceil=100)
@@ -245,14 +260,16 @@ if __name__=="__main__":
      
     print 'main: this is r_max: '+str(r_max)
      
-    SS=super_survey(surveys_sw, surveys_lw,r_max,l_sw,n_zeros,k,basis,P_lin=P,C=C)
+    SS=super_survey(surveys_sw, surveys_lw,r_max,l_sw,n_zeros,k,basis,P_lin=P,C=C,get_a=True,do_unmitigated=True,do_mitigated=False)
      
     #print "fractional mitigation: ", SS.a_no_mit/SS.a_mit     
-
+    rel_weights = SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0]*np.dot(SS.F_0.cholesky_cache,SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0])
     import matplotlib.pyplot as plt
     ax = plt.subplot(111)
-    cov_ss = surveys_sw[0].get_covars()[0,0]#np.diag(SS.O_I_data[0]['shear_shear']['covariance'][0,0])
-    c_ss = SS.O_I_data[0]
+    ax.plot(rel_weights)
+    plt.show()
+   # cov_ss = surveys_sw[0].get_covars()[0,0]#np.diag(SS.O_I_data[0]['shear_shear']['covariance'][0,0])
+   # c_ss = SS.O_I_data[0]
 
     #try:
     #    np.linalg.cholesky(np.diagflat(cov_ss))
@@ -267,13 +284,13 @@ if __name__=="__main__":
     #except Exception:
     #    print "mitigated covariance is not positive definite"
 
-    print "(S/N)^2 gaussian: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss))),c_ss)
-    print "(S/N)^2 gaussian+no mitigation: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss)+SS.cov_no_mit[0,0])),c_ss)
-    print "(S/N)^2 gaussian+mitigation: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss)+SS.cov_mit[0,0])),c_ss)
+    #print "(S/N)^2 gaussian: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss))),c_ss)
+    #print "(S/N)^2 gaussian+no mitigation: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss)+SS.cov_no_mit[0,0])),c_ss)
+    #print "(S/N)^2 gaussian+mitigation: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss)+SS.cov_mit[0,0])),c_ss)
     #ax.loglog(l_sw,cov_ss)
     #ax.loglog(l,np.diag(SS.cov_mit[0,0])/c_ss**2*l/2)
    # ax.loglog(l,(np.diag(SS.cov_mit[0,0])))
-    ax.loglog(l_sw,(np.diag(SS.cov_no_mit[0,0])/cov_ss))
+    #ax.loglog(l_sw,(np.diag(SS.cov_no_mit[0,0])/cov_ss))
     #ax.legend(['cov','mit','no mit'])
     #plt.show()
     print 'r diffs',np.diff(geo1.rs)
