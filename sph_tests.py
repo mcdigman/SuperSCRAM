@@ -105,7 +105,7 @@ class TestAlmMathematicaAgree1(unittest.TestCase):
     def test_rint_match_scipy(self):
         print "test_rint_match_scipy: begin testing numeric r integral agreement with exact (floating point precision) scipy solution"
         ZERO_TOLERANCE = 10e-13
-        MAX_TOLERANCE = 10e-1
+        MAX_TOLERANCE = 10e-2
         AVG_TOLERANCE = 10e-15
         ls = np.arange(0,70)
         k_cut = 0.02
@@ -129,7 +129,9 @@ class TestAlmMathematicaAgree1(unittest.TestCase):
                     n_count+=1
                     diff_tot+=diff
                     if diff>MAX_TOLERANCE:
-                        print "test_rint_match_scipy: error outside tolerance at l,k,numeric,scipy,scipy error est: ",ll,ks[i],r_int_compute,r_int_exact,sp.hyp1f2(1.5+ll/2.,2.5+ll/2.,1.5+ll,-1./4*ks[i]**2*r2**2)[1]
+                        f1 = sp.hyp1f2(1.5+ll/2.,2.5+ll/2.,1.5+ll,-1./4*ks[i]**2*r2**2)
+                        f2 = sp.hyp1f2(1.5+ll/2.,2.5+ll/2.,1.5+ll,-1./4.*ks[i]**2*r1**2)
+                        print "test_rint_match_scipy: err>TOL: l,k,numeric,scipy,hyp1,hyp2: ",ll,ks[i],r_int_compute,r_int_exact,f1,f2
                         bad_count+=1
                     diff_max = max(diff_max,diff)
                 else:

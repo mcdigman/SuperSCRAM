@@ -4,7 +4,7 @@ from sph_functions import j_n, jn_zeros_cut, dJ_n, Y_r
 from scipy.special import jv
 from scipy.integrate import trapz, quad,dblquad
 from scipy.interpolate import InterpolatedUnivariateSpline,interp1d
-from algebra_utils import cholesky_inv
+from algebra_utils import ch_inv
 import scipy as sp
 import sys 
 from time import time
@@ -95,7 +95,7 @@ class sph_basis_k(object):
 	        self.C_size = C_size	
                 print "sph_klim: basis size: ",self.C_size
 		self.C_id=np.zeros((C_size,3))
-		self.C_alpha_beta=np.zeros((self.C_id.shape[0],self.C_id.shape[0]))
+		C_alpha_beta=np.zeros((self.C_id.shape[0],self.C_id.shape[0]))
 
 
                 print "sph_klim: begin constructing covariance matrix. basis id: ",id(self)
@@ -126,17 +126,18 @@ class sph_basis_k(object):
                                 #print b
                                 for d in range(b,kk.size):
                                     coeff = 8.*np.sqrt(kk[b]*kk[d])*kk[b]*kk[d]/(np.pi*self.r_max**2*jv(ll+1.5,kk[b]*self.r_max)*jv(ll+1.5,kk[d]*self.r_max))
-                                    self.C_alpha_beta[itr_k1+b,itr_k1+d]=coeff*trapz(integrand1/((k**2-kk[b]**2)*(k**2-kk[d]**2)),k); #check coefficient
-                                    self.C_alpha_beta[itr_k1+d,itr_k1+b]=self.C_alpha_beta[itr_k1+b,itr_k1+d];
+                                    C_alpha_beta[itr_k1+b,itr_k1+d]=coeff*trapz(integrand1/((k**2-kk[b]**2)*(k**2-kk[d]**2)),k); #check coefficient
+                                    C_alpha_beta[itr_k1+d,itr_k1+b]=C_alpha_beta[itr_k1+b,itr_k1+d];
                         else:
                             for b in range(0,kk.size):
                                 for d in range(b,kk.size):
-                                    self.C_alpha_beta[itr_k1+b,itr_k1+d] = self.C_alpha_beta[itr_m1+b,itr_m1+d] 
-                                    self.C_alpha_beta[itr_k1+d,itr_k1+b] = self.C_alpha_beta[itr_m1+d,itr_m1+b] 
+                                    C_alpha_beta[itr_k1+b,itr_k1+d] = C_alpha_beta[itr_m1+b,itr_m1+d] 
+                                    C_alpha_beta[itr_k1+d,itr_k1+b] = C_alpha_beta[itr_m1+d,itr_m1+b] 
+                self.fisher = fm.fisher_matrix(C_alpha_beta,input_type=fm.REP_COVAR,initial_state=fm.REP_CHOL)
 	        #TODO can make more efficient if necessary	
                 t2 = time()
                 print "sph_klim: basis time: ",t2-t1
-                #print "sph_klim: maximum element of covariance matrix: ",np.max(self.C_alpha_beta)
+                #print "sph_klim: maximum element of covariance matrix: ",np.max(C_alpha_beta)
 	        print "sph_klim: finished init basis id: ",id(self)	
 
         #I_\alpha(k_\alpha,r_{max}) simplified
@@ -144,13 +145,13 @@ class sph_basis_k(object):
             return -np.pi*self.r_max**2/(4.*ka)*jv(la+1.5,ka*self.r_max)*jv(la-0.5,ka*self.r_max)
 
 	def Cov_alpha_beta(self):
-		return self.C_alpha_beta
+		return self.fisher.get_covar()
 	
 	def get_F_alpha_beta(self):
-	    return cholesky_inv(self.C_alpha_beta)
-
-        def get_fisher(self,allow_caching=False):
-            return fm.fisher_matrix(cholesky_inv(self.C_alpha_beta),allow_caching)
+	    return self.fisher.get_F_alpha_beta()
+        
+        def get_fisher(self):
+            return self.fisher
 		
 	def k_LW(self):
 		# return the long-wavelength wave vector k 
