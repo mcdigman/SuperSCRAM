@@ -14,10 +14,11 @@ if __name__=='__main__':
     Theta1=[np.pi/4.,5.*np.pi/16.]
     Phi1=[0.,np.pi/12.]
     zs=np.array([0.1,0.4,0.7,1.0,1.3,1.6])
+    z_fine = np.arange(0.05,1.6,0.05)
 
     ls = np.arange(2,3000)
 
-    geo1=rect_geo(zs,Theta1,Phi1,C)
+    geo1=rect_geo(zs,Theta1,Phi1,C,z_fine)
     
     omega_s = geo1.angular_area()
     

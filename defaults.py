@@ -53,17 +53,19 @@ cosmology_cosmosis={'Omegabh2' :0.049,
 				'Omegak'   : 0.0, # check on this value 
 				'Omegar'   : 0.0,
                                 'ns'       : 0.9681} #guess
-lensing_params = {  'z_resolution'    :0.05, #fine resolution
-                    'z_min_integral'  :0.05, #lowest z
+lensing_params = {  'z_resolution'    :0.01, #fine resolution
+                    'z_min_integral'  :0.01, #lowest z
                     'z_max_integral'  :2,#highes z
                     'pmodel_O'        :'halofit_nonlinear', #default method for finding p grid
                     'pmodel_dO_ddelta':'dc_halofit', #default method for finding dp/ddeltabar grid
-                    'n_gal'           :118000000,#118000000 galaxies/rad^2=10 galaxies/arcmin^2
+                    'n_gal'           :118000000*4.,#118000000 galaxies/rad^2=10 galaxies/arcmin^2
                     'delta_l'         :1., #binning window
                     'sigma2_e'        :0.27**2*2, #other noise term
                     'sigma2_mu'       :1.2, #noise term for magnification
-                    'smodel'          :'gaussian', #type, current options are 'gaussian','constant','cosmolike'
-                    'zbar'            :1.0, #mean of gaussian source distribution
+                    'smodel'          :'constant', #type, current options are 'gaussian','constant','cosmolike'
+                    'z_min_dist'      :0.,
+                    'z_max_dist'      :np.inf,
+                    'zbar'            :0.1, #mean of gaussian source distribution
                     'sigma'           :0.4, #stdev of gaussian source distribution
                     'epsilon'         :0.0001} #small parameter 
 sw_observable_list = ['len_shear_shear']

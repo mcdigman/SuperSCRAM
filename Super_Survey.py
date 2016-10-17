@@ -13,7 +13,7 @@ from hmf import ST_hmf
 
 import sys
 from geo import rect_geo
-from algebra_utils import ch_inv, inverse_cholesky,get_inv_cholesky
+from algebra_utils import ch_inv ,get_inv_cholesky
 import defaults
 import fisher_matrix as fm
 import lensing_observables as lo
@@ -164,26 +164,34 @@ if __name__=="__main__":
     r_max=C.D_comov(z_max)
     print 'this is r max and l_max', r_max , l_max
     
-    Theta1=[np.pi/4,5.*np.pi/16.]
-    Phi1=[0.,np.pi/12.]
+    Theta1=[0.,np.pi/4.]
+    Phi1=[0.,np.pi/3.]
     Theta2=[np.pi/8.,np.pi/4.]
     Phi2=[np.pi/6.,np.pi/3.]
 
     #zs=np.array([.4,0.8,1.2])
-    zs=np.array([.9,1.])
+    zs=np.array([.6,0.8,1.0])
     z_fine = np.arange(defaults.lensing_params['z_min_integral'],np.max(zs),defaults.lensing_params['z_resolution'])
     #zbins=np.array([.2,.6,1.0])
     #l=np.logspace(np.log10(2),np.log10(3000),1000)
-    l_sw = np.logspace(np.log(20),np.log(5000),base=np.exp(1.),num=100)
+    l_sw = np.logspace(np.log(20),np.log(5000),base=np.exp(1.),num=50)
+    #l_sw = np.arange(0,50)
     
     geo1=rect_geo(zs,Theta1,Phi1,C,z_fine)
     geo2=rect_geo(zs,Theta2,Phi2,C,z_fine)
+    
+    loc_lens_params = defaults.lensing_params.copy()
+    loc_lens_params['z_min_dist'] = np.min(zs)
+    loc_lens_params['z_max_dist'] = np.max(zs)
+    
+    lenless_defaults = defaults.sw_survey_params.copy()
+    lenless_defaults['needs_lensing'] = False
 
-    #survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=defaults.lensing_params) 
-    #survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=defaults.lensing_params) 
+    survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=loc_lens_params) 
+    #survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=loc_lens_params) 
  
-    survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = np.array([]),len_params=defaults.lensing_params) 
-    survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = np.array([]),len_params=defaults.lensing_params) 
+    #survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = np.array([]),len_params=loc_lens_params) 
+    survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=lenless_defaults,observable_list = np.array([]),len_params=loc_lens_params) 
      
      
 
@@ -194,11 +202,13 @@ if __name__=="__main__":
     
      
     geos = np.array([geo1,geo2])
+    #geos = np.array([geo1])
     l_lw=np.arange(0,20)
     n_zeros=49
-    k_cut = 0.022
+    k_cut = 0.01
             
     basis=sph_basis_k(r_max,C,k_cut,l_ceil=100)
+
     survey_3 = LWSurvey(geos,'lw_survey1',basis,C=C,ls = l_lw,params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params)
     surveys_lw=np.array([survey_3])
      
@@ -212,18 +222,20 @@ if __name__=="__main__":
      
     #print "fractional mitigation: ", SS.a_no_mit/SS.a_mit     
     rel_weights = SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0]*np.dot(SS.F_0.get_cov_cholesky(),SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0])
+    #np.savetxt('rel_weights_k_026.txt',rel_weights)
 
-    #import matplotlib.pyplot as plt
-    #ax = plt.subplot(111)
-    #ax.plot(rel_weights)
-    #plt.show()
+ #   ax.plot(rel_weights)
+ #   plt.show()
     
 #     cov_ss = SS.cov_no_mit[0].get_gaussian_covar()#np.diag(SS.O_I_data[0]['shear_shear']['covariance'][0,0])
 #    c_ss = SS.O_I_data[0]
    #chol_cov = get_inv_cholesky(cov_ss)
     #mat_retrieved = (np.identity(chol_cov.shape[0])+np.dot(np.dot(chol_cov,SS.cov_no_mit[0,0]),chol_cov.T))
     #eig_ret = np.linalg.eigvals(mat_retrieved)
-#    SS_eig =  SS.cov_no_mit[0].get_SS_eig()
+    SS_eig =  SS.cov_no_mit[0].get_SS_eig()
+    chol_gauss = np.linalg.cholesky(SS.cov_no_mit[0].get_gaussian_covar())
+    print "main: lambda1,2: "+str(SS_eig[0][-1])+","+str(SS_eig[0][-2])
+    print "n lambda>1.00000001: "+str(np.sum(np.abs(SS_eig[0])>1.00000001))
 #    print "SS eigenvals:",SS_eig[0]
 #    print "(S/N)^2 gaussian: ",np.dot(np.dot(c_ss,np.linalg.inv(cov_ss)),c_ss)
     #print "(S/N)^2 gaussian+no mitigation: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss)+SS.cov_no_mit[0,0])),c_ss)
@@ -236,4 +248,13 @@ if __name__=="__main__":
     #plt.show()
     print 'r diffs',np.diff(geo1.rs)
     print 'theta width',(geo1.rs[1]+geo1.rs[0])/2.*(Theta1[1]-Theta1[0])
-    print 'phi width',(geo1.rs[1]+geo1.rs[0])/2.*(Phi1[1]-Phi1[0])
+    print 'phi width',(geo1.rs[1]+geo1.rs[0])/2.*(Phi1[1]-Phi1[0])*np.sin((Theta1[1]+Theta1[0])/2)
+    ax_ls = np.hstack((l_sw,l_sw))
+    import matplotlib.pyplot as plt
+    ax = plt.subplot(111)
+    for itr in range(1,5):
+        #ax.plot(ax_ls,ax_ls*(ax_ls+1.)*np.dot(chol_gauss,SS_eig[1][:,-itr]))
+        ax.plot(np.dot(chol_gauss,SS_eig[1][:,-itr]))
+    
+    ax.legend(['1','2','3','4','5'])
+    plt.show()

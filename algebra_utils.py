@@ -1,15 +1,24 @@
 import numpy as np
 from scipy.linalg import solve_triangular,solve
+import scipy.linalg
+from warnings import warn
 
-#Get the inverse of the cholesky decomposition
-def get_inv_cholesky(A):
-    return solve_triangular(np.linalg.cholesky(A),np.identity(A.shape[0]),lower=True,overwrite_b=True)
+#TODO: In the long run, some of these functions would benifit from some low level optimizations, like doing cholesky decompositions
+#and inverses in place (or even lower level, like storing two cholesky decompositions in the same matrix and just masking the one we don't need when doing any given operation), 
+#because the memory consumption of these matrices is the code's primary performance bottleneck.
+#scipy.linalg.cholesky's overwrite_a option is not reliable for doing things in place, so I would probably need
+#some lower level (lapack?) calls, and I would prefer to wait until the code specification is more stable/good unit tests have been writen.
 
-def invert_triangular(A):
-    return solve_triangular(A,np.identity(A.shape[0]),lower=True,overwrite_b=True)
 
-def get_mat_from_inv_cholesky(A):
-    chol_mat = invert_triangular(A)
+#Get the inverse cholesky decomposition of a matrix A
+def get_inv_cholesky(A,lower=True):
+    return invert_triangular(cholesky_inplace(A,inplace=False,lower=lower),lower=lower)
+
+def invert_triangular(A,lower=True):
+    return solve_triangular(A,np.identity(A.shape[0]),lower=lower,overwrite_b=True)
+
+def get_mat_from_inv_cholesky(A,lower=True):
+    chol_mat = invert_triangular(A,lower)
     return np.dot(chol_mat,chol_mat.T)
 
 #compute inverse of positive definite matrix using cholesky decomposition
@@ -23,23 +32,66 @@ def ch_inv(A,cholesky_given=False):
         chol_inv = solve_triangular(np.linalg.cholesky(A),np.identity(A.shape[0]),lower=True,overwrite_b=True)
     return np.dot(chol_inv.T,chol_inv)
 
-def cholesky_inv_contract(A,vec1,vec2,cholesky_given=False,identical_inputs=False):
+def cholesky_inv_contract(A,vec1,vec2,cholesky_given=False,identical_inputs=False,lower=True):
     if cholesky_given:
         chol_inv = A
     else:
-        chol_inv = solve_triangular(np.linalg.cholesky(A),np.identity(A.shape[0]),lower=True,overwrite_b=True)
+        chol_inv = get_inv_cholesky(A,lower)
     #chol_inv = np.linalg.solve(np.linalg.cholesky(A),np.identity(A.shape[0]))
 
-    #Save some time if inputs are identical
+    #potentially Save some time if inputs are identical
+    #TODO: check if memory profile worse
     if identical_inputs:
-        right_side = np.dot(chol_inv,vec2)
+        if lower:
+            right_side = np.dot(chol_inv,vec2)
+        else:
+
+            right_side = np.dot(chol_inv.T,vec2)
         result = np.dot(right_side.T,right_side)
     else:
-        result = np.dot(np.dot(vec1,chol_inv.T),np.dot(chol_inv,vec2))
+        if lower:
+            result = np.dot(np.dot(vec1,chol_inv.T),np.dot(chol_inv,vec2))
+        else:
+            result = np.dot(np.dot(vec1,chol_inv),np.dot(chol_inv.T,vec2))
+
     return result
 
-def inverse_cholesky(A):
-    return solve_triangular(np.linalg.cholesky(A),np.identity(A.shape[0]),lower=True,overwrite_b=True)
+#Do a cholesky decomposition, in place if inplace=True. For safety, the return value should still be assigned, i.e. A=cholesky_inplace(A,inplace=True). 
+#Cannot currently be done in place if the array is not F contiguous, but will compute decomposition anyway.
+#in place will require less memory, and regardless this function should have less overhead than scipy/numpy (both in time and memory)
+#If absolutely must be done in place, set fatal_errors=True.
+#if lower=True return lower triangular decomposition, otherwise upper triangular (note lower=True is numpy default,lower=False is scipy default).
+#TODO: add more sanity check assertions, such as if lapack is actually installed
+def cholesky_inplace(A,inplace=True,fatal_errors=False,lower=True):
+
+    try_inplace = inplace
+
+    #dpotrf will still work on C contiguous arrays but will silently fail to do them in place regardless of overwrite_a, so raise a warning or error here 
+    #using order='F' when creating the array or A.copy('F') when copying ensures fortran contiguous arrays.
+    if (not A.flags['F_CONTIGUOUS']) and try_inplace:
+        if fatal_errors:
+            raise RuntimeError('algebra_utils: Cannot do cholesky decomposition in place on C continguous numpy array.') 
+        else:
+            warn('algebra_utils: Cannot do cholesky decomposition in place on C continguous numpy array. will output to return value',RuntimeWarning)
+            try_inplace = False
+    
+    #scipy.linalg.cholesky won't do them in place TODO actually handle it
+    if not A.dtype == np.float_:
+        raise ValueError('algebra_utils: cholesky_inplace currently only supports arrays with dtype=np.float_')
+
+    #TODO maybe workaround, determine actual threshold (46253 is just largest successful run)
+    if A.shape[0] > 46253:
+        warn('algebra_utils: dpotrf may segfault for matrices this large, due to a bug in certain lapack/blas implementations')
+    #result = scipy.linalg.cholesky(A,lower=lower,overwrite_a=try_inplace)
+    result,info = scipy.linalg.lapack.dpotrf(A,lower=lower,clean=1, overwrite_a=try_inplace)
+    
+    #Something went wrong. (scipy.linalg.cholesky and np.linalg.cholesky should fail too)
+    #if not info==0:
+    #    raise RuntimeError('algebra_utils: dpotrf failed with nonzero exit status')
+
+    # check if L is the desired L cholesky factor
+    #assert np.allclose(np.dot(L,L.T), A)
+    return result
 
 if __name__=='__main__':
     from time import time

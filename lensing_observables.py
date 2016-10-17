@@ -18,8 +18,8 @@ class LensingPowerBase():
   #      zs = np.arange(z_min,geo.zs[-1],z_step)
         #TODO consider letting shear_power interact with geo directly
         omega_s = self.geo.angular_area()/(4.*np.pi**2)
-        self.C_pow = sp.shear_power(C.k,C,self.geo.z_fine,ls,omega_s=omega_s,pmodel=params['pmodel_O'],P_in=C.P_lin)
-        self.dC_ddelta = sp.shear_power(C.k,C,self.geo.z_fine,ls,omega_s=omega_s,pmodel=params['pmodel_dO_ddelta'],P_in=C.P_lin)
+        self.C_pow = sp.shear_power(C.k,C,self.geo.z_fine,ls,omega_s=omega_s,pmodel=params['pmodel_O'],P_in=C.P_lin,params=params)
+        self.dC_ddelta = sp.shear_power(C.k,C,self.geo.z_fine,ls,omega_s=omega_s,pmodel=params['pmodel_dO_ddelta'],P_in=C.P_lin,params=params)
         
 
 #Generic lensing signal, subclass must define a function handle self.len_handle for which obserable to use

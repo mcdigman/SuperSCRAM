@@ -122,6 +122,8 @@ class shear_power:
         self.p_gd_use = self.p_dd_use #temporary for testing purposes
 
         smodel = params['smodel'] 
+        self.z_min_dist = params['z_min_dist']
+        self.z_max_dist = params['z_max_dist']
         if smodel == 'gaussian': 
             self.gaussian_z_source(params['zbar'],params['sigma'])
         elif smodel == 'constant':
@@ -143,6 +145,7 @@ class shear_power:
         for i in range(0,self.n_z-1): #compensate for different bin sizes
            ps[i] = p_in[i]/(self.chis[i+1]-self.chis[i])
         ps[-1] = ps[-1]/(self.C.D_comov(2*self.zs[-1]-self.zs[-2])-self.chis[-1]) #patch for last value
+        self.ps = self.ps*(self.zs<=self.z_max_dist)*(self.zs>=self.z_min_dist) #cutoff outside dist limits
         return ps/np.trapz(ps,self.chis) #normalize galaxy probability distribution
     
         
@@ -152,6 +155,7 @@ class shear_power:
         for i in range(0,self.n_z-1): #compensate for different bin sizes
            self.ps[i] = self.ps[i]/(self.chis[i+1]-self.chis[i])
         self.ps[-1] = self.ps[-1]/(self.C.D_comov(2*self.zs[-1]-self.zs[-2])-self.chis[-1]) #patch for last value
+        self.ps = self.ps*(self.zs<=self.z_max_dist)*(self.zs>=self.z_min_dist) #cutoff outside dist limits
         self.ps = self.ps/np.trapz(self.ps,self.chis) #normalize galaxy probability distribution
     
     #constant source distribution
@@ -159,6 +163,7 @@ class shear_power:
         for i in range(0,self.n_z-1): 
            self.ps[i] = 1/(self.chis[i+1]-self.chis[i])
         self.ps[-1] = 1/(self.C.D_comov(2*self.zs[-1]-self.zs[-2])-self.chis[-1])
+        self.ps = self.ps*(self.zs<=self.z_max_dist)*(self.zs>=self.z_min_dist) #cutoff outside dist limits
         self.ps = self.ps/np.trapz(self.ps,self.chis) #normalize galaxy probability distribution
     
     #source distribution from cosmolike paper
@@ -168,6 +173,7 @@ class shear_power:
         for i in range(0,self.n_z-1): 
             self.ps[i] = self.ps[i]/(self.chis[i+1]-self.chis[i])
         self.ps[-1] = self.ps[i]/(self.C.D_comov(2*self.zs[-1]-self.zs[-2])-self.chis[-1])
+        self.ps = self.ps*(self.zs<=self.z_max_dist)*(self.zs>=self.z_min_dist) #cutoff outside dist limits
         self.ps = self.ps/np.trapz(self.ps,self.chis) #normalize galaxy probability distribution
 
 

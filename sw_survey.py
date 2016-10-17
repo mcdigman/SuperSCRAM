@@ -4,9 +4,10 @@ import defaults
 import re
 from warnings import warn
 import lensing_observables as lo
-from sw_cov_mat import SWCovMat,CovMat
+from sw_cov_mat import CovMat,SWCovMat
 class SWSurvey:
     def __init__(self,geo,survey_id,C,ls = np.array([]),params=defaults.sw_survey_params,observable_list=defaults.sw_observable_list,len_params=defaults.lensing_params):
+        print "sw_survey: began initializing survey: "+str(survey_id)
         self.geo = geo
         self.params = params
         self.needs_lensing = params['needs_lensing']
@@ -22,6 +23,7 @@ class SWSurvey:
 
         self.observable_names = generate_observable_names(self.geo,observable_list,params['cross_bins'])
         self.observables = self.names_to_observables(self.observable_names)
+        print "sw_survey: finsihed initializing survey: "+str(survey_id)
 
     def get_survey_id(self):
         return self.survey_id
@@ -69,7 +71,13 @@ class SWSurvey:
         return cov_mats
 
     def get_SSC_cov(self,fisher,basis):
+        print "sw_survey: begin computing sw covariance matrices"
         cov_mats = np.zeros((self.get_total_dimension(),self.get_total_dimension()))
+
+        #short circuit get_dO_I_ddelta_bar_list() if the result won't be used
+        if self.get_total_dimension()==0:
+            print "sw_survey: no sw covariance matrices to compute"
+            return cov_mats
         ds = self.get_dimension_list()
         #n1 and n2 are to track indices so cov_mats can be a float array instead of an array of objects
         n1 = 0
@@ -86,7 +94,7 @@ class SWSurvey:
                 cov_mats[n1:n1+ds[i],n2:n2+ds[j]] = fisher.contract_covar(T_i.T,T_j)
                 n2+=ds[j]
             n1+=ds[i]
-
+        print "sw_survey: finished computing sw covariance matrices"
         return cov_mats
     
     def get_nongaussian_cov(self):
