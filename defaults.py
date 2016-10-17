@@ -77,5 +77,6 @@ lw_survey_params = {    'cross_bins':   False}
 basis_params = {    'allow_caching'         :True,
                     'n_bessel_oversample'   :100000,
                     'k_max'                 :100.,
-                    'k_min'                 :10**-4}
+                    'k_min'                 :10**-4,
+                    'n_radial_sample':100000 }
 
