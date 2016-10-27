@@ -159,13 +159,16 @@ class sph_basis_k(object):
 
         #get the partial derivatives of an sw observable wrt the basis given an integrand with elements at each r_fine i.e.  \frac{\partial O_i}{\partial \bar(\delta)(r_{fine})}
         #TODO this may not be very efficient
-        def D_O_I_D_delta_alpha(self,geo,integrand,force_recompute = False):
+        def D_O_I_D_delta_alpha(self,geo,integrand,force_recompute = False,use_r=True):
             print "sph_klim: calculating D_O_I_D_delta_alpha"
             d_delta_bar = self.D_delta_bar_D_delta_alpha(geo,force_recompute,tomography=False)
             result = np.zeros((d_delta_bar.shape[1],integrand.shape[1]))
             for alpha in range(0,d_delta_bar.shape[1]):
                 for ll in range(0, integrand.shape[1]):
-                    result[alpha,ll] = trapz(d_delta_bar[:,alpha]*integrand[:,ll],geo.r_fine) 
+                    if use_r:
+                        result[alpha,ll] = trapz(d_delta_bar[:,alpha]*integrand[:,ll],geo.r_fine) 
+                    else:
+                        result[alpha,ll] = trapz(d_delta_bar[:,alpha]*integrand[:,ll],geo.z_fine) 
             print "sph_klim: got D_O_I_D_delta_alpha"
             return result
 

@@ -65,6 +65,7 @@ class SWSurvey:
             for j in range(0,self.get_N_O_I()):
                 cov = SWCovMat(self.observables[i],self.observables[j])
                 cov_mats[n1:n1+ds[i],n2:n2+ds[j]] = cov.get_gaussian_covar()
+                cov_mats[n2:n2+ds[j],n1:n1+ds[i]] = cov.get_gaussian_covar()
                 n2+=ds[j]
             n1+=ds[i]
 
@@ -106,7 +107,7 @@ class SWSurvey:
     def names_to_observables(self,names):
         observables = np.zeros(len(names.keys()),dtype=object)
         itr = 0 
-        for key in names:
+        for key in sorted(names.keys()):
             if self.params['needs_lensing'] and re.match('^len',key):
                 r1 = names[key]['r1']
                 r2 = names[key]['r2']
@@ -132,9 +133,14 @@ def generate_observable_names(geo,observable_list,cross_bins=defaults.sw_survey_
                 r1 = rbins[i]
                 if cross_bins:
                     for j in range(0,rbins.shape[0]):
-                        r2 = rbins[j]
-                        name_str = name+'_'+str(i)+'_'+str(j)
-                        names[name_str] = {'r1':r1,'r2':r2}
+                        #Only take r1<=r2
+                        if i>j: 
+                            pass 
+                        else:
+                            r2 = rbins[j]
+                            name_str = name+'_'+str(i)+'_'+str(j)
+                            names[name_str] = {'r1':r1,'r2':r2}
+
                 else:
                     name_str = name+'_'+str(i)+'_'+str(i)
                     names[name_str] = {'r1':r1,'r2':r1}
@@ -171,45 +177,7 @@ if __name__=='__main__':
 #                cov = SWCovMat(self.observables[i],self.observables[j])
 #                cov_mats[i,j] = cov.get_total_covar()
 #        return cov_mats
-    def names_to_observables(self,names):
-        observables = np.zeros(len(names.keys()),dtype=object)
-        itr = 0 
-        for key in names:
-            if self.params['needs_lensing'] and re.match('^len',key):
-                r1 = names[key]['r1']
-                r2 = names[key]['r2']
-                if re.match('^len_shear_shear',key):
-                    observables[itr] = lo.ShearShearLensingObservable(self.len_pow,r1,r2,params=self.len_params)
-                elif re.match('^len_galaxy_galaxy',key):
-                    observables[itr] = lo.GalaxyGalaxyLensingObservable(self.len_pow,r1,r2,params=self.len_params)
-                else:
-                    warn('unrecognized or unprocessable observable: \'',key,'\', skipping')
-                    observables[itr] = None
-            else:
-                warn('unrecognized or unprocessable observable: \'',key,'\', skipping')
-                observables[itr] = None
-            itr+=1
-        return observables
             
-def generate_observable_names(geo,observable_list,cross_bins=defaults.sw_survey_params['cross_bins']):
-    rbins = geo.rbins
-    names = {}
-    for name in observable_list:
-        if re.match('^len',name):
-            for i in range(0,rbins.shape[0]):
-                r1 = rbins[i]
-                if cross_bins:
-                    for j in range(0,rbins.shape[0]):
-                        r2 = rbins[j]
-                        name_str = name+'_'+str(i)+'_'+str(j)
-                        names[name_str] = {'r1':r1,'r2':r2}
-                else:
-                    name_str = name+'_'+str(i)+'_'+str(i)
-                    names[name_str] = {'r1':r1,'r2':r1}
-        else:
-            warn('observable name \'',name,'\' unrecognized, ignoring')
-    return names
-
 if __name__=='__main__':
     from geo import rect_geo
     Theta = [np.pi/4.,np.pi/2.]

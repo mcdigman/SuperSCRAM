@@ -49,7 +49,7 @@ class LWSurvey:
             if re.match('^d_number_density',key):
                 bin1 = names[key]['bin1']
                 bin2 = names[key]['bin2']
-                observables[itr] = DNumberDensityObservable(np.array([bin1,bin2]),self.geos,self.dn_params,self.survey_id,self.C,self.ddelta_bar_ddelta_alpha_list)
+                observables[itr] = DNumberDensityObservable(np.array([bin1,bin2]),self.geos,self.dn_params,self.survey_id,self.C,self.basis,self.ddelta_bar_ddelta_alpha_list)
             else:
                 warn('unrecognized or unprocessable observable: \'',key,'\', skipping')
                 observables[itr] = None

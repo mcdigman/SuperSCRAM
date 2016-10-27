@@ -197,6 +197,54 @@ def test_get_inv_cholesky_C_order_inverse_upper(test_mat):
     test_chol2 = None
     #print test_chol2.T
 
+def test_ch_inv_chol_given_lower(test_mat):
+    A = test_mat.A
+    A_i = test_mat.A_i
+    chol = test_mat.chol
+    chol_i = test_mat.chol_i
+    
+    test_chol = chol.copy()
+    test_chol_i = chol_i.copy()
+
+    assert(np.allclose(ch_inv(test_chol_i,cholesky_given=True,lower=True),A_i))
+    assert(np.allclose(ch_inv(test_chol.T,cholesky_given=True,lower=True),A))
+    
+def test_ch_inv_chol_given_upper(test_mat):
+    A = test_mat.A
+    A_i = test_mat.A_i
+    chol = test_mat.chol.T
+    chol_i = test_mat.chol_i.T
+    
+    test_chol = chol.copy()
+    test_chol_i = chol_i.copy()
+
+    assert(np.allclose(ch_inv(test_chol_i,cholesky_given=True,lower=False),A_i))
+    assert(np.allclose(ch_inv(test_chol.T,cholesky_given=True,lower=False),A))
+    
+def test_ch_inv_not_chol_given_lower(test_mat):
+    A = test_mat.A
+    A_i = test_mat.A_i
+    chol = test_mat.chol.T
+    chol_i = test_mat.chol_i.T
+    
+    test_chol = chol.copy()
+    test_chol_i = chol_i.copy()
+
+    assert(np.allclose(ch_inv(A,cholesky_given=False,lower=True),A_i))
+    assert(np.allclose(ch_inv(A_i,cholesky_given=False,lower=True),A))
+
+def test_ch_inv_not_chol_given_upper(test_mat):
+    A = test_mat.A
+    A_i = test_mat.A_i
+    chol = test_mat.chol.T
+    chol_i = test_mat.chol_i.T
+    
+    test_chol = chol.copy()
+    test_chol_i = chol_i.copy()
+
+    assert(np.allclose(ch_inv(A,cholesky_given=False,lower=False),A_i))
+    assert(np.allclose(ch_inv(A_i,cholesky_given=False,lower=False),A))
+
 def test_ch_inv_both_F_order(test_mat):
     A = test_mat.A
     A_i = test_mat.A_i

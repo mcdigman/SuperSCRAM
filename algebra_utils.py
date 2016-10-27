@@ -14,6 +14,12 @@ from warnings import warn
 def get_inv_cholesky(A,lower=True):
     return invert_triangular(cholesky_inplace(A,inplace=False,lower=lower),lower=lower)
 
+#Get the cholesky decomposition of the inverse of a matrix a
+#TODO add safety checks,tests
+def get_cholesky_inv(A,lower=True):
+    return np.rot90(scipy.linalg.lapack.dtrtri(cholesky_inplace(np.rot90(A,2),lower=(not lower),inplace=False),lower=(not lower))[0],2)
+
+#TODO: replace with scipy.linalg.lapack.dtrtri
 def invert_triangular(A,lower=True):
     return solve_triangular(A,np.identity(A.shape[0]),lower=lower,overwrite_b=True)
 
@@ -23,14 +29,20 @@ def get_mat_from_inv_cholesky(A,lower=True):
 
 #compute inverse of positive definite matrix using cholesky decomposition
 #cholesky_given = True if A already is the cholesky decomposition of the covariance
-def ch_inv(A,cholesky_given=False):
+#TODO: replace part with scipy.linalg.lapack.dpotri
+def ch_inv(A,cholesky_given=False,lower=True):
     #chol = np.linalg.cholesky(A)
     #chol_inv = np.linalg.solve(np.linalg.cholesky(A),np.identity(A.shape[0]))
     if cholesky_given:
         chol_inv = A
     else:
-        chol_inv = solve_triangular(np.linalg.cholesky(A),np.identity(A.shape[0]),lower=True,overwrite_b=True)
-    return np.dot(chol_inv.T,chol_inv)
+        #chol_inv = solve_triangular(np.linalg.cholesky(A),np.identity(A.shape[0]),lower=lower,overwrite_b=True)
+        chol_inv = get_inv_cholesky(A,lower=lower)
+    if lower:
+        return np.dot(chol_inv.T,chol_inv)
+    else:
+        return np.dot(chol_inv,chol_inv.T)
+
 
 def cholesky_inv_contract(A,vec1,vec2,cholesky_given=False,identical_inputs=False,lower=True):
     if cholesky_given:

@@ -70,10 +70,10 @@ lensing_params = {  'z_resolution'    :0.01, #fine resolution
                     'epsilon'         :0.0001} #small parameter 
 sw_observable_list = ['len_shear_shear']
 sw_survey_params = {    'needs_lensing'     : True,
-                        'cross_bins'        : False}
-dn_params = {   'M_cut'  : 10**(12.5)}
+                        'cross_bins'        : True}
+dn_params = {   'M_cut'  : 10**12.5}#(12.5)}
 lw_observable_list = ['d_number_density']
-lw_survey_params = {    'cross_bins':   False} 
+lw_survey_params = {    'cross_bins': False} 
 basis_params = {    'allow_caching'         :True,
                     'n_bessel_oversample'   :100000,
                     'k_max'                 :100.,

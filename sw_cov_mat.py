@@ -49,10 +49,22 @@ class SWCovMat(CovMat):
                 #under current assumptions only need sh_pow1
                 sh_pow1 = O_I_1.len_pow.C_pow
                 sh_pow2 = O_I_2.len_pow.C_pow
-                n_ac = sh_pow1.get_n_shape(class_a,class_c)
-                n_ad = sh_pow1.get_n_shape(class_a,class_d)
-                n_bd = sh_pow1.get_n_shape(class_b,class_d)
-                n_bc = sh_pow1.get_n_shape(class_b,class_c)
+                r1_1 = O_I_1.r1
+                r1_2 = O_I_1.r2
+                r2_1 = O_I_2.r1
+                r2_2 = O_I_2.r2
+                n_ac = 0.
+                n_ad = 0.
+                n_bd = 0.
+                n_bc = 0.
+                if np.all(r1_1 == r2_1):
+                    n_ac = sh_pow1.get_n_shape(class_a,class_c)
+                if np.all(r1_1 == r2_2):
+                    n_ad = sh_pow1.get_n_shape(class_a,class_d)
+                if np.all(r1_2 == r2_2):
+                    n_bd = sh_pow1.get_n_shape(class_b,class_d)
+                if np.all(r1_2 == r2_1):
+                    n_bc = sh_pow1.get_n_shape(class_b,class_c)
                 ns = np.array([n_ac,n_ad,n_bd,n_bc])
                 #TODO fix ns
                 self.gaussian_covar = np.diagflat(sh_pow1.cov_g_diag2(np.array([O_I_1.q1_pow,O_I_1.q2_pow,O_I_2.q1_pow,O_I_2.q2_pow]),ns))

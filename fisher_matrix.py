@@ -1,7 +1,7 @@
 import numpy as np
 import scipy as sp
 import scipy.linalg
-from algebra_utils import ch_inv,cholesky_inv_contract,get_inv_cholesky,invert_triangular,get_mat_from_inv_cholesky,cholesky_inplace
+from algebra_utils import ch_inv,cholesky_inv_contract,get_inv_cholesky,invert_triangular,get_mat_from_inv_cholesky,cholesky_inplace,get_cholesky_inv
 from warnings import warn
 REP_FISHER = 0
 REP_CHOL = 1
@@ -55,7 +55,7 @@ class fisher_matrix:
         #internal state must be fisher to add right now: could possibly be changed
         self.switch_rep(REP_FISHER)
         #TODO check this is ok with views
-        self.F_alpha_beta += F_n
+        self.internal_mat += F_n
 
     #TODO handle F_alpha_beta with 0 eigenvalues separately
     #copy_output=True should guarantee the output will never be mutated by fisher_matrix (ie copy the output matrix if necessary)
@@ -69,7 +69,7 @@ class fisher_matrix:
         else:
             print("fisher_matrix "+str(id(self))+": covar cache miss")
             copy_safe = True
-            result = ch_inv(self.get_cov_cholesky(),cholesky_given=True)
+            result = ch_inv(self.get_cov_cholesky(),cholesky_given=True,lower=False)
 
         #TODO protect internal_mat/allow override
         if copy_output and not copy_safe:
@@ -95,18 +95,19 @@ class fisher_matrix:
             if self.internal_state == REP_CHOL:# or self.good_caches[REP_CHOL]:
                 result = invert_triangular(self.internal_mat)
             elif self.internal_state == REP_FISHER: #or self.good_caches[REP_FISHER]:
-                #TODO use cholesky_inplace as appropriate
-                result = np.linalg.cholesky(self.internal_mat)
+                #TODO maybe add checks/optimize. This calculates inverse cholesky decomposition of the covariance matrix. Think about just changing to cholesky decomposition of fab.
+                #result = np.linalg.cholesky(self.internal_mat)
+                result = np.rot90(cholesky_inplace(np.rot90(self.internal_mat,2),inplace=False,lower=False),2)
             elif self.internal_state == REP_COVAR:# or self.good_caches[REP_COVAR]:
-                result = get_inv_cholesky(self.internal_mat).T
+                result = get_inv_cholesky(self.internal_mat)
             else:
                 raise ValueError("fisher_matrix "+str(id(self))+": unrecognized internal state "+str(self.internal_state))
 
 
-            if  copy_output and not copy_safe:
-                return result.copy()
-            else:
-                return result
+        if  copy_output and not copy_safe:
+            return result.copy()
+        else:
+            return result
 
     def get_cov_cholesky(self,inplace=False,copy_output=False):
         copy_safe = False
@@ -119,14 +120,15 @@ class fisher_matrix:
             #TODO: evaluate prioritization of ways to find the decomposition, esp. for numerical stability versus speed/memory consumption (cholesky may be more numerically stable than inv)
             if self.internal_state == REP_CHOL_INV :#or self.good_caches[REP_CHOL_INV]:
                 print "fisher_matrix "+str(id(self)),": getting cholesky decomposition of covariance matrix from its inverse, size: "+str(self.internal_mat.nbytes/10**6)+" megabytes"
-                result = invert_trianglular(self.internal_mat)
+                result = invert_triangular(self.internal_mat)
             elif self.internal_state == REP_COVAR:# or self.good_caches[REP_COVAR]:
                 print "fisher_matrix "+str(id(self)),": getting cholesky decomposition of covariance matrix directly, size: "+str(self.internal_mat.nbytes/10**6)+" megabytes"
-                result = cholesky_inplace(self.internal_mat,inplace=inplace).T
+                result = cholesky_inplace(self.internal_mat,inplace=inplace)
                 #sp.linalg.cholesky(self.covar_cache,lower=True,check_finite=False,overwrite_a=True).T
             elif self.internal_state == REP_FISHER:#or self.good_caches[REP_FISHER]:
                 print "fisher_matrix "+str(id(self)),": getting cholesky decomposition of covariance matrix from F_alpha_beta, size: "+str(self.internal_mat.nbytes/10**6)+" megabytes"
-                result = get_inv_cholesky(self.internal_mat,copy_output)
+                #result = get_inv_cholesky(self.internal_mat)
+                result = get_cholesky_inv(self.internal_mat)
             else:
                 raise ValueError("fisher_matrix "+str(id(self))+": unrecognized internal state "+str(self.internal_state))
 
@@ -147,7 +149,7 @@ class fisher_matrix:
         else:
             print "fisher_matrix "+str(id(self))+": fisher matrix cache miss"
             #TODO check efficiency/arguments
-            chol_res = self.get_fab_cholesky(copy_output=False)
+            chol_res = self.get_fab_cholesky(copy_output=False).T
             result = np.dot(chol_res,chol_res.T)
             
         if copy_output and not copy_safe:

@@ -13,7 +13,7 @@ from fisher_matrix import fisher_matrix
 #    return result 
 
 class DNumberDensityObservable(LWObservable):
-    def __init__(self,bins,geos,params,survey_id, C,ddelta_bar_ddelta_alpha_list): 
+    def __init__(self,bins,geos,params,survey_id, C,basis,ddelta_bar_ddelta_alpha_list): 
         
         '''
             data should hold: 
@@ -31,27 +31,66 @@ class DNumberDensityObservable(LWObservable):
         bin1 = bins[0]
         bin2 = bins[1]
         self.mf=ST_hmf(self.C)
-         
+        self.basis = basis 
     
-        self.DO_a=np.zeros(ddelta_bar_ddelta_alpha_list.size)
-           
-        d1s = ddelta_bar_ddelta_alpha_list[0]
-        d2s = ddelta_bar_ddelta_alpha_list[1]
-        z_avg=(geo1.zbins[bin1][0] + geo1.zbins[bin1][1])/2.
-            
-        n_avg=self.mf.n_avg(min_mass, z_avg)
-        self.dn_ddelta_bar=self.mf.bias_avg(min_mass,z_avg)
-        print "x",self.dn_ddelta_bar
-        #d1=basis.D_delta_bar_D_delta_alpha(geo1.rs[i-1],geo1.rs[i],geo1)
-        #d2=basis.D_delta_bar_D_delta_alpha(geo2.rs[i-1],geo2.rs[i],geo2)
-            
-        self.DO_a=self.dn_ddelta_bar*(d1s[bin1]-d2s[bin2])
         V1 = geo1.volumes[bin1]
         V2 = geo2.volumes[bin2]
+        #self.DO_a=np.zeros(ddelta_bar_ddelta_alpha_list.size)
+           
+        #d1s = ddelta_bar_ddelta_alpha_list[0]
+        #d2s = ddelta_bar_ddelta_alpha_list[1]
+        z_min1 = geo1.zbins[bin1][0]
+        z_max1 = geo1.zbins[bin1][1]
+        z_fine1 = geo1.z_fine
+        self.dn_ddelta_bar1 = np.zeros((z_fine1.size,1))
+        for i in range(0,z_fine1.size):
+            #z_avg=(geo1.zbins[bin1][0] + geo1.zbins[bin1][1])/2.
+            
+            z_i = z_fine1[i]
+            if z_i< z_min1:
+                continue
+            if z_i>z_max1:
+                break
+            
+            n_avg=self.mf.n_avg(min_mass, z_i)
+            self.dn_ddelta_bar1[i]=self.mf.bias_avg(min_mass,z_i)
+        d1 = self.basis.D_O_I_D_delta_alpha(geo1,self.dn_ddelta_bar1,use_r=False)
+
+        z_min2 = geo2.zbins[bin2][0]
+        z_max2 = geo2.zbins[bin2][1]
+        z_fine2 = geo2.z_fine
+        self.dn_ddelta_bar2 = np.zeros((z_fine2.size,1))
+        for i in range(0,z_fine2.size):
+            #z_avg=(geo1.zbins[bin1][0] + geo1.zbins[bin1][1])/2.
+            
+            z_i = z_fine2[i]
+            if z_i< z_min2:
+                continue
+            if z_i>z_max2:
+                break
+            
+            self.dn_ddelta_bar2[i]=self.mf.bias_avg(min_mass,z_i)
+        d2 = self.basis.D_O_I_D_delta_alpha(geo2,self.dn_ddelta_bar2,use_r=False)
+        self.DO_a = d2-d1
+
+        n_avgs = np.zeros(z_fine1.size)
+        for i in range(0,z_fine1.size):
+            z_i = z_fine1[i]
+            if z_i< z_min1:
+                continue
+            if z_i>z_max1:
+                break
+
+            n_avgs[i]=self.mf.n_avg(min_mass, z_i)
+
+        n_avg = np.trapz(n_avgs,z_fine1)/(z_max1-z_min1)
+        #n_avg = self.mf.n_avg(min_mass,(z_min1+z_max1)/2.)
+
+        #self.DO_a=self.dn_ddelta_bar*(d1s[bin1]-d2s[bin2])
           #  V1=volume(r_min[i-1],r_max[i-1],geo1)
           #  V2=volume(r_min[i-1],r_max[i-1],geo2)
             
-        self.Nab=(1/V1+1/V2)/n_avg
+        self.Nab=(1./V1+1./V2)*(n_avg)
             
        
         self.v=self.DO_a

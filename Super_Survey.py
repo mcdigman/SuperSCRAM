@@ -78,7 +78,7 @@ class super_survey:
                 self.cov_no_mit,self.a_no_mit=self.get_SSC_covar(mitigation=False)     
                 print "Super_Survey: unmitigated run gave a="+str(self.a_no_mit)
             if self.do_mitigated:
-                self.F_0.clear_cache()
+                #self.F_0.clear_cache()
                 self.cov_mit,self.a_mit=self.get_SSC_covar(mitigation=True)     
                 print "Super_Survey: mitigated run gave a="+str(self.a_mit)
         else:
@@ -166,15 +166,15 @@ if __name__=="__main__":
     
     Theta1=[0.,np.pi/4.]
     Phi1=[0.,np.pi/3.]
-    Theta2=[np.pi/8.,np.pi/4.]
-    Phi2=[np.pi/6.,np.pi/3.]
+    Theta2=[0.,np.pi/4.]
+    Phi2=[2.*np.pi/3.,np.pi]
 
     #zs=np.array([.4,0.8,1.2])
-    zs=np.array([.6,0.8,1.0])
+    zs=np.array([.01,0.5,1.01])
     z_fine = np.arange(defaults.lensing_params['z_min_integral'],np.max(zs),defaults.lensing_params['z_resolution'])
     #zbins=np.array([.2,.6,1.0])
     #l=np.logspace(np.log10(2),np.log10(3000),1000)
-    l_sw = np.logspace(np.log(20),np.log(5000),base=np.exp(1.),num=50)
+    l_sw = np.logspace(np.log(30),np.log(5000),base=np.exp(1.),num=40)
     #l_sw = np.arange(0,50)
     
     geo1=rect_geo(zs,Theta1,Phi1,C,z_fine)
@@ -205,7 +205,7 @@ if __name__=="__main__":
     #geos = np.array([geo1])
     l_lw=np.arange(0,20)
     n_zeros=49
-    k_cut = 0.01
+    k_cut = 0.015
             
     basis=sph_basis_k(r_max,C,k_cut,l_ceil=100)
 
@@ -215,7 +215,7 @@ if __name__=="__main__":
      
     print 'main: this is r_max: '+str(r_max)
      
-    SS=super_survey(surveys_sw, surveys_lw,r_max,l_sw,n_zeros,k,basis,P_lin=P,C=C,get_a=True,do_unmitigated=True,do_mitigated=False)
+    SS=super_survey(surveys_sw, surveys_lw,r_max,l_sw,n_zeros,k,basis,P_lin=P,C=C,get_a=True,do_unmitigated=True,do_mitigated=True)
 
     t2 = time()
     print "main: total run time "+str(t2-t1)+" s"
@@ -233,8 +233,10 @@ if __name__=="__main__":
     #mat_retrieved = (np.identity(chol_cov.shape[0])+np.dot(np.dot(chol_cov,SS.cov_no_mit[0,0]),chol_cov.T))
     #eig_ret = np.linalg.eigvals(mat_retrieved)
     SS_eig =  SS.cov_no_mit[0].get_SS_eig()
+    SS_eig_mit =  SS.cov_mit[0].get_SS_eig()
     chol_gauss = np.linalg.cholesky(SS.cov_no_mit[0].get_gaussian_covar())
-    print "main: lambda1,2: "+str(SS_eig[0][-1])+","+str(SS_eig[0][-2])
+    print "main: unmitigated lambda1,2: "+str(SS_eig[0][-1])+","+str(SS_eig[0][-2])
+    print "main: mitigated lambda1,2: "+str(SS_eig_mit[0][-1])+","+str(SS_eig_mit[0][-2])
     print "n lambda>1.00000001: "+str(np.sum(np.abs(SS_eig[0])>1.00000001))
 #    print "SS eigenvals:",SS_eig[0]
 #    print "(S/N)^2 gaussian: ",np.dot(np.dot(c_ss,np.linalg.inv(cov_ss)),c_ss)
@@ -257,4 +259,4 @@ if __name__=="__main__":
         ax.plot(np.dot(chol_gauss,SS_eig[1][:,-itr]))
     
     ax.legend(['1','2','3','4','5'])
-    plt.show()
+  #  plt.show()
