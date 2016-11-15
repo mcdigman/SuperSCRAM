@@ -52,7 +52,6 @@ class DNumberDensityObservable(LWObservable):
             if z_i>z_max1:
                 break
             
-            n_avg=self.mf.n_avg(min_mass, z_i)
             self.dn_ddelta_bar1[i]=self.mf.bias_avg(min_mass,z_i)
         d1 = self.basis.D_O_I_D_delta_alpha(geo1,self.dn_ddelta_bar1,use_r=False)
 

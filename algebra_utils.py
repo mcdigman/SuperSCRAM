@@ -8,6 +8,7 @@ from warnings import warn
 #because the memory consumption of these matrices is the code's primary performance bottleneck.
 #scipy.linalg.cholesky's overwrite_a option is not reliable for doing things in place, so I would probably need
 #some lower level (lapack?) calls, and I would prefer to wait until the code specification is more stable/good unit tests have been writen.
+#potentially use ztrmm for triangular dot products
 
 
 #Get the inverse cholesky decomposition of a matrix A

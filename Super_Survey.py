@@ -164,13 +164,13 @@ if __name__=="__main__":
     r_max=C.D_comov(z_max)
     print 'this is r max and l_max', r_max , l_max
     
-    Theta1=[0.,np.pi/4.]
+    Theta1=[0,np.pi/4.]
     Phi1=[0.,np.pi/3.]
-    Theta2=[0.,np.pi/4.]
-    Phi2=[2.*np.pi/3.,np.pi]
+    Theta2=[0,np.pi/4.]
+    Phi2=[1.*np.pi/3.,2.*np.pi/3.]
 
     #zs=np.array([.4,0.8,1.2])
-    zs=np.array([.01,0.5,1.01])
+    zs=np.array([.01,1.01])
     z_fine = np.arange(defaults.lensing_params['z_min_integral'],np.max(zs),defaults.lensing_params['z_resolution'])
     #zbins=np.array([.2,.6,1.0])
     #l=np.logspace(np.log10(2),np.log10(3000),1000)
@@ -205,7 +205,7 @@ if __name__=="__main__":
     #geos = np.array([geo1])
     l_lw=np.arange(0,20)
     n_zeros=49
-    k_cut = 0.015
+    k_cut = 0.005
             
     basis=sph_basis_k(r_max,C,k_cut,l_ceil=100)
 

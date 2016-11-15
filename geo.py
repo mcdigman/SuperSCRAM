@@ -1,7 +1,7 @@
 import numpy as np
 import cosmopie as cp
 from scipy.integrate import dblquad
-
+from sph_functions import Y_r
 
 #Abstract class defining a geometry for a survey. 
 #At the moment, a geometry must 
@@ -41,6 +41,15 @@ class geo:
     def angular_area(self):
         return self.surface_integral(lambda theta,phi: 1.0)
 
+    # returns \int d theta d phi \sin(theta) Y_lm(theta, phi) (the spherical harmonic a_lm for the area)
+    # l and m are the indices for the spherical harmonics 
+    def a_lm(self,l,m):
+        def integrand(phi,theta):
+            return np.sin(theta)*Y_r(l,m,theta,phi)
+        I2 = self.surface_integral(integrand)
+        return I2
+
+
     #volume ddeltabar_dalpha
 
 #class implementing a geometry of rectangles (on the surface of a sphere, defined by theta,phi coordinates of vertices)
@@ -74,4 +83,38 @@ class rect_geo(geo):
         else:
             return I
 
-#TODO: Implement polygon_geo, allowing arbitrary polygons, using either healpix, boundary conditions, or both ways
+#same pixels at every redshift.
+class pixel_geo(geo):
+    def __init__(self,zs,pixels,C,z_fine):
+        #pixel format np.array([(theta,phi,area)])
+        #area should be in steradians for now
+        self.pixels = pixels
+    
+
+        rs = np.zeros(zs.size)
+        for i in range(0,zs.size):
+            rs[i] = C.D_comov(zs[i])
+           
+        volumes = np.zeros(zs.size-1)
+        tot_area = np.sum(pixels[:,2])
+        for i in range(0,volumes.size):
+            volumes[i] += (rs[i+1]**3-rs[i]**3)/3.*tot_area
+
+
+        v_total = np.sum(volumes)
+
+        geo.__init__(self,zs,volumes,v_total,rs,C,z_fine)
+        
+    #TODO consider vectorizing
+    def surface_integral(self,function):
+        total = 0.
+        for i in range(0,self.pixels.shape[0]):
+            total+=function(self.pixels[i,0],self.pixels[i,1])*self.pixels[i,2] #f(theta,phi)*A
+        return total
+
+    #vectorized a_lm computation relies on vector Y_r
+    def a_lm(self,l,m):
+        return np.sum(np.sin(self.pixels[:,0])*Y_r(l,m,self.pixels[:,0],self.pixels[:,1])*self.pixels[:,2])
+            
+        
+        #TODO: Implement polygon_geo, allowing arbitrary polygons, using either healpix, boundary conditions, or both ways

@@ -25,7 +25,7 @@ class CovMat:
     def get_dimension(self):
         return self.dimension
     #TODO some of this behavior may be replicated in fisher_matrix
-    #TODO maybe use eigh instead
+    #TODO check cholesky
     def get_SS_eig(self):
         chol_cov = get_inv_cholesky(self.get_gaussian_covar())
         #chol_cov = scipy.linalg.cholesky(self.get_gaussian_covar(),lower=True)

@@ -188,7 +188,7 @@ if __name__=="__main__":
 	from cosmopie import CosmoPie
 	CP=CosmoPie(cosmology,P_lin=P,k=k)	
 	
-	#z=1.1; h=.6774
+	#z=1.1; h=.677el
 	#rho_bar=CP.rho_bar(z)
 	hmf=ST_hmf(CP)
 	

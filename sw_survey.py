@@ -84,15 +84,23 @@ class SWSurvey:
         n1 = 0
         #TODO consider not getting this whole list initially
         dO_I_ddelta_bar_list = self.get_dO_I_ddelta_bar_list()
+        Ts = np.zeros(self.get_N_O_I(),dtype=object)
+        for i in range(0,Ts.size):
+            Ts[i] = fisher.contract_chol_right(basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[i]))
         #TODO consider optimizing by preevaluating contractions with T (may take more memory)
         for i in range(0,self.get_N_O_I()):
             n2 = 0
-            T_i = basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[i])
-            print "sw_survey: T_i shape: "+str(T_i.shape)
-            for j in range(0,self.get_N_O_I()):
+          #  T_i = basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[i])
+         #   print "sw_survey: T_i shape: "+str(T_i.shape)
+            for j in range(0,i+1):
                 print "sw_survey "+str(self.get_survey_id())+": Calc d delta alpha for observable 1,2 #:"+str(i)+","+str(j)
-                T_j = basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[j])
-                cov_mats[n1:n1+ds[i],n2:n2+ds[j]] = fisher.contract_covar(T_i.T,T_j)
+              #  T_j = basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[j])
+                #cov_mats[n1:n1+ds[i],n2:n2+ds[j]] = fisher.contract_covar(T_i.T,T_j)
+                cov_mats[n1:n1+ds[i],n2:n2+ds[j]] = np.dot(Ts[i].T,Ts[j])
+                if not i==j:
+                    cov_mats[n2:n2+ds[i],n1:n1+ds[j]] = cov_mats[n1:n1+ds[i],n2:n2+ds[j]].T
+
+
                 n2+=ds[j]
             n1+=ds[i]
         print "sw_survey: finished computing sw covariance matrices"

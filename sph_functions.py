@@ -188,15 +188,16 @@ def Y_r(l,m,theta,phi):
 		#return result
 	if m<0:
 		result =1j/np.sqrt(2)*(Y_lm(m,l,phi,theta) - (-1)**m*Y_lm(-m,l,phi,theta))
-		if np.absolute(np.real(result)) < eps:
-			result=0
+                #TODO check if eps check is necessary
+		#if np.absolute(np.real(result)) < eps:
+		#	result=0
 		#return np.sqrt(2)*(-1)**m*np.imag(Y_lm(m,l,phi,theta))
 		return np.real(result)
 	if m>0: 
 		result =1/np.sqrt(2)*(Y_lm(-m,l,phi,theta)  + (-1)**m*Y_lm(m,l,phi,theta))
 		#return np.sqrt(2)*(-1)**m*np.real(Y_lm(m,l,phi,theta))
-		if np.absolute(np.real(result)) < eps:
-			result=0
+		#if np.absolute(np.real(result)) < eps:
+		#	result=0
 		return np.real(result)
 		
 

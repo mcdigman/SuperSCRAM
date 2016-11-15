@@ -5,9 +5,10 @@ import re
 from warnings import warn
 from sw_cov_mat import SWCovMat
 from Dn import DNumberDensityObservable
+import sys
 
 class LWSurvey:
-    def __init__(self,geos,survey_id,basis,C,ls = np.array([]),params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params):
+    def __init__(self,geos,survey_id,basis,C,ls = np.array([]),params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params,prefetch_ddelta_bar=False):
         print "lw_survey: began initializing long wavelength survey: "+str(survey_id)
         self.geos = geos
         self.params = params
@@ -16,15 +17,22 @@ class LWSurvey:
         self.survey_id = survey_id
         self.basis = basis
         self.ddelta_bar_ddelta_alpha_list = np.zeros(self.geos.size,dtype = object)
-        #TODO: do not always need to get this.
-        for i in range(0,self.geos.size):
-            self.ddelta_bar_ddelta_alpha_list[i] = self.basis.D_delta_bar_D_delta_alpha(self.geos[i],tomography=True)
+        if prefetch_ddelta_bar:
+            self.ddelta_bar_stored = True
+            for i in range(0,self.geos.size):
+                self.ddelta_bar_ddelta_alpha_list[i] = self.basis.D_delta_bar_D_delta_alpha(self.geos[i],tomography=True)
+        else:
+            self.ddelta_bar_stored = False
         self.dn_params = defaults.dn_params
         self.observable_names = generate_observable_names(self.geos,observable_list,params['cross_bins'])
         self.observables = self.names_to_observables(self.observable_names)
         print "lw_survey: finished initializing long wavelength survey: "+str(survey_id)
 
-    def get_ddelta_bar_ddelta_alpha_list(self):
+    def get_ddelta_bar_ddelta_alpha_list(self,force_recompute=False):
+        if not self.ddelta_bar_stored or force_recompute:
+            self.ddelta_bar_stored = True
+            for i in range(0,self.geos.size):
+                self.ddelta_bar_ddelta_alpha_list[i] = self.basis.D_delta_bar_D_delta_alpha(self.geos[i],tomography=True)
         return self.ddelta_bar_ddelta_alpha_list
 
     def get_N_O_a(self):

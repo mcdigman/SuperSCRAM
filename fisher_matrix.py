@@ -82,6 +82,11 @@ class fisher_matrix:
     def contract_covar(self,v1,v2,identical_inputs=False):
         print "fisher_matrix "+str(id(self))+": contracting covariance"
         return cholesky_inv_contract(self.get_cov_cholesky(),v1,v2,cholesky_given=True,identical_inputs=identical_inputs)
+
+    #for use in sw_survey
+    def contract_chol_right(self,v):
+        print "fisher_matrix "+str(id(self))+": getting right chol contraction"
+        return np.dot(self.get_cov_cholesky(),v)
    
 
     def get_fab_cholesky(self,inplace=False,copy_output=False):

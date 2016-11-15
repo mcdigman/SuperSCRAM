@@ -216,7 +216,7 @@ class sph_basis_k(object):
                 alm_cache = {}
 
 
-	    a_00=a_lm(geo,0,0)
+	    a_00=geo.a_lm(0,0)
             print "sph_klim: a_00="+str(a_00)
             print "sph_klim: theta: "+str(geo.Theta)
             print "sph_klim: phi: "+str(geo.Phi)
@@ -260,7 +260,7 @@ class sph_basis_k(object):
                 else:
                     alm_last = alm_cache.get(str(ll)+","+str(mm))
                     if alm_last is None:
-                        alm_last = a_lm(geo,ll,mm)
+                        alm_last = geo.a_lm(ll,mm)
                         alm_cache[str(ll)+","+str(mm)] = alm_last
                     ll_last = ll
                     mm_last = mm
@@ -274,6 +274,7 @@ class sph_basis_k(object):
                     self.ddelta_bar_cache[str(id(geo))]['alm'] = alm_cache
             print "sph_klim: finished d_delta_bar_d_delta_alpha for geo id: ",id(geo)
 	    return result
+
 def R_int(r_range,k,ll):
     # returns \int R_n(rk_alpha) r2 dr
     # I am using the spherical Bessel function for R_n, but that might change  
@@ -291,33 +292,6 @@ def R_int(r_range,k,ll):
 			
     return I 
 
-#slow part, TODO consider caching results	
-def a_lm(geo,l,m):    
-	# returns \int d theta d phi \sin(theta) Y_lm(theta, phi)
-	# theta is an array of 2 numbers representing the max and min of theta
-	# phi is an array of 2 numbers representing the max and min of phi
-	# l and m are the indices for the spherical harmonics 
-        Theta = geo.Theta
-        Phi = geo.Phi
-	theta_min, theta_max=Theta
-	phi_min, phi_max=Phi
-	#def integrand(theta,phi):
-	def integrand(phi,theta):
-        #print theta, phi 
-	    return sin(theta)*Y_r(l,m,theta,phi)
-	
-	#I = dblquad(integrand,theta_min,theta_max, lambda phi: phi_min, lambda phi :phi_max)[0]
-	#I1 = dblquad(integrand,theta_min,theta_max, lambda phi: phi_min, lambda phi :phi_max)[0]
-        #TODO I1 tsting purposes only
-        I2 = geo.surface_integral(integrand)
-        #if np.absolute(I1) <= eps:
-                #    I1 = 0.0
-                #if not I1==I2:
-		#    print "I1,I2,eps",I1,I2,eps
-                #    sys.exit()
-
-	return I2
-		 
 if __name__=="__main__":
         import geo
 
