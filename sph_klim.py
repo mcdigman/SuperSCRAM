@@ -218,8 +218,8 @@ class sph_basis_k(object):
 
 	    a_00=geo.a_lm(0,0)
             print "sph_klim: a_00="+str(a_00)
-            print "sph_klim: theta: "+str(geo.Theta)
-            print "sph_klim: phi: "+str(geo.Phi)
+            #print "sph_klim: theta: "+str(geo.Theta)
+            #print "sph_klim: phi: "+str(geo.Phi)
 	   # Omega=np.sqrt(a_00)*4.*np.pi
             #CHANGED
 	   # Omega=a_00*np.sqrt(4*pi) 

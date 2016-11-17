@@ -188,17 +188,21 @@ def Y_r(l,m,theta,phi):
 		#return result
 	if m<0:
 		result =1j/np.sqrt(2)*(Y_lm(m,l,phi,theta) - (-1)**m*Y_lm(-m,l,phi,theta))
-                #TODO check if eps check is necessary
+                #TODO check if eps check is done correctly
+                result = np.real(result)
+                #result[np.abs(result)<eps] = 0.
 		#if np.absolute(np.real(result)) < eps:
 		#	result=0
 		#return np.sqrt(2)*(-1)**m*np.imag(Y_lm(m,l,phi,theta))
-		return np.real(result)
+		return result
 	if m>0: 
 		result =1/np.sqrt(2)*(Y_lm(-m,l,phi,theta)  + (-1)**m*Y_lm(m,l,phi,theta))
+                result = np.real(result)
+                #result[np.abs(result)<eps] = 0.
 		#return np.sqrt(2)*(-1)**m*np.real(Y_lm(m,l,phi,theta))
 		#if np.absolute(np.real(result)) < eps:
 		#	result=0
-		return np.real(result)
+		return result
 		
 
 #Daniel added - radial part of tidal force		

@@ -45,7 +45,7 @@ class geo:
     # l and m are the indices for the spherical harmonics 
     def a_lm(self,l,m):
         def integrand(phi,theta):
-            return np.sin(theta)*Y_r(l,m,theta,phi)
+            return Y_r(l,m,theta,phi)
         I2 = self.surface_integral(integrand)
         return I2
 
@@ -77,11 +77,13 @@ class rect_geo(geo):
 
     #function(phi,theta)
     def surface_integral(self,function):
-        I=dblquad(function,self.Theta[0],self.Theta[1], lambda phi: self.Phi[0], lambda phi: self.Phi[1])[0]
-        if (np.absolute(I) <= self.eps):
-            return 0.0
-        else:
-            return I
+        def integrand(phi,theta):
+            return function(phi,theta)*np.sin(theta) #TODO: evaluate if better way of inserting sin(theta)
+        I=dblquad(integrand,self.Theta[0],self.Theta[1], lambda phi: self.Phi[0], lambda phi: self.Phi[1])[0]
+        #if (np.absolute(I) <= self.eps):
+        #    return 0.0
+        #else:
+        return I
 
 #same pixels at every redshift.
 class pixel_geo(geo):
@@ -105,7 +107,7 @@ class pixel_geo(geo):
 
         geo.__init__(self,zs,volumes,v_total,rs,C,z_fine)
         
-    #TODO consider vectorizing
+    #TODO consider vectorizing sum
     def surface_integral(self,function):
         total = 0.
         for i in range(0,self.pixels.shape[0]):
@@ -114,7 +116,7 @@ class pixel_geo(geo):
 
     #vectorized a_lm computation relies on vector Y_r
     def a_lm(self,l,m):
-        return np.sum(np.sin(self.pixels[:,0])*Y_r(l,m,self.pixels[:,0],self.pixels[:,1])*self.pixels[:,2])
+        return np.sum(Y_r(l,m,self.pixels[:,0],self.pixels[:,1])*self.pixels[:,2])
             
         
         #TODO: Implement polygon_geo, allowing arbitrary polygons, using either healpix, boundary conditions, or both ways

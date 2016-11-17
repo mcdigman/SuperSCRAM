@@ -1,6 +1,7 @@
 import numpy as np
 #from talk_to_class import class_objects 
 from FASTPTcode import FASTPT 
+from polygon_pixel_geo import polygon_pixel_geo
 
 from cosmopie import CosmoPie 
 #import sph_basis as basis
@@ -163,11 +164,30 @@ if __name__=="__main__":
     C=CosmoPie(k=k,P_lin=P,cosmology=defaults.cosmology)
     r_max=C.D_comov(z_max)
     print 'this is r max and l_max', r_max , l_max
-    
-    Theta1=[0,np.pi/4.]
-    Phi1=[0.,np.pi/3.]
-    Theta2=[0,np.pi/4.]
-    Phi2=[1.*np.pi/3.,2.*np.pi/3.]
+
+    theta0=0.*np.pi/16.
+    theta1=16.*np.pi/16.
+    phi0=0.
+    phi1=np.pi/3.
+    phi2=0.
+    phi3=np.pi/3
+
+    theta1s = np.array([theta0,theta1,theta1,theta0,theta0])
+    phi1s = np.array([phi0,phi0,phi1,phi1,phi0])
+    theta_in1 = np.pi/2.
+    phi_in1 = np.pi/12.
+    theta2s = np.array([theta0,theta1,theta1,theta0,theta0])
+    phi2s = np.array([phi2,phi2,phi3,phi3,phi2])
+    theta_in2 = np.pi/2.
+    phi_in2 = np.pi/12.
+    res_choose = 8
+
+
+
+    Theta1=[theta0,theta1]
+    Phi1=[phi0,phi1]
+    Theta2=[theta0,theta1]
+    Phi2=[phi2,phi3]
 
     #zs=np.array([.4,0.8,1.2])
     zs=np.array([.01,1.01])
@@ -176,9 +196,13 @@ if __name__=="__main__":
     #l=np.logspace(np.log10(2),np.log10(3000),1000)
     l_sw = np.logspace(np.log(30),np.log(5000),base=np.exp(1.),num=40)
     #l_sw = np.arange(0,50)
-    
-    geo1=rect_geo(zs,Theta1,Phi1,C,z_fine)
-    geo2=rect_geo(zs,Theta2,Phi2,C,z_fine)
+    use_poly=True
+    if use_poly:
+        geo1 = polygon_pixel_geo(zs,theta1s,phi1s,theta_in1,phi_in2,C,z_fine,res_healpix=res_choose)  
+        geo2 = polygon_pixel_geo(zs,theta2s,phi2s,theta_in1,phi_in2,C,z_fine,res_healpix=res_choose)  
+    else:
+        geo1=rect_geo(zs,Theta1,Phi1,C,z_fine)
+        geo2=rect_geo(zs,Theta2,Phi2,C,z_fine)
     
     loc_lens_params = defaults.lensing_params.copy()
     loc_lens_params['z_min_dist'] = np.min(zs)
@@ -205,7 +229,7 @@ if __name__=="__main__":
     #geos = np.array([geo1])
     l_lw=np.arange(0,20)
     n_zeros=49
-    k_cut = 0.005
+    k_cut = 0.018
             
     basis=sph_basis_k(r_max,C,k_cut,l_ceil=100)
 

@@ -29,7 +29,7 @@ class TestAlmMathematicaAgree1(unittest.TestCase):
     
         alm_py = np.zeros_like(alm_math)
         for i in range(0,lm_table.shape[0]):
-            alm_py[i] = sph.a_lm(geo1,lm_table[i,0],lm_table[i,1])
+            alm_py[i] =geo1.a_lm(lm_table[i,0],lm_table[i,1])# sph.a_lm(geo1,lm_table[i,0],lm_table[i,1])
        
         alm_math1 = alm_math[alm_math>0]
         alm_py1 = alm_py[alm_math>0]
