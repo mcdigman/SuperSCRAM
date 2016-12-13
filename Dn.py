@@ -5,10 +5,11 @@ from nz_candel import NZCandel
 import sys
 from lw_observable import LWObservable
 from fisher_matrix import fisher_matrix
+from warnings import warn
 
 
 class DNumberDensityObservable(LWObservable):
-    def __init__(self,bins,geos,params,survey_id, C,basis,ddelta_bar_ddelta_alpha_list,nz_params): 
+    def __init__(self,geos,params,survey_id, C,basis,ddelta_bar_ddelta_alpha_list,nz_params): 
         
         '''
             data should hold: 
@@ -26,14 +27,12 @@ class DNumberDensityObservable(LWObservable):
 
         self.mf=ST_hmf(self.C)
         self.nzc = NZCandel(nz_params)
-    
-        bin1 = bins[0]
-        bin2 = bins[1]
-        self.basis = basis 
-        self.bounds1 = self.geo1.fine_indices[bin1]
-        self.bounds2 = self.geo2.fine_indices[bin2]
-        range1 = range(self.bounds1[0],self.bounds1[1])
-        range2 = range(self.bounds2[0],self.bounds2[1])
+        self.n_bins = self.geo1.fine_indices.shape[0]
+        if not self.n_bins==self.geo2.fine_indices.shape[0]:
+            warn("size of geo1 "+str(self.n_bins)+" incompatible with size of geo2 "+str(self.geo2.fine_indices.shape[0]))
+        self.Nab_i = np.zeros((self.n_bins,self.n_bins))
+        self.vs = np.zeros((self.n_bins,basis.get_size()))
+
 
         #TODO check if interpolation needed
         if self.variable_cut: 
@@ -47,74 +46,67 @@ class DNumberDensityObservable(LWObservable):
             for i in range(0,self.geo2.z_fine.size):
                 self.n_avgs2[i] = self.mf.n_avg(min_mass,self.geo2.z_fine[i])
 
-        V1 = self.geo1.volumes[bin1]
-        V2 = self.geo2.volumes[bin2]
-
         if self.variable_cut:
             self.M_cuts1 = self.nzc.get_M_cut(self.mf,self.geo1)
             self.M_cuts2 = self.nzc.get_M_cut(self.mf,self.geo2)
+     
+        for itr in range(0,self.n_bins):
+            self.basis = basis 
+            self.bounds1 = self.geo1.fine_indices[itr]
+            self.bounds2 = self.geo2.fine_indices[itr]
+            range1 = np.array(range(self.bounds1[0],self.bounds1[1]))
+            range2 = np.array(range(self.bounds2[0],self.bounds2[1]))
+    
+    
+            V1 = self.geo1.volumes[itr]
+            V2 = self.geo2.volumes[itr]
+    
+            #TODO pull out of loop     
+            self.dn_ddelta_bar1 = np.zeros((range1.size))
+            self.dn_ddelta_bar2 = np.zeros((range2.size))
+            #self.DO_a=np.zeros(ddelta_bar_ddelta_alpha_list.size)
+               
+            #d1s = ddelta_bar_ddelta_alpha_list[0]
+            #d2s = ddelta_bar_ddelta_alpha_list[1]
+    
+            if self.variable_cut: 
+                #for i in range1:
+                self.dn_ddelta_bar1=self.mf.bias_n_avg_array(self.M_cuts1[range1],self.geo1.z_fine[range1])
+                self.dn_ddelta_bar2=self.mf.bias_n_avg_array(self.M_cuts2[range2],self.geo2.z_fine[range2])
+                #for i in range2:
+                 #   self.dn_ddelta_bar2[i]=self.mf.bias_avg(self.M_cuts2[i],self.geo2.z_fine[i])
+            else: 
+                mass_array1 = np.full(range1.shape,min_mass)
+                self.dn_ddelta_bar1=self.mf.bias_n_avg_array(mass_array1,self.geo1.z_fine[range1])
+                mass_array2 = np.full(range2.shape,min_mass)
+                self.dn_ddelta_bar2=self.mf.bias_n_avg_array(mass_array2,self.geo2.z_fine[range2])
+            print "Dn: getting d1,d2"
+            #multiplier for integrand,TODO maybe better way
+            self.integrand1 = np.expand_dims(self.dn_ddelta_bar1*self.geo1.r_fine[range1]**2,axis=1)
+            self.d1=self.basis.D_O_I_D_delta_alpha(self.geo1,self.integrand1,use_r=True,range_spec=range1)/(self.geo1.r_fine[range1[-1]]**3-self.geo1.r_fine[range1[0]]**3)*3.
             
-        self.dn_ddelta_bar1 = np.zeros((self.geo1.z_fine.size))
-        self.dn_ddelta_bar2 = np.zeros((self.geo2.z_fine.size))
-        #self.DO_a=np.zeros(ddelta_bar_ddelta_alpha_list.size)
-           
-        #d1s = ddelta_bar_ddelta_alpha_list[0]
-        #d2s = ddelta_bar_ddelta_alpha_list[1]
-
-        #TODO vectorize, make sure to replace n_avgs with 0 outside range if necessary
-        if self.variable_cut: 
-            for i in range1:
-                self.dn_ddelta_bar1[i]=self.mf.bias_avg(self.M_cuts1[i],self.geo1.z_fine[i])
-            for i in range2:
-                self.dn_ddelta_bar2[i]=self.mf.bias_avg(self.M_cuts2[i],self.geo2.z_fine[i])
-        else: 
-            for i in range1:
-                self.dn_ddelta_bar1[i]=self.mf.bias_avg(min_mass,self.geo1.z_fine[i])
-            for i in range2:
-                self.dn_ddelta_bar2[i]=self.mf.bias_avg(min_mass,self.geo2.z_fine[i])
-        print "Dn: getting d1,d2"
-        #multiplier for integrand,TODO maybe better way
-        self.integrand1 = np.expand_dims(self.dn_ddelta_bar1*self.geo1.r_fine**2,axis=1)
-        self.d1=self.basis.D_O_I_D_delta_alpha(self.geo1,self.integrand1,use_r=True)/(self.geo1.r_fine[range1[1]]**3-self.geo1.r_fine[range1[0]]**3)*3.
-        
-        self.integrand2 = np.expand_dims(self.dn_ddelta_bar1*self.geo2.r_fine**2,axis=1)
-        #self.d1 = self.basis.D_O_I_D_delta_alpha(self.geo1,self.dn_ddelta_bar1)#.T*self.geo1.r_fine**2*C.D_comov_dz(self.geo1.z_fine),use_r=True)/(self.geo1.r_fine[range1[1]]**3-self.geo1.r_fine[range1[0]]**3)*3.
-        self.d2=self.basis.D_O_I_D_delta_alpha(self.geo2,self.integrand2,use_r=True)/(self.geo2.r_fine[range2[1]]**3-self.geo2.r_fine[range2[0]]**3)*3.
-        #self.d2 = self.basis.D_O_I_D_delta_alpha(self.geo2,self.dn_ddelta_bar2)#.T*self.geo1.r_fine**2*C.D_comov_dz(self.geo1.z_fine),use_r=True)/(self.geo2.r_fine[range2[1]]**3-self.geo1.r_fine[range2[0]]**3)*3.
-        self.DO_a = self.d2-self.d1
-        
-        #TODO handle correctly if n avg not same
-        #TODO averaging w and wo trapezoidal rule different 
-        #self.n_avg1 = np.trapz(self.n_avgs1[range1],self.geo1.z_fine[range1])/(self.geo1.z_fine[range1[-1]]-self.geo1.z_fine[range1[0]])
-        #self.n_avg2 = np.trapz(self.n_avgs2[range2],self.geo2.z_fine[range2])/(self.geo2.z_fine[range2[-1]]-self.geo2.z_fine[range2[0]])
-        self.n_avg1 = np.trapz((self.geo1.r_fine**2*self.n_avgs1)[range1],self.geo1.r_fine[range1])/(self.geo1.r_fine[range1[1]]**3-self.geo1.r_fine[range1[0]]**3)*3.
-        self.n_avg2 = np.trapz((self.geo2.r_fine**2*self.n_avgs2)[range2],self.geo2.r_fine[range2])/(self.geo1.r_fine[range1[1]]**3-self.geo1.r_fine[range1[0]]**3)*3.
-        #self.n_avg2 = np.average(self.n_avgs2[range2])
-        
-
-        #n_avg = self.mf.n_avg(min_mass,(z_min1+z_max1)/2.)
-
-        #self.DO_a=self.dn_ddelta_bar*(d1s[bin1]-d2s[bin2])
-          #  V1=volume(r_min[i-1],r_max[i-1],self.geo1)
-          #  V2=volume(r_min[i-1],r_max[i-1],self.geo2)
-        #TODO handle overlapping geometries 
-        self.Nab=(self.n_avg1/V1+self.n_avg2/V2)
-        #self.Nab=(1./V1+1./V2)*self.n_avg1
+            self.integrand2 = np.expand_dims(self.dn_ddelta_bar1*self.geo2.r_fine[range2]**2,axis=1)
+            self.d2=self.basis.D_O_I_D_delta_alpha(self.geo2,self.integrand2,use_r=True,range_spec=range2)/(self.geo2.r_fine[range2[-1]]**3-self.geo2.r_fine[range2[0]]**3)*3.
+            self.DO_a = self.d2-self.d1
             
-       
-        self.v=self.DO_a
-        #self.F_alpha_beta=np.outer(v,v)*1./self.Nab 
-        
+            self.n_avg1 = np.trapz((self.geo1.r_fine**2*self.n_avgs1)[range1],self.geo1.r_fine[range1])/(self.geo1.r_fine[range1[-1]]**3-self.geo1.r_fine[range1[0]]**3)*3.
+            self.n_avg2 = np.trapz((self.geo2.r_fine**2*self.n_avgs2)[range2],self.geo2.r_fine[range2])/(self.geo1.r_fine[range1[-1]]**3-self.geo1.r_fine[range1[0]]**3)*3.
+            
+    
+            #TODO handle overlapping geometries 
+            self.Nab_i[itr,itr]=1./(self.n_avg1/V1+self.n_avg2/V2)
+                
            
-    #TODO check zbins        
-   # def get_dO_a_ddelta_bar():
-   #     return self.dn_ddelta_bar
+            self.vs[itr]=self.DO_a.flatten()
+        
+    def get_rank(self):
+        return self.n_bins
 
     def get_dO_a_ddelta_bar(self):
         return self.DO_a
         
     def get_F_alpha_beta(self):
-        return np.outer(self.v,self.v)*1./self.Nab
+        return np.dot(np.dot(self.vs.T,self.Nab_i),self.vs)
                 
         
 

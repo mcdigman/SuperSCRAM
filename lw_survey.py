@@ -49,15 +49,18 @@ class LWSurvey:
             
             #print "fisher", np.linalg.eigvals(self.observables[i].get_F_alpha_beta())[0]
             fisher_0.add_fisher(self.observables[i].get_F_alpha_beta())
-
+    def get_total_rank(self):
+        rank = 0
+        for itr in range(0,self.observables.size):
+            if not self.observables[itr] is None:
+                rank+=self.observables[itr].get_rank()
+        return rank
     def names_to_observables(self,names):
         observables = np.zeros(len(names.keys()),dtype=object)
         itr = 0 
         for key in names:
             if re.match('^d_number_density',key):
-                bin1 = names[key]['bin1']
-                bin2 = names[key]['bin2']
-                observables[itr] = DNumberDensityObservable(np.array([bin1,bin2]),self.geos,self.dn_params,self.survey_id,self.C,self.basis,self.ddelta_bar_ddelta_alpha_list,defaults.nz_params)
+                observables[itr] = DNumberDensityObservable(self.geos,self.dn_params,self.survey_id,self.C,self.basis,self.ddelta_bar_ddelta_alpha_list,defaults.nz_params)
             else:
                 warn('unrecognized or unprocessable observable: \'',key,'\', skipping')
                 observables[itr] = None
@@ -69,16 +72,7 @@ def generate_observable_names(geos,observable_list,cross_bins=defaults.lw_survey
     names = {}
     for name in observable_list:
         if re.match('^d_number_density',name):
-            for i in range(0,rbins.shape[0]):
-                r1 = rbins[i]
-                if cross_bins:
-                    for j in range(0,rbins.shape[0]):
-                        r2 = rbins[j]
-                        name_str = name+'_'+str(i)+'_'+str(j)
-                        names[name_str] = {'bin1':i,'bin2':j}
-                else:
-                    name_str = name+'_'+str(i)+'_'+str(i)
-                    names[name_str] = {'bin1':i,'bin2':i}
+            names[name] = {}
         else:
             warn('observable name \'',name,'\' unrecognized, ignoring')
     return names

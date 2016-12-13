@@ -182,7 +182,7 @@ if __name__=="__main__":
     phi2s = np.array([phi2,phi2,phi3,phi3,phi2])
     theta_in2 = np.pi/8.
     phi_in2 = np.pi/12+2.*np.pi/3.
-    res_choose = 7
+    res_choose = 6
 
 
 
@@ -288,7 +288,7 @@ if __name__=="__main__":
     ax.legend(['1','2','3','4','5'])
   #  plt.show()
     #TODO make testing module for this
-    test_perturbation=True
+    test_perturbation=False
     pert_test_fails = 0
     if test_perturbation:
         #TOLERANCE below which an eigenvalue less than TOLERANCE*max eigenvalue is considered 0
@@ -322,7 +322,7 @@ if __name__=="__main__":
             warn("some eigenvalues decreased within tolerance, unacceptable")
         
         #check interlace theorem satisfied (eigenvalues cannot be reordered by more than rank of perturbation)
-        n_offset = SS.surveys_lw[0].observables.size
+        n_offset = SS.surveys_lw[0].get_total_rank()
         rolled_eig = (eigf1[::-1][n_offset:eigf0.size]-eigf0[::-1][0:eigf0.size-n_offset])
         rolled_eig[np.abs(rolled_eig)<REL_TOLERANCE*np.max(np.abs(rolled_eig))]=0.  
         if np.any(rolled_eig>0):
@@ -356,7 +356,7 @@ if __name__=="__main__":
             print "All fisher matrix sanity checks passed"
         else:
             warn(str(pert_test_fails)+" fisher matrix sanity checks failed")
-    test_eigs = True
+    test_eigs = False
     eig_test_fails = 0
     if test_eigs:
         REL_TOLERANCE = 10**-8
@@ -388,7 +388,7 @@ if __name__=="__main__":
         if np.any(eig_mitprod>1):
             eig_test_fails+=1
             warn("mitigation making covariance worse, unacceptable")
-        n_offset = SS.surveys_lw[0].observables.size
+        n_offset = SS.surveys_lw[0].get_total_rank()
         if np.sum(eig_mitprod<1.)>n_offset:
             eig_test_fails+=1
             warn("mitigation changing too many eigenvalues, unacceptable")

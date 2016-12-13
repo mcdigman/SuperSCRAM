@@ -3,8 +3,8 @@
 '''
 import numpy as np
 from numpy import log, log10, exp, pi
-from scipy.interpolate import interp1d
-from scipy.integrate import trapz 
+from scipy.interpolate import interp1d,RectBivariateSpline
+from scipy.integrate import trapz,cumtrapz 
 import sys
 import defaults
 
@@ -25,11 +25,8 @@ class ST_hmf():
 		
 		self.nu_array=np.zeros(n_grid+1)
 		self.sigma=np.zeros(n_grid+1)
-		#self.Omegam_0=cosmology['Omegam']
-		#self.OmegaL=cosmology['OmegaL']
 		
 		
-		#self.delta_v=CosmoPie.delta_v(z)
 		self.delta_c=CosmoPie.delta_c(0)
 		if delta_bar is not None:
 			self.delta_c=self.delta_c - delta_bar 
@@ -40,12 +37,12 @@ class ST_hmf():
 
 		print 'rhos', 0,self.rho_bar/(1e10), CosmoPie.rho_crit(0)/(1e10)
 		
-		#print 'hubble', CosmoPie.H(z)
 		
 		for i in range(self.M_grid.size):
 			
 			R=3./4.*self.M_grid[i]/self.rho_bar/pi
 			R=R**(1./3.)
+                        #TODO evaluate if faster way to get sigma_r
 			self.sigma[i]=CosmoPie.sigma_r(0.,R)
 	
 		
@@ -63,93 +60,82 @@ class ST_hmf():
                 self.z_grid = np.arange(self.params['z_min'],self.params['z_max'],self.params['z_resolution'])
                 self.G_grid = CosmoPie.G_norm(self.z_grid)
                 
-                self.b_norm_grid = np.zeros(self.z_grid.size)
-                for i in range(0,self.z_grid.size):
-                    self.b_norm_grid[i] = self.bias_norm(self.z_grid[i],self.G_grid[i])
-                #TODO check
+                self.b_norm_grid = self.bias_norm(self.G_grid)
                 self.b_norm_cache = interp1d(self.z_grid,self.b_norm_grid)
                 
 
 		
-	def f_norm(self,z,G):
+	def f_norm(self,G):
 		A=0.3222; a=0.707; p=0.3
 		nu=self.nu_array/G**2
-		
 		f=A*np.sqrt(2*a/np.pi)*(1 + (1/a/nu)**p)*np.sqrt(nu)*exp(-a*nu/2.)
-		sigma_inv=(G**2*self.sigma)**(-1)
+		sigma_inv=1./self.sigma*1./G**2
 		norm=trapz(f,log(sigma_inv))
-		
-# 		d=np.loadtxt('test_data/hmf_test.dat')
-# 		import matplotlib.pyplot as plt
-# 		ax=plt.subplot(111)
-# 		ax.set_xscale('log')
-# 		ax.set_yscale('log')
-# 		
-# 		ax.plot(self.M_grid,f/norm*(.6774**2))
-# 		ax.plot(d[:,0],d[:,2])
-# 		ax.plot(d[:,0],d[:,4])
-# 		plt.grid()
-# 		plt.show()
-		
 		return norm
-        #TODO cache/vectorize this, it gets called a lot	
-	def bias_norm(self,z,G):
+
+	def f_norm_array(self,G):
+		A=0.3222; a=0.707; p=0.3
+		nu=np.outer(self.nu_array,1./G**2)	
+		f=A*np.sqrt(2*a/np.pi)*(1 + (1/a/nu)**p)*np.sqrt(nu)*exp(-a*nu/2.)
+		sigma_inv=np.outer(1./self.sigma,1./G**2)
+		norm=trapz(f,log(sigma_inv),axis=0)
+		return norm
+        #Now supports vector arguments	
+        #TODO eliminate redundant z argument
+	def bias_norm(self,G):
 	   
 		A=0.3222; a=0.707; p=0.3
-		nu=self.nu_array/G**2
-		
+		nu=np.outer(self.nu_array,1./G**2)
+	
 		bias=(1 + (a*nu-1)/self.delta_c + 2*p/(self.delta_c*(1+(a*nu)**p)))
 		f=A*np.sqrt(2*a/np.pi)*(1 + (1/a/nu)**p)*np.sqrt(nu)*exp(-a*nu/2.)
 		
-		norm=trapz(f*bias,nu)
+		norm=trapz(f*bias,nu,axis=0)
 		return norm
 		
-# 		d=np.loadtxt('test_data/hmf_test.dat')
-# 		import matplotlib.pyplot as plt
-# 		ax=plt.subplot(111)
-# 		ax.set_xscale('log')
-# 		ax.set_yscale('log')
-# 		
-# 		ax.plot(self.M_grid,f/norm*(.6774**2))
-# 		ax.plot(d[:,0],d[:,2])
-# 		ax.plot(d[:,0],d[:,4])
-# 		plt.grid()
-# 		plt.show()
-		
-		return norm
-
-	def f_sigma(self,M,z):
+	def f_sigma(self,M,G):
 		A=0.3222; a=0.707; p=0.3
-		G=self.Growth(z)
-		norm=self.f_norm(z,G)
+		norm=self.f_norm(G)
 		nu=self.nu_of_M(M)/G**2
 		f=A*np.sqrt(2*a/np.pi)*(1 + (1/a/nu)**p)*np.sqrt(nu)*exp(-a*nu/2.)
-# 		
-# 		print 'hello G', G
-# 		d=np.loadtxt('test_data/hmf_test.dat')
-# 		import matplotlib.pyplot as plt
-# 		ax=plt.subplot(111)
-# 		ax.set_xscale('log')
-# 		ax.set_yscale('log')
-		
-# 		ax.plot(M,f*(.6774**2))
-# 		ax.plot(d[:,0],d[:,2])
-# 		ax.plot(d[:,0],d[:,4])
-# 		plt.show()
-		
 		return f/norm
 
-	def mass_func(self,M,z):
-		f=self.f_sigma(M,z)
+	def f_sigma_array(self,M,G):
+		A=0.3222; a=0.707; p=0.3
+		norm=self.f_norm_array(G)
+		nu=np.outer(self.nu_of_M(M),1./G**2)
+		f=A*np.sqrt(2*a/np.pi)*(1 + (1/a/nu)**p)*np.sqrt(nu)*exp(-a*nu/2.)
+		return f/norm
+
+
+	def mass_func(self,M,G):
+		f=self.f_sigma(M,G)
 		sigma=self.sigma_of_M(M)
 		dsigma_dM=self.dsigma_dM_of_M(M)
 		mf=self.rho_bar/M*dsigma_dM*f
 		# return sigma,f,and the mass function dn/dM
 		return sigma,f,mf 
-	
+
+	def mass_func_array(self,M,G):
+		f=self.f_sigma_array(M,G)
+		sigma=self.sigma_of_M(M)
+		dsigma_dM=self.dsigma_dM_of_M(M)
+		mf=(self.rho_bar/M*dsigma_dM*f.T).T
+		# return sigma,f,and the mass function dn/dM
+		return sigma,f,mf 
+        
+	def dndM_G_array(self,M,G):
+	    _,_,mf=self.mass_func_array(M,G)
+	    return mf 
+
+	def dndM_G(self,M,G):
+	    _,_,mf=self.mass_func(M,G)
+	    return mf 
+
 	def dndM(self,M,z):
-		_,_,mf=self.mass_func(M,z)
-		return mf 
+            G=self.Growth(z)
+	    _,_,mf=self.mass_func(M,G)
+	    return mf 
 
 	def M_star(self):
 		return self.M_of_nu(1.0)
@@ -159,28 +145,61 @@ class ST_hmf():
 		G=self.Growth(z)
 		nu=self.nu_of_M(M)/G**2
                 if norm is None:
-		    norm=self.bias_norm(z,G)
+		    norm=self.bias_norm(G)
 		bias=(1 + (a*nu-1)/self.delta_c + 2*p/(self.delta_c*(1+(a*nu)**p)))
 		return bias/norm
+
 	#TODO vectorize,rename,interpolate
-	def bias_avg(self,min_mass,z):
+	def bias_n_avg(self,min_mass,z):
 	    mass=self.mass_grid[ self.mass_grid >= min_mass]
 	    b_array=np.zeros_like(mass)
 
             norm = self.b_norm_cache(z)
 	    for i in range(mass.size):
 	        b_array[i]=self.bias(mass[i],z,norm=norm)
-	    
-	    mf=self.dndM(mass,z)	    
+	    G = self.Growth(z) 
+	    mf=self.dndM_G(mass,G)	    
 	    
 	    return trapz(b_array*mf,mass) 
-	    
+	
+	def bias_array(self,M,zs,G,norm):
+		A=0.3222; a=0.707; p=0.3
+		nu=np.outer(self.nu_of_M(M),1./G**2)
+		bias=(1 + (a*nu-1)/self.delta_c + 2*p/(self.delta_c*(1+(a*nu)**p)))
+		return bias/norm
+
+	def bias_n_avg_array(self,min_mass,zs):
+            result = np.zeros(zs.size)
+            norms = self.b_norm_cache(zs)
+            Gs = self.Growth(zs)
+            b_array = self.bias_array(self.mass_grid,zs,Gs,norms)
+	    mf=self.dndM_G_array(self.mass_grid,Gs)
+            integrated = RectBivariateSpline(self.mass_grid,zs,-np.vstack((np.zeros((1,mf.shape[1])),cumtrapz((b_array*mf)[::-1,:],self.mass_grid[::-1],axis=0)))[::-1,:],kx=1,ky=1)
+	    #TODO could unroll loop, if speedup is necessary
+            for itr in range(0,zs.size):
+                #restrict = self.mass_grid>= min_mass[itr]
+                result[itr] = integrated(min_mass[itr],zs[itr])#trapz(b_array[restrict,itr]*mf[restrict,itr],self.mass_grid[restrict],axis=0) 	
+            return result
 	    
 		
 	def n_avg(self,M,z):
 		mass=self.mass_grid[ self.mass_grid >= M]
-		mf=self.dndM(mass,z)
+                G = self.Growth(z)
+		mf=self.dndM_G(mass,G)
 		return trapz(mf,mass)
+
+	def n_avg_array(self,M,zs):
+                G = self.Growth(zs)
+		mf=self.dndM_G_array(self.mass_grid,G)
+                integrated = RectBivariateSpline(self.mass_grid,zs,-np.vstack((np.zeros((1,mf.shape[1])),cumtrapz(mf[::-1,:],self.mass_grid[::-1],axis=0)))[::-1,:],kx=1,ky=1)
+                result = np.zeros(zs.size)
+                for itr in range(0,zs.size):
+                    result[itr] = integrated(M[itr],zs[itr])
+                #for itr in range(0,zs.size):
+                #    restrict = self.mass_grid>=M[itr]
+                #    result[itr] = trapz(mf[restrict,itr],self.mass_grid[restrict],axis=0) 
+		return result
+		
 		
 	
 if __name__=="__main__":
@@ -211,11 +230,12 @@ if __name__=="__main__":
 	
 	
 	z1=0;z2=1.1;z3=.1
+        G1=hmf.Growth(z1);G2=hmf.Growth(z2);G3=hmf.Growth(z3)
 	#M=np.logspace(8,15,150)
 	M=d[:,0]
-	_,f1,mf1=hmf.mass_func(M,z1)
-	_,f2,mf2=hmf.mass_func(M,z2)
-	_,f2,mf3=hmf.mass_func(M,z3)
+	_,f1,mf1=hmf.mass_func(M,G1)
+	_,f2,mf2=hmf.mass_func(M,G2)
+	_,f2,mf3=hmf.mass_func(M,G3)
 	
 	
 	h=.6774
@@ -234,8 +254,9 @@ if __name__=="__main__":
 	ax.plot(d[:,0], d[:,3]/h**2, '--')
 	
 	zz=np.array([.1,.2,.3,.5,1,2])
+        GG=hmf.Growth(zz)
 	for i in range(zz.size):
-		_,_,y=hmf.mass_func(M,zz[i])
+		_,_,y=hmf.mass_func(M,GG[i])
 		ax.plot(M,y*M)
 		
 	

@@ -124,7 +124,8 @@ class sph_basis_k(object):
                 t2 = time()
                 print "sph_klim: basis time: ",t2-t1
 	        print "sph_klim: finished init basis id: ",id(self)	
-
+        def get_size(self):
+            return self.C_size
         #I_\alpha(k_\alpha,r_{max}) simplified
         def norm_factor(self,ka,la):
             return -np.pi*self.r_max**2/(4.*ka)*jv(la+1.5,ka*self.r_max)*jv(la-0.5,ka*self.r_max)
@@ -144,16 +145,23 @@ class sph_basis_k(object):
 
         #get the partial derivatives of an sw observable wrt the basis given an integrand with elements at each r_fine i.e.  \frac{\partial O_i}{\partial \bar(\delta)(r_{fine})}
         #TODO this may not be very efficient
-        def D_O_I_D_delta_alpha(self,geo,integrand,force_recompute = False,use_r=True):
+        def D_O_I_D_delta_alpha(self,geo,integrand,force_recompute = False,use_r=True,range_spec=None):
             print "sph_klim: calculating D_O_I_D_delta_alpha"
             d_delta_bar = self.D_delta_bar_D_delta_alpha(geo,force_recompute,tomography=False)
             result = np.zeros((d_delta_bar.shape[1],integrand.shape[1]))
+            #the variable to integrate over
+            if use_r:
+                x = geo.r_fine
+            else:
+                x = geo.z_fine
+            #allow a restriction to the range of r_fine or z_fine,TODO check if can default 
+            if range_spec is not None:
+                x = x[range_spec]
+                d_delta_bar = d_delta_bar[range_spec,:]
+
             for alpha in range(0,d_delta_bar.shape[1]):
                 for ll in range(0, integrand.shape[1]):
-                    if use_r:
-                        result[alpha,ll] = trapz(d_delta_bar[:,alpha]*integrand[:,ll],geo.r_fine) 
-                    else:
-                        result[alpha,ll] = trapz(d_delta_bar[:,alpha]*integrand[:,ll],geo.z_fine) 
+                    result[alpha,ll] = trapz(d_delta_bar[:,alpha]*integrand[:,ll],x) 
             print "sph_klim: got D_O_I_D_delta_alpha"
             return result
 
