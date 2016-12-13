@@ -77,16 +77,16 @@ class fisher_matrix:
         else: 
             return result
         
-   
+    #TODO appears to be wrong 
     #for getting variance
     def contract_covar(self,v1,v2,identical_inputs=False):
         print "fisher_matrix "+str(id(self))+": contracting covariance"
-        return cholesky_inv_contract(self.get_cov_cholesky(),v1,v2,cholesky_given=True,identical_inputs=identical_inputs)
-
+        return cholesky_inv_contract(self.get_cov_cholesky().T,v1,v2,cholesky_given=True,identical_inputs=identical_inputs)
+    #TODO check
     #for use in sw_survey
     def contract_chol_right(self,v):
         print "fisher_matrix "+str(id(self))+": getting right chol contraction"
-        return np.dot(self.get_cov_cholesky(),v)
+        return np.dot(self.get_cov_cholesky().T,v)
    
 
     def get_fab_cholesky(self,inplace=False,copy_output=False):

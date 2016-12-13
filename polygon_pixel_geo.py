@@ -9,8 +9,10 @@ import defaults
 import scipy as sp
 from cosmopie import CosmoPie
 from scipy.interpolate import SmoothBivariateSpline
+from warnings import warn
 
 #get a healpix pixelated spherical polygon geo
+#TODO consider using sp_poly area for angular_area()
 class polygon_pixel_geo(pixel_geo):
         def __init__(self,zs,thetas,phis,theta_in,phi_in,C,z_fine,res_healpix=defaults.polygon_params['res_healpix'],l_max=defaults.polygon_params['l_max']):
             all_pixels = get_healpix_pixelation(res_choose=res_healpix)
@@ -32,12 +34,12 @@ class polygon_pixel_geo(pixel_geo):
             self.alm_table,ls,ms,self.alm_dict = self.get_a_lm_table(l_max)
 
         def a_lm(self,l,m):
-            #if not precomputed, get alm as usual, otherwise read it out of the table
-            if l>self.l_max:
-                return pixel_geo.a_lm(self,l,m)
-            else:
-                return self.alm_table[self.alm_dict[(l,m)]]
-
+            #if not precomputed, get alm slow way, otherwise read it out of the table
+            alm = self.alm_table[(l,m)] 
+            if alm is None:
+                alm = pixel_geo.a_lm(self,l,m)
+                self.alm_table[(l,m)] = alm
+            return alm
 
         
         #first try loop takes 22.266 sec for l_max=5 for 290 pixel region
@@ -51,7 +53,7 @@ class polygon_pixel_geo(pixel_geo):
         #fourth try (precompute some stuff), 16348 pixels l_max=100 takes 0.271s 
         #fourth try l_max=50 takes 0.0691s, total ~2800x speed up over 1st try
         def get_a_lm_below_l_max(self,l_max):
-            a_lms = np.zeros((l_max+1)**2)
+            a_lms = {}
             ls = np.zeros((l_max+1)**2)
             ms = np.zeros((l_max+1)**2)
 
@@ -62,7 +64,7 @@ class polygon_pixel_geo(pixel_geo):
                     #first try takes ~0.618 sec/iteration for 290 pixel region=> 2.1*10**-3 sec/(iteration pixel), much too slow
                     ls[itr] = ll
                     ms[itr] = mm
-                    a_lms[itr] = self.a_lm(ll,mm)
+                    a_lms[(ll,mm)] = self.a_lm(ll,mm)
                     itr+=1
             return a_lms,ls,ms
         #TODO check numerical stability
@@ -72,7 +74,7 @@ class polygon_pixel_geo(pixel_geo):
 
             ls = np.zeros(n_tot)
             ms = np.zeros(n_tot)
-            a_lms = np.zeros(n_tot)
+            a_lms = {}
             
             lm_dict = {}
             itr = 0
@@ -110,12 +112,12 @@ class polygon_pixel_geo(pixel_geo):
                     #no sin theta because first order integrator
                     base = known_legendre[(ll,mm)]
                     if mm==0:
-                        a_lms[lm_dict[(ll,mm)]] = prefactor*np.sum(base)
+                        a_lms[(ll,mm)] = prefactor*np.sum(base)
                     else:
                         #Note: check condon shortley phase convention
 
-                        a_lms[lm_dict[(ll,mm)]] = (-1)**(mm)*np.sqrt(2.)*prefactor*np.sum(base*cos_phi_m[mm])
-                        a_lms[lm_dict[(ll,-mm)]] = (-1)**(mm)*np.sqrt(2.)*prefactor*np.sum(base*sin_phi_m[mm])
+                        a_lms[(ll,mm)] = (-1)**(mm)*np.sqrt(2.)*prefactor*np.sum(base*cos_phi_m[mm])
+                        a_lms[(ll,-mm)] = (-1)**(mm)*np.sqrt(2.)*prefactor*np.sum(base*sin_phi_m[mm])
                     if mm<=ll-2:
                         known_legendre.pop((ll-2,mm),None)
 
@@ -164,11 +166,11 @@ class polygon_pixel_geo(pixel_geo):
                     prefactor = np.sqrt((2.*ll+1.)/(4.*np.pi)*factorials[ll-mm]/factorials[ll+mm])
                     base = known_legendre[(ll,mm)]
                     if mm==0:
-                        reconstructed += prefactor*alms[lm_dict[(ll,mm)]]*base
+                        reconstructed += prefactor*alms[(ll,mm)]*base
                     else:
                         #Note: check condon shortley phase convention
-                        reconstructed+= (-1)**(mm)*np.sqrt(2.)*alms[lm_dict[(ll,mm)]]*prefactor*base*cos_phi_m[mm]
-                        reconstructed+= (-1)**(mm)*np.sqrt(2.)*alms[lm_dict[(ll,-mm)]]*prefactor*base*sin_phi_m[mm]
+                        reconstructed+= (-1)**(mm)*np.sqrt(2.)*alms[(ll,mm)]*prefactor*base*cos_phi_m[mm]
+                        reconstructed+= (-1)**(mm)*np.sqrt(2.)*alms[(ll,-mm)]*prefactor*base*sin_phi_m[mm]
                 if mm<=ll-2:
                     known_legendre.pop((ll-2,mm),None)
 
@@ -337,9 +339,9 @@ if __name__=='__main__':
     
     if do_rect:
         r_geo = rect_geo(zs,np.array([theta0,theta1]),np.array([phi0,phi1]),C,z_fine)
-        alm_rect = np.zeros(ls.size)
+        alm_rect = {}
         for itr in range(0,ls.size):
-            alm_rect[itr] = r_geo.a_lm(ls[itr],ms[itr])
+            alm_rect[(ls[itr],ms[itr])] = r_geo.a_lm(ls[itr],ms[itr])
     t4 =time()
     if do_rect:
         print "rect_geo: rect geo alms in time"+str(t4-t3)

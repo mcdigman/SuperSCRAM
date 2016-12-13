@@ -2,6 +2,7 @@ import numpy as np
 import cosmopie as cp
 from scipy.integrate import dblquad
 from sph_functions import Y_r
+from scipy.interpolate import InterpolatedUnivariateSpline
 
 #Abstract class defining a geometry for a survey. 
 #At the moment, a geometry must 
@@ -25,12 +26,32 @@ class geo:
         self.rbins = np.zeros((self.rs.size-1,2)) 
         self.zbins = np.zeros((self.zs.size-1,2))
         for i in range(0,self.rs.size-1):
-            self.rbins[i,0] = self.rs[i]
-            self.rbins[i,1] = self.rs[i+1]
-            self.zbins[i,0] = self.zs[i]
-            self.zbins[i,1] = self.zs[i+1]
+            self.rbins[i,:] = self.rs[i:i+2]
+            self.zbins[i,:] = self.zs[i:i+2]
+        #TODO go to 0 more elegantly maybe
+        self.rbins_fine = np.zeros((self.r_fine.size,2)) 
+        self.zbins_fine = np.zeros((self.z_fine.size,2))
+        self.rbins_fine[0,:] = np.array([0.,self.r_fine[0]])
+        self.zbins_fine[0,:] = np.array([0.,self.z_fine[0]])
+        for i in range(0,self.r_fine.size-1):
+            self.rbins_fine[i+1,:] = self.r_fine[i:i+2]
+            self.zbins_fine[i+1,:] = self.z_fine[i:i+2]
+
+        #create list of indices of coarse bin starts in fine grid
+        #TODO check handling bin edges correctly
+        self.fine_indices = np.zeros((self.zs.size-1,2),dtype=np.int)    
+        self.fine_indices[0,0] = 0
+        for i in range(1,self.zs.size-1):
+            self.fine_indices[i-1,1] = np.argmax(self.z_fine>=self.zs[i])
+            self.fine_indices[i,0] = self.fine_indices[i-1,1]
+        self.fine_indices[-1,1] = self.z_fine.size
+
+        self.dzdr = InterpolatedUnivariateSpline(self.r_fine,self.z_fine).derivative()(self.r_fine)
         #smalles possible difference for a sum
         self.eps=np.finfo(float).eps
+        
+        #for caching a_lm
+        self.alm_table = {}
     #integrate a function over the surface of the geo (interpretation of the meaning of the "surface" is up to the subclass)
     #mainly used for calculating area and a_lm at the moment
     #TODO: consider making specific to a tomography bin (or just let subclasses do that?)
@@ -43,11 +64,16 @@ class geo:
 
     # returns \int d theta d phi \sin(theta) Y_lm(theta, phi) (the spherical harmonic a_lm for the area)
     # l and m are the indices for the spherical harmonics 
+    #automatically cache alm. Don't explicitly memoize because other geos will precompute alm_table
     def a_lm(self,l,m):
-        def integrand(phi,theta):
-            return Y_r(l,m,theta,phi)
-        I2 = self.surface_integral(integrand)
-        return I2
+        alm = self.alm_table.get((l,m))
+        if alm is None:
+            def integrand(phi,theta):
+                return Y_r(l,m,theta,phi)
+            alm = self.surface_integral(integrand)
+            self.alm_table[(l,m)] = alm
+
+        return alm
 
 
     #volume ddeltabar_dalpha
@@ -116,7 +142,11 @@ class pixel_geo(geo):
 
     #vectorized a_lm computation relies on vector Y_r
     def a_lm(self,l,m):
-        return np.sum(Y_r(l,m,self.pixels[:,0],self.pixels[:,1])*self.pixels[:,2])
+        alm = self.alm_table.get((l,m))
+        if alm is None:
+            alm = np.sum(Y_r(l,m,self.pixels[:,0],self.pixels[:,1])*self.pixels[:,2])
+            self.alm_table[(l,m)] = alm
+        return alm
             
         
-        #TODO: Implement polygon_geo, allowing arbitrary polygons, using either healpix, boundary conditions, or both ways
+        #TODO: Implement polygon_geo, allowing arbitrary polygons, using stokes theorem method

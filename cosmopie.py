@@ -188,11 +188,18 @@ class CosmoPie :
 # 	def G(self,z):
 # 		integrand = lambda zp : 1/(1 + zp)**2/self.H(z)**3 
 # 		return 2.5*self.Omegam_z(z)/(1+z)**2*self.H(z)**3*quad(integrand, z,1e5)[0]
+        
 	def G_norm(self,z):
 		# the normalized linear growth factor
 		# normalized so the G(0) =1 
                 G_0=self.G(0.)
-		return self.G(z)/G_0 
+                #G does not currently support vector inputs unless precomputed TODO could fix that
+                if (not self.precompute) and isinstance(z,np.ndarray):
+                    result = np.zeros(z.size)
+                    for i in range(z.size):
+                        result[i] = self.G_norm(z[i])
+                else:
+		    return self.G(z)/G_0 
 		
 		
 	def log_growth(self,z):
@@ -200,16 +207,19 @@ class CosmoPie :
 		a=1/(1+z)
 		print 'what I think it is', a/self.H(z)*self.dH_da(z) + 5/2.*self.Omegam*self.G_norm(0)/self.H(z)**2/a**2/self.G_norm(z)
 		return -3/2.*self.Omegam/a**3*self.H0**2/self.H(z)**2 + 1/self.H(z)**2/a**2/self.G_norm(z)
-	
+        #TODO probably obsolete	
 	def G_array(self,z):
 		# the normalized linear growth factor 
 		# for an array 
-		if (type(z)==float):
+		if isinstance(z,float):
 			return np.array([self.G_norm(z)])
-		result=np.zeros(z.size)
-		for i in range(z.size):
-			result[i]=self.G_norm(z[i])
-		return result 
+                elif self.precompute and isinstance(z,np.ndarray):
+                    return G_norm(z)
+                else:
+		    result=np.zeros(z.size)
+		    for i in range(z.size):
+			    result[i]=self.G_norm(z[i])
+		    return result 
 			
 	# ----------------------------------------------------------------------------
 	 

@@ -21,6 +21,7 @@ import lensing_observables as lo
 import copy
 from sw_survey import SWSurvey
 from lw_survey import LWSurvey
+from warnings import warn
 class super_survey:
     ''' This class holds and returns information for all surveys
     ''' 
@@ -120,7 +121,8 @@ class super_survey:
                 T=self.basis.D_delta_bar_D_delta_alpha(survey.geo,tomography=True)[0]
                 a_SSC[i]=F_loc.contract_covar(T.T,T,identical_inputs=True)
                 print "Super_Survey: a is "+str(a_SSC[i])+" for survey #"+str(i)
-
+        self.F_fin = F_loc
+        #TODO this is somewhat hackish
         if self.get_a:
             return Cov_SSC,a_SSC
         else:
@@ -138,7 +140,7 @@ class super_survey:
                     n_obs=np.array([data[0],data[1]])
                     mass=data[2]
                     print n_obs, mass
-                    X=DNumberDensityObservable(self.surveys_lw[0],defaults.dn_params,'lw1',self.C,self.basis)
+                    X=DNumberDensityObservable(self.surveys_lw[0],defaults.dn_params,'lw1',self.C,self.basis,defaults.nz_params)
                     D_O_a[i] = X.Fisher_alpha_beta()
                     print "Super_Survey: min D_O_a element for lw observable #"+str(i)+": "+str(np.min(D_O_a[i][0]))
                     print "Super_Survey: D_O_a for lw observable #"+str(i)+": ",D_O_a[i][0]
@@ -165,22 +167,22 @@ if __name__=="__main__":
     r_max=C.D_comov(z_max)
     print 'this is r max and l_max', r_max , l_max
 
-    theta0=0.*np.pi/16.
-    theta1=16.*np.pi/16.
+    theta0=0.
+    theta1=np.pi/2.
     phi0=0.
-    phi1=np.pi/3.
-    phi2=0.
-    phi3=np.pi/3
+    phi1=2.*np.pi/3.
+    phi2=2.*np.pi/3.
+    phi3=4.*np.pi/3.
 
     theta1s = np.array([theta0,theta1,theta1,theta0,theta0])
     phi1s = np.array([phi0,phi0,phi1,phi1,phi0])
-    theta_in1 = np.pi/2.
+    theta_in1 = np.pi/8.
     phi_in1 = np.pi/12.
     theta2s = np.array([theta0,theta1,theta1,theta0,theta0])
     phi2s = np.array([phi2,phi2,phi3,phi3,phi2])
-    theta_in2 = np.pi/2.
-    phi_in2 = np.pi/12.
-    res_choose = 8
+    theta_in2 = np.pi/8.
+    phi_in2 = np.pi/12+2.*np.pi/3.
+    res_choose = 7
 
 
 
@@ -190,7 +192,7 @@ if __name__=="__main__":
     Phi2=[phi2,phi3]
 
     #zs=np.array([.4,0.8,1.2])
-    zs=np.array([.01,1.01])
+    zs=np.array([.6,0.8,1.01])
     z_fine = np.arange(defaults.lensing_params['z_min_integral'],np.max(zs),defaults.lensing_params['z_resolution'])
     #zbins=np.array([.2,.6,1.0])
     #l=np.logspace(np.log10(2),np.log10(3000),1000)
@@ -198,7 +200,7 @@ if __name__=="__main__":
     #l_sw = np.arange(0,50)
     use_poly=True
     if use_poly:
-        geo1 = polygon_pixel_geo(zs,theta1s,phi1s,theta_in1,phi_in2,C,z_fine,res_healpix=res_choose)  
+        geo1 = polygon_pixel_geo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,res_healpix=res_choose)  
         geo2 = polygon_pixel_geo(zs,theta2s,phi2s,theta_in1,phi_in2,C,z_fine,res_healpix=res_choose)  
     else:
         geo1=rect_geo(zs,Theta1,Phi1,C,z_fine)
@@ -227,9 +229,9 @@ if __name__=="__main__":
      
     geos = np.array([geo1,geo2])
     #geos = np.array([geo1])
-    l_lw=np.arange(0,20)
+    l_lw=np.arange(0,30)
     n_zeros=49
-    k_cut = 0.018
+    k_cut = 0.008
             
     basis=sph_basis_k(r_max,C,k_cut,l_ceil=100)
 
@@ -245,7 +247,8 @@ if __name__=="__main__":
     print "main: total run time "+str(t2-t1)+" s"
      
     #print "fractional mitigation: ", SS.a_no_mit/SS.a_mit     
-    rel_weights = SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0]*np.dot(SS.F_0.get_cov_cholesky(),SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0])
+    rel_weights1 = SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0]*np.dot(SS.F_0.get_cov_cholesky(),SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0])
+    rel_weights2 = SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0]*np.dot(SS.F_fin.get_cov_cholesky(),SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0])
     #np.savetxt('rel_weights_k_026.txt',rel_weights)
 
  #   ax.plot(rel_weights)
@@ -284,3 +287,119 @@ if __name__=="__main__":
     
     ax.legend(['1','2','3','4','5'])
   #  plt.show()
+    #TODO make testing module for this
+    test_perturbation=True
+    pert_test_fails = 0
+    if test_perturbation:
+        #TOLERANCE below which an eigenvalue less than TOLERANCE*max eigenvalue is considered 0
+        REL_TOLERANCE = 10**-8
+        f0 = SS.F_0.get_F_alpha_beta()
+        f1 = SS.F_fin.get_F_alpha_beta()
+        if not np.all(f0.T==f0):
+            pert_test_fails+=1
+            warn("unperturbed fisher matrix not symmetric, unacceptable")
+        if not np.all(f1.T==f1):
+            pert_test_fails+=1
+            warn("perturbed fisher matrix not symmetric, unacceptable")
+        #get eigenvalues and set numerically zero values to 0 
+        eigf0 = np.linalg.eigh(f0)[0]
+        eigf0[np.abs(eigf0)<REL_TOLERANCE*np.max(np.abs(eigf0))]=0.
+        eigf1 = np.linalg.eigh(f1)[0]
+        eigf1[np.abs(eigf1)<REL_TOLERANCE*np.max(np.abs(eigf1))]=0.
+        #check positive semidefinite
+        if np.any(eigf0<0.):
+            pert_test_fails+=1
+            warn("unperturbed fisher matrix not positive definite within tolerance, unacceptable")
+        if np.any(eigf1<0.):
+            pert_test_fails+=1
+            warn("perturbed fisher matrix not positive definite within tolerance, unacceptable")
+
+        #check nondecresasing
+        diff_eig = eigf1-eigf0
+        diff_eig[np.abs(diff_eig)<REL_TOLERANCE*np.max(np.abs(diff_eig))] = 0
+        if np.any(diff_eig<0):
+            pert_test_fails+=1
+            warn("some eigenvalues decreased within tolerance, unacceptable")
+        
+        #check interlace theorem satisfied (eigenvalues cannot be reordered by more than rank of perturbation)
+        n_offset = SS.surveys_lw[0].observables.size
+        rolled_eig = (eigf1[::-1][n_offset:eigf0.size]-eigf0[::-1][0:eigf0.size-n_offset])
+        rolled_eig[np.abs(rolled_eig)<REL_TOLERANCE*np.max(np.abs(rolled_eig))]=0.  
+        if np.any(rolled_eig>0):
+            pert_test_fails+=1
+            warn("some eigenvalues fail interlace theorem, unacceptable")
+
+
+        c0 = SS.F_0.get_covar()
+        c1 = SS.F_fin.get_covar()
+        if not np.allclose(c0,c0.T):
+            pert_test_fails+=1
+            warn("unperturbed covariance not symmetric, unacceptable")
+        #TODO investigate possible deviation from exactness here
+        if not np.allclose(c1,c1.T):
+            warn("perturbed covariance not symmetric, unacceptable")
+        eigc0 = np.linalg.eigh(c0)[0]
+        eigc1 = np.linalg.eigh(c1)[0]
+        if np.any(eigc0<0):
+            pert_test_fails+=1
+            warn("unperturbed covariance not positive semidefinite, unacceptable")
+        if np.any(eigc1<0):
+            pert_test_fails+=1
+            warn("perturbed covariance not positive semidefinite, unacceptable")
+        fdiff_eigc = (eigc1-eigc0)/eigc0
+        fdiff_eigc[np.abs(fdiff_eigc)<REL_TOLERANCE] = 0.
+        if np.any(fdiff_eigc>0):
+            pert_test_fails+=1
+            warn("some covariance eigenvalues increase, unacceptable")
+        
+        if pert_test_fails==0:
+            print "All fisher matrix sanity checks passed"
+        else:
+            warn(str(pert_test_fails)+" fisher matrix sanity checks failed")
+    test_eigs = True
+    eig_test_fails = 0
+    if test_eigs:
+        REL_TOLERANCE = 10**-8
+        c_ssc0 = SS.cov_no_mit[0].get_ssc_covar()
+        if not np.allclose(c_ssc0,c_ssc0.T):
+            eig_test_fails+=1
+            warn("unperturbed result covariance not symmetric, unacceptable")
+        c_ssc1 = SS.cov_mit[0].get_ssc_covar()
+        if not np.allclose(c_ssc1,c_ssc1.T):
+            eig_test_fails+=1
+            warn("perturbed result covariance not symmetric, unacceptable")
+        eigsys_ssc0 = np.linalg.eigh(c_ssc0)
+        eigsys_ssc1 = np.linalg.eigh(c_ssc1)
+        eig_ssc0 = eigsys_ssc0[0].copy()
+        eig_ssc1 = eigsys_ssc1[0].copy()
+        eig_ssc0[np.abs(eig_ssc0)<np.max(np.abs(eig_ssc0))*REL_TOLERANCE]=0
+        eig_ssc1[np.abs(eig_ssc0)<np.max(np.abs(eig_ssc0))*REL_TOLERANCE]=0
+        if np.any(eig_ssc0<0):
+            eig_test_fails+=1
+            warn("unperturbed result cov not positive semidefinite, unacceptable")
+        if np.any(eig_ssc1<0):
+            eig_test_fails+=1
+            warn("perturbed result cov not positive semidefinite, unacceptable")
+        cg = SS.cov_no_mit[0].get_gaussian_covar()
+        eigsys_cg = np.linalg.eigh(cg)
+        eig_cg = eigsys_cg[0].copy()
+        eig_mitprod = np.real(np.linalg.eig(np.dot(np.linalg.inv(c_ssc0+cg),c_ssc1+cg))[0])
+        eig_mitprod[np.abs(eig_mitprod-1.)<REL_TOLERANCE] = 1.
+        if np.any(eig_mitprod>1):
+            eig_test_fails+=1
+            warn("mitigation making covariance worse, unacceptable")
+        n_offset = SS.surveys_lw[0].observables.size
+        if np.sum(eig_mitprod<1.)>n_offset:
+            eig_test_fails+=1
+            warn("mitigation changing too many eigenvalues, unacceptable")
+        eig_diff = eig_ssc1-eig_ssc0
+        eig_diff[np.abs(eig_diff)<np.max(np.abs(eig_diff))*REL_TOLERANCE] = 0.
+        if np.any(eig_diff>0):
+            eig_test_fails+=1
+            warn("mitigation making covariance worse, unacceptable")
+
+        if eig_test_fails==0:
+            print "All eigenvalue sanity checks passed"
+        else:
+            warn(str(pert_test_fails)+" eigenvalue sanity checks failed")
+

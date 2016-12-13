@@ -53,8 +53,8 @@ cosmology_cosmosis={'Omegabh2' :0.049,
 				'Omegak'   : 0.0, # check on this value 
 				'Omegar'   : 0.0,
                                 'ns'       : 0.9681} #guess
-lensing_params = {  'z_resolution'    :0.05, #fine resolution
-                    'z_min_integral'  :0.01, #lowest z
+lensing_params = {  'z_resolution'    :0.005, #fine resolution
+                    'z_min_integral'  :0.005, #lowest z
                     'z_max_integral'  :2,#highes z
                     'pmodel_O'        :'halofit_nonlinear', #default method for finding p grid
                     'pmodel_dO_ddelta':'dc_halofit', #default method for finding dp/ddeltabar grid
@@ -71,7 +71,8 @@ lensing_params = {  'z_resolution'    :0.05, #fine resolution
 sw_observable_list = ['len_shear_shear']
 sw_survey_params = {    'needs_lensing'     : True,
                         'cross_bins'        : True}
-dn_params = {   'M_cut'  : 10**12.5}#(12.5)}
+dn_params = {   'M_cut'         : 10**12.5,
+                'variable_cut'  : True}#(12.5)}
 lw_observable_list = ['d_number_density']
 lw_survey_params = {    'cross_bins': False} 
 basis_params = {    'allow_caching'         :True,
@@ -80,3 +81,17 @@ basis_params = {    'allow_caching'         :True,
                     'k_min'                 :10**-4,
                     'n_radial_sample':100000 }
 polygon_params = {'res_healpix':6,'l_max':100}
+nz_params = {   'data_source'   :'./data/CANDELS-GOODSS2.dat',
+                'i_cut'         :24,
+                'area_sterad'   :0.0409650328530259/3282.80635,
+                'smooth_sigma'  :0.04,
+                'n_right_extend':4,
+                'z_resolution'  :0.0001,
+                'mirror_boundary':True}
+
+hmf_params = {      'log10_min_mass'    :   6,
+                    'log10_max_mass'    :   18,
+                    'n_grid'            :   3000,
+                    'z_resolution'      : 0.001,
+                    'z_min'             : 0.,
+                    'z_max'             : 3.}

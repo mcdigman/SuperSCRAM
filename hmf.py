@@ -6,15 +6,16 @@ from numpy import log, log10, exp, pi
 from scipy.interpolate import interp1d
 from scipy.integrate import trapz 
 import sys
+import defaults
 
 class ST_hmf():
-	def __init__(self,CosmoPie, delta_bar=None):
-		
+	def __init__(self,CosmoPie, delta_bar=None,params=defaults.hmf_params):
+		self.params = params
 		# log 10 of the minimum and maximum halo mass
 		self.min=6
 		self.max=18
 		# number of grid points in M 
-		n_grid=1000
+		n_grid=self.params['n_grid']
 		# I add an additional point because I will take derivatives latter
 		# and the finite difference scheme misses that last grid point. 
 		dlog_M=(self.max-self.min)/float(n_grid)
@@ -33,7 +34,10 @@ class ST_hmf():
 		if delta_bar is not None:
 			self.delta_c=self.delta_c - delta_bar 
 		self.rho_bar=CosmoPie.rho_bar(0)
+
 		self.Growth=CosmoPie.G_norm
+                
+
 		print 'rhos', 0,self.rho_bar/(1e10), CosmoPie.rho_crit(0)/(1e10)
 		
 		#print 'hubble', CosmoPie.H(z)
@@ -49,13 +53,23 @@ class ST_hmf():
 		self.nu_array=(self.delta_c/self.sigma)**2
 		sigma_inv=self.sigma**(-1)
 		dsigma_dM=np.diff(log(sigma_inv))/(np.diff(self.M_grid))
-		
-		
-		
+				
 		self.sigma_of_M=interp1d(self.M_grid[:-1],self.sigma[:-1])
 		self.nu_of_M=interp1d(self.M_grid[:-1], self.nu_array[:-1])
 		self.M_of_nu=interp1d(self.nu_array[:-1],self.M_grid[:-1])
 		self.dsigma_dM_of_M=interp1d(self.M_grid[:-1],dsigma_dM)
+
+                #grid for precomputing z dependent quantities
+                self.z_grid = np.arange(self.params['z_min'],self.params['z_max'],self.params['z_resolution'])
+                self.G_grid = CosmoPie.G_norm(self.z_grid)
+                
+                self.b_norm_grid = np.zeros(self.z_grid.size)
+                for i in range(0,self.z_grid.size):
+                    self.b_norm_grid[i] = self.bias_norm(self.z_grid[i],self.G_grid[i])
+                #TODO check
+                self.b_norm_cache = interp1d(self.z_grid,self.b_norm_grid)
+                
+
 		
 	def f_norm(self,z,G):
 		A=0.3222; a=0.707; p=0.3
@@ -78,7 +92,7 @@ class ST_hmf():
 # 		plt.show()
 		
 		return norm
-	
+        #TODO cache/vectorize this, it gets called a lot	
 	def bias_norm(self,z,G):
 	   
 		A=0.3222; a=0.707; p=0.3
@@ -140,19 +154,22 @@ class ST_hmf():
 	def M_star(self):
 		return self.M_of_nu(1.0)
 		
-	def bias(self,M,z):
+	def bias(self,M,z,norm=None):
 		A=0.3222; a=0.707; p=0.3
 		G=self.Growth(z)
 		nu=self.nu_of_M(M)/G**2
-		norm=self.bias_norm(z,G)
+                if norm is None:
+		    norm=self.bias_norm(z,G)
 		bias=(1 + (a*nu-1)/self.delta_c + 2*p/(self.delta_c*(1+(a*nu)**p)))
 		return bias/norm
-	
+	#TODO vectorize,rename,interpolate
 	def bias_avg(self,min_mass,z):
 	    mass=self.mass_grid[ self.mass_grid >= min_mass]
 	    b_array=np.zeros_like(mass)
+
+            norm = self.b_norm_cache(z)
 	    for i in range(mass.size):
-	        b_array[i]=self.bias(mass[i],z)
+	        b_array[i]=self.bias(mass[i],z,norm=norm)
 	    
 	    mf=self.dndM(mass,z)	    
 	    
