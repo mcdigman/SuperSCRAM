@@ -12,16 +12,23 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 #Most of the behavior should be defined in subclasses
 
 class geo:
-    def __init__(self,z_coarse,volumes,v_total,r_coarse,C,z_fine):
+    def __init__(self,z_coarse,C,z_fine):
         self.zs = z_coarse #index of the starts of the tomography bins
         self.C = C #cosmopie
-        self.volumes = volumes #volume of each tomography bin
-        self.v_total = v_total #total volume of geo
-        self.rs = r_coarse #comoving distances associated with the zs (TODO: just calculate from zs)
+        self.rs = np.zeros(self.zs.size) #comoving distances associated with the zs 
+        for i in range(0,self.zs.size):
+            self.rs[i] = self.C.D_comov(self.zs[i])
         self.z_fine = z_fine
         self.r_fine = np.zeros(self.z_fine.size)
         for i in range(0,self.r_fine.size):
             self.r_fine[i] = self.C.D_comov(self.z_fine[i])
+
+        tot_area = self.angular_area() 
+        self.volumes = np.zeros(self.zs.size-1) #volume of each tomography bin
+        for i in range(0,self.volumes.size):
+            self.volumes[i] += (self.rs[i+1]**3-self.rs[i]**3)/3.*tot_area
+        self.v_total = np.sum(self.volumes) #total volume of geo
+
         #list r and  z bins as [rmin,rmax] pairs (min in bin, max in bin) for convenience
         self.rbins = np.zeros((self.rs.size-1,2)) 
         self.zbins = np.zeros((self.zs.size-1,2))
@@ -87,19 +94,15 @@ class rect_geo(geo):
             phi1,phi2=self.Phi
             theta1,theta2=self.Theta
 
-            rs = np.zeros(zs.size)
-            for i in range(0,zs.size):
-                rs[i] = C.D_comov(zs[i])
             
-            
-            volumes = np.zeros(zs.size-1)
-            for i in range(0,volumes.size):
-                volumes[i] = (phi2-phi1)*(np.cos(theta1)- np.cos(theta2))*(rs[i+1]**3-rs[i]**3)/3.
+            #volumes = np.zeros(zs.size-1)
+            #for i in range(0,volumes.size):
+            #    volumes[i] = (phi2-phi1)*(np.cos(theta1)- np.cos(theta2))*(rs[i+1]**3-rs[i]**3)/3.
 
-            v_total=(phi2-phi1)*(np.cos(theta1)- np.cos(theta2))*(rs[-1]**3-rs[0]**3)/3.
+            #v_total=(phi2-phi1)*(np.cos(theta1)- np.cos(theta2))*(rs[-1]**3-rs[0]**3)/3.
 
 
-            geo.__init__(self,zs,volumes,v_total,rs,C,z_fine)
+            geo.__init__(self,zs,C,z_fine)
 
     #function(phi,theta)
     def surface_integral(self,function):
@@ -118,20 +121,7 @@ class pixel_geo(geo):
         #area should be in steradians for now
         self.pixels = pixels
     
-
-        rs = np.zeros(zs.size)
-        for i in range(0,zs.size):
-            rs[i] = C.D_comov(zs[i])
-           
-        volumes = np.zeros(zs.size-1)
-        tot_area = np.sum(pixels[:,2])
-        for i in range(0,volumes.size):
-            volumes[i] += (rs[i+1]**3-rs[i]**3)/3.*tot_area
-
-
-        v_total = np.sum(volumes)
-
-        geo.__init__(self,zs,volumes,v_total,rs,C,z_fine)
+        geo.__init__(self,zs,C,z_fine)
         
     #TODO consider vectorizing sum
     def surface_integral(self,function):
