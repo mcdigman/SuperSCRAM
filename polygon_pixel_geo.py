@@ -17,7 +17,7 @@ class polygon_pixel_geo(pixel_geo):
         def __init__(self,zs,thetas,phis,theta_in,phi_in,C,z_fine,res_healpix=defaults.polygon_params['res_healpix'],l_max=defaults.polygon_params['l_max']):
             all_pixels = get_healpix_pixelation(res_choose=res_healpix)
             self.sp_poly = get_poly(thetas,phis,theta_in,phi_in)
-            self.contained = is_contained(all_pixels,self.sp_poly)
+            self.contained =  is_contained(all_pixels,self.sp_poly)
             contained_pixels = all_pixels[self.contained,:]
             self.n_pix = contained_pixels.shape[0]
             self.all_pixels = all_pixels
@@ -378,7 +378,7 @@ if __name__=='__main__':
         fig=plt.figure()
         fig.add_subplot(111, projection=w)
         ax.imshow(im, origin='lower', cmap='cubehelix')
-        ply.show()
+        plt.show()
      
     if try_plot:
         #try:

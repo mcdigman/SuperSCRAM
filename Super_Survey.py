@@ -2,6 +2,7 @@ import numpy as np
 #from talk_to_class import class_objects 
 from FASTPTcode import FASTPT 
 from polygon_pixel_geo import polygon_pixel_geo
+from polygon_geo import polygon_geo
 
 from cosmopie import CosmoPie 
 #import sph_basis as basis
@@ -167,7 +168,7 @@ if __name__=="__main__":
     r_max=C.D_comov(z_max)
     print 'this is r max and l_max', r_max , l_max
 
-    theta0=0.
+    theta0=np.pi/16.
     theta1=np.pi/2.
     phi0=0.
     phi1=2.*np.pi/3.
@@ -199,9 +200,14 @@ if __name__=="__main__":
     l_sw = np.logspace(np.log(30),np.log(5000),base=np.exp(1.),num=40)
     #l_sw = np.arange(0,50)
     use_poly=True
+    use_poly2=False
     if use_poly:
-        geo1 = polygon_pixel_geo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,res_healpix=res_choose)  
-        geo2 = polygon_pixel_geo(zs,theta2s,phi2s,theta_in1,phi_in2,C,z_fine,res_healpix=res_choose)  
+        if use_poly2:
+            geo1 = polygon_geo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine)
+            geo2 = polygon_geo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine)
+        else:
+            geo1 = polygon_pixel_geo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,res_healpix=res_choose)  
+            geo2 = polygon_pixel_geo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,res_healpix=res_choose)  
     else:
         geo1=rect_geo(zs,Theta1,Phi1,C,z_fine)
         geo2=rect_geo(zs,Theta2,Phi2,C,z_fine)
