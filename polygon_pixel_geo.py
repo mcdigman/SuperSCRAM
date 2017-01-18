@@ -10,13 +10,16 @@ import scipy as sp
 from cosmopie import CosmoPie
 from scipy.interpolate import SmoothBivariateSpline
 from warnings import warn
+from math import isnan
 
 #get a healpix pixelated spherical polygon geo
 #TODO consider using sp_poly area for angular_area()
 class polygon_pixel_geo(pixel_geo):
-        def __init__(self,zs,thetas,phis,theta_in,phi_in,C,z_fine,res_healpix=defaults.polygon_params['res_healpix'],l_max=defaults.polygon_params['l_max']):
+        def __init__(self,zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max,res_healpix=defaults.polygon_params['res_healpix'],overwride_precompute=False):
             all_pixels = get_healpix_pixelation(res_choose=res_healpix)
             self.sp_poly = get_poly(thetas,phis,theta_in,phi_in)
+            if isnan(self.sp_poly.area()):
+                raise ValueError("polygon_pixel_geo: Calculated area of polygon is nan, polygon likely invalid")
             self.contained =  is_contained(all_pixels,self.sp_poly)
             contained_pixels = all_pixels[self.contained,:]
             self.n_pix = contained_pixels.shape[0]
@@ -31,11 +34,16 @@ class polygon_pixel_geo(pixel_geo):
 
             #precompute a table of alms
             self.l_max = l_max
-            self.alm_table,ls,ms,self.alm_dict = self.get_a_lm_table(l_max)
+            #allow overwriding precompute for testing, should not really do this otherwise
+            if not overwride_precompute:
+                self.alm_table,ls,ms,self.alm_dict = self.get_a_lm_table(l_max)
+            else:
+                self.alm_table = {}
+            
 
         def a_lm(self,l,m):
             #if not precomputed, get alm slow way, otherwise read it out of the table
-            alm = self.alm_table[(l,m)] 
+            alm = self.alm_table.get((l,m))
             if alm is None:
                 alm = pixel_geo.a_lm(self,l,m)
                 self.alm_table[(l,m)] = alm
@@ -186,6 +194,12 @@ def Y_r_2(ll,mm,theta,phi,known_legendre):
         return base*np.sqrt(2.)*np.cos(mm*phi)
     else:
         return base*np.sqrt(2.)*np.sin(np.abs(mm)*phi)
+def get_Y_r_dict(l_max,thetas,phis):
+    ytable,ls,ms = get_Y_r_table(l_max,thetas,phis)
+    ydict = {}
+    for itr in range(0,ls.size):
+        ydict[(ls[itr],ms[itr])] = ytable[itr]
+    return ydict
 def get_Y_r_table(l_max,thetas,phis):
     n_tot = (l_max+1)**2
 
@@ -321,7 +335,7 @@ if __name__=='__main__':
     try_plot2 = False
     
     t0 = time()
-    pp_geo = polygon_pixel_geo(zs,thetas,phis,theta_in,phi_in,C,z_fine,res_healpix=res_choose)
+    pp_geo = polygon_pixel_geo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,res_healpix=res_choose)
     t1 = time()
     #TODO write explicit test case to compare
     if do_old:

@@ -80,7 +80,7 @@ basis_params = {    'allow_caching'         :True,
                     'k_max'                 :100.,
                     'k_min'                 :10**-4,
                     'n_radial_sample':100000 }
-polygon_params = {'res_healpix':6,'l_max':100}
+polygon_params = {'res_healpix':6,'n_double':30}
 nz_params = {   'data_source'   :'./data/CANDELS-GOODSS2.dat',
                 'i_cut'         :24,
                 'area_sterad'   :0.0409650328530259/3282.80635,
