@@ -82,6 +82,19 @@ class geo:
 
         return alm
 
+    def get_alm_array(self,l_max):
+        ls = np.zeros((l_max+1)**2,dtype=int)
+        ms = np.zeros((1+l_max)**2,dtype=int)    
+        alms = np.zeros((1+l_max)**2)    
+        itr = 0
+        for ll in range(0,l_max+1):
+            for mm in range(-ll,ll+1):
+                ls[itr] = ll
+                ms[itr] = mm
+                alms[itr] = self.a_lm(ll,mm)
+                itr+=1
+        return alms,ls,ms
+        
 
     #volume ddeltabar_dalpha
 

@@ -28,6 +28,8 @@ class polygon_geo(geo):
 
             self.n_double = poly_params['n_double']
 
+            #maximum alm already available, only a00 available at start
+            self._l_max = 0
             self.n_v = thetas.size-1
 
             self.bounding_theta = thetas-np.pi/2. #to radec
@@ -36,11 +38,11 @@ class polygon_geo(geo):
 
             #this gets correct internal angles with specified vertex order (copied from spherical_polygon clas) 
             self.internal_angles = 2.*np.pi-np.hstack([gca.angle(self.bounding_xyz[:-2], self.bounding_xyz[1:-1], self.bounding_xyz[2:], degrees=False),gca.angle(self.bounding_xyz[-2], self.bounding_xyz[0], self.bounding_xyz[1], degrees=False)])
-
+        
             geo.__init__(self,zs,C,z_fine)
 
             self.alm_table = {(0,0):self.angular_area()/np.sqrt(4.*np.pi)}
-            
+             
 
             self.z_hats = np.zeros((self.n_v,3))
             self.y_hats = np.zeros_like(self.z_hats)
@@ -72,7 +74,7 @@ class polygon_geo(geo):
                 self.betas_alt[itr1] = np.arcsin(sin_beta12)
                 #TODO  don't use isclose here
                 if np.isclose(self.betas[itr1],0.):
-                    print "polygon_geo: side length 0, directions uncontrained, picking directions arbitrarily"
+                    print "polygon_geo: side length 0, directions unconstrained, picking directions arbitrarily"
                     #z_hat is not uniquely defined here so arbitrarily pick one orthogonal to pa1, #TODO: probably a better way to do this
                     arbitrary = np.zeros(3)
                     if not np.isclose(np.abs(pa1[0]),1.):
@@ -114,16 +116,15 @@ class polygon_geo(geo):
                         self.theta_alphas[itr1] = 0.
 
             
-            self.expand_alm_table(np.arange(1,l_max+1))
+            self.expand_alm_table(l_max)
             print "polygon_geo: finished initialization" 
 
         #use angle defect formula (Girard's theorem) to get a00 
         def angular_area(self):
             return (np.sum(self.internal_angles)-(self.n_v-2.)*np.pi)
 
-        def expand_alm_table(self,ls):
-            if not isinstance(ls,np.ndarray):
-                ls = np.array([ls])
+        def expand_alm_table(self,l_max):
+            ls = np.arange(self._l_max+1,l_max+1)
             n_l = ls.size
             d_alm_table1 = np.zeros(n_l,dtype=object)
             Y_r_dict = get_Y_r_dict(np.max(ls),np.zeros(1)+np.pi/2.,np.zeros(1))
@@ -186,15 +187,17 @@ class polygon_geo(geo):
                     else:
                         self.alm_table[(ll,mm)] = np.sum(d_alm_table4[l_itr][ll+mm])
                         self.alm_table[(ll,-mm)] =np.sum(d_alm_table4[l_itr][ll-mm])
+            self._l_max = l_max
 
         def a_lm(self,l,m):
-            alm = self.alm_table.get((l,m))
-            #does not currently support fetching values not cached
-            if alm is None:
+
+            if l>self._l_max:
+                print "polygon_pixel_geo: l value "+str(l)+" exceeds maximum precomputed l "+str(self._l_max)+",expanding table"
                 self.expand_alm_table(l)
-                alm = self.alm_table[(l,m)] 
-                if alm is None:
-                    raise RuntimeError('polygon_geo: a_lm generation failed for unknown reason')
+
+            alm = self.alm_table.get((l,m))
+            if alm is None:
+                raise RuntimeError('polygon_geo: a_lm generation failed for unknown reason at l='+str(l)+',m='+str(m))
             return alm
 
 #Note these are spherical polygons so all the sides are great circles (not lines of constant theta!)
@@ -229,31 +232,34 @@ def check_mutually_orthonormal(vectors):
     return fails
 
 if __name__=='__main__':
-    toffset = np.pi/6.
-    theta0=np.pi/6+toffset
-    theta1=np.pi/3.+toffset
+    toffset = np.pi/2.
+    #theta0=np.pi/6+toffset
+    #theta1=np.pi/3.+toffset
+    theta0=0.+toffset
+    theta1=np.pi/2.+toffset
     theta2=np.pi/3.+0.1+toffset
     theta3=theta2-np.pi/3.
     theta4 = theta3+np.pi/6.
-    offset=np.pi/6.
+    offset=0.
     phi0=0.+offset
-    phi1 = np.pi/4.+offset
+    phi1 = 4.*np.pi/3.+offset
+    #phi1 = np.pi/3.+offset
     phi2 = phi1+np.pi/2.
     phi3 = phi2-np.pi/6.
     phi4 = phi3-np.pi/3.
   
 
+    thetas = np.array([theta0,theta1,theta1,theta0,theta0])
+    phis = np.array([phi0,phi0,phi1,phi1,phi0])
     #thetas = np.array([theta0,theta1,theta1,theta0,theta0])
     #phis = np.array([phi0,phi0,phi1,phi1,phi0])
-    #thetas = np.array([theta0,theta1,theta1,theta0,theta0])
-    #phis = np.array([phi0,phi0,phi1,phi1,phi0])
-    thetas = np.array([theta0,theta1,theta1,theta2,theta0,theta3,theta3,theta4,theta0])
-    phis = np.array([phi0,phi0,phi1,phi1,phi2,phi3,phi4,phi4,phi0])
+    #thetas = np.array([theta0,theta1,theta1,theta2,theta0,theta3,theta3,theta4,theta0])
+    #phis = np.array([phi0,phi0,phi1,phi1,phi2,phi3,phi4,phi4,phi0])
     theta_in = np.pi/4.+toffset
     phi_in = np.pi/6.+offset
     res_choose = 6
     res_choose2 = 7
-    l_max = 50
+    l_max = 100
 
     
     #some setup to make an actual geo
@@ -275,163 +281,12 @@ if __name__=='__main__':
     pp_geo2 = polygon_pixel_geo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,res_healpix=res_choose2)
     t3 = time()
     print "polygon_pixel_geo initialized at res "+str(res_choose2)+" in time: "+str(t3-t2)
-    #r_geo = rect_geo(zs,np.array([theta0,theta1]),np.array([phi0,phi1]),C,z_fine)
-
+    r_geo = rect_geo(zs,np.array([theta0,theta1]),np.array([phi0,phi1]),C,z_fine)
+    alm1 = r_geo.get_alm_array(10)[0]
+    alm2 = poly_geo.get_alm_array(10)[0]
+    print "max diff from rect "+str(np.max(np.abs(alm2-alm1)))
     nt = poly_geo.n_v
    
-
-    x1_1 = np.zeros((nt,3))
-    x1_1[:,0] = 1.
-    y1_1 = np.zeros((nt,3))
-    y1_1[:,1] = 1.
-    z1_1 = np.zeros((nt,3))
-    z1_1[:,2] = 1.
-
-    assert(0==check_mutually_orthonormal(np.array([x1_1,y1_1,z1_1])))
-    assert(np.allclose(np.cross(x1_1,y1_1),z1_1))
-
-    x1_g=poly_geo.bounding_xyz[0:nt]
-    z1_g=poly_geo.z_hats
-    y1_g=np.cross(z1_g,x1_g)
-
-    assert(np.allclose(poly_geo.bounding_xyz[1:nt+1],np.expand_dims(np.cos(poly_geo.betas),1)*x1_g-np.expand_dims(np.sin(poly_geo.betas),1)*y1_g))
-
-    assert(0==check_mutually_orthonormal(np.array([x1_g,y1_g,z1_g])))
-    assert(np.allclose(np.cross(x1_g,y1_g),z1_g))
-
-    omegas = poly_geo.omega_alphas
-    rot12 = np.zeros((nt,3,3))
-    x2_1 = np.zeros((nt,3))
-    y2_1 = np.zeros((nt,3))
-    z2_1 = np.zeros((nt,3))
-    for itr in range(0,nt):
-        rot12[itr] = np.array([[np.cos(omegas[itr]),np.sin(omegas[itr]),0],[-np.sin(omegas[itr]),np.cos(omegas[itr]),0],[0,0,1]]) 
-        x2_1[itr] = np.dot(rot12[itr].T,x1_1[itr])
-        y2_1[itr] = np.dot(rot12[itr].T,y1_1[itr])
-        z2_1[itr] = np.dot(rot12[itr].T,z1_1[itr])
-    assert(0==check_mutually_orthonormal(np.array([x2_1,y2_1,z2_1])))
-    assert(np.allclose(np.cross(x2_1,y2_1),z2_1))
-
-    x2_g_alt =np.expand_dims(np.sum(x2_1*x1_1,axis=1),1)*x1_g+np.expand_dims(np.sum(y2_1*x1_1,axis=1),1)*y1_g+np.expand_dims(np.sum(z2_1*x1_1,axis=1),1)*z1_g
-    y2_g_alt =np.expand_dims(np.sum(x2_1*y1_1,axis=1),1)*x1_g+np.expand_dims(np.sum(y2_1*y1_1,axis=1),1)*y1_g+np.expand_dims(np.sum(z2_1*y1_1,axis=1),1)*z1_g
-    z2_g_alt =np.expand_dims(np.sum(x2_1*z1_1,axis=1),1)*x1_g+np.expand_dims(np.sum(y2_1*z1_1,axis=1),1)*y1_g+np.expand_dims(np.sum(z2_1*z1_1,axis=1),1)*z1_g
-    assert(0==check_mutually_orthonormal(np.array([x2_g_alt,y2_g_alt,z2_g_alt])))
-    assert(np.allclose(np.cross(x2_g_alt,y2_g_alt),z2_g_alt))
-
-
-    x2_g = np.zeros((nt,3))
-    x2_g[:,0] = np.cos(poly_geo.gamma_alphas)
-    x2_g[:,1] = np.sin(poly_geo.gamma_alphas)
-    z2_g=z1_g
-    y2_g=np.cross(z2_g,x2_g)
-    assert(0==check_mutually_orthonormal(np.array([x2_g,y2_g,z2_g])))
-    assert(np.allclose(np.cross(x2_g,y2_g),z2_g))
-
-    assert(np.allclose(np.zeros(nt),np.linalg.norm(np.cross(x2_g,np.cross(np.array([0.,0.,1.]),z1_g)),axis=1)))
-    assert(np.allclose(np.cos(omegas),np.sum(x2_g_alt*x1_g,axis=1)))
-    assert(np.allclose(np.cos(omegas),np.sum(x2_g*x1_g,axis=1)))
-    assert(np.allclose(np.cos(omegas),np.sum(y2_g*y1_g,axis=1)))
-    assert(np.allclose(1.,np.sum(z2_g*z1_g,axis=1)))
-
-    x2_2 = x1_1
-    y2_2 = y1_1
-    z2_2 = z1_1
-    assert(0==check_mutually_orthonormal(np.array([x2_2,y2_2,z2_2])))
-    assert(np.allclose(np.cross(x2_2,y2_2),z2_2))
-
-
-
-    x3_g =x2_g
-    z3_g = np.zeros((nt,3))
-    z3_g[:,2] = 1.
-    y3_g=np.cross(z3_g,x3_g)
-    assert(0==check_mutually_orthonormal(np.array([x3_g,y3_g,z3_g])))
-    assert(np.allclose(np.cross(x3_g,y3_g),z3_g))
-
-
-    thetas_a = poly_geo.theta_alphas
-    rot23 = np.zeros((nt,3,3))
-    x3_2 = np.zeros((nt,3))
-    y3_2 = np.zeros((nt,3))
-    z3_2 = np.zeros((nt,3))
-    for itr in range(0,nt):
-        rot23[itr] = np.array([[1.,0.,0.],[0.,np.cos(thetas_a[itr]),np.sin(thetas_a[itr])],[0,-np.sin(thetas_a[itr]),np.cos(thetas_a[itr])]]) 
-        x3_2[itr] = np.dot(rot23[itr].T,x2_2[itr])
-        y3_2[itr] = np.dot(rot23[itr].T,y2_2[itr])
-        z3_2[itr] = np.dot(rot23[itr].T,z2_2[itr])
-    assert(0==check_mutually_orthonormal(np.array([x3_2,y3_2,z3_2])))
-    assert(np.allclose(np.cross(x3_2,y3_2),z3_2))
-
-    assert(np.allclose(np.cos(thetas_a),np.sum(z3_g*z2_g,axis=1)))
-    assert(np.allclose(np.cos(thetas_a),np.sum(y3_g*y2_g,axis=1)))
-    assert(np.allclose(1.,np.sum(x3_g*x2_g,axis=1)))
-
-
-    x3_g_alt =np.expand_dims(np.sum(x3_2*x2_2,axis=1),1)*x2_g_alt+np.expand_dims(np.sum(y3_2*x2_2,axis=1),1)*y2_g_alt+np.expand_dims(np.sum(z3_2*x2_2,axis=1),1)*z2_g_alt
-    y3_g_alt =np.expand_dims(np.sum(x3_2*y2_2,axis=1),1)*x2_g_alt+np.expand_dims(np.sum(y3_2*y2_2,axis=1),1)*y2_g_alt+np.expand_dims(np.sum(z3_2*y2_2,axis=1),1)*z2_g_alt
-    z3_g_alt =np.expand_dims(np.sum(x3_2*z2_2,axis=1),1)*x2_g_alt+np.expand_dims(np.sum(y3_2*z2_2,axis=1),1)*y2_g_alt+np.expand_dims(np.sum(z3_2*z2_2,axis=1),1)*z2_g_alt
-    assert(0==check_mutually_orthonormal(np.array([x3_g_alt,y3_g_alt,z3_g_alt])))
-    assert(np.allclose(np.cross(x3_g_alt,y3_g_alt),z3_g_alt))
-
-    assert(np.allclose(np.zeros(nt),np.linalg.norm(np.cross(x2_g_alt,np.cross(np.array([0.,0.,1.]),z1_g)),axis=1)))
-    assert(np.allclose(x3_g_alt,x2_g_alt))
-    x3_3 = x1_1
-    y3_3 = y1_1
-    z3_3 = z1_1
-    assert(0==check_mutually_orthonormal(np.array([x3_3,y3_3,z3_3])))
-    assert(np.allclose(np.cross(x3_3,y3_3),z3_3))
-
-
-    gammas = poly_geo.gamma_alphas
-    rot34 = np.zeros((nt,3,3))
-    x4_3 = np.zeros((nt,3))
-    y4_3 = np.zeros((nt,3))
-    z4_3 = np.zeros((nt,3))
-    for itr in range(0,nt):
-        rot34[itr] = np.array([[np.cos(gammas[itr]),np.sin(gammas[itr]),0],[-np.sin(gammas[itr]),np.cos(gammas[itr]),0],[0,0,1]]) 
-        x4_3[itr] = np.dot(rot34[itr].T,x3_3[itr])
-        y4_3[itr] = np.dot(rot34[itr].T,y3_3[itr])
-        z4_3[itr] = np.dot(rot34[itr].T,z3_3[itr])
-    assert(0==check_mutually_orthonormal(np.array([x4_3,y4_3,z4_3])))
-    assert(np.allclose(np.cross(x4_3,y4_3),z4_3))
-
-
-    x4_g_alt =np.expand_dims(np.sum(x4_3*x3_3,axis=1),1)*x3_g_alt+np.expand_dims(np.sum(y4_3*x3_3,axis=1),1)*y3_g_alt+np.expand_dims(np.sum(z4_3*x3_3,axis=1),1)*z3_g_alt
-    y4_g_alt =np.expand_dims(np.sum(x4_3*y3_3,axis=1),1)*x3_g_alt+np.expand_dims(np.sum(y4_3*y3_3,axis=1),1)*y3_g_alt+np.expand_dims(np.sum(z4_3*y3_3,axis=1),1)*z3_g_alt
-    z4_g_alt =np.expand_dims(np.sum(x4_3*z3_3,axis=1),1)*x3_g_alt+np.expand_dims(np.sum(y4_3*z3_3,axis=1),1)*y3_g_alt+np.expand_dims(np.sum(z4_3*z3_3,axis=1),1)*z3_g_alt
-    assert(0==check_mutually_orthonormal(np.array([x4_g_alt,y4_g_alt,z4_g_alt])))
-    assert(np.allclose(np.cross(x4_g_alt,y4_g_alt),z4_g_alt))
-
-    assert(np.allclose(np.cos(gammas),np.sum(x4_g_alt*x3_g,axis=1)))
-    assert(np.allclose(np.cos(gammas),np.sum(y4_g_alt*y3_g,axis=1)))
-    assert(np.allclose(1.,np.sum(z4_g_alt*z3_g,axis=1)))
-
-    assert(np.allclose(x4_g_alt,np.array([1,0,0.]))) 
-    assert(np.allclose(y4_g_alt,np.array([0,1,0.]))) 
-    assert(np.allclose(z4_g_alt,np.array([0,0,1.]))) 
-
-
-    assert(np.allclose(x3_g,x3_g_alt))
-    assert(np.allclose(y3_g,y3_g_alt))
-    assert(np.allclose(z3_g,z3_g_alt))
-
-    assert(np.allclose(x2_g,x2_g_alt))
-    assert(np.allclose(y2_g,y2_g_alt))
-    assert(np.allclose(z2_g,z2_g_alt))
-
-    #alm_rats0 = np.zeros(l_max+1)
-    #alm_ratsfp = np.zeros(l_max+1)
-    #alm_ratsfm = np.zeros(l_max+1)
-    #for ll in range(0,l_max+1):
-    #    alm_rats0[ll] = pp_geo.a_lm(ll,0)/poly_geo.alm_table[(ll,0)]
-    #    alm_ratsfp[ll] = pp_geo.a_lm(ll,ll)/poly_geo.alm_table[(ll,ll)]
-    #    alm_ratsfm[ll] = pp_geo.a_lm(ll,-ll)/poly_geo.alm_table[(ll,-ll)]
-
-    #import matplotlib.pyplot as plt 
-    #plt.plot(1./alm_rats0)
-    #plt.plot(1./alm_ratsfp)
-    #plt.plot(1./alm_ratsfm)
-    #plt.show()
     my_table = poly_geo.alm_table.copy()
     #get rect_geo to cache the values in the table
     #for ll in range(0,l_max+1):
@@ -445,11 +300,12 @@ if __name__=='__main__':
     totals_poly = pp_geo2.reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],my_table)
     avg_diff = np.average(np.abs(totals_pp-totals_poly))
     print "mean absolute difference between pixel and exact geo reconstruction: "+str(avg_diff)
-    poly_error = np.average(np.abs(totals_poly-pp_geo2.contained*1.))
-    pp_error = np.average(np.abs(totals_pp-pp_geo2.contained*1.))
-    print "mean absolute reconstruction error of exact geo: "+str(poly_error)
-    print "mean absolute reconstruction error of pixel geo at res "+str(res_choose)+": "+str(pp_error)
-    print "improvement in absolute reconstruction accuracy: "+str((pp_error-poly_error)/pp_error*100)+"%"
+    poly_error = np.sqrt(np.average(np.abs(totals_poly-pp_geo2.contained*1.)**2))
+    pp_error = np.sqrt(np.average(np.abs(totals_pp-pp_geo2.contained*1.)**2))
+    print "rms reconstruction error of exact geo: "+str(poly_error)
+    print "rms reconstruction error of pixel geo at res "+str(res_choose)+": "+str(pp_error)
+    #can be negative if res_choose2=res_choose due to pixelation effects
+    print "improvement in rms reconstruction accuracy: "+str((pp_error-poly_error)/pp_error*100)+"%"
 
     #totals_alm = pp_geo.reconstruct_from_alm(l_max,pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1],r_alm_table)
     try_plot=True
@@ -468,10 +324,6 @@ if __name__=='__main__':
             x,y=m(lons,lats)
             #have to switch because histogram2d considers y horizontal, x vertical
             fig = plt.figure(figsize=(10,5))
-            minC = np.min([totals_poly,totals_pp])
-            maxC = np.max([totals_poly,totals_pp])
-            bounds = np.linspace(minC,maxC,10)
-            norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
             ax = fig.add_subplot(121)
             H1,yedges1,xedges1 = np.histogram2d(y,x,100,weights=totals_pp)
             X1, Y1 = np.meshgrid(xedges1, yedges1)

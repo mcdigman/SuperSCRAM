@@ -159,7 +159,7 @@ class super_survey:
           
 if __name__=="__main__":
     t1 = time()
-    z_max=1.05; l_max=20 
+    z_max=1.05; l_max=80 
 
     #d=np.loadtxt('Pk_Planck15.dat')
     d=np.loadtxt('camb_m_pow_l.dat')

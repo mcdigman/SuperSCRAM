@@ -2,7 +2,9 @@ import numpy as np
 from astropy.io import fits
 import spherical_geometry.vector as sgv
 from spherical_geometry.polygon import SphericalPolygon
+import spherical_geometry.great_circle_arc as great_circle_arc
 from sph_functions import Y_r
+from numpy.core.umath_tests import inner1d
 from geo import pixel_geo,rect_geo
 from time import time
 import defaults
@@ -11,6 +13,7 @@ from cosmopie import CosmoPie
 from scipy.interpolate import SmoothBivariateSpline
 from warnings import warn
 from math import isnan
+import sys
 
 #get a healpix pixelated spherical polygon geo
 #TODO consider using sp_poly area for angular_area()
@@ -20,7 +23,8 @@ class polygon_pixel_geo(pixel_geo):
             self.sp_poly = get_poly(thetas,phis,theta_in,phi_in)
             if isnan(self.sp_poly.area()):
                 raise ValueError("polygon_pixel_geo: Calculated area of polygon is nan, polygon likely invalid")
-            self.contained =  is_contained(all_pixels,self.sp_poly)
+            #self.contained =  is_contained(all_pixels,self.sp_poly)
+            self.contained =  contains_points(all_pixels,self.sp_poly)
             contained_pixels = all_pixels[self.contained,:]
             self.n_pix = contained_pixels.shape[0]
             self.all_pixels = all_pixels
@@ -28,25 +32,32 @@ class polygon_pixel_geo(pixel_geo):
             print "polygon_pixel_geo: total contained area of polygon: "+str(np.sum(contained_pixels[:,2]))
             print "polygon_pixel_geo: area calculated by SphericalPolygon: "+str(self.sp_poly.area())
             #check that the true area from angular defect formula and calculated area approximately match
-            if not np.isclose(np.sum(contained_pixels[:,2]),self.sp_poly.area(),atol=10**-2,rtol=10**-3):
+            calc_area = np.sum(contained_pixels[:,2])
+            if not np.isclose(calc_area,self.sp_poly.area(),atol=10**-2,rtol=10**-3):
                 warn("polygon_pixel_geo: significant discrepancy between true area "+str(self.sp_poly.area())+" and calculated area"+str(np.sum(contained_pixels[:,2]))+" results may be poorly converged")
             pixel_geo.__init__(self,zs,contained_pixels,C,z_fine)
-
+            
+            #set a00 to value from pixels for consistency, not angle defect even though angle defect is more accurate
+            self.alm_table[(0,0)] = calc_area/np.sqrt(4.*np.pi)
             #precompute a table of alms
-            self.l_max = l_max
             #allow overwriding precompute for testing, should not really do this otherwise
             if not overwride_precompute:
                 self.alm_table,ls,ms,self.alm_dict = self.get_a_lm_table(l_max)
+                self._l_max = l_max
             else:
                 self.alm_table = {}
+                self._l_max = 0
             
 
         def a_lm(self,l,m):
-            #if not precomputed, get alm slow way, otherwise read it out of the table
+            #if not precomputed, regenerate table up to specified l, otherwise read it out of the table
+            if l>self._l_max:
+                print "polygon_pixel_geo: l value "+str(l)+" exceeds maximum precomputed l "+str(self._l_max)+",expanding table"
+                self.alm_table,ls,ms,self.alm_dict = self.get_a_lm_table(l)
+                self._l_max = l
             alm = self.alm_table.get((l,m))
             if alm is None:
-                alm = pixel_geo.a_lm(self,l,m)
-                self.alm_table[(l,m)] = alm
+                raise RuntimeError("polygon_pixel_geo: alm evaluated to None at l="+str(l)+",m="+str(m)+". l,m may exceed highest available Ylm")
             return alm
 
         
@@ -184,6 +195,7 @@ class polygon_pixel_geo(pixel_geo):
 
             return reconstructed
 
+
 #alternate way of computing Y_r from the way in sph_functions
 def Y_r_2(ll,mm,theta,phi,known_legendre):
     prefactor = np.sqrt((2.*ll+1.)/(4.*np.pi)*sp.misc.factorial(ll-np.abs(mm))/sp.misc.factorial(ll+np.abs(mm)))
@@ -302,6 +314,32 @@ def is_contained(pixels,sp_poly):
         contained[i]= sp_poly.contains_point([xyz_vals[0][i],xyz_vals[1][i],xyz_vals[2][i]])
     return contained
 
+#contains procedure adapted from spherical_geometry but pixels can be a vector
+def contains_points(pixels,sp_poly):
+    xyz_vals = np.array(sgv.radec_to_vector(pixels[:,1],pixels[:,0]-np.pi/2.,degrees=False)).T
+    intersects = np.zeros(pixels.shape[0],dtype=int)
+    bounding_xyz = sp_poly._polygons[0]._points
+    inside_xyz = sp_poly._polygons[0]._inside
+    inside_large = np.zeros_like(xyz_vals)
+    inside_large+=inside_xyz
+    for itr in range(0,bounding_xyz.shape[0]-1):
+        #intersects+= great_circle_arc.intersects(bounding_xyz[itr], bounding_xyz[itr+1], inside_large, xyz_vals)
+        intersects+= contains_intersect(bounding_xyz[itr], bounding_xyz[itr+1], inside_xyz, xyz_vals)
+    return np.mod(intersects,2)==0
+
+#adapted from spherical_geometry.great_circle_arc.intersects, but much faster for our purposes
+#may behave unpredicatably if one of the points is exactly on an edge
+def contains_intersect(vertex1,vertex2,inside_point,test_points):
+    cxd = np.cross(inside_point,test_points)
+    axb = np.cross(vertex1,vertex2)
+    #T doesn't need to be normalized because we only want signs
+    T = np.cross(axb,cxd)
+    sign1 = np.sign(np.inner(np.cross(axb,vertex1),T))
+    sign2 = np.sign(np.inner(np.cross(vertex2,axb),T))
+    #row wise dot product is inner1d
+    sign3 = np.sign(inner1d(np.cross(cxd,inside_point),T))
+    sign4 = np.sign(inner1d(np.cross(test_points,cxd),T))
+    return (sign1==sign2) & (sign1==sign3) & (sign1==sign4)
 #PLAN: explicitly implement Y_r both ways for testing purposes
 #FIX: make a_lm theta, phi pole actually at 0
 if __name__=='__main__':
@@ -314,7 +352,7 @@ if __name__=='__main__':
     phis = np.array([phi0,phi0,phi1,phi1,phi0])
     theta_in = np.pi/4.
     phi_in = np.pi/6.
-    res_choose = 7
+    res_choose = 10
     #pixels = get_healpix_pixelation(res_choose=res_choose)
     #sp_poly = get_poly(thetas,phis,theta_in,phi_in)
     #contained = is_contained(pixels,sp_poly)
@@ -330,13 +368,15 @@ if __name__=='__main__':
     l_max = 25
     n_run = 1
     do_old = False
-    do_rect = True
-    try_plot = True
+    do_rect = False
+    try_plot = False
     try_plot2 = False
+    do_reconstruct = False
     
     t0 = time()
     pp_geo = polygon_pixel_geo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,res_healpix=res_choose)
     t1 = time()
+    print "instantiation finished in time: "+str(t1-t0)+"s"
     #TODO write explicit test case to compare
     if do_old:
         print "polygon_pixel_geo: initialization time: "+str(t1-t0)+"s"
@@ -353,15 +393,17 @@ if __name__=='__main__':
     
     if do_rect:
         r_geo = rect_geo(zs,np.array([theta0,theta1]),np.array([phi0,phi1]),C,z_fine)
-        alm_rect = {}
-        for itr in range(0,ls.size):
-            alm_rect[(ls[itr],ms[itr])] = r_geo.a_lm(ls[itr],ms[itr])
+        if do_reconstruct:
+            alm_rect = {}
+            for itr in range(0,ls.size):
+                alm_rect[(ls[itr],ms[itr])] = r_geo.a_lm(ls[itr],ms[itr])
     t4 =time()
     if do_rect:
         print "rect_geo: rect geo alms in time"+str(t4-t3)
     
     #totals_recurse = np.zeros(pp_geo.all_pixels.shape[0])
-    totals_recurse = pp_geo.reconstruct_from_alm(l_max,pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1],alm_recurse)
+    if do_reconstruct:
+        totals_recurse = pp_geo.reconstruct_from_alm(l_max,pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1],alm_recurse)
     #totals_old = pp_geo.reconstruct_from_alm(l_max,pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1],alm_pps)
     #total_reconstruct = SmoothBivariateSpline(pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1],totals_recurse)
     #orig_spline =  SmoothBivariateSpline(pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1],pp_geo.contained*1.)
@@ -371,7 +413,7 @@ if __name__=='__main__':
 
     t5 = time()
     print "Y_r_2 table time: "+str(t5-t4)+"s"
-    if do_rect:
+    if do_rect and do_reconstruct:
         totals_rect = pp_geo.reconstruct_from_alm(l_max,pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1],alm_rect)
     #if do_rect:
     #    for itr in range(0,ls.size):
@@ -394,7 +436,7 @@ if __name__=='__main__':
         ax.imshow(im, origin='lower', cmap='cubehelix')
         plt.show()
      
-    if try_plot:
+    if try_plot and do_reconstruct:
         #try:
             from mpl_toolkits.basemap import Basemap
             import matplotlib.pyplot as plt
