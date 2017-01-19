@@ -1,5 +1,6 @@
 import numpy as np
-# default cosmology is Planck 2015 
+# default cosmology is Planck 2015 TT+lowP+lensing+ext 
+#TODO set not derived paramters to none and derive
 cosmology={'Omegabh2' :0.02227,
 				'Omegach2' :0.1184,
 				'Omegamh2' : 0.1413,
@@ -13,7 +14,9 @@ cosmology={'Omegabh2' :0.02227,
                                 'ns'       : 0.9681,
                                 'tau'      : 0.067,
                                 '100thetamc': 1.04106,
-                                'As'        : 2.143*10**-9}
+                                'Yp'        :0.251,
+                                'As'        : 2.143*10**-9,
+                                }
 cosmology_cosmolike={'Omegabh2' :0.02227,
 				'Omegach2' :0.1204,
 				'Omegamh2' : 0.14267,
@@ -27,6 +30,7 @@ cosmology_cosmolike={'Omegabh2' :0.02227,
                                 'ns'       : 0.9603,
                                 'tau'      : 0.067,
                                 '100thetamc': 1.04106,
+                                'Yp'        :None,
                                 'As'        : 2.143*10**-9}
 cosmology_chiang={'Omegabh2' :0.023,
 				'Omegach2' :0.1093,
@@ -41,6 +45,7 @@ cosmology_chiang={'Omegabh2' :0.023,
                                 'ns'       : 0.95,
                                 'tau'      : 0.067,
                                 '100thetamc': 1.04106,
+                                'Yp'        :None,
                                 'As'        : 2.143*10**-9}
 cosmology_cosmosis={'Omegabh2' :0.049,
 				'Omegach2' :0.1188,
@@ -95,3 +100,13 @@ hmf_params = {      'log10_min_mass'    :   6,
                     'z_resolution'      : 0.001,
                     'z_min'             : 0.,
                     'z_max'             : 3.}
+fpt_params = {   'C_window':0.75,
+                    'n_pad':1000,
+                    'low_extrap':None,
+                    'high_extrap':None,
+                    'nu' :-2}
+camb_params = {'npoints':3000,
+                'minkh':1.1e-5,
+                'maxkh':1e5,
+                'kmax':2.0 #may need to be higher for some purposes,like 100, but makes things slower
+                }

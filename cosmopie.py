@@ -25,6 +25,7 @@ class CosmoPie :
 		self.Omegamh2 = cosmology['Omegamh2']
 		self.OmegaL   = cosmology['OmegaL']
 		self.Omegam   = cosmology['Omegam']
+                self.ns = cosmology['ns']
 		self.H0       = cosmology['H0']
 		self.sigma8   = cosmology['sigma8']
 		self.h        = cosmology['h']

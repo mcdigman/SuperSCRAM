@@ -159,7 +159,7 @@ class super_survey:
           
 if __name__=="__main__":
     t1 = time()
-    z_max=1.05; l_max=80 
+    z_max=1.05; l_max=50 
 
     #d=np.loadtxt('Pk_Planck15.dat')
     d=np.loadtxt('camb_m_pow_l.dat')
@@ -203,11 +203,11 @@ if __name__=="__main__":
     use_poly2=False
     if use_poly:
         if use_poly2:
-            geo1 = polygon_geo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine)
-            geo2 = polygon_geo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine)
+            geo1 = polygon_geo(zs,theta1s,phi1s,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
+            geo2 = polygon_geo(zs,theta2s,phi2s,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
         else:
-            geo1 = polygon_pixel_geo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,res_healpix=res_choose)  
-            geo2 = polygon_pixel_geo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,res_healpix=res_choose)  
+            geo1 = polygon_pixel_geo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max=l_max,res_healpix=res_choose)  
+            geo2 = polygon_pixel_geo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max=l_max,res_healpix=res_choose)  
     else:
         geo1=rect_geo(zs,Theta1,Phi1,C,z_fine)
         geo2=rect_geo(zs,Theta2,Phi2,C,z_fine)

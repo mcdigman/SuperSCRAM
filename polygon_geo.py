@@ -259,7 +259,7 @@ if __name__=='__main__':
     phi_in = np.pi/6.+offset
     res_choose = 6
     res_choose2 = 7
-    l_max = 100
+    l_max = 15
 
     
     #some setup to make an actual geo

@@ -38,6 +38,75 @@ def dp_ddelta(k_a,P_a,zbar,C,pmodel='linear',epsilon=0.0001,halo_a=None,halo_b=N
         dp = 47./21.*pza-1./3.*k_a*dpdk
     return dp,pza
 
+#P_a is fiducial power spectrum 
+#parameter can be H0,Omegabh2,Omegach2,Omegak,ns,sigma8,h
+#include others such as omegam, w
+def dp_dparameter(k_a,P_a,zbar,C,parameter,pmodel='linear',epsilon=0.0001,halo_a=None,halo_b=None,fpt=None):
+    cosmo_fid = C.cosmology
+    cosmo_a = cosmo_fid.copy()
+    cosmo_b = cosmo_fid.copy()
+    if pmodel=='linear':
+        print "linear"
+    elif pmodel=='halofit':
+        print "halofit"
+    elif pmodel=='fastpt':
+        print "fastpt"
+    else:
+        raise ValueError('invalid pmodel option \''+str(pmodel)+'\'')
+    return dp,pza 
+    
+#get new cosmology with 1 parameter self consistently (ie enforce exact relations) perturbed
+def get_perturbed_cosmology(cosmo_old,parameter,epsilon=0.0001):
+    cosmo_new = cosmo_old.copy()
+    if parameter=='Omegabh2':
+        #there is no Omegab or it would change. ignore change to Omegam for now
+        #TODO do I need to change omega m here?
+       cosmo_new['Omegabh2'] = cosmo_old['Omegabh2']+epsilon 
+    elif parameter=='Omegach2':
+        cosmo_new['Omegach2'] = cosmo_old['Omegach2']+epsilon
+    elif parameter=='Omegamh2':
+        cosmo_new['Omegamh2'] = cosmo_old['Omegamh2']+epsilon
+        cosmo_new['Omegam'] = cosmo_new['Omegamh2']/cosmo_new['h']**2
+    elif parameter=='OmegaL':
+        cosmo_new['OmegaL'] = cosmo_old['OmegaL']+epsilon
+    elif parameter=='Omegam':
+        cosmo_new['Omegam'] = cosmo_old['Omegam']+epsilon
+        cosmo_new['Omegamh2'] = cosmo_new['Omegam']*cosmo_new['h']**2
+    elif parameter=='H0':
+        #TODO think about if this is allowed, what we want to keep fixed
+        #for now hold Omegab,Omegam,Omegac constant
+        cosmo_new['H0'] = cosmo_old['H0']+epsilon
+        cosmo_new['h'] = cosmo_old['h']+cosmo_old['h']/cosmo_old['H0']*epsilon
+        cosmo_new['Omegabh2'] = cosmo_old['Omegabh2']/cosmo_old['h']**2*cosmo_new['h']**2
+        cosmo_new['Omegach2'] = cosmo_old['Omegach2']/cosmo_old['h']**2*cosmo_new['h']**2
+        cosmo_new['Omegamh2'] = cosmo_old['Omegamh2']/cosmo_old['h']**2*cosmo_new['h']**2
+    elif parameter=='h':
+        cosmo_new['h'] = cosmo_old['h']+epsilon
+        cosmo_new['H0'] = cosmo_old['H0']+cosmo_old['H0']/cosmo_old['h']*epsilon
+        cosmo_new['Omegabh2'] = cosmo_old['Omegabh2']/cosmo_old['h']**2*cosmo_new['h']**2
+        cosmo_new['Omegach2'] = cosmo_old['Omegach2']/cosmo_old['h']**2*cosmo_new['h']**2
+        cosmo_new['Omegamh2'] = cosmo_old['Omegamh2']/cosmo_old['h']**2*cosmo_new['h']**2
+    elif parameter=='sigma8':
+        cosmo_new['sigma8']=cosmo_old['sigma8']+epsilon
+    elif parameter=='ns':
+        cosmo_new['ns'] = cosmo_old['ns']+epsilon
+    elif parameter=='Omegak':
+        cosmo_new['Omegak'] = cosmo_old['Omegak']+epsilon
+    elif parameter=='Omegar':
+        #TODO check relationships
+        cosmo_new['Omegar'] = cosmo_old['Omegar']+epsilon
+    elif parameter=='tau':
+        cosmo_new['tau'] = cosmo_old['tau']+epsilon
+    elif parameter=='100thetamc':
+        cosmo_new['100thetamc'] = cosmo_old['100thetamc']+epsilon
+    elif parameter=='As':
+        cosmo_new['As'] = cosmo_old['As']+epsilon
+    else:
+        raise ValueError('unrecognized paramater \''+str(parameter)+'\'')
+
+
+
+
 #def derv(x,f):
 #    return np.gradient(f)/np.gradient(x)
 #

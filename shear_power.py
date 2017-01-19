@@ -103,6 +103,7 @@ class shear_power:
                 self.p_dd_use[:,i] = 2*np.pi**2*InterpolatedUnivariateSpline(self.k_in,self.halos[P_select[i]].D2_NL(self.k_in,self.zs[i]),k=1)(self.k_use[:,i])/self.k_use[:,i]**3
             elif pmodel=='halofit_var_redshift_lin':
                 self.p_dd_use[:,i] = 2*np.pi**2*InterpolatedUnivariateSpline(self.k_in,self.halos[P_select[i]].D2_L(self.k_in,self.zs[i]),k=1)(self.k_use[:,i])/self.k_use[:,i]**3
+            #can get derivatives by simply plugging in dp/ddelta instead of the power spectrum
             elif pmodel=='dc_halofit':
                 self.p_dd_use[:,i] = InterpolatedUnivariateSpline(k_in,dp_ddelta(k_in,P_in,zs[i],C=self.C,pmodel='halofit',epsilon=self.epsilon,halo_a=self.halo_a,halo_b=self.halo_b)[0],k=1)(self.k_use[:,i])
             elif pmodel=='dc_linear':
