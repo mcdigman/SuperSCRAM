@@ -13,13 +13,19 @@ from scipy.integrate import romberg, quad, trapz,cumtrapz
 import sys
 from scipy.interpolate import interp1d
 import defaults
+import camb_power
 eps=np.finfo(float).eps
 
 class CosmoPie :
 	
-	def __init__(self,cosmology=defaults.cosmology, P_lin=None, k=None,lin_type='class',precompute=True,z_max=4.0,z_space=0.01):
+	def __init__(self,cosmology=defaults.cosmology, P_lin=None, k=None,lin_type='class',precompute=True,z_max=4.0,z_space=0.01,cosmopie_params=defaults.cosmopie_params):
 		# default to Planck 2015 values 
                 print "cosmopie "+str(id(self))+": begin initialization"	
+                #define parameterization
+                self.p_space=cosmopie_params['p_space']
+                #fill out cosmology
+                cosmology = add_derived_parameters(cosmology,self.p_space)
+
 		self.Omegabh2 = cosmology['Omegabh2']
 		self.Omegach2 = cosmology['Omegach2']
 		self.Omegamh2 = cosmology['Omegamh2']
@@ -142,6 +148,13 @@ class CosmoPie :
 	    d=np.zeros_like(z)
 	    for i in range(z.size):
 	        d[i]=self.D_A(z[i])
+	    return d 
+
+	def D_c_A_array(self,z):
+
+	    d=np.zeros_like(z)
+	    for i in range(z.size):
+	        d[i]=self.D_comov_A(z[i])
 	    return d 
 	
 	def D_c_array(self,z):
@@ -312,8 +325,103 @@ class CosmoPie :
 	    return self.k, self.P_lin
 	   
 	# -----------------------------------------------------------------------------
-		
+    
+#get cosmology with the required value set without enforcing consistency. Use defaults if unknown.
+#def get_complete_cosmology(cosmo_old,required=defaults.cosmo_consistency_params['required'],cosmo_d = defaults.cosmology):
+#    cosmo_new = {}
+#
+#    for param in required:
+#        if param in cosmo_old:
+#            continue
+#        if param=='h':
+#            if 'H0' in cosmo_old: 
+#               cosmo_new['h']=cosmo_old['H0']/100.
+#            else: 
+#                cosmo_new['h']=cosmo_d['h']
+#        elif param=='H0':
+#            if 'h' in cosmo_old: 
+#               cosmo_new['H0']=cosmo_old['h']*100.
+#            else: 
+#                cosmo_new['H0']=cosmo_d['H0']
+#        elif param=='Omegac':
+            
+#remove all nonessential attributes for a cosmology unless they are in overwride list,
+#leaving only the necessary elements of the parameter space
+#possible parameter spaces (with required elements) are:
+# 'jdem':parameter space proposed in joint dark energy mission figure of merit working group paper, arxiv:0901.0721v1
+# 'lihu':parameter space used in Li, Hu & Takada 2013, arxiv:1408.1081v2
+P_SPACES ={'jdem': ['ns','Omegamh2','Omegabh2','Omegakh2','OmegaLh2','dGamma','dM','LogG0','LogAs'],
+            'lihu' : ['ns','Omegach2','Omegabh2','Omegakh2','h','LogAs']}
+def strip_cosmology(cosmo_old,p_space,overwride=[]):
+    cosmo_new = cosmo_old.copy()
+    if p_space in P_SPACES:
+        param_need = P_SPACES[p_space]
+        #delete unneeded values
+        for key in cosmo_old:
+            if key not in P_SPACES[p_space] and key not in overwride:
+                cosmo_new.pop(key,None)
+        #insert 0 for missing values
+        #TODO consider better defaults
+        for req in P_SPACES[p_space]:
+            if req not in cosmo_new:
+                cosmo_new[req] = defaults.cosmology_jdem[req]
+
+    else:
+        raise ValueError('unrecognized p_space \''+str(p_space)+'\'')
+
+
+    #mark this cosmology with its parameter space
+    cosmo_new['p_space']=p_space
+    return cosmo_new
 	 
+#use relations to add all known derived parameters to a cosmology starting from its parameter space, including:
+#Omegam,Omegac,Omegab,Omegak,OmegaL,Omegar
+#Omegamh2,Omegach2,Omegabh2,Omegakh2,OmegaLh2,Omegarh2
+#H0,h
+#LogAs,As,sigma8 #TODO check
+def add_derived_parameters(cosmo_old,p_space=None):
+        cosmo_new = cosmo_old.copy()
+        if p_space is None:
+            p_space = cosmo_old.get('p_space')
+        if p_space is 'jdem':
+            cosmo_new['Omegach2'] = cosmo_old['Omegamh2']-cosmo_old['Omegabh2']  
+            cosmo_new['h'] = np.sqrt(cosmo_old['Omegamh2']+cosmo_old['OmegaLh2']+cosmo_old['Omegakh2'])
+            cosmo_new['H0'] = cosmo_new['h']*100.
+            cosmo_new['Omegab'] = cosmo_old['Omegabh2']/cosmo_new['h']**2
+            cosmo_new['Omegac'] = cosmo_new['Omegach2']/cosmo_new['h']**2
+            cosmo_new['Omegam'] = cosmo_old['Omegamh2']/cosmo_new['h']**2
+            cosmo_new['OmegaL'] = cosmo_old['OmegaLh2']/cosmo_new['h']**2
+            cosmo_new['Omegak'] = cosmo_old['Omegakh2']/cosmo_new['h']**2
+            #define omega radiation
+            cosmo_new['Omegar'] = 1.-cosmo_new['Omegam']-cosmo_new['OmegaL']-cosmo_new['Omegak']
+            cosmo_new['Omegarh2'] = cosmo_new['Omegar']*cosmo_new['h']**2
+     
+            cosmo_new['As']=np.exp(cosmo_old['LogAs'])
+            cosmo_new['sigma8'] = camb_power.camb_sigma8(cosmo_new)
+        elif p_space is 'lihu':
+            cosmo_new['Omegamh2'] = cosmo_old['Omegach2']+cosmo_old['Omegabh2']  
+            cosmo_new['H0'] = cosmo_old['h']*100.
+            cosmo_new['Omegab'] = cosmo_old['Omegabh2']/cosmo_new['h']**2
+            cosmo_new['Omegac'] = cosmo_old['Omegach2']/cosmo_new['h']**2
+            cosmo_new['Omegam'] = cosmo_new['Omegamh2']/cosmo_new['h']**2
+            cosmo_new['Omegak'] = cosmo_old['Omegakh2']/cosmo_new['h']**2
+            cosmo_new['Omegar'] = 0. #I think just set this to 0?
+
+            cosmo_new['OmegaL'] = 1.-cosmo_new['Omegam']-cosmo_new['Omegar']-cosmo_new['Omegak']
+            cosmo_new['OmegaLh2'] = cosmo_new['OmegaL']*cosmo_new['h']**2
+            cosmo_new['Omegarh2'] = cosmo_new['Omegar']*cosmo_new['h']**2
+
+            cosmo_new['As']=np.exp(cosmo_old['LogAs'])
+            cosmo_new['sigma8'] = camb_power.camb_sigma8(cosmo_new)
+        elif p_space is 'overwride':
+            #option which does nothing
+            pass
+
+        else:
+            raise ValueError('unrecognized p_space \''+str(p_space)+'\'')
+
+        cosmo_new['p_space'] = p_space
+        return cosmo_new
 if __name__=="__main__": 
 
 	C=CosmoPie(cosmology=defaults.cosmology)
@@ -327,7 +435,7 @@ if __name__=="__main__":
 	z=0.0
 	print('logrithmic growth factor', C.log_growth(z))
 	print('compare logrithmic growth factor to approxiamtion', C.Omegam**(-.6), C.Omegam)
-	print('cirtical overdensity ',C.delta_c(0)  ) 
+	print('critical overdensity ',C.delta_c(0)  ) 
 		
 	z=np.linspace(0,5,80) 
 	D1=np.zeros(80)

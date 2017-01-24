@@ -103,6 +103,7 @@ class halofitPk(object):
         #nint = 1000
         #nint=np.floor((self.k_max)/2.)
         #print self.k_max/2.
+        #TODO figure out what to do if k_max<2
         nint =min(np.int(self.k_max/2.),1000)
         t = ( np.arange(nint)+0.5 )/nint
         y = 1./t - 1.
@@ -132,12 +133,7 @@ class halofitPk(object):
         if not isinstance(z,np.ndarray):
             return self.C.G_norm(z)**2*self.p_interp(rk)
         else:
-            print self.p_interp(rk).shape
-            print self.C.G_norm(z).shape
-            print z.shape
-            print rk.shape
-            print  np.outer(self.p_interp(rk),self.C.G_norm(z)).shape
-            return np.outer(self.p_interp(rk),self.C.G_norm(z))
+            return np.outer(self.p_interp(rk),self.C.G_norm(z)**2)
     #def D2_L(self,rk,z):
     #   rk=np.asarray(rk)
     #   return self.C.G_norm(z)**2*self.p_cdm(rk)
