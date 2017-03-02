@@ -14,9 +14,8 @@ class PowerDerivativeComparison1:
         zs = np.arange(0.1,1.0,0.1)
         ls = np.arange(1,5000)
         epsilon = 0.00001
-        cosmo_a = defaults.cosmology_chiang.copy()
+        cosmo_a = C.cosmology.copy()
         k_a,P_a = cpow.camb_pow(cosmo_a)
-        
         d_chiang_halo = np.loadtxt('test_inputs/dp_1/dp_chiang.dat')
         k_chiang_halo = d_chiang_halo[:,0]
         dc_chiang_halo = d_chiang_halo[:,1]
@@ -26,7 +25,6 @@ class PowerDerivativeComparison1:
         dc_chiang_lin = d_chiang_lin[:,1]
         dc_ch2= interp1d(k_chiang_lin,dc_chiang_lin,bounds_error=False)(k_a)
         import matplotlib.pyplot as plt
-        
         zbar = 3.
         ax = plt.subplot(221)
         plt.xlim([0.,0.4])

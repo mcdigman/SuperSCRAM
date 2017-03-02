@@ -5,35 +5,75 @@ import lensing_observables as lo
 import shear_power as sp
 from warnings import warn
 from algebra_utils import get_inv_cholesky
-
+import fisher_matrix as fm
 import sys
 class CovMat:
-    def __init__(self,gaussian_covar,nongaussian_covar,ssc_covar,dimension):
-        self.gaussian_covar = gaussian_covar
-        self.nongaussian_covar = nongaussian_covar
-        self.ssc_covar = ssc_covar 
+    def __init__(self,gaussian_covar,nongaussian_covar,ssc_covar,dimension,param_prior=None):
+        self.f_gaussian = fm.fisher_matrix(gaussian_covar,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
+        self.f_nongaussian = fm.fisher_matrix(nongaussian_covar,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
+        self.f_ssc = fm.fisher_matrix(ssc_covar,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
+        self.f_tot = fm.fisher_matrix(gaussian_covar+nongaussian_covar+ssc_covar,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
+        self.param_prior = param_prior
         self.dimension = dimension
 
     def get_gaussian_covar(self):
-        return self.gaussian_covar
+        return self.f_gaussian.get_covar()
     def get_nongaussian_covar(self):
-        return self.nongaussian_covar
+        return self.f_nongaussian.get_covar()
     def get_ssc_covar(self):
-        return self.ssc_covar
+        return self.f_ssc.get_covar()
     def get_total_covar(self):
-        return self.gaussian_covar+self.nongaussian_covar+self.ssc_covar
+        return self.f_tot.get_covar()
+        #return self.get_gaussian_covar()+self.get_nongaussian_covar()+self.get_ssc_covar()
     def get_dimension(self):
         return self.dimension
+    def get_cov_sum_param_basis(self,basis,gaussian_only=False):
+        #handle empty basis to avoid errors
+        if basis.size==0:
+            print "CovMat: no elements in basis"
+            return np.array([])
+        else:
+            if gaussian_only:
+                f_tot_param = self.f_gaussian.contract_fisher(basis,basis,identical_inputs=True,return_fisher=True)
+                self.f_tot_save_g = f_tot_param
+                print "g",f_tot_param.get_covar()
+            else:
+                #f_ng_param =self.f_nongaussian.contract_fisher(basis,basis,identical_inputs=True,return_fisher=True)
+                #f_ssc_param = self.f_ssc.contract_fisher(basis,basis,identical_inputs=True,return_fisher=True)
+                f_tot_param = self.f_tot.contract_fisher(basis,basis,identical_inputs=True,return_fisher=True)
+                self.f_tot_save_full = f_tot_param
+                #print "ssc",f_ssc_param.get_covar()
+                #print "g",f_g_param.get_covar()
+            if self.param_prior is not None:
+                #TODO watch number of inverses
+                f_tot_param.add_fisher(self.param_prior)
+            return f_tot_param.get_covar()#f_ng_param.get_covar()+f_ssc_param.get_covar() 
+
     #TODO some of this behavior may be replicated in fisher_matrix
     #TODO check cholesky
     def get_SS_eig(self):
         chol_cov = get_inv_cholesky(self.get_gaussian_covar())
         #chol_cov = scipy.linalg.cholesky(self.get_gaussian_covar(),lower=True)
-        mat_retrieved = (np.identity(self.get_dimension())+np.dot(np.dot(chol_cov,self.ssc_covar),chol_cov.T))
+        mat_retrieved = (np.identity(self.get_dimension())+np.dot(np.dot(chol_cov,self.get_ssc_covar()),chol_cov.T))
         return np.linalg.eigh(mat_retrieved)
-    
-    
 
+    #TODO refactor
+    def get_SS_eig_param(self,basis):
+        f_g_param =  self.f_gaussian.contract_fisher(basis,basis,identical_inputs=True,return_fisher=True)
+        f_tot_param = self.f_tot.contract_fisher(basis,basis,identical_inputs=True,return_fisher=True)
+        if self.param_prior is not None:
+            f_tot_param.add_fisher(self.param_prior)
+            f_g_param.add_fisher(self.param_prior)
+
+        chol_cov = get_inv_cholesky(f_g_param.get_covar())
+        mat_retrieved = (np.identity(chol_cov.shape[0])+np.dot(np.dot(chol_cov,f_tot_param.get_covar()),chol_cov.T))
+        return np.linalg.eigh(mat_retrieved)
+
+
+
+    
+    
+#TODO noncompliant with CovMat
 class SWCovMat(CovMat):
     def __init__(self,O_I_1,O_I_2):
         self.gaussian_covar = 0.
@@ -77,4 +117,5 @@ class SWCovMat(CovMat):
         #TODO handle nongaussian covariance,return matrix
         self.nongaussian_covar = 0.
         self.ssc_covar = 0.
+        CovMat.__init__(self,self.gaussian_covar,self.nongaussian_covar,self.ssc_covar,self.dimension)
 

@@ -11,12 +11,18 @@ from warnings import warn
 #parameter can be H0,Omegabh2,Omegach2,Omegak,ns,sigma8,h
 #include others such as omegam, w
 #use central finite difference because I think chris said to, check if it is actually necessary.
-def dp_dparameter(k_fid,P_fid,zs,C,parameter,pmodel='linear',epsilon=0.0001,fpt=None,fpt_params=defaults.fpt_params,camb_params=defaults.camb_params,dp_params=defaults.dp_params):
+def dp_dparameter(k_fid,P_fid,zs,C,parameter,pmodel='linear',epsilon=0.0001,log_param_deriv=False,fpt=None,fpt_params=defaults.fpt_params,camb_params=defaults.camb_params,dp_params=defaults.dp_params):
     cosmo_fid = C.cosmology.copy()
-    cosmo_a = get_perturbed_cosmology(cosmo_fid,parameter,epsilon)
-    cosmo_b = get_perturbed_cosmology(cosmo_fid,parameter,-epsilon)
-    print cosmo_a
-    print cosmo_b
+    print cosmo_fid
+    #skip getting sigma8 if possible because it is slow
+    if not parameter=='sigma8' and ('sigma8' not in cp.P_SPACES[cosmo_fid['p_space']]):
+        cosmo_fid['skip_sigma8'] = True
+        camb_params = camb_params.copy()
+        camb_params['force_sigma8'] = False
+    cosmo_a = get_perturbed_cosmology(cosmo_fid,parameter,epsilon,log_param_deriv=log_param_deriv)
+    print "cosmo_a",cosmo_a
+    cosmo_b = get_perturbed_cosmology(cosmo_fid,parameter,-epsilon,log_param_deriv=log_param_deriv)
+    print "cosmo_b",cosmo_b
     #get perturbed linear power spectra from camb
     k_a,P_a = cpow.camb_pow(cosmo_a,camb_params=camb_params) 
     k_b,P_b = cpow.camb_pow(cosmo_b,camb_params=camb_params) 
@@ -38,13 +44,17 @@ def dp_dparameter(k_fid,P_fid,zs,C,parameter,pmodel='linear',epsilon=0.0001,fpt=
         if fpt is None:
             fpt = FASTPT.FASTPT(k_fid,fpt_params['nu'],low_extrap=fpt_params['low_extrap'],high_extrap=fpt_params['high_extrap'],n_pad=fpt_params['n_pad'])
         #TODO maybe make fastpt support vector z if it doesn't already
-        p_lin_a = np.outer(P_a,C.G_norm(zs)**2) 
-        p_lin_b = np.outer(P_a,C.G_norm(zs)**2) 
-        pza = np.zeros_like(p_lin_a)
-        pzb = np.zeros_like(p_lin_b)
-        for itr in range(0,zs.size):
-            pza[:,itr] = p_lin_a[:,itr] = fpt.one_loop(p_lin_a[:,itr],C_window=fpt_params['C_window'])
-            pzb[:,itr] = p_lin_b[:,itr] = fpt.one_loop(p_lin_b[:,itr],C_window=fpt_params['C_window'])            
+        p_lin_a = np.outer(P_a,C.G_norm(zs)**2) #TODO C needs to change properly
+        p_lin_b = np.outer(P_b,C.G_norm(zs)**2) 
+        one_loop_a = fpt.one_loop(P_a,C_window=fpt_params['C_window'])
+        one_loop_b = fpt.one_loop(P_b,C_window=fpt_params['C_window'])
+        pza = plin_a+np.outer(one_loop_a,C.G_norm(zs)**4)
+        pzb = plin_b+np.outer(one_loop_b,C.G_norm(zs)**4)
+        #pza = np.zeros_like(p_lin_a)
+        #pzb = np.zeros_like(p_lin_b)
+        #for itr in range(0,zs.size):
+        #    pza[:,itr] = p_lin_a[:,itr] + fpt.one_loop(p_lin_a[:,itr],C_window=fpt_params['C_window'])
+        #    pzb[:,itr] = p_lin_b[:,itr] + fpt.one_loop(p_lin_b[:,itr],C_window=fpt_params['C_window'])            
     else:
         raise ValueError('invalid pmodel option \''+str(pmodel)+'\'')
 
@@ -61,99 +71,85 @@ def dp_dparameter(k_fid,P_fid,zs,C,parameter,pmodel='linear',epsilon=0.0001,fpt=
         dp = (pza-pzb)/(2.*epsilon)
     return dp,pza,pzb 
     
+#get set of perturbed cosmopies (including camb linear power spectrum) for getting derivatives, assuming using central finite difference method
+def get_perturbed_cosmopies(C_fid,parameters,epsilons,log_param_derivs=np.array([])):
+    cosmo_fid = C_fid.cosmology.copy()
+    P_fid = C_fid.P_lin
+    k_fid = C_fid.k
+    camb_params=C_fid.camb_params.copy()
+
+    #default assumption is ordinary derivative, can do log deriv in parameter also
+    #if log_param_derivs[i] == True, will do log deriv
+    if not log_param_derivs.size==parameters.size:
+        log_param_derivs = np.zeros(parameters.size,dtype=bool)
+    if epsilons is None:
+        epsilons = np.zeros(parameters.size)+0.0001
+    
+    Cs_pert = np.zeros((parameters.size,2),dtype=object) 
+
+    for i in range(0,parameters.size):
+
+        #skip evaulating sigma8 unless now unless it is necessary (it is slow), will get it later 
+        if (not parameters[i]=='sigma8') and ('sigma8' not in cp.P_SPACES[cosmo_fid['p_space']]):
+            cosmo_fid['skip_sigma8'] = True
+            camb_params['force_sigma8'] = False
+            camb_params['return_sigma8'] = True
+
+        cosmo_a = get_perturbed_cosmology(cosmo_fid,parameters[i],epsilons[i],log_param_derivs[i])
+        cosmo_b = get_perturbed_cosmology(cosmo_fid,parameters[i],-epsilons[i],log_param_derivs[i])
+
+        k_a,P_a,sigma8_a = cpow.camb_pow(cosmo_a,camb_params=camb_params) 
+        k_b,P_b,sigma8_b = cpow.camb_pow(cosmo_b,camb_params=camb_params) 
+        #attach a sigma8 to the resulting cosmology in case something needs it later
+        if not parameters[i]=='sigma8' and ('sigma8' not in cp.P_SPACES[cosmo_fid['p_space']]):
+            cosmo_a['sigma8'] = sigma8_a
+            cosmo_b['sigma8'] = sigma8_b
+            cosmo_a.pop('skip_sigma8',None)
+            cosmo_b.pop('skip_sigma8',None)
+
+        #TODO not sure if interpolation is needed/correct
+        if not np.all(k_a==k_fid) or not(np.all(k_b==k_fid)):
+            print "adapting k grid"
+            P_a = InterpolatedUnivariateSpline(k_a,P_a,k=1)(k_fid)
+            P_b = InterpolatedUnivariateSpline(k_b,P_b,k=1)(k_fid)
+            k_a = k_fid
+            k_b = k_fid
+        if parameters[i] in cp.GROW_SAFE:
+            C_a = cp.CosmoPie(cosmo_a,P_lin=P_a,k=k_a,p_space=cosmo_fid['p_space'],safe_sigma8=True,G_safe=True,G_in=C_fid.G_p)
+            C_b = cp.CosmoPie(cosmo_b,P_lin=P_b,k=k_b,p_space=cosmo_fid['p_space'],safe_sigma8=True,G_safe=True,G_in=C_fid.G_p)
+        else:
+            C_a = cp.CosmoPie(cosmo_a,P_lin=P_a,k=k_a,p_space=cosmo_fid['p_space'],safe_sigma8=True)
+            C_b = cp.CosmoPie(cosmo_b,P_lin=P_b,k=k_b,p_space=cosmo_fid['p_space'],safe_sigma8=True)
+        Cs_pert[i,0] = C_a 
+        Cs_pert[i,1] = C_b
+    return Cs_pert
+        
+
 #get new cosmology with 1 parameter self consistently (ie enforce exact relations) perturbed
-def get_perturbed_cosmology(cosmo_old,parameter,epsilon=0.0001,hold_omegah2=True):
+def get_perturbed_cosmology(cosmo_old,parameter,epsilon=0.0001,log_param_deriv=False):
     cosmo_new = cosmo_old.copy()
     if cosmo_new.get(parameter) is not None:
-        cosmo_new[parameter]+=epsilon   
+        if log_param_deriv:
+            cosmo_new[parameter] = np.exp(np.log(cosmo_old[parameter])+epsilon)   
+        else:
+            cosmo_new[parameter]+=epsilon   
         if parameter not in cp.P_SPACES.get(cosmo_new.get('p_space')):
-            warn('parameter '+str(parameter)+' may not support derivatives with this parameter set')
+            warn('parameter \''+str(parameter)+'\' may not support derivatives with the parameter set \''+str(cosmo_new.get('p_space'))+'\'')
         return cp.add_derived_parameters(cosmo_new)
     else:
         raise ValueError('undefined parameter in cosmology \''+str(parameter)+'\'')
-
-    if parameter=='Omegabh2':
-        #there is no Omegab or it would change. ignore change to Omegam for now
-        #TODO do I need to change omega m here?
-        cosmo_new['Omegabh2'] = cosmo_old['Omegabh2']+epsilon  
-        cosmo_new['Omegab'] = cosmo_new['Omegabh2']/cosmo_old['h']**2
-        cosmo_new['Omegamh2'] = cosmo_old['Omegamh2']+epsilon 
-        cosmo_new['Omegam'] = cosmo_new['Omegamh2']/cosmo_old['h']**2
-    elif parameter=='Omegach2':
-        cosmo_new['Omegach2'] = cosmo_old['Omegach2']+epsilon
-        cosmo_new['Omegac'] = cosmo_new['Omegach2']/cosmo_old['h']**2
-        cosmo_new['Omegamh2'] = cosmo_old['Omegamh2']+epsilon 
-        cosmo_new['Omegam'] = cosmo_new['Omegamh2']/cosmo_old['h']**2
-        #added
-        cosmo_new['OmegaL'] = 1.-cosmo_new['Omegab']-cosmo_new['Omegac']
-    elif parameter=='Omegamh2':
-        #treat change in Omegam as change in Omegac
-        cosmo_new['Omegamh2'] = cosmo_old['Omegamh2']+epsilon
-        cosmo_new['Omegam'] = cosmo_new['Omegamh2']/cosmo_old['h']**2
-        cosmo_new['Omegach2'] = cosmo_old['Omegach2']+epsilon
-        cosmo_new['Omegac'] = cosmo_new['Omegach2']/cosmo_old['h']**2
-    elif parameter=='OmegaL':
-        cosmo_new['OmegaL'] = cosmo_old['OmegaL']+epsilon
-    elif parameter=='Omegam':
-        #treat change in Omegam as change in Omegac
-        cosmo_new['Omegam'] = cosmo_old['Omegam']+epsilon
-        cosmo_new['Omegamh2'] = cosmo_new['Omegam']*cosmo_old['h']**2
-        cosmo_new['Omegac'] = cosmo_old['Omegac']+epsilon
-        cosmo_new['Omegach2'] = cosmo_new['Omegac']*cosmo_old['h']**2
-    elif parameter=='H0':
-        #TODO think about if this is allowed, what we want to keep fixed
-        #for now hold Omegab,Omegam,Omegac constant
-        cosmo_new['H0'] = cosmo_old['H0']+epsilon
-        cosmo_new['h'] = cosmo_old['h']+cosmo_old['h']/cosmo_old['H0']*epsilon
-        cosmo_new['Omegabh2'] = cosmo_old['Omegabh2']/cosmo_old['h']**2*cosmo_new['h']**2
-        cosmo_new['Omegach2'] = cosmo_old['Omegach2']/cosmo_old['h']**2*cosmo_new['h']**2
-        cosmo_new['Omegamh2'] = cosmo_old['Omegamh2']/cosmo_old['h']**2*cosmo_new['h']**2
-    elif parameter=='h':
-        cosmo_new['h'] = cosmo_old['h']+epsilon
-        cosmo_new['H0'] = cosmo_old['H0']+cosmo_old['H0']/cosmo_old['h']*epsilon
-        if hold_omegah2:
-            cosmo_new['Omegab'] = cosmo_old['Omegab']*cosmo_old['h']**2/cosmo_new['h']**2
-            cosmo_new['Omegac'] = cosmo_old['Omegac']*cosmo_old['h']**2/cosmo_new['h']**2
-            cosmo_new['Omegam'] = cosmo_old['Omegam']*cosmo_old['h']**2/cosmo_new['h']**2
-            #TODO need to force universe to stay flat consistently
-            cosmo_new['OmegaL'] = 1.-cosmo_new['Omegab']-cosmo_new['Omegac']
-            #cosmo_new['OmegaL'] = cosmo_old['OmegaL']*cosmo_old['h']**2/cosmo_new['h']**2
-        else:
-            cosmo_new['Omegabh2'] = cosmo_old['Omegabh2']/cosmo_old['h']**2*cosmo_new['h']**2
-            cosmo_new['Omegach2'] = cosmo_old['Omegach2']/cosmo_old['h']**2*cosmo_new['h']**2
-            cosmo_new['Omegamh2'] = cosmo_old['Omegamh2']/cosmo_old['h']**2*cosmo_new['h']**2
-    elif parameter=='sigma8':
-        cosmo_new['sigma8']=cosmo_old['sigma8']+epsilon
-    elif parameter=='ns':
-        cosmo_new['ns'] = cosmo_old['ns']+epsilon
-    elif parameter=='Omegak':
-        cosmo_new['Omegak'] = cosmo_old['Omegak']+epsilon
-    elif parameter=='Omegar':
-        #TODO check relationships
-        cosmo_new['Omegar'] = cosmo_old['Omegar']+epsilon
-    elif parameter=='tau':
-        cosmo_new['tau'] = cosmo_old['tau']+epsilon
-    elif parameter=='100thetamc':
-        warn('power_parameter_response: unsupported parameter '+parameter)
-        cosmo_new['100thetamc'] = cosmo_old['100thetamc']+epsilon
-    elif parameter=='As':
-        cosmo_new['As'] = cosmo_old['As']+epsilon
-    else:
-        raise ValueError('unrecognized paramater \''+str(parameter)+'\'')
-    return cosmo_new
-
 
 if __name__=="__main__":
     
         #d = np.loadtxt('camb_m_pow_l.dat')
         #k_in = d[:,0]
         zs = np.arange(0.1,1.0,0.1)
-        epsilon = 0.00001
 
 
 
         do_plot1=False
-        do_plot2=True
+        do_plot2=False
+        do_plot3=True
         import matplotlib.pyplot as plt
 
         if do_plot1:
@@ -163,23 +159,31 @@ if __name__=="__main__":
             camb_params['maxkh'] = 10.0
             camb_params['kmax'] = 10.0
             camb_params['leave_h'] = False
+            camb_params['force_sigma8'] = True
 
-            cosmo_fid = defaults.cosmology.copy()
-            C=cp.CosmoPie(cosmology=cosmo_fid)
+            epsilon = 0.01
+
+            C=cp.CosmoPie(defaults.cosmology.copy(),p_space='basic')
+            cosmo_fid=C.cosmology
             k_fid,P_fid = cpow.camb_pow(cosmo_fid,camb_params=camb_params)
 
+
+            dp_params = defaults.dp_params.copy()
+            dp_params['use_k3p']=False
+            dp_params['log_deriv_direct']=True
+
             #attempt to replicate leftmost subplot at top of page 6 in Neyrinck 2011 arxiv:1105.2955v2
-            dp_ch2,pza,pzb = dp_dparameter(k_fid,P_fid,np.array([0.]),C,'Omegach2',pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params)
-            dp_bh2,pza,pzb = dp_dparameter(k_fid,P_fid,np.array([0.]),C,'Omegabh2',pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params)
-            dp_s8,pza,pzb = dp_dparameter(k_fid,P_fid,np.array([0.]),C,'sigma8',pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params)
-            dp_ns,pza,pzb = dp_dparameter(k_fid,P_fid,np.array([0.]),C,'ns',pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params)
+            dp_ch2,pza,pzb = dp_dparameter(k_fid,P_fid,np.array([0.]),C,'Omegamh2',log_param_deriv=True,pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params,dp_params=dp_params)
+            dp_bh2,pza,pzb = dp_dparameter(k_fid,P_fid,np.array([0.]),C,'Omegabh2',log_param_deriv=True,pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params,dp_params=dp_params)
+            dp_s8,pza,pzb = dp_dparameter(k_fid,P_fid,np.array([0.]),C,'sigma8',log_param_deriv=True,pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params,dp_params=dp_params)
+            dp_ns,pza,pzb = dp_dparameter(k_fid,P_fid,np.array([0.]),C,'ns',pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params,dp_params=dp_params)
             min_index = 0
             max_index = np.argmin(k_fid<0.5)
          
-            plt.semilogx(k_fid[min_index:max_index],dp_ns[min_index:max_index,0]/P_fid[min_index:max_index])
-            plt.semilogx(k_fid[min_index:max_index],dp_s8[min_index:max_index,0]/P_fid[min_index:max_index]*cosmo_fid['sigma8']/2.)
-            plt.semilogx(k_fid[min_index:max_index],dp_ch2[min_index:max_index,0]/P_fid[min_index:max_index]*cosmo_fid['Omegach2'])
-            plt.semilogx(k_fid[min_index:max_index],dp_bh2[min_index:max_index,0]/P_fid[min_index:max_index]*cosmo_fid['Omegabh2'])
+            plt.semilogx(k_fid[min_index:max_index],dp_ns[min_index:max_index,0])
+            plt.semilogx(k_fid[min_index:max_index],dp_s8[min_index:max_index,0]/2.)
+            plt.semilogx(k_fid[min_index:max_index],dp_ch2[min_index:max_index,0])
+            plt.semilogx(k_fid[min_index:max_index],dp_bh2[min_index:max_index,0])
             plt.legend(['ns','log(sigma8^2)','log(Omegach2)','log(Omegabh2)'],loc=4)
             plt.xlabel('k')
             plt.xlim([0.02,0.5])
@@ -196,18 +200,20 @@ if __name__=="__main__":
             camb_params['maxkh'] = 50.0
             camb_params['kmax'] = 100.0
             camb_params['leave_h'] = True
+            camb_params['force_sigma8'] = False
             dp_params = defaults.dp_params.copy()
             dp_params['use_k3p']=True
+            dp_params['log_deriv_direct']=True
             epsilon = 0.0001
             cosmo_fid = defaults.cosmology.copy()
             cosmo_fid['h']=0.7;cosmo_fid['ns']=0.96;cosmo_fid['Omegamh2']=0.14014;cosmo_fid['Omegabh2']=0.02303;cosmo_fid['Omegakh2']=0.
             cosmo_fid['sigma8']=0.82
             cosmo_fid['LogAs']=-19.9229844537
             cosmo_fid = cp.strip_cosmology(cosmo_fid,'lihu',overwride=['tau','Yp'])
+            cosmo_fid['skip_sigma8']=True
             cosmo_fid = cp.add_derived_parameters(cosmo_fid)
-            C=cp.CosmoPie(cosmology=cosmo_fid)
+            C=cp.CosmoPie(cosmology=cosmo_fid,p_space='lihu')
             k_fid,P_fid = cpow.camb_pow(cosmo_fid,camb_params=camb_params)
-            #TODO investigate why As makes no difference at all
             #attempt to replicate leftmost subplot at top of page 6 in Neyrinck 2011 arxiv:1105.2955v2
             epsilon_h =0.02
             dp_h,pza,pzb = dp_dparameter(k_fid,P_fid,np.array([0.]),C,'h',pmodel=pmodel_use,epsilon=epsilon_h,camb_params=camb_params,dp_params=dp_params)
@@ -233,4 +239,18 @@ if __name__=="__main__":
             plt.title('camb+halofit power spectrum response functions')
             plt.grid()
             plt.show()
-                 
+        if do_plot3:
+            camb_params = defaults.camb_params.copy()
+            pmodel_use = 'linear'
+            camb_params['minkh'] = 0.02
+            camb_params['maxkh'] = 10.0
+            camb_params['kmax'] = 10.0
+            camb_params['leave_h'] = False
+            camb_params['force_sigma8'] = True
+
+            epsilon = 0.01
+
+            cosmo_fid=defaults.cosmology.copy()
+            k_fid,P_fid = cpow.camb_pow(cosmo_fid,camb_params=camb_params)
+            C=cp.CosmoPie(defaults.cosmology.copy(),k=k_fid,P_lin=P_fid,p_space='jdem',camb_params=camb_params)
+            Cs_pert = get_perturbed_cosmopies(C,np.array(['Omegamh2']),np.array([epsilon]),np.array([False]))

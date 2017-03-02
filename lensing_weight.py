@@ -15,7 +15,6 @@ class q_shear(q_weight):
         g_vals = np.zeros(sp.n_z)
         low_mask = (sp.chis>=chi_min)*1. #so only integrate from max(chi,chi_min)
         high_mask = (sp.chis<=chi_max)*1. #so only integrate from max(chi,chi_min)
-        print chi_min,chi_max
         
         ps_norm = sp.ps*high_mask*low_mask/np.trapz(sp.ps*low_mask*high_mask,sp.chis) #TODO check normalization
 	for i in range(0,sp.n_z):

@@ -112,6 +112,7 @@ class sph_basis_k(object):
                                 #print b
                                 for d in range(b,kk.size):
                                     coeff = 8.*np.sqrt(kk[b]*kk[d])*kk[b]*kk[d]/(np.pi*self.r_max**2*jv(ll+1.5,kk[b]*self.r_max)*jv(ll+1.5,kk[d]*self.r_max))
+                                    #TODO convergence test
                                     C_alpha_beta[itr_k1+b,itr_k1+d]=coeff*trapz(integrand1/((k**2-kk[b]**2)*(k**2-kk[d]**2)),k); #check coefficient
                                     C_alpha_beta[itr_k1+d,itr_k1+b]=C_alpha_beta[itr_k1+b,itr_k1+d];
                         else:
@@ -211,9 +212,9 @@ class sph_basis_k(object):
 
             norm=3./(rbins[:,1]**3 - rbins[:,0]**3)/(a_00*2.*np.sqrt(np.pi))   
 	    for itr in range(self.C_id.shape[0]):
-	        ll=self.C_id[itr,0]
+	        ll=int(self.C_id[itr,0])
 	        kk=self.C_id[itr,1]
-	        mm=self.C_id[itr,2]
+	        mm=int(self.C_id[itr,2])
                 #TODO clean up these conditionals
                 #TODO just precompute the r_parts
                 if (kk,ll) in r_cache:

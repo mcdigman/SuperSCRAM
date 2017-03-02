@@ -27,12 +27,14 @@ def dp_ddelta(k_a,P_a,zbar,C,pmodel='linear',epsilon=0.0001,halo_a=None,halo_b=N
             halo_a = hf.halofitPk(C,k_a,P_a)
         if halo_b is None:
             halo_b = hf.halofitPk(C,k_a,P_a*(1.+epsilon/C.sigma8)**2)
-        pza = (halo_a.D2_NL(k_a,zbar).T*2.*np.pi**2/k_a**3).T
-        pzb = (halo_b.D2_NL(k_a,zbar).T*2.*np.pi**2/k_a**3).T
         if isinstance(zbar,np.ndarray) and zbar.size>1:
+            pza = (halo_a.D2_NL(k_a,zbar).T*2.*np.pi**2/k_a**3).T
+            pzb = (halo_b.D2_NL(k_a,zbar).T*2.*np.pi**2/k_a**3).T
             dpdk =RectBivariateSpline(k_a,zbar,pza,kx=2,ky=1)(k_a,zbar,dx=1) 
             dp = 13./21.*C.sigma8*(pzb-pza)/epsilon+pza-1./3.*(k_a*dpdk.T).T
         else:
+            pza = (halo_a.D2_NL(k_a,zbar)*2.*np.pi**2/k_a**3)
+            pzb = (halo_b.D2_NL(k_a,zbar)*2.*np.pi**2/k_a**3)
             dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2,k=1).derivative(1))(k_a) 
             dp = 13./21.*C.sigma8*(pzb-pza)/epsilon+pza-1./3.*k_a*dpdk
     elif pmodel=='fastpt':
@@ -40,13 +42,16 @@ def dp_ddelta(k_a,P_a,zbar,C,pmodel='linear',epsilon=0.0001,halo_a=None,halo_b=N
             fpt = FASTPT.FASTPT(k_a,fpt_params['nu'],low_extrap=fpt_params['low_extrap'],high_extrap=fpt_params['high_extrap'],n_pad=fpt_params['n_pad'])
         if isinstance(zbar,np.ndarray):
             plin = np.outer(P_a,C.G_norm(zbar)**2)
-            pza = np.zeros((k_a.size,zbar.size)) 
-            for itr in range(0,zbar.size):
-                pza[:,itr] = plin[:,itr]+fpt.one_loop(plin[:,itr],C_window=fpt_params['C_window'])
+            #pza = np.zeros((k_a.size,zbar.size)) 
+            one_loop = fpt.one_loop(P_a,C_window=fpt_params['C_window'])
+            pza = plin+np.outer(one_loop,C.G_norm(zbar)**4)
+            #for itr in range(0,zbar.size):
+            #    pza[:,itr] = plin[:,itr]+fpt.one_loop(plin[:,itr],C_window=fpt_params['C_window'])
             dpdk =RectBivariateSpline(k_a,zbar,pza,kx=2,ky=1)(k_a,zbar,dx=1) 
-            dp = np.zeros((k_a.size,zbar.size)) 
-            for itr in range(0,zbar.size):
-                dp[:,itr] = 47./21.*pza[:,itr]-1./3.*k_a*dpdk[:,itr]+26./21.*fpt.one_loop(plin[:,itr],C_window=fpt_params['C_window'])
+           # dp = np.zeros((k_a.size,zbar.size)) 
+            dp = 47./21.*pza-1./3.*(k_a*(dpdk.T)).T+26./21.*np.outer(one_loop,C.G_norm(zbar)**4)
+           # for itr in range(0,zbar.size):
+           #     dp[:,itr] = 47./21.*pza[:,itr]-1./3.*k_a*dpdk[:,itr]+26./21.*fpt.one_loop(plin[:,itr],C_window=fpt_params['C_window'])
         else:
             plin = P_a*C.G_norm(zbar)**2
             pza = plin+fpt.one_loop(plin,C_window=fpt_params['C_window'])

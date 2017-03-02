@@ -5,8 +5,9 @@ import re
 from warnings import warn
 import lensing_observables as lo
 from sw_cov_mat import CovMat,SWCovMat
+import fisher_matrix as fm
 class SWSurvey:
-    def __init__(self,geo,survey_id,C,ls = np.array([]),params=defaults.sw_survey_params,observable_list=defaults.sw_observable_list,len_params=defaults.lensing_params):
+    def __init__(self,geo,survey_id,C,ls = np.array([]),cosmo_param_list=np.array([],dtype=object),cosmo_param_epsilons=np.array([]),params=defaults.sw_survey_params,observable_list=defaults.sw_observable_list,len_params=defaults.lensing_params,ps=np.array([]),param_priors=None):
         print "sw_survey: began initializing survey: "+str(survey_id)
         self.geo = geo
         self.params = params
@@ -14,16 +15,19 @@ class SWSurvey:
         self.C = C # cosmopie 
         self.ls = ls
         self.survey_id = survey_id
+        self.cosmo_param_list = cosmo_param_list
         if self.needs_lensing:
-            self.len_pow = lo.LensingPowerBase(self.geo,self.ls,survey_id,C=C,params=len_params)
+            self.len_pow = lo.LensingPowerBase(self.geo,self.ls,survey_id,C=C,params=len_params,cosmo_param_list=cosmo_param_list,cosmo_param_epsilons=cosmo_param_epsilons,ps=ps)
             self.len_params = len_params
         else:
             self.len_pow = None
             self.len_params = None
 
+        self.param_priors = param_priors
+
         self.observable_names = generate_observable_names(self.geo,observable_list,params['cross_bins'])
         self.observables = self.names_to_observables(self.observable_names)
-        print "sw_survey: finsihed initializing survey: "+str(survey_id)
+        print "sw_survey: finished initializing survey: "+str(survey_id)
 
     def get_survey_id(self):
         return self.survey_id
@@ -54,6 +58,26 @@ class SWSurvey:
         for i in range(self.observables.size):
             dO_I_ddelta_bar_list[i] = self.observables[i].get_dO_I_ddelta_bar()
         return dO_I_ddelta_bar_list
+
+    def get_dO_I_dparameter_list(self):
+        dO_I_dparam_list = np.zeros((self.cosmo_param_list.size,self.observables.size),dtype=object)
+        for i in range(self.observables.size):
+            dO_I_dparam_list[:,i] = self.observables[i].get_dO_I_dparameters()
+        return dO_I_dparam_list
+
+    def get_dO_I_dparameter_array(self):
+        dO_I_dparam_list = self.get_dO_I_dparameter_list()
+        print dO_I_dparam_list.shape
+        dO_I_dparam_array = np.zeros((dO_I_dparam_list.shape[0],self.get_total_dimension()))
+        print dO_I_dparam_array.shape
+        for i in range(0,dO_I_dparam_list.shape[0]):
+            itr = 0
+            for j in range(0,self.get_N_O_I()):
+                n_k = dO_I_dparam_list[i][j].size
+                dO_I_dparam_array[i,itr:itr+n_k] = dO_I_dparam_list[i,j]
+                itr+=n_k
+        return dO_I_dparam_array
+
 
     def get_gaussian_cov(self):
         cov_mats = np.zeros((self.get_total_dimension(),self.get_total_dimension()))
@@ -86,6 +110,7 @@ class SWSurvey:
         dO_I_ddelta_bar_list = self.get_dO_I_ddelta_bar_list()
         Ts = np.zeros(self.get_N_O_I(),dtype=object)
         for i in range(0,Ts.size):
+            #TODO is this right cholesky?
             Ts[i] = fisher.contract_chol_right(basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[i]))
             #Ts[i] = basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[i])
         for i in range(0,self.get_N_O_I()):
@@ -111,11 +136,19 @@ class SWSurvey:
         return cov_mats
     
     def get_nongaussian_cov(self):
-        return 0.
-
+        return np.zeros((self.get_total_dimension(),self.get_total_dimension()))
+    
+    #get the covariance matrices, and a fisher matrix for the total covariance
     def get_covars(self,fisher,basis):
-        return CovMat(self.get_gaussian_cov(),self.get_nongaussian_cov(),self.get_SSC_cov(fisher,basis),self.get_total_dimension())
-
+        cov_mats =  CovMat(self.get_gaussian_cov(),self.get_nongaussian_cov(),self.get_SSC_cov(fisher,basis),self.get_total_dimension(),self.param_priors)
+        #fisher_c = fm.fisher_matrix(cov_mats.get_total_covar(),input_type=fm.REP_COVAR,fix_input=False)
+        return cov_mats
+   
+    def get_cov_tot_parameters(self,cov_mats,gaussian_only=False):
+        #TODO cache
+        v = self.get_dO_I_dparameter_array()
+        return cov_mats.get_cov_sum_param_basis(v,gaussian_only=gaussian_only)
+        
     def names_to_observables(self,names):
         observables = np.zeros(len(names.keys()),dtype=object)
         itr = 0 

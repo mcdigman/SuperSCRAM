@@ -79,7 +79,7 @@ class polygon_geo(geo):
                     arbitrary = np.zeros(3)
                     if not np.isclose(np.abs(pa1[0]),1.):
                         arbitrary[0] = 1.
-                    elif not isclose(np.abs(pa1[1]),1.):
+                    elif not np.isclose(np.abs(pa1[1]),1.):
                         arbitrary[1] = 1.
                     else:
                         arbitrary[2] = 1.
@@ -123,6 +123,7 @@ class polygon_geo(geo):
         def angular_area(self):
             return (np.sum(self.internal_angles)-(self.n_v-2.)*np.pi)
 
+        #TODO test: probably bug somehow is giving float to get_Y_r_dict
         def expand_alm_table(self,l_max):
             ls = np.arange(self._l_max+1,l_max+1)
             n_l = ls.size
@@ -235,7 +236,9 @@ if __name__=='__main__':
     toffset = np.pi/2.
     #theta0=np.pi/6+toffset
     #theta1=np.pi/3.+toffset
-    theta0=0.+toffset
+    #theta0=2.82893228356285
+    theta0=np.pi-np.arccos(1.-5.*np.pi/324.)
+    #theta0=(1.25814+toffset)
     theta1=np.pi/2.+toffset
     theta2=np.pi/3.+0.1+toffset
     theta3=theta2-np.pi/3.
@@ -247,19 +250,29 @@ if __name__=='__main__':
     phi2 = phi1+np.pi/2.
     phi3 = phi2-np.pi/6.
     phi4 = phi3-np.pi/3.
-  
-
-    thetas = np.array([theta0,theta1,theta1,theta0,theta0])
-    phis = np.array([phi0,phi0,phi1,phi1,phi0])
+    n_steps = 120
+    thetas = np.zeros(n_steps+2)+theta0
+    phis = np.zeros(n_steps+2)
+    phis[0] = phi0
+    phis[-1] = phi0
+    for itr in range(1,n_steps+1):
+        phis[itr] = phi0+itr*2.*np.pi/n_steps
+    phis = phis[::-1]
+    #thetas = np.array([theta0,theta0,theta0,theta0,theta0,theta0,theta0,theta0])
+    #phis = np.array([phi0,phi0+np.pi/3.,phi0+2.*np.pi/3.,phi0+np.pi,phi0+4.*np.pi/3.,phi0+5.*np.pi/3.,6.*np.pi/3.,phi0])[::-1]
+    #thetas = np.array([theta0,theta1,theta1,theta0,theta0])
+    #phis = np.array([phi0,phi0,phi1,phi1,phi0])
     #thetas = np.array([theta0,theta1,theta1,theta0,theta0])
     #phis = np.array([phi0,phi0,phi1,phi1,phi0])
     #thetas = np.array([theta0,theta1,theta1,theta2,theta0,theta3,theta3,theta4,theta0])
     #phis = np.array([phi0,phi0,phi1,phi1,phi2,phi3,phi4,phi4,phi0])
-    theta_in = np.pi/4.+toffset
-    phi_in = np.pi/6.+offset
+    #theta_in = np.pi/4.+toffset
+    #phi_in = np.pi/6.+offset
+    theta_in = theta0+0.1
+    phi_in = phi0-0.1
     res_choose = 6
     res_choose2 = 7
-    l_max = 15
+    l_max = 50
 
     
     #some setup to make an actual geo

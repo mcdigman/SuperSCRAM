@@ -241,7 +241,7 @@ class halofitPk(object):
         om_m  = self.C.Omegam_z(z)
         om_v  = self.C.OmegaL_z(z)
         #w = -0.758
-        w=-1.
+        w=self.C.w_interp(z) #not sure if z dependent w is appropriate in halofit, possible answer in https://arxiv.org/pdf/0911.2454.pdf
        # #cf Bird, Viel, Haehnelt 2011 for extragam explanation (cosmosis)
         #extragam = 0.3159-0.0765*rn-0.8350*rncur
 

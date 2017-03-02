@@ -12,7 +12,7 @@ class projected_power:
     
         if P_type=='linear':
             z=np.linspace(0,z_max,500)
-            G=CosmoPie.G_array(z)
+            G=CosmoPie.G_norm(z)
             G=G**2
             P_in=P_in.reshape(k.size,1)
             P_grid=G*P_in

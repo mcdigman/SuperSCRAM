@@ -22,6 +22,7 @@ import lensing_observables as lo
 import copy
 from sw_survey import SWSurvey
 from lw_survey import LWSurvey
+import planck_fisher
 from warnings import warn
 class super_survey:
     ''' This class holds and returns information for all surveys
@@ -90,6 +91,19 @@ class super_survey:
             if self.do_mitigated:
                 self.F_0.clear_cache()
                 self.cov_mit=self.get_SSC_covar(mitigation=True)     
+        if self.do_unmitigated:
+            self.c_no_mit_params = self.surveys_sw[0].get_cov_tot_parameters(self.cov_no_mit[0])
+            #self.f_no_mit = fm.fisher_matrix(self.cov_no_mit[0].get_total_covar(),input_type=fm.REP_COVAR,fix_input=False)
+            #self.f_no_mit_params = self.surveys_sw[0].get_fisher_parameters(self.f_no_mit) 
+        if self.do_mitigated:
+            self.c_mit_params = self.surveys_sw[0].get_cov_tot_parameters(self.cov_mit[0])
+            #self.f_mit = fm.fisher_matrix(self.cov_mit[0].get_total_covar(),input_type=fm.REP_COVAR,fix_input=False)
+            #self.f_mit_params = self.surveys_sw[0].get_fisher_parameters(self.f_mit) 
+        #TODO iterate
+        self.c_g_params = self.surveys_sw[0].get_cov_tot_parameters(self.cov_no_mit[0],gaussian_only=True)
+        #self.f_gaussian = fm.fisher_matrix(self.cov_no_mit[0].get_gaussian_covar(),input_type=fm.REP_COVAR,fix_input=True)
+        #self.f_gaussian_params = self.surveys_sw[0].get_fisher_parameters(self.f_gaussian)
+
         t2=time()
         print 'Super_Survey: all done'
         print 'Super_Survey: run time', t2-t1
@@ -110,7 +124,8 @@ class super_survey:
             F_loc = self.F_0
             print "Super_Survey: getting SSC covar without mitigation"
 
-        Cov_SSC = np.zeros(2,dtype=object) 
+        Cov_SSC = np.zeros(self.N_surveys_sw,dtype=object) 
+        F_SSC = np.zeros(self.N_surveys_sw,dtype=object) 
         if self.get_a:
             a_SSC = np.zeros(self.N_surveys_sw,dtype=object) 
 
@@ -123,7 +138,6 @@ class super_survey:
                 a_SSC[i]=F_loc.contract_covar(T.T,T,identical_inputs=True)
                 print "Super_Survey: a is "+str(a_SSC[i])+" for survey #"+str(i)
         self.F_fin = F_loc
-        #TODO this is somewhat hackish
         if self.get_a:
             return Cov_SSC,a_SSC
         else:
@@ -155,34 +169,70 @@ class super_survey:
             N_O_I_survey = survey.get_N_O_I()
             O_I_list[N_O_I:N_O_I+N_O_I_survey] = survey.get_O_I_list()
         return O_I_list
-
+def get_ellipse_specs(covs,dchi2=2.3):
+    a_s = np.zeros_like(covs)
+    b_s = np.zeros_like(covs)
+    #dchi2 = 2.3
+    alpha =np.sqrt(dchi2)
+    angles = np.zeros_like(covs)
+    areas = np.zeros_like(covs)
+    for i in range(0,covs.shape[0]):
+        for j in range(0,covs.shape[1]):
+            a_s[i,j] = np.sqrt((covs[i,i]+covs[j,j])/2.+np.sqrt((covs[i,i]-covs[j,j])**2/4.+covs[i,j]**2))
+            b_s[i,j] = np.sqrt((covs[i,i]+covs[j,j])/2.-np.sqrt((covs[i,i]-covs[j,j])**2/4.+covs[i,j]**2))
+            angles[i,j] = np.arctan2(2.*covs[i,j],covs[i,i]-covs[j,j])/2.
+    width1s = a_s*alpha
+    width2s = b_s*alpha
+    areas = np.pi*width1s*width2s
+    return width1s,width2s,angles,areas
           
 if __name__=="__main__":
     t1 = time()
     z_max=1.05; l_max=50 
 
     #d=np.loadtxt('Pk_Planck15.dat')
-    d=np.loadtxt('camb_m_pow_l.dat')
-    k=d[:,0]; P=d[:,1]
-    C=CosmoPie(k=k,P_lin=P,cosmology=defaults.cosmology)
+    #d=np.loadtxt('camb_m_pow_l.dat')
+    #k=d[:,0]; P=d[:,1]
+    #TODO check possible h discrepancy
+    camb_params = defaults.camb_params.copy()
+    camb_params['kmax'] = 10.
+    camb_params['npoints'] = 1000
+    cosmo_fid = defaults.cosmology_jdem.copy()
+    C=CosmoPie(cosmology=cosmo_fid,p_space='jdem',needs_power=True,camb_params=camb_params)
+    #C=CosmoPie(cosmology=defaults.cosmology,p_space='basic',needs_power=True)
+    k,P=C.get_P_lin()
     r_max=C.D_comov(z_max)
     print 'this is r max and l_max', r_max , l_max
 
-    theta0=np.pi/16.
+    theta0=0.
     theta1=np.pi/2.
     phi0=0.
-    phi1=2.*np.pi/3.
+    phi1=5.*np.pi**2/162. #gives exactly a 1000 square degree field of view
     phi2=2.*np.pi/3.
-    phi3=4.*np.pi/3.
-
+    phi3=phi2+(phi1-phi0)
     theta1s = np.array([theta0,theta1,theta1,theta0,theta0])
     phi1s = np.array([phi0,phi0,phi1,phi1,phi0])
     theta_in1 = np.pi/8.
-    phi_in1 = np.pi/12.
+    phi_in1 = 4.*np.pi**2/162.
     theta2s = np.array([theta0,theta1,theta1,theta0,theta0])
     phi2s = np.array([phi2,phi2,phi3,phi3,phi2])
     theta_in2 = np.pi/8.
-    phi_in2 = np.pi/12+2.*np.pi/3.
+    phi_in2 = phi2+(phi_in1-phi0)
+    #theta0=np.pi/16.
+    #theta1=np.pi/2.
+    #phi0=0.
+    #phi1=np.pi/6.
+    #phi2=2.*np.pi/3.
+    #phi3=5.*np.pi/6.
+
+    #theta1s = np.array([theta0,theta1,theta1,theta0,theta0])
+    #phi1s = np.array([phi0,phi0,phi1,phi1,phi0])
+    #theta_in1 = np.pi/8.
+    #phi_in1 = np.pi/12.
+    #theta2s = np.array([theta0,theta1,theta1,theta0,theta0])
+    #phi2s = np.array([phi2,phi2,phi3,phi3,phi2])
+    #theta_in2 = np.pi/8.
+    #phi_in2 = np.pi/12+2.*np.pi/3.
     res_choose = 6
 
 
@@ -216,14 +266,25 @@ if __name__=="__main__":
     loc_lens_params['z_min_dist'] = np.min(zs)
     loc_lens_params['z_max_dist'] = np.max(zs)
     
+    #TODO put in defaults
     lenless_defaults = defaults.sw_survey_params.copy()
     lenless_defaults['needs_lensing'] = False
 
-    survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=loc_lens_params) 
+    cosmo_param_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w'])
+    cosmo_param_epsilons = np.array([0.002,0.0005,0.0001,0.0005,0.1,0.1])
+    #cosmo_param_list = np.array(['LogAs','w'])
+    #cosmo_param_epsilons = np.array([0.001,0.001])
+
+    param_priors = planck_fisher.get_w0_projected(planck_fisher_loc = 'F_Planck_tau0.01.dat')
+    #cosmo_param_list = np.array(['Omegamh2','Omegabh2'])
+    #cosmo_param_epsilons = np.array([0.001,0.001])
+    #cosmo_param_list = np.array(['Omegamh2','Omegabh2','ns','h','sigma8'])
+    #note that currently (poorly implemented derivative) in jdem, OmegaLh2 and LogAs are both almost completely unconstrained but nondegenerate, while in basic, h and sigma8 are not constrained but are almost completely degenerate
+    survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,cosmo_param_list = cosmo_param_list,cosmo_param_epsilons=cosmo_param_epsilons,len_params=loc_lens_params,param_priors=param_priors) 
     #survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=loc_lens_params) 
  
     #survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = np.array([]),len_params=loc_lens_params) 
-    survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=lenless_defaults,observable_list = np.array([]),len_params=loc_lens_params) 
+    survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=lenless_defaults,observable_list = np.array([]),cosmo_param_list = np.array([],dtype=object),cosmo_param_epsilons=np.array([]),len_params=loc_lens_params,param_priors=param_priors) 
      
      
 
@@ -237,7 +298,7 @@ if __name__=="__main__":
     #geos = np.array([geo1])
     l_lw=np.arange(0,30)
     n_zeros=49
-    k_cut = 0.008
+    k_cut = 0.005
             
     basis=sph_basis_k(r_max,C,k_cut,l_ceil=100)
 
@@ -285,14 +346,126 @@ if __name__=="__main__":
     print 'theta width',(geo1.rs[1]+geo1.rs[0])/2.*(Theta1[1]-Theta1[0])
     print 'phi width',(geo1.rs[1]+geo1.rs[0])/2.*(Phi1[1]-Phi1[0])*np.sin((Theta1[1]+Theta1[0])/2)
     ax_ls = np.hstack((l_sw,l_sw))
-    import matplotlib.pyplot as plt
-    ax = plt.subplot(111)
-    for itr in range(1,5):
-        #ax.plot(ax_ls,ax_ls*(ax_ls+1.)*np.dot(chol_gauss,SS_eig[1][:,-itr]))
-        ax.plot(np.dot(chol_gauss,SS_eig[1][:,-itr]))
     
-    ax.legend(['1','2','3','4','5'])
-  #  plt.show()
+    v= SS.surveys_sw[0].get_dO_I_dparameter_array()
+    eig_nm = SS.cov_no_mit[0].get_SS_eig_param(v)
+    eig_m = SS.cov_mit[0].get_SS_eig_param(v)
+
+    import matplotlib.pyplot as plt
+    ellipse_plot=True
+    if ellipse_plot:
+        from matplotlib.patches import Ellipse
+        import numpy.random as rnd
+        #fig = plt.figure(0)
+        n_p = cosmo_param_list.size
+        fig,ax_list = plt.subplots(n_p,n_p)
+        dchi2 = 2.3
+        width1s_g,width2s_g,angles_g,areas_g = get_ellipse_specs(SS.c_g_params,dchi2=dchi2)
+        width1s_no_mit,width2s_no_mit,angles_no_mit,areas_no_mit = get_ellipse_specs(SS.c_no_mit_params,dchi2=dchi2)
+        width1s_mit,width2s_mit,angles_mit,areas_mit = get_ellipse_specs(SS.c_mit_params,dchi2=dchi2)
+        width1_set = np.array([width1s_mit,width1s_no_mit,width1s_g])
+        width2_set = np.array([width2s_mit,width2s_no_mit,width2s_g])
+        angle_set = np.array([angles_mit,angles_no_mit,angles_g])
+        n_c = angle_set.shape[0]
+        #g_color = rnd.rand(3)
+        opacity1 = 0.2
+        #no_mit_color = np.array([ 0.97474969,  0.52521156,  0.7712169 ])
+        #mit_color = np.array([ 0.11296808,  0.03784064,  0.22109817])
+        #g_color = np.array([ 0.44051884,  0.68219451,  0.89644416])
+        no_mit_color = np.array([1.,0.,0.])
+        mit_color = np.array([0.,1.,0.])
+        g_color = np.array([0.,0.,1.])
+        #box_width_xs = np.max(width1s[:,0])
+        color_set = np.array([mit_color,no_mit_color,g_color])
+        opacity_set = np.array([1.0,1.0,1.0])
+        xbox_widths = np.array([0.015,0.005,0.0005,0.005,0.1,0.05])
+
+        #xbox_widths = np.array([0.1,0.02])
+        ybox_widths = xbox_widths
+        #ybox_widths = np.array([0.05,0.05,0.05,0.05,0.35,0.05])
+        #xbox_widths = np.array([0.01,0.01])
+        #ybox_widths = np.array([0.01,0.01])
+        label_set = np.array(["ssc+mit+g","ssc+g","g"])
+        for itr1 in range(0,n_p):
+            for itr2 in range(0,n_p): 
+                ax = ax_list[itr2,itr1]
+                param1 = cosmo_param_list[itr1] 
+                param2 = cosmo_param_list[itr2] 
+                fid_point = np.array([C.cosmology[param1],C.cosmology[param2]])
+
+                #e_g = Ellipse(fid_point,width1s_g[itr1,itr2],width2s_g[itr1,itr2],angle=180./np.pi*angles_g[itr1,itr2],label='g')
+                #box_width_g = np.max(width1s_g[itr1,itr2],width2s_g[itr1,itr2])
+                #ax.add_artist(e_g)
+                #e_g.set_clip_box(ax.bbox)
+                #e_g.set_alpha(opacity1)
+                #e_g.set_facecolor(g_color)
+                #TODO check sense of rotation
+                es = np.zeros(n_c,dtype=object)
+                for itr3  in range(0,n_c):
+                    es[itr3] = Ellipse(fid_point,width1_set[itr3][itr1,itr2],width2_set[itr3][itr1,itr2],angle=180./np.pi*angle_set[itr3][itr1,itr2],label=label_set[itr3])
+                    #box_width_no_mit = np.max(width1s_no_mit[itr1,itr2],width2s_no_mit[itr1,itr2])
+                    ax.add_artist(es[itr3])
+                    es[itr3].set_clip_box(ax.bbox)
+                    es[itr3].set_alpha(opacity_set[itr3])
+                    es[itr3].set_edgecolor(color_set[itr3])
+                    es[itr3].set_facecolor(color_set[itr3])
+                    es[itr3].set_fill(False)
+                #e_no_mit = Ellipse(fid_point,width1s_no_mit[itr1,itr2],width2s_no_mit[itr1,itr2],angle=180./np.pi*angles_no_mit[itr1,itr2],label='ssc+g')
+                #box_width_no_mit = np.max(width1s_no_mit[itr1,itr2],width2s_no_mit[itr1,itr2])
+                #ax.add_artist(e_no_mit)
+                #e_no_mit.set_clip_box(ax.bbox)
+                #e_no_mit.set_alpha(opacity1)
+                #e_no_mit.set_facecolor(no_mit_color)
+                
+                #e_mit = Ellipse(fid_point,width1s_mit[itr1,itr2],width2s_mit[itr1,itr2],angle=180./np.pi*angles_mit[itr1,itr2],label='ssc+g+mit')
+                #box_width_mit = np.max(width1s_mit[itr1,itr2],width2s_mit[itr1,itr2])
+                #ax.add_artist(e_mit)
+                #e_mit.set_clip_box(ax.bbox)
+                #e_mit.set_alpha(opacity1)
+                #e_mit.set_facecolor(mit_color)
+
+           #     xbox_width = np.max(np.array([width1s_no_mit[:,itr1]))
+                #xbox_width = 0.05
+                #if itr1==n_p-1:
+                #    xbox_width=0.35
+           #     ybox_width = np.max(np.array(width2s_no_mit[:,itr2]))
+                #ybox_width = 0.05
+                #if itr2==n_p-1:
+                #    ybox_width=0.35
+                xbox_width = xbox_widths[itr1]
+                ybox_width = ybox_widths[itr2]
+                #ax.set_title('1-sigma contours')
+                ax.set_xlim(fid_point[0]-xbox_width/2.,fid_point[0]+xbox_width/2.)
+                ax.set_ylim(fid_point[1]-ybox_width/2.,fid_point[1]+ybox_width/2.)
+                #ax.set_aspect('equal')
+                ax.tick_params(axis='both',labelsize='small',labelbottom='off',labelleft='off',labeltop='off',labelright='off')
+                ax.grid()
+                if itr1==itr2==0:
+                    ax.legend(handles=[es[0],es[1],es[2]],loc=2,prop={'size':6})
+                if itr1==0:
+                    ax.set_ylabel(param2,fontsize=8)
+                    ax.tick_params(axis='y',labelsize='small',labelleft='on')
+                if itr1==n_p-1:
+                    ax.tick_params(axis='y',labelsize='small',labelright='on')
+                if itr2==0:
+                    ax.tick_params(axis='x',labelsize='small',labeltop='on')
+                if itr2==n_p-1:
+                    ax.set_xlabel(param1,fontsize=8)
+                    ax.tick_params(axis='x',labelsize='small',labelbottom='on')
+
+        plt.subplots_adjust(wspace=0.,hspace=0.)
+        plt.show()
+
+
+    chol_plot=False
+    if chol_plot:
+        ax = plt.subplot(111)
+        for itr in range(1,5):
+            #ax.plot(ax_ls,ax_ls*(ax_ls+1.)*np.dot(chol_gauss,SS_eig[1][:,-itr]))
+            ax.plot(np.dot(chol_gauss,SS_eig[1][:,-itr]))
+    
+        ax.legend(['1','2','3','4','5'])
+        plt.show()
     #TODO make testing module for this
     test_perturbation=False
     pert_test_fails = 0

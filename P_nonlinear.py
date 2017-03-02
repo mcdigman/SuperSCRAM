@@ -12,7 +12,7 @@ class P_nonlinear():
            C_pie : is a class made with cosmopie class that contians relevant things (like growth factor)
         '''
        
-        self.G=CosmoPie.G_array(z)
+        self.G=CosmoPie.G_norm(z)
         self.P_lin=P_lin
         self.k=k
         for i in range(len(types)):

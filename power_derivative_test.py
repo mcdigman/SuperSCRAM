@@ -26,10 +26,10 @@ if __name__=='__main__':
     zs_test1 = np.arange(len_params['z_min_integral'],len_params['z_max_integral'],z_test_res1)
     #zs_test2 = np.arange(len_params['z_min_integral'],len_params['z_max_integral'],z_test_res2)
 
-    dC_ddelta1 = shear_power(k_in,C,zs_test1,ls,omega_s=omega_s,pmodel=len_params['pmodel_dO_ddelta'],P_in=P_in)
+    dC_ddelta1 = shear_power(k_in,C,zs_test1,ls,omega_s=omega_s,pmodel=len_params['pmodel_dO_ddelta'],mode='dc_ddelta',P_in=P_in)
     #dC_ddelta2 = shear_power(k_in,C,zs_test2,ls,omega_s=omega_s,pmodel=len_params['pmodel_dO_ddelta'],P_in=P_in)
     
-    sp1 = shear_power(k_in,C,zs_test1,ls,omega_s=omega_s,pmodel=len_params['pmodel_O'],P_in=P_in)
+    sp1 = shear_power(k_in,C,zs_test1,ls,omega_s=omega_s,pmodel=len_params['pmodel_O'],mode='power',P_in=P_in)
    # sp2 = shear_power(k_in,C,zs_test2,ls,omega_s=omega_s,pmodel=len_params['pmodel_O'],P_in=P_in)
 
     

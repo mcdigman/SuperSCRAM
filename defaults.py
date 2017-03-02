@@ -20,7 +20,10 @@ cosmology={'Omegabh2' :0.02227,
                                 '100thetamc': 1.04106,
                                 'Yp'        :0.251,
                                 'As'        : 2.143*10**-9,
-                                'LogAs'     :-19.9619 #calculated
+                                'LogAs'     :-19.9619, #calculated
+                                'w'         :-1.0,#not from planck
+                                'de_model'  :'constant_w',#dark energy model
+                                'zstar'     :1089.90#redshift at last scattering
                                 }
 #cosmology from jdem 2008 working group paper arxiv:0901.0721v1
 cosmology_jdem={                'ns'       : 0.963,
@@ -31,7 +34,9 @@ cosmology_jdem={                'ns'       : 0.963,
                                 'dGamma'    : 0.,#parameter we don't need
                                 'dM'        :0.,#parameter we don't need
                                 'LogG0'     :0.,#parameter we don't need
-                                'LogAs'     :-19.9628
+                                'LogAs'     :-19.9628,
+                                'w'         :-1,
+                                'de_model'  :'constant_w'
                                 }
 cosmology_cosmolike={'Omegabh2' :0.02227,
 				'Omegach2' :0.1204,
@@ -64,11 +69,11 @@ cosmology_chiang={'Omegabh2' :0.023,
                                 'Omegakh2' : 0.0,
 				'Omegar'   : 0.0,
                                 'ns'       : 0.95,
-                                'tau'      : 0.067,
-                                '100thetamc': 1.04106,
+                                'tau'      : None,
+                                '100thetamc':None,
                                 'Yp'        :None,
-                                'As'        : 2.143*10**-9,
-                                'LogAs'   : np.log(2.143*10**-9)}
+                                'As'        : None,
+                                'LogAs'   : None}
 cosmology_cosmosis={'Omegabh2' :0.049,
 				'Omegach2' :0.1188,
 				'Omegamh2' : 0.14170,
@@ -88,9 +93,10 @@ cosmology_cosmosis={'Omegabh2' :0.049,
                                 'LogAs'   : np.log(2.143*10**-9)} #guess
 lensing_params = {  'z_resolution'    :0.005, #fine resolution
                     'z_min_integral'  :0.005, #lowest z
-                    'z_max_integral'  :2,#highes z
+                    'z_max_integral'  :2,#highest z
                     'pmodel_O'        :'halofit', #default method for finding p grid
-                    'pmodel_dO_ddelta':'dc_halofit', #default method for finding dp/ddeltabar grid
+                    'pmodel_dO_ddelta':'halofit', #default method for finding dp/ddeltabar grid
+                    'pmodel_dO_dparameter':'halofit',#default method for finding dp/dparameter grid
                     'n_gal'           :118000000*4.,#118000000 galaxies/rad^2=10 galaxies/arcmin^2
                     'delta_l'         :1., #binning window
                     'sigma2_e'        :0.27**2*2, #other noise term
@@ -134,13 +140,15 @@ fpt_params = {   'C_window':0.75,
                     'high_extrap':None,
                     'nu' :-2}
 camb_params = {'npoints':10000,
-                'minkh':1.1e-5,
+                'minkh':1.1e-4,
                 'maxkh':1e5,
-                'kmax':50.0, #may need to be higher for some purposes,like 100, but makes things slower
-                'leave_h':False
+                'kmax':100.0, #may need to be higher for some purposes,like 100, but makes things slower
+                'leave_h':False,
+                'force_sigma8':True,
+                'return_sigma8':False
                 }
 dp_params = {'use_k3p':False,
-            'log_deriv_direct':True,
+            'log_deriv_direct':False,
             'log_deriv_indirect':False}
 #amara refregier 2006 parameter forecast stuff
-cosmopie_params = {'p_space':'jdem'}
+cosmopie_params = {'p_space':'overwride'}
