@@ -8,11 +8,15 @@ from algebra_utils import get_inv_cholesky
 import fisher_matrix as fm
 import sys
 class CovMat:
-    def __init__(self,gaussian_covar,nongaussian_covar,ssc_covar,dimension,param_prior=None):
+    def __init__(self,gaussian_covar,nongaussian_covar,ssc_covar_set,dimension,param_prior=None):
         self.f_gaussian = fm.fisher_matrix(gaussian_covar,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
         self.f_nongaussian = fm.fisher_matrix(nongaussian_covar,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
-        self.f_ssc = fm.fisher_matrix(ssc_covar,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
-        self.f_tot = fm.fisher_matrix(gaussian_covar+nongaussian_covar+ssc_covar,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
+        self.n_ssc = ssc_covar_set.shape[0]
+        self.f_ssc_set = np.zeros(self.n_ssc,dtype=object)
+        self.f_tot_set = np.zeros(self.n_ssc,dtype=object)
+        for i in range(0,self.n_ssc):
+            self.f_ssc_set[i] = fm.fisher_matrix(ssc_covar_set[i],input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
+            self.f_tot_set[i] = fm.fisher_matrix(gaussian_covar+nongaussian_covar+ssc_covar_set[i],input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
         self.param_prior = param_prior
         self.dimension = dimension
 
@@ -21,9 +25,15 @@ class CovMat:
     def get_nongaussian_covar(self):
         return self.f_nongaussian.get_covar()
     def get_ssc_covar(self):
-        return self.f_ssc.get_covar()
+        ssc_cov_set = np.zeros((self.n_ssc,self.dimension,self.dimension))
+        for i in range(0,self.n_ssc):
+            ssc_cov_set[i] = self.f_ssc_set[i].get_covar()
+        return ssc_cov_set
     def get_total_covar(self):
-        return self.f_tot.get_covar()
+        tot_cov_set = np.zeros((self.n_ssc,self.dimension,self.dimension))
+        for i in range(0,self.n_ssc):
+            tot_cov_set[i] = self.f_tot_set[i].get_covar()
+        return tot_cov_set
         #return self.get_gaussian_covar()+self.get_nongaussian_covar()+self.get_ssc_covar()
     def get_dimension(self):
         return self.dimension
@@ -33,41 +43,74 @@ class CovMat:
             print "CovMat: no elements in basis"
             return np.array([])
         else:
+            f_tot_param_set = np.zeros(self.n_ssc,dtype=object)
             if gaussian_only:
-                f_tot_param = self.f_gaussian.contract_fisher(basis,basis,identical_inputs=True,return_fisher=True)
-                self.f_tot_save_g = f_tot_param
-                print "g",f_tot_param.get_covar()
+                for i in range(0,self.n_ssc):
+                    f_tot_param_set[i] = self.f_gaussian.contract_fisher(basis,basis,identical_inputs=True,return_fisher=True)
+                self.f_tot_save_g = f_tot_param_set
+                print "g",f_tot_param_set[0].get_covar()
             else:
                 #f_ng_param =self.f_nongaussian.contract_fisher(basis,basis,identical_inputs=True,return_fisher=True)
                 #f_ssc_param = self.f_ssc.contract_fisher(basis,basis,identical_inputs=True,return_fisher=True)
-                f_tot_param = self.f_tot.contract_fisher(basis,basis,identical_inputs=True,return_fisher=True)
-                self.f_tot_save_full = f_tot_param
+                for i in range(0,self.n_ssc):
+                    f_tot_param_set[i] = self.f_tot_set[i].contract_fisher(basis,basis,identical_inputs=True,return_fisher=True)
+                self.f_tot_save_full = f_tot_param_set
                 #print "ssc",f_ssc_param.get_covar()
                 #print "g",f_g_param.get_covar()
             if self.param_prior is not None:
                 #TODO watch number of inverses
-                f_tot_param.add_fisher(self.param_prior)
-            return f_tot_param.get_covar()#f_ng_param.get_covar()+f_ssc_param.get_covar() 
+                for i in range(0,self.n_ssc):
+                    f_tot_param_set[i].add_fisher(self.param_prior)
+            #TODO save n_params a better way
+            n_params = self.param_prior.shape[0]
+            cov_set = np.zeros((self.n_ssc,n_params,n_params))
+            for i in range(0,self.n_ssc):
+                cov_set[i] = f_tot_param_set[i].get_covar()
+            return cov_set#f_ng_param.get_covar()+f_ssc_param.get_covar() 
 
     #TODO some of this behavior may be replicated in fisher_matrix
     #TODO check cholesky
     def get_SS_eig(self):
         chol_cov = get_inv_cholesky(self.get_gaussian_covar())
         #chol_cov = scipy.linalg.cholesky(self.get_gaussian_covar(),lower=True)
-        mat_retrieved = (np.identity(self.get_dimension())+np.dot(np.dot(chol_cov,self.get_ssc_covar()),chol_cov.T))
-        return np.linalg.eigh(mat_retrieved)
+        mat_retrieved_set = np.zeros((self.n_ssc,self.dimension,self.dimension))
+        eig_set = np.zeros(self.n_ssc,dtype=object)
+        ssc_cov_set = self.get_ssc_covar()
+        for i in range(0,mat_retrieved_set.shape[0]):
+            #TODO do not really need to save mat_retrieved_set
+            mat_retrieved_set[i] = (np.identity(self.dimension)+np.dot(np.dot(chol_cov,ssc_cov_set[i]),chol_cov.T))
+            eig_set[i] = np.linalg.eigh(mat_retrieved_set[i])
+        return eig_set
 
     #TODO refactor
-    def get_SS_eig_param(self,basis):
+    def get_SS_eig_param(self,basis,cross=False):
         f_g_param =  self.f_gaussian.contract_fisher(basis,basis,identical_inputs=True,return_fisher=True)
-        f_tot_param = self.f_tot.contract_fisher(basis,basis,identical_inputs=True,return_fisher=True)
+        f_tot_param_set = np.zeros(self.n_ssc,dtype=object)
+        for i in range(0,self.n_ssc):
+            f_tot_param_set[i] = self.f_tot_set[i].contract_fisher(basis,basis,identical_inputs=True,return_fisher=True)
+            if self.param_prior is not None:
+                f_tot_param_set[i].add_fisher(self.param_prior)
         if self.param_prior is not None:
-            f_tot_param.add_fisher(self.param_prior)
             f_g_param.add_fisher(self.param_prior)
+        if not cross:
+            chol_cov = get_inv_cholesky(f_g_param.get_covar())
+            n_param = self.param_prior.shape[0]
+            mat_retrieved_set = np.zeros((self.n_ssc,n_param,n_param))
+            eig_set = np.zeros(self.n_ssc,dtype=object)
+            for i in range(0,self.n_ssc):
+                mat_retrieved_set[i] = (np.identity(chol_cov.shape[0])+np.dot(np.dot(chol_cov,f_tot_param_set[i].get_covar()),chol_cov.T))
+                eig_set[i] = np.linalg.eigh(mat_retrieved_set[i])
+        else:
+            n_param = self.param_prior.shape[0]
+            eig_set = np.zeros((self.n_ssc,self.n_ssc),dtype=object)
+            mat_retrieved_set = np.zeros((self.n_ssc,self.n_ssc,n_param,n_param))
+            for i in range(0,self.n_ssc):
+                chol_cov = get_inv_cholesky(f_tot_param_set[i].get_covar())
+                for j in range(0,self.n_ssc):
+                    mat_retrieved_set[i,j] = (np.identity(chol_cov.shape[0])+np.dot(np.dot(chol_cov,f_tot_param_set[j].get_covar()),chol_cov.T))
+                    eig_set[i,j] = np.linalg.eigh(mat_retrieved_set[i,j])
 
-        chol_cov = get_inv_cholesky(f_g_param.get_covar())
-        mat_retrieved = (np.identity(chol_cov.shape[0])+np.dot(np.dot(chol_cov,f_tot_param.get_covar()),chol_cov.T))
-        return np.linalg.eigh(mat_retrieved)
+        return eig_set
 
 
 
@@ -116,6 +159,6 @@ class SWCovMat(CovMat):
             warn("sw_cov_mat: unhandled observable pair in constructor")
         #TODO handle nongaussian covariance,return matrix
         self.nongaussian_covar = 0.
-        self.ssc_covar = 0.
+        self.ssc_covar = np.array([0.])
         CovMat.__init__(self,self.gaussian_covar,self.nongaussian_covar,self.ssc_covar,self.dimension)
 

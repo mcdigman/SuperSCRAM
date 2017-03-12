@@ -23,7 +23,8 @@ cosmology={'Omegabh2' :0.02227,
                                 'LogAs'     :-19.9619, #calculated
                                 'w'         :-1.0,#not from planck
                                 'de_model'  :'constant_w',#dark energy model
-                                'zstar'     :1089.90#redshift at last scattering
+                                'zstar'     :1089.90,#redshift at last scattering
+                                'mnu'       :0.
                                 }
 #cosmology from jdem 2008 working group paper arxiv:0901.0721v1
 cosmology_jdem={                'ns'       : 0.963,
@@ -36,7 +37,8 @@ cosmology_jdem={                'ns'       : 0.963,
                                 'LogG0'     :0.,#parameter we don't need
                                 'LogAs'     :-19.9628,
                                 'w'         :-1,
-                                'de_model'  :'constant_w'
+                                'de_model'  :'constant_w',
+                                'mnu'       :0.
                                 }
 cosmology_cosmolike={'Omegabh2' :0.02227,
 				'Omegach2' :0.1204,
@@ -55,7 +57,11 @@ cosmology_cosmolike={'Omegabh2' :0.02227,
                                 '100thetamc': 1.04106,
                                 'Yp'        :None,
                                 'As'        : 2.143*10**-9,
-                                'LogAs'     : np.log(2.143*10**-9)}
+                                'LogAs'     : np.log(2.143*10**-9),
+                                'w'         :-1.,
+                                'de_model'  :'constant_w',
+                                'mnu'       :0.}
+
 cosmology_chiang={'Omegabh2' :0.023,
 				'Omegach2' :0.1093,
 				'Omegamh2' : 0.1323,
@@ -94,9 +100,9 @@ cosmology_cosmosis={'Omegabh2' :0.049,
 lensing_params = {  'z_resolution'    :0.005, #fine resolution
                     'z_min_integral'  :0.005, #lowest z
                     'z_max_integral'  :2,#highest z
-                    'pmodel_O'        :'halofit', #default method for finding p grid
-                    'pmodel_dO_ddelta':'halofit', #default method for finding dp/ddeltabar grid
-                    'pmodel_dO_dparameter':'halofit',#default method for finding dp/dparameter grid
+                    'pmodel_O'        :'fastpt', #default method for finding p grid
+                    'pmodel_dO_ddelta':'fastpt', #default method for finding dp/ddeltabar grid
+                    'pmodel_dO_dparameter':'fastpt',#default method for finding dp/dparameter grid
                     'n_gal'           :118000000*4.,#118000000 galaxies/rad^2=10 galaxies/arcmin^2
                     'delta_l'         :1., #binning window
                     'sigma2_e'        :0.27**2*2, #other noise term
@@ -136,13 +142,13 @@ hmf_params = {      'log10_min_mass'    :   6,
                     'z_max'             : 3.}
 fpt_params = {   'C_window':0.75,
                     'n_pad':1000,
-                    'low_extrap':None,
-                    'high_extrap':None,
+                    'low_extrap':-5,
+                    'high_extrap':5,
                     'nu' :-2}
-camb_params = {'npoints':10000,
+camb_params = {'npoints':1000,
                 'minkh':1.1e-4,
                 'maxkh':1e5,
-                'kmax':100.0, #may need to be higher for some purposes,like 100, but makes things slower
+                'kmax':20.0, #may need to be higher for some purposes,like 100, but makes things slower
                 'leave_h':False,
                 'force_sigma8':True,
                 'return_sigma8':False
@@ -152,3 +158,23 @@ dp_params = {'use_k3p':False,
             'log_deriv_indirect':False}
 #amara refregier 2006 parameter forecast stuff
 cosmopie_params = {'p_space':'overwride'}
+planck_fisher_params ={ 'row_strip'     :np.array([3,5,6,7]),
+                        'fisher_source' :'F_Planck_tau0.01.dat',
+                        'n_full'        :45,
+                        'n_de'          :36,
+                        'z_step'        :0.025}
+halofit_params = {'n_r':3000, #500
+                    'r_max':6,#5
+                    'r_min':0.05,#0.05
+                    'r_step':0.01,
+                    'c_threshold':0.001, #0.001
+                    'cutoff':True
+                    }
+wmatcher_params = {'w_step':0.01,
+                    'w_min':-3.50,
+                    'w_max':0.1,
+                    'a_step':0.001,
+                    'a_min':0.000917,
+                    'a_max':1.001,
+                    'integ_E_step':0.05}
+matter_power_params = {}

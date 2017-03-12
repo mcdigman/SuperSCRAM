@@ -3,6 +3,8 @@ from numpy import pi
 import sys
 from scipy.interpolate import interp1d
 import cosmopie as cp
+import defaults
+from warnings import warn
 #p_h = np.loadtxt('camb_m_pow_l.dat')#
 #p_interp = interp1d(p_h[:,0],p_h[:,1]*p_h[:,0]**3/(2*np.pi**2))
 
@@ -24,7 +26,7 @@ class halofitPk(object):
     
     '''
     #take an input linear power spectrum at z=0, d2_l and d2_nl will output power spectrum at desired redshit
-    def __init__(self,C,k_in,p_lin=np.array([])):
+    def __init__(self,C,k_in,p_lin=np.array([]),halofit_params=defaults.halofit_params):
 
         self.C = C
         self.k_max = max(k_in)
@@ -34,21 +36,39 @@ class halofitPk(object):
             p_lin=self.p_cdm(k_in)*(2.*np.pi**2)/k_in**3
         self.p_interp = interp1d(k_in,p_lin*k_in**3/(2.*np.pi**2))
 
-        self.c_threshold = 0.001
+        self.c_threshold = halofit_params['c_threshold']
        #TODO check necessary r_min,r_max,n_r nint in wint are good
-        r_min = 0.05
-        r_max = 5.
-        n_r = 500
-        rs = np.linspace(r_min,r_max,n_r)
+        r_min = halofit_params['r_min']
+        r_max = halofit_params['r_max']
+        r_step = halofit_params['r_step']
+        self.cutoff = halofit_params['cutoff']
+        #n_r = halofit_params['n_r']
+        #array should use generously sized r_max initially
+        rs = np.arange(r_min,r_max,r_step)
+        n_r = rs.size
         sigs = np.zeros(n_r)
         sig_d1s = np.zeros(n_r)
         sig_d2s = np.zeros(n_r)
+        #can safely cutoff if 1/sig is greater than 1, because that corresponds to a normalized growth factor>1 and 1/sig monotonically increases with higher r
+        n_r_max = n_r
         for i in range(0,n_r):
             sig,d1,d2 = self.wint(rs[i])
             sigs[i] = sig
             sig_d1s[i] = d1
             sig_d2s[i] = d2
+            if self.cutoff and 1./sig>1.:
+                n_r_max = i+1
+                sigs = sigs[0:n_r_max]
+                rs = rs[0:n_r_max]
+                sig_d1s = sig_d1s[0:n_r_max]
+                sig_d2s = sig_d2s[0:n_r_max]
+                break
+        if 1./sigs[-1]<1.:
+            warn('with given parameters,halofit will only work up G_norm='+str(1./sigs[-1])+', try increasing r_max')
+        self.n_r = n_r_max
         self.sigs = sigs 
+        self.g_max = (1./sigs)[-1]
+        self.g_min = (1./sigs)[0]
         self.r_grow = interp1d(1./sigs,rs)
         self.sig_d1 = interp1d(rs,sig_d1s)
         self.sig_d2 = interp1d(rs,sig_d2s)
@@ -100,6 +120,7 @@ class halofitPk(object):
         second derivative of variance at rknl. 
         '''
         #TODO consider handling upper limit differently
+        #current method introduces dependence of k_max of input power spectrum, which is not ideal.
         #nint = 1000
         #nint=np.floor((self.k_max)/2.)
         #print self.k_max/2.
@@ -108,6 +129,7 @@ class halofitPk(object):
         t = ( np.arange(nint)+0.5 )/nint
         y = 1./t - 1.
         rk = y
+        #TODO check this is correct way to get d2
         d2 = self.D2_L(rk,0.)
         x2 = y*y*r*r
         w1=np.exp(-x2)
@@ -155,6 +177,7 @@ class halofitPk(object):
         """
         halo model nonlinear fitting formula as described in 
         Appendix C of Smith et al. (2002)
+        modified by Takahashi arXiv:1208.2701v2 as in cosmosis
         """
         rk = np.asarray(rk)
         #rn    = self.rneff
@@ -176,7 +199,9 @@ class halofitPk(object):
 
         #cf Bird, Viel, Haehnelt 2011 for extragam explanation (cosmosis)
         extragam = 0.3159-0.0765*rn-0.8350*rncur
+        #extragam=0.
         
+            
         gam=extragam+0.86485+0.2989*rn+0.1631*rncur
         a=10**(1.4861+1.83693*rn+1.67618*rn*rn+0.7940*rn*rn*rn+\
              0.1670756*rn*rn*rn*rn-0.620695*rncur)
@@ -218,7 +243,7 @@ class halofitPk(object):
         else:
             return pnl
                     
-    def D2_NL(self,rk,z,return_components = False):
+    def D2_NL(self,rk,z,return_components = False,w_overwride=False):
         """
         halo model nonlinear fitting formula as described in 
         Appendix C of Smith et al. (2002)
@@ -227,7 +252,9 @@ class halofitPk(object):
         #rn    = self.rneff
         
         growth = self.C.G_norm(z)
-        
+        if np.max(growth)>self.g_max or np.min(growth)<self.g_min:
+            raise ValueError('Growth factor exceeds precomputed range. Try increasing r_max to increase G max or decreasing r_min to decrease G min.')
+
         rmid = self.r_grow(growth)
         d1 = self.sig_d1(rmid)
         d2 = self.sig_d2(rmid)
@@ -241,7 +268,10 @@ class halofitPk(object):
         om_m  = self.C.Omegam_z(z)
         om_v  = self.C.OmegaL_z(z)
         #w = -0.758
-        w=self.C.w_interp(z) #not sure if z dependent w is appropriate in halofit, possible answer in https://arxiv.org/pdf/0911.2454.pdf
+        if w_overwride:
+            w=-1
+        else:
+            w=self.C.w_interp(z) #not sure if z dependent w is appropriate in halofit, possible answer in https://arxiv.org/pdf/0911.2454.pdf
        # #cf Bird, Viel, Haehnelt 2011 for extragam explanation (cosmosis)
         #extragam = 0.3159-0.0765*rn-0.8350*rncur
 

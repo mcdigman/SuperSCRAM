@@ -61,9 +61,9 @@ class super_survey:
         self.O_I=np.array([], dtype=object)
     
         #self.O_a=np.array([], dtype=object)
-        for i in range(self.N_surveys_sw):
-          
+        for i in range(self.N_surveys_sw): 
             survey=surveys_sw[i]
+            #TODO why add N_O_I from different surveys?
             self.N_O_I=self.N_O_I + survey.get_N_O_I()          
         #TODO temp     
         for i in range(self.N_surveys_lw):
@@ -77,30 +77,31 @@ class super_survey:
         #self.O_I_data=self.get_O_I(k,P_lin)
         self.O_I_data = self.get_O_I_all()
         self.F_0 = self.basis.get_fisher()
-        if self.get_a:
-            if self.do_unmitigated:
-                self.cov_no_mit,self.a_no_mit=self.get_SSC_covar(mitigation=False)     
-                print "Super_Survey: unmitigated run gave a="+str(self.a_no_mit)
-            if self.do_mitigated:
-                #self.F_0.clear_cache()
-                self.cov_mit,self.a_mit=self.get_SSC_covar(mitigation=True)     
-                print "Super_Survey: mitigated run gave a="+str(self.a_mit)
+        if self.do_mitigated:
+            #self.cov_mit,self.a_mit=self.get_SSC_covar(mitigation=True)     
+            self.covs_sw,self.a_vals=self.get_SSC_covar(mitigation=True)     
+            #self.cov_no_mit,self.a_no_mit=self.get_SSC_covar(mitigation=False)     
+            if self.get_a:
+                print "Super_Survey: mitigated run gave a="+str(self.a_vals)
+        elif self.do_unmitigated:
+            self.covs_sw,self.a_vals=self.get_SSC_covar(mitigation=False)     
+            print "Super_Survey: unmitigated run gave a="+str(self.a_no_mit)
         else:
-            if self.do_unmitigated:
-                self.cov_no_mit=self.get_SSC_covar(mitigation=False)     
-            if self.do_mitigated:
-                self.F_0.clear_cache()
-                self.cov_mit=self.get_SSC_covar(mitigation=True)     
-        if self.do_unmitigated:
-            self.c_no_mit_params = self.surveys_sw[0].get_cov_tot_parameters(self.cov_no_mit[0])
+            self.covs_sw=np.array([],dtype=object)
+            self.a_vals = np.array([],dtype=object)
+
+        self.covs_params = self.surveys_sw[0].get_cov_tot_parameters(self.covs_sw[0])
+        #if self.do_mitigated:
+         #   self.c_mit_params = self.surveys_sw[0].get_cov_tot_parameters(self.cov_mit[0])
+            #self.c_no_mit_params = self.surveys_sw[0].get_cov_tot_parameters(self.cov_no_mit[0])
+        #elif self.do_unmitigated:
+            #self.c_no_mit_params = self.surveys_sw[0].get_cov_tot_parameters(self.cov_no_mit[0])
             #self.f_no_mit = fm.fisher_matrix(self.cov_no_mit[0].get_total_covar(),input_type=fm.REP_COVAR,fix_input=False)
             #self.f_no_mit_params = self.surveys_sw[0].get_fisher_parameters(self.f_no_mit) 
-        if self.do_mitigated:
-            self.c_mit_params = self.surveys_sw[0].get_cov_tot_parameters(self.cov_mit[0])
             #self.f_mit = fm.fisher_matrix(self.cov_mit[0].get_total_covar(),input_type=fm.REP_COVAR,fix_input=False)
             #self.f_mit_params = self.surveys_sw[0].get_fisher_parameters(self.f_mit) 
         #TODO iterate
-        self.c_g_params = self.surveys_sw[0].get_cov_tot_parameters(self.cov_no_mit[0],gaussian_only=True)
+        self.covs_g_params = self.surveys_sw[0].get_cov_tot_parameters(self.covs_sw[0],gaussian_only=True)
         #self.f_gaussian = fm.fisher_matrix(self.cov_no_mit[0].get_gaussian_covar(),input_type=fm.REP_COVAR,fix_input=True)
         #self.f_gaussian_params = self.surveys_sw[0].get_fisher_parameters(self.f_gaussian)
 
@@ -125,23 +126,22 @@ class super_survey:
             print "Super_Survey: getting SSC covar without mitigation"
 
         Cov_SSC = np.zeros(self.N_surveys_sw,dtype=object) 
-        F_SSC = np.zeros(self.N_surveys_sw,dtype=object) 
-        if self.get_a:
-            a_SSC = np.zeros(self.N_surveys_sw,dtype=object) 
+        F_SSC = np.zeros((2,self.N_surveys_sw),dtype=object) 
+        a_SSC = np.zeros((2,self.N_surveys_sw),dtype=object) 
 
         for i in range(0,self.N_surveys_sw):
             survey=self.surveys_sw[i]
-            Cov_SSC[i] = survey.get_covars(F_loc,self.basis)
+            if mitigation:
+                Cov_SSC[i] = survey.get_covars(np.array([self.F_0,F_loc]),self.basis)
+            else:
+                Cov_SSC[i] = survey.get_covars(np.array([self.F_0]),self.basis)
             
             if self.get_a:
                 T=self.basis.D_delta_bar_D_delta_alpha(survey.geo,tomography=True)[0]
                 a_SSC[i]=F_loc.contract_covar(T.T,T,identical_inputs=True)
                 print "Super_Survey: a is "+str(a_SSC[i])+" for survey #"+str(i)
         self.F_fin = F_loc
-        if self.get_a:
-            return Cov_SSC,a_SSC
-        else:
-            return Cov_SSC
+        return Cov_SSC,a_SSC
 
     def get_O_a(self):
         D_O_a=np.zeros(self.N_O_a,dtype=object)
@@ -178,6 +178,7 @@ def get_ellipse_specs(covs,dchi2=2.3):
     areas = np.zeros_like(covs)
     for i in range(0,covs.shape[0]):
         for j in range(0,covs.shape[1]):
+            #cf arxiv:0906.4123 for explanation
             a_s[i,j] = np.sqrt((covs[i,i]+covs[j,j])/2.+np.sqrt((covs[i,i]-covs[j,j])**2/4.+covs[i,j]**2))
             b_s[i,j] = np.sqrt((covs[i,i]+covs[j,j])/2.-np.sqrt((covs[i,i]-covs[j,j])**2/4.+covs[i,j]**2))
             angles[i,j] = np.arctan2(2.*covs[i,j],covs[i,i]-covs[j,j])/2.
@@ -185,7 +186,88 @@ def get_ellipse_specs(covs,dchi2=2.3):
     width2s = b_s*alpha
     areas = np.pi*width1s*width2s
     return width1s,width2s,angles,areas
-          
+
+def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_param_list,C,dchi2,adaptive_mult=1.05):
+    import matplotlib.pyplot as plt
+    import matplotlib.ticker as ticker
+    from matplotlib.patches import Ellipse
+    n_p = cosmo_param_list.size
+    fig,ax_list = plt.subplots(n_p,n_p)
+    #width1s_g,width2s_g,angles_g,areas_g = get_ellipse_specs(SS.c_g_params,dchi2=dchi2)
+    #width1s_no_mit,width2s_no_mit,angles_no_mit,areas_no_mit = get_ellipse_specs(SS.c_no_mit_params,dchi2=dchi2)
+    #width1s_mit,width2s_mit,angles_mit,areas_mit = get_ellipse_specs(SS.c_mit_params,dchi2=dchi2)
+    n_c = cov_set.shape[0]
+    n_p = cosmo_param_list.shape[0]
+    width1_set = np.zeros((n_c,n_p,n_p))
+    width2_set = np.zeros((n_c,n_p,n_p))
+    angle_set = np.zeros((n_c,n_p,n_p))
+    area_set = np.zeros((n_c,n_p,n_p))
+    for itr3 in range(0,n_c):
+        width1_set[itr3],width2_set[itr3],angle_set[itr3],area_set[itr3] = get_ellipse_specs(cov_set[itr3],dchi2=dchi2)
+    if box_widths is "adaptive":
+        box_widths = np.zeros(n_p)
+        for itr3 in range(0,n_c):
+            box_widths = np.max(np.array([box_widths,2.*np.sqrt(np.diag(cov_set[itr3]))]),axis=0)
+        box_widths*=adaptive_mult
+
+    xbox_widths = box_widths
+    ybox_widths = box_widths
+    for itr1 in range(0,n_p):
+        for itr2 in range(0,n_p): 
+            ax = ax_list[itr2,itr1]
+            param1 = cosmo_param_list[itr1] 
+            param2 = cosmo_param_list[itr2] 
+            fid_point = np.array([C.cosmology[param1],C.cosmology[param2]])
+
+            #TODO check sense of rotation
+            es = np.zeros(n_c,dtype=object)
+            for itr3  in range(0,n_c):
+                es[itr3] = Ellipse(fid_point,width1_set[itr3][itr1,itr2],width2_set[itr3][itr1,itr2],angle=180./np.pi*angle_set[itr3][itr1,itr2],label=label_set[itr3])
+                ax.add_artist(es[itr3])
+                es[itr3].set_clip_box(ax.bbox)
+                es[itr3].set_alpha(opacity_set[itr3])
+                es[itr3].set_edgecolor(color_set[itr3])
+                es[itr3].set_facecolor(color_set[itr3])
+                es[itr3].set_fill(False)
+
+            xbox_width = xbox_widths[itr1]
+            ybox_width = ybox_widths[itr2]
+            nticks = 3
+            tickrange =0.7
+            xtickspacing = xbox_width*tickrange/nticks
+            ytickspacing = ybox_width*tickrange/nticks
+            xticks = np.arange(fid_point[0]-tickrange/2*xbox_width,fid_point[0]+tickrange/2*xbox_width+0.01*xtickspacing,xtickspacing)
+            yticks = np.arange(fid_point[1]-tickrange/2*ybox_width,fid_point[1]+tickrange/2*ybox_width+0.01*ytickspacing,ytickspacing)
+            #ax.set_title('1-sigma contours')
+            ax.xaxis.set_major_locator(ticker.FixedLocator(xticks))
+            ax.yaxis.set_major_locator(ticker.FixedLocator(yticks))
+            formatter=ticker.FormatStrFormatter("%.4f")
+            ax.xaxis.set_major_formatter(formatter)
+            ax.yaxis.set_major_formatter(formatter)
+            ax.set_xlim(fid_point[0]-xbox_width/2.,fid_point[0]+xbox_width/2.)
+            ax.set_ylim(fid_point[1]-ybox_width/2.,fid_point[1]+ybox_width/2.)
+            ax.tick_params(axis='both',labelsize='small',labelbottom='off',labelleft='off',labeltop='off',labelright='off')
+            #ax.ticklabel_format(useOffset=False)
+
+            ax.grid()
+            if itr1==itr2==0:
+                ax.legend(handles=[es[0],es[1],es[2]],loc=2,prop={'size':6})
+            if itr1==0:
+                ax.set_ylabel(param2,fontsize=8)
+                ax.tick_params(axis='y',labelsize=8,labelleft='on')
+            if itr1==n_p-1:
+                ax.tick_params(axis='y',labelsize=8,labelright='on')
+            if itr2==0:
+                ax.tick_params(axis='x',labelsize=8,labeltop='on')
+             #   ax.ticklabel_format(axis='x',useOffset=True)
+            if itr2==n_p-1:
+                ax.set_xlabel(param1,fontsize=8)
+                ax.tick_params(axis='x',labelsize=8,labelbottom='on')
+             #   ax.ticklabel_format(axis='x',useOffset=True)
+
+    plt.subplots_adjust(wspace=0.,hspace=0.)
+    plt.show()
+      
 if __name__=="__main__":
     t1 = time()
     z_max=1.05; l_max=50 
@@ -204,19 +286,23 @@ if __name__=="__main__":
     r_max=C.D_comov(z_max)
     print 'this is r max and l_max', r_max , l_max
 
-    theta0=0.
+    #theta0=0.
+    #theta1=np.pi/2.
+    theta0=np.pi/4.
     theta1=np.pi/2.
     phi0=0.
-    phi1=5.*np.pi**2/162. #gives exactly a 1000 square degree field of view
-    phi2=2.*np.pi/3.
+    #phi1=5.*np.pi**2/162. #gives exactly a 1000 square degree field of view
+    phi1 = 5*np.pi**2/(np.sqrt(2)*81.)
+    phi2=np.pi/3.
     phi3=phi2+(phi1-phi0)
     theta1s = np.array([theta0,theta1,theta1,theta0,theta0])
     phi1s = np.array([phi0,phi0,phi1,phi1,phi0])
-    theta_in1 = np.pi/8.
-    phi_in1 = 4.*np.pi**2/162.
+    theta_in1 = 3.*np.pi/8.
+    #phi_in1 = 4.*np.pi**2/162.
+    phi_in1 = 5*np.pi**2/(2.*np.sqrt(2)*162.)
     theta2s = np.array([theta0,theta1,theta1,theta0,theta0])
     phi2s = np.array([phi2,phi2,phi3,phi3,phi2])
-    theta_in2 = np.pi/8.
+    theta_in2 = 3.*np.pi/8.
     phi_in2 = phi2+(phi_in1-phi0)
     #theta0=np.pi/16.
     #theta1=np.pi/2.
@@ -275,7 +361,7 @@ if __name__=="__main__":
     #cosmo_param_list = np.array(['LogAs','w'])
     #cosmo_param_epsilons = np.array([0.001,0.001])
 
-    param_priors = planck_fisher.get_w0_projected(planck_fisher_loc = 'F_Planck_tau0.01.dat')
+    param_priors = planck_fisher.get_w0_projected(params=defaults.planck_fisher_params)
     #cosmo_param_list = np.array(['Omegamh2','Omegabh2'])
     #cosmo_param_epsilons = np.array([0.001,0.001])
     #cosmo_param_list = np.array(['Omegamh2','Omegabh2','ns','h','sigma8'])
@@ -308,7 +394,7 @@ if __name__=="__main__":
      
     print 'main: this is r_max: '+str(r_max)
      
-    SS=super_survey(surveys_sw, surveys_lw,r_max,l_sw,n_zeros,k,basis,P_lin=P,C=C,get_a=True,do_unmitigated=True,do_mitigated=True)
+    SS=super_survey(surveys_sw, surveys_lw,r_max,l_sw,n_zeros,k,basis,P_lin=P,C=C,get_a=False,do_unmitigated=True,do_mitigated=True)
 
     t2 = time()
     print "main: total run time "+str(t2-t1)+" s"
@@ -326,12 +412,16 @@ if __name__=="__main__":
    #chol_cov = get_inv_cholesky(cov_ss)
     #mat_retrieved = (np.identity(chol_cov.shape[0])+np.dot(np.dot(chol_cov,SS.cov_no_mit[0,0]),chol_cov.T))
     #eig_ret = np.linalg.eigvals(mat_retrieved)
-    SS_eig =  SS.cov_no_mit[0].get_SS_eig()
-    SS_eig_mit =  SS.cov_mit[0].get_SS_eig()
-    chol_gauss = np.linalg.cholesky(SS.cov_no_mit[0].get_gaussian_covar())
-    print "main: unmitigated lambda1,2: "+str(SS_eig[0][-1])+","+str(SS_eig[0][-2])
-    print "main: mitigated lambda1,2: "+str(SS_eig_mit[0][-1])+","+str(SS_eig_mit[0][-2])
-    print "n lambda>1.00000001: "+str(np.sum(np.abs(SS_eig[0])>1.00000001))
+    #SS_eig =  SS.cov_no_mit[0].get_SS_eig()[0]
+    #SS_eig_mit =  SS.cov_mit[0].get_SS_eig()[0]
+    try:
+        SS_eigs = SS.covs_sw[0].get_SS_eig()
+        chol_gauss = np.linalg.cholesky(SS.covs_sw[0].get_gaussian_covar())
+        print "main: unmitigated lambda1,2: "+str(SS_eigs[0][0][-1])+","+str(SS_eigs[0][0][-2])
+        print "main: mitigated lambda1,2: "+str(SS_eigs[1][0][-1])+","+str(SS_eigs[1][0][-2])
+        print "n lambda>1.00000001: "+str(np.sum(np.abs(SS_eigs[0][0][0])>1.00000001))
+    except:
+        warn('Eig value failed')
 #    print "SS eigenvals:",SS_eig[0]
 #    print "(S/N)^2 gaussian: ",np.dot(np.dot(c_ss,np.linalg.inv(cov_ss)),c_ss)
     #print "(S/N)^2 gaussian+no mitigation: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss)+SS.cov_no_mit[0,0])),c_ss)
@@ -348,113 +438,22 @@ if __name__=="__main__":
     ax_ls = np.hstack((l_sw,l_sw))
     
     v= SS.surveys_sw[0].get_dO_I_dparameter_array()
-    eig_nm = SS.cov_no_mit[0].get_SS_eig_param(v)
-    eig_m = SS.cov_mit[0].get_SS_eig_param(v)
+    eig_params = SS.covs_sw[0].get_SS_eig_param(v)
+    #eig_nm = SS.cov_no_mit[0].get_SS_eig_param(v)
+    #eig_m = SS.cov_mit[0].get_SS_eig_param(v)
 
-    import matplotlib.pyplot as plt
     ellipse_plot=True
     if ellipse_plot:
-        from matplotlib.patches import Ellipse
-        import numpy.random as rnd
-        #fig = plt.figure(0)
-        n_p = cosmo_param_list.size
-        fig,ax_list = plt.subplots(n_p,n_p)
-        dchi2 = 2.3
-        width1s_g,width2s_g,angles_g,areas_g = get_ellipse_specs(SS.c_g_params,dchi2=dchi2)
-        width1s_no_mit,width2s_no_mit,angles_no_mit,areas_no_mit = get_ellipse_specs(SS.c_no_mit_params,dchi2=dchi2)
-        width1s_mit,width2s_mit,angles_mit,areas_mit = get_ellipse_specs(SS.c_mit_params,dchi2=dchi2)
-        width1_set = np.array([width1s_mit,width1s_no_mit,width1s_g])
-        width2_set = np.array([width2s_mit,width2s_no_mit,width2s_g])
-        angle_set = np.array([angles_mit,angles_no_mit,angles_g])
-        n_c = angle_set.shape[0]
-        #g_color = rnd.rand(3)
-        opacity1 = 0.2
-        #no_mit_color = np.array([ 0.97474969,  0.52521156,  0.7712169 ])
-        #mit_color = np.array([ 0.11296808,  0.03784064,  0.22109817])
-        #g_color = np.array([ 0.44051884,  0.68219451,  0.89644416])
         no_mit_color = np.array([1.,0.,0.])
         mit_color = np.array([0.,1.,0.])
         g_color = np.array([0.,0.,1.])
-        #box_width_xs = np.max(width1s[:,0])
         color_set = np.array([mit_color,no_mit_color,g_color])
         opacity_set = np.array([1.0,1.0,1.0])
-        xbox_widths = np.array([0.015,0.005,0.0005,0.005,0.1,0.05])
-
-        #xbox_widths = np.array([0.1,0.02])
-        ybox_widths = xbox_widths
-        #ybox_widths = np.array([0.05,0.05,0.05,0.05,0.35,0.05])
-        #xbox_widths = np.array([0.01,0.01])
-        #ybox_widths = np.array([0.01,0.01])
+        box_widths = np.array([0.015,0.005,0.0005,0.005,0.1,0.05])
+        dchi2 = 2.3
+        cov_set = np.array([SS.covs_params[1],SS.covs_params[0],SS.covs_g_params[0]])
         label_set = np.array(["ssc+mit+g","ssc+g","g"])
-        for itr1 in range(0,n_p):
-            for itr2 in range(0,n_p): 
-                ax = ax_list[itr2,itr1]
-                param1 = cosmo_param_list[itr1] 
-                param2 = cosmo_param_list[itr2] 
-                fid_point = np.array([C.cosmology[param1],C.cosmology[param2]])
-
-                #e_g = Ellipse(fid_point,width1s_g[itr1,itr2],width2s_g[itr1,itr2],angle=180./np.pi*angles_g[itr1,itr2],label='g')
-                #box_width_g = np.max(width1s_g[itr1,itr2],width2s_g[itr1,itr2])
-                #ax.add_artist(e_g)
-                #e_g.set_clip_box(ax.bbox)
-                #e_g.set_alpha(opacity1)
-                #e_g.set_facecolor(g_color)
-                #TODO check sense of rotation
-                es = np.zeros(n_c,dtype=object)
-                for itr3  in range(0,n_c):
-                    es[itr3] = Ellipse(fid_point,width1_set[itr3][itr1,itr2],width2_set[itr3][itr1,itr2],angle=180./np.pi*angle_set[itr3][itr1,itr2],label=label_set[itr3])
-                    #box_width_no_mit = np.max(width1s_no_mit[itr1,itr2],width2s_no_mit[itr1,itr2])
-                    ax.add_artist(es[itr3])
-                    es[itr3].set_clip_box(ax.bbox)
-                    es[itr3].set_alpha(opacity_set[itr3])
-                    es[itr3].set_edgecolor(color_set[itr3])
-                    es[itr3].set_facecolor(color_set[itr3])
-                    es[itr3].set_fill(False)
-                #e_no_mit = Ellipse(fid_point,width1s_no_mit[itr1,itr2],width2s_no_mit[itr1,itr2],angle=180./np.pi*angles_no_mit[itr1,itr2],label='ssc+g')
-                #box_width_no_mit = np.max(width1s_no_mit[itr1,itr2],width2s_no_mit[itr1,itr2])
-                #ax.add_artist(e_no_mit)
-                #e_no_mit.set_clip_box(ax.bbox)
-                #e_no_mit.set_alpha(opacity1)
-                #e_no_mit.set_facecolor(no_mit_color)
-                
-                #e_mit = Ellipse(fid_point,width1s_mit[itr1,itr2],width2s_mit[itr1,itr2],angle=180./np.pi*angles_mit[itr1,itr2],label='ssc+g+mit')
-                #box_width_mit = np.max(width1s_mit[itr1,itr2],width2s_mit[itr1,itr2])
-                #ax.add_artist(e_mit)
-                #e_mit.set_clip_box(ax.bbox)
-                #e_mit.set_alpha(opacity1)
-                #e_mit.set_facecolor(mit_color)
-
-           #     xbox_width = np.max(np.array([width1s_no_mit[:,itr1]))
-                #xbox_width = 0.05
-                #if itr1==n_p-1:
-                #    xbox_width=0.35
-           #     ybox_width = np.max(np.array(width2s_no_mit[:,itr2]))
-                #ybox_width = 0.05
-                #if itr2==n_p-1:
-                #    ybox_width=0.35
-                xbox_width = xbox_widths[itr1]
-                ybox_width = ybox_widths[itr2]
-                #ax.set_title('1-sigma contours')
-                ax.set_xlim(fid_point[0]-xbox_width/2.,fid_point[0]+xbox_width/2.)
-                ax.set_ylim(fid_point[1]-ybox_width/2.,fid_point[1]+ybox_width/2.)
-                #ax.set_aspect('equal')
-                ax.tick_params(axis='both',labelsize='small',labelbottom='off',labelleft='off',labeltop='off',labelright='off')
-                ax.grid()
-                if itr1==itr2==0:
-                    ax.legend(handles=[es[0],es[1],es[2]],loc=2,prop={'size':6})
-                if itr1==0:
-                    ax.set_ylabel(param2,fontsize=8)
-                    ax.tick_params(axis='y',labelsize='small',labelleft='on')
-                if itr1==n_p-1:
-                    ax.tick_params(axis='y',labelsize='small',labelright='on')
-                if itr2==0:
-                    ax.tick_params(axis='x',labelsize='small',labeltop='on')
-                if itr2==n_p-1:
-                    ax.set_xlabel(param1,fontsize=8)
-                    ax.tick_params(axis='x',labelsize='small',labelbottom='on')
-
-        plt.subplots_adjust(wspace=0.,hspace=0.)
-        plt.show()
+        make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',cosmo_param_list,C,dchi2=dchi2)
 
 
     chol_plot=False
@@ -539,11 +538,12 @@ if __name__=="__main__":
     eig_test_fails = 0
     if test_eigs:
         REL_TOLERANCE = 10**-8
-        c_ssc0 = SS.cov_no_mit[0].get_ssc_covar()
+        c_sscs = SS.covs_sw[0].get_ssc_covar()
+        c_ssc0 = c_sscs[0]
         if not np.allclose(c_ssc0,c_ssc0.T):
             eig_test_fails+=1
             warn("unperturbed result covariance not symmetric, unacceptable")
-        c_ssc1 = SS.cov_mit[0].get_ssc_covar()
+        c_ssc1 = c_sscs[1]
         if not np.allclose(c_ssc1,c_ssc1.T):
             eig_test_fails+=1
             warn("perturbed result covariance not symmetric, unacceptable")

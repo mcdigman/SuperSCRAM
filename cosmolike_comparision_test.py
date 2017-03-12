@@ -138,6 +138,11 @@ if __name__ == '__main__':
     #k_in=d[:,0]; P_in=d[:,1]
     camb_params = defaults.camb_params
     camb_params['force_sigma8']=True
+    camb_params['leave_h'] =False
+    camb_params['npoints']=1000
+    camb_params['minkh']=1.1e-4
+    camb_params['maxkh']=100.
+    camb_params['kmax']=1.
     k_in,P_in=camb_pow(defaults.cosmology_cosmolike,camb_params=camb_params)
     import matplotlib.pyplot as plt
     len_params = defaults.lensing_params.copy()

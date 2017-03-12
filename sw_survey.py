@@ -95,12 +95,14 @@ class SWSurvey:
 
         return cov_mats
 
-    def get_SSC_cov(self,fisher,basis):
+    def get_SSC_cov(self,fisher_set,basis):
         print "sw_survey: begin computing sw covariance matrices"
-        cov_mats = np.zeros((self.get_total_dimension(),self.get_total_dimension()))
+        n_m = self.get_total_dimension()
+        n_c = fisher_set.shape[0]
+        cov_mats = np.zeros((n_c,n_m,n_m))
 
         #short circuit get_dO_I_ddelta_bar_list() if the result won't be used
-        if self.get_total_dimension()==0:
+        if n_m==0:
             print "sw_survey: no sw covariance matrices to compute"
             return cov_mats
         ds = self.get_dimension_list()
@@ -108,12 +110,16 @@ class SWSurvey:
         n1 = 0
         #TODO consider not getting this whole list initially
         dO_I_ddelta_bar_list = self.get_dO_I_ddelta_bar_list()
-        Ts = np.zeros(self.get_N_O_I(),dtype=object)
-        for i in range(0,Ts.size):
-            #TODO is this right cholesky?
-            Ts[i] = fisher.contract_chol_right(basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[i]))
+
+        n_o = self.get_N_O_I()
+        Ts = np.zeros((n_c,n_o),dtype=object)
+        for i in range(0,n_o):
+            dO_ddelta_alpha_i=basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[i])
+            for j in range(0,n_c):
+                #TODO is this right cholesky?
+                Ts[j,i] = fisher_set[j].contract_chol_right(dO_ddelta_alpha_i)
             #Ts[i] = basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[i])
-        for i in range(0,self.get_N_O_I()):
+        for i in range(0,n_o):
             n2 = 0
           #  T_i = basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[i])
          #   print "sw_survey: T_i shape: "+str(T_i.shape)
@@ -125,9 +131,10 @@ class SWSurvey:
               #  T_j = basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[j])
                # cov_mats[n1:n1+ds[i],n2:n2+ds[j]] = np.dot(np.dot(Ts[i].T,fisher.get_covar()),Ts[j])
                 #cov_mats[n1:n1+ds[i],n2:n2+ds[j]] = fisher.contract_covar(Ts[i].T,Ts[j])
-                cov_mats[n1:n1+ds[i],n2:n2+ds[j]] = np.dot(Ts[i].T,Ts[j])
-                if not i==j:
-                    cov_mats[n2:n2+ds[i],n1:n1+ds[j]] = cov_mats[n1:n1+ds[i],n2:n2+ds[j]].T
+                for k in range(0,n_c):
+                    cov_mats[k,n1:n1+ds[i],n2:n2+ds[j]] = np.dot(Ts[k,i].T,Ts[k,j])
+                    if not i==j:
+                        cov_mats[k,n2:n2+ds[i],n1:n1+ds[j]] = cov_mats[k,n1:n1+ds[i],n2:n2+ds[j]].T
 
 
                 n2+=ds[j]
@@ -139,8 +146,8 @@ class SWSurvey:
         return np.zeros((self.get_total_dimension(),self.get_total_dimension()))
     
     #get the covariance matrices, and a fisher matrix for the total covariance
-    def get_covars(self,fisher,basis):
-        cov_mats =  CovMat(self.get_gaussian_cov(),self.get_nongaussian_cov(),self.get_SSC_cov(fisher,basis),self.get_total_dimension(),self.param_priors)
+    def get_covars(self,fisher_set,basis):
+        cov_mats =  CovMat(self.get_gaussian_cov(),self.get_nongaussian_cov(),self.get_SSC_cov(fisher_set,basis),self.get_total_dimension(),self.param_priors)
         #fisher_c = fm.fisher_matrix(cov_mats.get_total_covar(),input_type=fm.REP_COVAR,fix_input=False)
         return cov_mats
    
