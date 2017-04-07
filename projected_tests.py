@@ -6,6 +6,7 @@ import shear_power as sp
 import defaults
 from warnings import warn
 import unittest
+import matter_power_spectrum as mps
 
 #class TestCosmosisAgreement():
 
@@ -106,7 +107,9 @@ class TestCosmosisHalofitAgreement1(unittest.TestCase):
             #d = np.loadtxt('test_inputs/proj_1/p_k_lin.dat')
             #k_in = d[:,0]
             #P_in = d[:,1]
-            k_in,P_in = camb_pow(defaults.cosmology_cosmosis)
+            #k_in,P_in = camb_pow(defaults.cosmology_cosmosis)
+            P_in = mps.MatterPower(C)
+            k_in = P_in.k
             zs = np.loadtxt('test_inputs/proj_2/z.txt')
             zs[0] = 10**-3
 

@@ -15,12 +15,13 @@ from power_response import dp_ddelta
 from power_parameter_response import dp_dparameter
 from lensing_weight import q_shear,q_mag,q_num,q_k
 from lensing_source_distribution import get_source_distribution
+import matter_power_spectrum as mps
 import sph
 import re
 #TODO create derivative class than can change whole cosmology
 #TODO check integral boundaries ok
 class shear_power:
-    def __init__(self,k_in,C,zs,ls,omega_s,pmodel='halofit',P_in=np.array([]),ps=np.array([]),P_select=np.array([]),Cs=[],params=defaults.lensing_params,fpt_params=defaults.fpt_params,param_vary=None,mode=None):
+    def __init__(self,k_in,C,zs,ls,omega_s,pmodel='halofit',P_in=None,ps=np.array([]),P_select=np.array([]),Cs=[],params=defaults.lensing_params,fpt_params=defaults.fpt_params,param_vary=None,mode=None):
 	self.k_in = k_in
         self.C = C
         self.zs = zs
@@ -61,20 +62,23 @@ class shear_power:
                 self.chis = interp1d(z_bar,np.loadtxt('test_inputs/proj_2/d_m.txt')[::-1])(zs)
                 self.chi_As = self.chis
             elif pmodel=='halofit':
-                self.halo = hf.halofitPk(self.C,k_in,P_in)
-                self.pow_interp = RectBivariateSpline(self.k_in,self.zs,2*np.pi**2*(self.halo.D2_NL(self.k_in,self.zs).T/self.k_in**3).T)
+                #self.halo = hf.halofitPk(self.C,k_in,P_in)
+                #self.pow_interp = RectBivariateSpline(self.k_in,self.zs,2*np.pi**2*(self.halo.D2_NL(self.k_in,self.zs).T/self.k_in**3).T)
+                self.pow_interp = RectBivariateSpline(self.k_in,self.zs,P_in.nonlinear_power(self.zs,pmodel='halofit'),kx=2,ky=2)
             elif pmodel=='fastpt':
                 #TODO use defaults
-                fpt = FASTPT.FASTPT(k_in,fpt_params['nu'],low_extrap=-5,high_extrap=5,n_pad=800)
-                one_loop = fpt.one_loop(P_in,C_window=fpt_params['C_window']) 
+                #fpt = FASTPT.FASTPT(k_in,fpt_params['nu'],low_extrap=-5,high_extrap=5,n_pad=800)
+                #one_loop = fpt.one_loop(P_in,C_window=fpt_params['C_window']) 
                 #one_loop is proportional to amplitude of input power spectrum squared, so multiply by G^4 to rescale correctly
-                self.pow_interp = RectBivariateSpline(self.k_in,self.zs,np.outer(P_in,self.Gs**2)+np.outer(one_loop,self.Gs**4))
+                #self.pow_interp = RectBivariateSpline(self.k_in,self.zs,np.outer(P_in,self.Gs**2)+np.outer(one_loop,self.Gs**4))
+                self.pow_interp = RectBivariateSpline(self.k_in,self.zs,P_in.nonlinear_power(self.zs,pmodel='fastpt'),kx=2,ky=2)
             elif pmodel=='linear':
-                self.pow_interp = RectBivariateSpline(self.k_in,self.zs,np.outer(P_in,self.Gs**2),kx=1,ky=1)
+                self.pow_interp = RectBivariateSpline(self.k_in,self.zs,P_in.linear_power(self.zs),kx=2,ky=2)
+                #self.pow_interp = RectBivariateSpline(self.k_in,self.zs,np.outer(P_in,self.Gs**2),kx=1,ky=1)
             else:
                 raise ValueError('unrecognized pmodel\''+str(pmodel)+'\' for mode \''+str(mode)+'\'')
         elif mode == 'dc_ddelta':
-            self.pow_interp = RectBivariateSpline(k_in,zs,dp_ddelta(k_in,P_in,zs,C=self.C,pmodel=pmodel,epsilon=self.epsilon)[0],kx=1,ky=1) 
+            self.pow_interp = RectBivariateSpline(k_in,zs,dp_ddelta(k_in,P_in,zs,C=self.C,pmodel=pmodel,epsilon=self.epsilon)[0],kx=2,ky=2) 
         elif mode=='dc_dparameter':
             #TODO find analytic formula and fix this
             self.param_vary = param_vary
@@ -355,7 +359,9 @@ if __name__=='__main__':
         #cosmo_a = defaults.cosmology.copy()
         #k_a = d[:,0]
         #P_a = d[:,1]
-        k_a,P_a = cpow.camb_pow(C.cosmology)
+        #k_a,P_a = cpow.camb_pow(C.cosmology)
+        P_a = mps.MatterPower(C)
+        k_a = P_a.k
        # P_a = hf.halofitPk(k_a,C=C).D2_L(k_a,0)
         omega_s=np.pi/(3.*np.sqrt(2.))
       

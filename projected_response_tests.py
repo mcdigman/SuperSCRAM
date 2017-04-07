@@ -3,13 +3,17 @@ import shear_power as sp
 from geo import rect_geo
 import defaults
 from cosmopie import CosmoPie
+import matter_power_spectrum as mps
 
 if __name__=='__main__':
 
-    d=np.loadtxt('camb_m_pow_l.dat')
-    k=d[:,0]; P=d[:,1]
+    #d=np.loadtxt('camb_m_pow_l.dat')
+    #k=d[:,0]; P=d[:,1]
 
-    C=CosmoPie(k=k,P_lin=P,cosmology=defaults.cosmology)
+    C=CosmoPie(cosmology=defaults.cosmology)
+    P = mps.MatterPower(C)
+    k = P.k
+    
 
     Theta1=[np.pi/4.,5.*np.pi/16.]
     Phi1=[0.,np.pi/12.]

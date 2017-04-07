@@ -5,13 +5,10 @@ import camb
 from camb import model, initialpower
 import defaults
 #TODO may want to investigate possible halofit discrepancy
-def camb_pow(cosmology,zbar=0.,camb_params=defaults.camb_params,nonlinear_model=model.NonLinear_none,neutrinos_on=True):
+def camb_pow(cosmology,zbar=0.,camb_params=defaults.camb_params,nonlinear_model=model.NonLinear_none):
 #Now get matter power spectra and sigma8 at redshift 0 and 0.8
         pars = camb.CAMBparams()
-        if neutrinos_on:
-            pars.set_cosmology(H0=cosmology['H0'], ombh2=cosmology['Omegabh2'], omch2=cosmology['Omegach2'],omk=cosmology['Omegak'],mnu=cosmology['mnu']) #ignores tau and YHe for now
-        else:
-            pars.set_cosmology(H0=cosmology['H0'], ombh2=cosmology['Omegabh2'], omch2=cosmology['Omegach2'],omk=cosmology['Omegak'],mnu=0.) #ignores tau and YHe for now
+        pars.set_cosmology(H0=cosmology['H0'], ombh2=cosmology['Omegabh2'], omch2=cosmology['Omegach2'],omk=cosmology['Omegak'],mnu=cosmology['mnu']) #ignores tau and YHe for now
 
         if cosmology.get('As') is not None:
             pars.InitPower.set_params(ns=cosmology['ns'],As=cosmology['As'])
@@ -34,7 +31,6 @@ def camb_pow(cosmology,zbar=0.,camb_params=defaults.camb_params,nonlinear_model=
         pars.NonLinear = nonlinear_model
         results = camb.get_results(pars)
         kh, z, pk = results.get_matter_power_spectrum(minkh=camb_params['minkh'], maxkh=camb_params['maxkh'], npoints = camb_params['npoints'])
-
         if camb_params['force_sigma8']:
             sigma8 = cosmology['sigma8']
             pk[0] = pk[0]*sigma8**2/results.get_sigma8()**2
@@ -179,8 +175,8 @@ if __name__=='__main__':
         from scipy.interpolate import interp1d
         print np.log(interp1d(s8s,As)(0.82))
 
-
-    w_test=True
+    
+    w_test=False
     if w_test:
         camb_params = defaults.camb_params.copy()
         camb_params['force_sigma8']=False
@@ -195,12 +191,15 @@ if __name__=='__main__':
         cosmo_start = cp.add_derived_parameters(cosmo_start,p_space='jdem')
         cosmo_start['de_model']='constant_w'
         cosmo_start['w']=-1
+        cosmo_start['mnu'] = 0.
         w_step = -0.4
-        ws = np.arange(-0.6,-3,w_step)
+        ws = np.arange(-0.6,-1.9,w_step)
+        zs = np.array([0.1])
         kls= np.zeros((ws.size,camb_params['npoints']))
         Pls= np.zeros((ws.size,camb_params['npoints']))
         knls= np.zeros((ws.size,camb_params['npoints']))
         Pnls= np.zeros((ws.size,camb_params['npoints']))
+        Peffs= np.zeros((ws.size,camb_params['npoints']))
         Phfs= np.zeros((ws.size,camb_params['npoints']))
         Pfpts= np.zeros((ws.size,camb_params['npoints']))
         Pfpt2s= np.zeros((ws.size,camb_params['npoints']))
@@ -224,15 +223,22 @@ if __name__=='__main__':
         fpt_params['n_pad']=3000
         fpt_params['high_extrap']=8
         fpt_params['low_extrap']=-8
-        k_0,P_0,sigma8_0 =camb_pow(cosmo_start,camb_params=camb_params,nonlinear_model=model.NonLinear_none,neutrinos_on=False) 
+        k_0,P_0,sigma8_0 =camb_pow(cosmo_start,camb_params=camb_params,nonlinear_model=model.NonLinear_none) 
         C_0=cp.CosmoPie(cosmo_start,needs_power=False)
         G_0 = C_0.G(0.)
+        halofit_params =defaults.halofit_params.copy()
+        halofit_params['cutoff']=False
+        hf_0 = hf.halofitPk(C_0,k_0,P_0,halofit_params=halofit_params)
 
         n_w = ws.size
         wm = w_matcher.WMatcher(C_0)
-        zs = np.array([0.])
         w4s = np.zeros((n_w,zs.size))
-        mult4s = np.zeros((n_w,zs.size,zs.size))
+        mult4s = np.zeros((n_w,zs.size))
+        scales = np.zeros((n_w,zs.size))
+        kq2s = np.zeros((n_w))
+        sqs = np.zeros((n_w))
+        alphaqs = np.zeros((n_w))
+        transfer_mods = np.zeros((n_w,k_0.size))
 
         print "begin loop"
         for itr in range(0,ws.size):
@@ -240,42 +246,47 @@ if __name__=='__main__':
             Cs[itr]=cp.CosmoPie(cosmo_start,needs_power=False)
             Gs[itr] = Cs[itr].G(0.)
             Gnorms[itr] = Cs[itr].G_norm(0.)
-            kls[itr],Pls[itr],sigma8ls[itr] = camb_pow(cosmo_start,camb_params=camb_params,nonlinear_model=model.NonLinear_none,neutrinos_on=False)
+            kls[itr],Pls[itr],sigma8ls[itr] = camb_pow(cosmo_start,camb_params=camb_params,nonlinear_model=model.NonLinear_none)
             if itr==0:
                 fpt = FASTPT.FASTPT(kls[0],fpt_params['nu'],low_extrap=fpt_params['low_extrap'],high_extrap=fpt_params['high_extrap'],n_pad=fpt_params['n_pad'])
-            knls[itr],Pnls[itr],sigma8nls[itr] = camb_pow(cosmo_start,zbar=0.0,camb_params=camb_params,nonlinear_model=model.NonLinear_both,neutrinos_on=False)
-            hfs[itr] = hf.halofitPk(Cs[itr],kls[itr],Pls[itr])
-            Phfs[itr] = 2*np.pi**2*(hfs[itr].D2_NL(kls[itr],0.0).T/kls[itr]**3).T
+            knls[itr],Pnls[itr],sigma8nls[itr] = camb_pow(cosmo_start,zbar=1.,camb_params=camb_params,nonlinear_model=model.NonLinear_both)
+            hfs[itr] = hf.halofitPk(Cs[itr],kls[itr],Pls[itr],halofit_params=halofit_params)
+            Phfs[itr] = 2*np.pi**2*(hfs[itr].D2_NL(kls[itr],1.0).T/kls[itr]**3).T
             #Pfpts[itr] =Pls[0]*((Gs[itr]/Gs[0])**2)*Gnorms[itr]**2+fpt.one_loop(Pls[0]*(Gs[itr]/Gs[0])**2,C_window=fpt_params['C_window'])*Gnorms[itr]**4
             Pfpts[itr] =P_0*(Gs[itr]/G_0)**2+fpt.one_loop(P_0,C_window=fpt_params['C_window'])*(Gs[itr]/G_0)**4
             Pfpt2s[itr] =Pls[itr]*(Gnorms[itr])**2+fpt.one_loop(Pls[itr],C_window=fpt_params['C_window'])*(Gnorms[itr])**4
             w4s[itr] = wm.match_w(Cs[itr],zs)
             mult4s[itr] = wm.match_growth(Cs[itr],zs,w4s[itr])
+            scales[itr] = wm.match_scale(Cs[itr],zs,w4s[itr])
             cosmo_eff = cosmo_start.copy()
             cosmo_eff['w'] = w4s[itr,0]
             cosmo_eff['de_model'] = 'constant_w'
-            cosmo_eff['sigma8']*=np.sqrt(mult4s[itr,0,0])
+            cosmo_eff['sigma8']*=np.sqrt(mult4s[itr,0])*np.sqrt(scales[itr])
             C4s[itr] = cp.CosmoPie(cosmo_eff,needs_power=False) 
-            Pfpt3s[itr] =P_0*mult4s[itr,0,0]+fpt.one_loop(P_0,C_window=fpt_params['C_window'])*mult4s[itr,0,0]**2
-            
-            if itr>0:
-                hf2s[itr] = hf.halofitPk(Cs[itr],kls[itr],P_0*(Gs[itr]/G_0)**2)
-                hf4s[itr] = hf.halofitPk(C4s[itr],kls[itr],P_0*mult4s[itr,0,0])
-                Phf2s[itr] = 2*np.pi**2*(hf2s[itr].D2_NL(kls[itr],0.,w_overwride=True).T/kls[itr]**3).T
-                Phf3s[itr] = 2*np.pi**2*(hf2s[itr].D2_NL(kls[itr],0.,w_overwride=False).T/kls[itr]**3).T
-                Phf4s[itr] = 2*np.pi**2*(hf4s[itr].D2_NL(kls[itr],0.,w_overwride=False).T/kls[itr]**3).T
-            else:
-                hf2s[itr] = hf.halofitPk(Cs[itr],kls[itr],P_0*(Gs[itr]/G_0)**2)
-                hf4s[itr] = hf.halofitPk(C4s[itr],kls[itr],P_0*mult4s[itr,0,0])
-                Phf2s[itr] = Phfs[0]
-                Phf3s[itr] = 2*np.pi**2*(hf2s[itr].D2_NL(kls[itr],0.,w_overwride=False).T/kls[itr]**3).T
-                Phf4s[itr] = 2*np.pi**2*(hf4s[itr].D2_NL(kls[itr],0.,w_overwride=False).T/kls[itr]**3).T
-                hf4s[itr] = hf.halofitPk(C4s[itr],kls[itr],P_0*mult4s[itr,0,0])
+            kq2s[itr] = np.abs((3.*C_0.H0/C_0.c)**2*(1.-w4s[itr])*(2.+2.*w4s[itr]-w4s[itr]*C_0.Omegam))
+            sqs[itr] = (0.012-0.036*w4s[itr]-0.017/w4s[itr])*(1.-C_0.Omegam)+(0.098+0.029*w4s[itr]-0.085/w4s[itr])*np.log(C_0.Omegam)
+            alphaqs[itr] = (-w4s[itr])**sqs[itr]
+            transfer_mods[itr] = (alphaqs[itr]+alphaqs[itr]*(k_0**2/kq2s[itr]))/(1.+alphaqs[itr]*(k_0**2/kq2s[itr])) 
+            #P_eff = P_0*mult4s[itr,0]*transfer_mods[itr]**2*sigma8ls[itr]**2/sigma8_0**2 #(sigma8ls[itr]**2/sigma8_0**2) should be interchangeable with scales[itr]
+            Peffs[itr] = P_0*mult4s[itr,0]*scales[itr]*transfer_mods[itr]**2#*sigma8ls[itr]**2/sigma8_0**2 #(sigma8ls[itr]**2/sigma8_0**2) should be interchangeable with scales[itr]
+            Pfpt3s[itr] =Peffs[itr]+fpt.one_loop(Peffs[itr],C_window=fpt_params['C_window'])
+            #if itr>0:
+            hf2s[itr] = hf.halofitPk(C4s[itr],kls[itr],Peffs[itr],halofit_params=halofit_params)
+            hf4s[itr] = hf.halofitPk(C4s[itr],kls[itr],P_0*mult4s[itr,0],halofit_params=halofit_params)
+            Phf2s[itr] = 2*np.pi**2*(hf2s[itr].D2_NL(kls[itr],1.0,w_overwride=True,fixed_w=w4s[itr],grow_overwride=False,fixed_growth=mult4s[itr]*C_0.G_norm(0.)**2).T/kls[itr]**3).T
+            Phf3s[itr] = 2*np.pi**2*(hfs[itr].D2_NL(kls[itr],0.,w_overwride=True,fixed_w=w4s[itr]).T/kls[itr]**3).T
+            Phf4s[itr] = 2*np.pi**2*(hf4s[itr].D2_NL(kls[itr],0.,w_overwride=False).T/kls[itr]**3).T
+            #else:
+            #    hf2s[itr] = hf.halofitPk(Cs[itr],kls[itr],P_0*mul)
+            #    hf4s[itr] = hf.halofitPk(C4s[itr],kls[itr],P_0*mult4s[itr,0])
+            #    Phf2s[itr] = 2*np.pi**2*(hf2s[itr].D2_NL(kls[itr],0.,w_overwride=False,fixed_w=w4s[itr],grow_overwride=True,fixed_growth=C_0.G_norm(0.)**2).T/kls[itr]**3).T
+            #    Phf3s[itr] = 2*np.pi**2*(hfs[itr].D2_NL(kls[itr],0.,w_overwride=True,fixed_w=w4s[itr]).T/kls[itr]**3).T
+            #    Phf4s[itr] = 2*np.pi**2*(hf4s[itr].D2_NL(kls[itr],0.,w_overwride=False).T/kls[itr]**3).T
         import matplotlib.pyplot as plt
         #ax = plt.subplot(111)
         #ax.set_ylim([0.95,(np.max((Ps/Ps[0]).T)-1)*1.1+1])
         #ax.semilogx(knls.T,(Pnls/Pnls[0]).T*Gs[0]/Gs)
-        plt.semilogx(kls.T,(Phf4s/Phfs).T)
+        plt.semilogx(kls.T,(Phf2s/Phfs).T)
         #ax.semilogx(kls.T,(Pnls/Phfs).T)
         from scipy.integrate import cumtrapz
         print (cumtrapz(np.abs(Pnls-Phfs),kls,initial=0))[:,-1]

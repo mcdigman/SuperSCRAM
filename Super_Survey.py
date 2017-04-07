@@ -24,6 +24,7 @@ from sw_survey import SWSurvey
 from lw_survey import LWSurvey
 import planck_fisher
 from warnings import warn
+import matter_power_spectrum as mps
 class super_survey:
     ''' This class holds and returns information for all surveys
     ''' 
@@ -277,12 +278,20 @@ if __name__=="__main__":
     #k=d[:,0]; P=d[:,1]
     #TODO check possible h discrepancy
     camb_params = defaults.camb_params.copy()
+    camb_params['force_sigma8']=False
     camb_params['kmax'] = 10.
     camb_params['npoints'] = 1000
     cosmo_fid = defaults.cosmology_jdem.copy()
-    C=CosmoPie(cosmology=cosmo_fid,p_space='jdem',needs_power=True,camb_params=camb_params)
+    cosmo_fid['w0'] = cosmo_fid['w']
+    cosmo_fid['wa'] = 0.
+    cosmo_fid['de_model'] = 'w0wa'
+    C=CosmoPie(cosmology=cosmo_fid,p_space='jdem',camb_params=camb_params)
     #C=CosmoPie(cosmology=defaults.cosmology,p_space='basic',needs_power=True)
-    k,P=C.get_P_lin()
+    #k,P=C.get_P_lin()
+    P=mps.MatterPower(C,camb_params)
+    k=P.k
+    C.P_lin=P
+    C.k=k
     r_max=C.D_comov(z_max)
     print 'this is r max and l_max', r_max , l_max
 
@@ -356,12 +365,12 @@ if __name__=="__main__":
     lenless_defaults = defaults.sw_survey_params.copy()
     lenless_defaults['needs_lensing'] = False
 
-    cosmo_param_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w'])
-    cosmo_param_epsilons = np.array([0.002,0.0005,0.0001,0.0005,0.1,0.1])
+    cosmo_param_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w','wa'])
+    cosmo_param_epsilons = np.array([0.002,0.0005,0.0001,0.0005,0.1,0.1,0.1])
     #cosmo_param_list = np.array(['LogAs','w'])
     #cosmo_param_epsilons = np.array([0.001,0.001])
 
-    param_priors = planck_fisher.get_w0_projected(params=defaults.planck_fisher_params)
+    param_priors = planck_fisher.get_w0wa_projected(params=defaults.planck_fisher_params)
     #cosmo_param_list = np.array(['Omegamh2','Omegabh2'])
     #cosmo_param_epsilons = np.array([0.001,0.001])
     #cosmo_param_list = np.array(['Omegamh2','Omegabh2','ns','h','sigma8'])

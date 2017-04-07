@@ -1,10 +1,11 @@
 import numpy as np
 from numpy import pi 
 import sys
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
 import cosmopie as cp
 import defaults
 from warnings import warn
+from numpy.core.umath_tests import inner1d
 #p_h = np.loadtxt('camb_m_pow_l.dat')#
 #p_interp = interp1d(p_h[:,0],p_h[:,1]*p_h[:,0]**3/(2*np.pi**2))
 
@@ -30,11 +31,32 @@ class halofitPk(object):
 
         self.C = C
         self.k_max = max(k_in)
+        self.k_in = k_in
+        self.params = halofit_params
+        self.k_fix = self.params['k_fix']
+        #extrapolated internal power spectrum to avoid spurious dependence on input k_max
+        k_max_in = np.max(k_in)
+        if self.params['extrap_wint'] and k_max_in<self.k_fix:
+            #assume log spaced k_in
+            log_k_space = np.average(np.diff(np.log(k_in)))
+            k_diff = (np.log(self.k_fix)-np.log(k_max_in))
+            self.n_k_extend = np.ceil(k_diff/log_k_space)
+            k_extend = np.exp(np.log(k_max_in)+(np.arange(0,self.n_k_extend)+1.0)*log_k_space)
+            self.k = np.hstack((k_in,k_extend))
+            self.p_use = np.hstack((p_lin,p_lin[-1]*(k_extend/k_in[-1])**(C.ns-4))) #use ns-4 extrapolation on high end
+        else:
+            self.n_k_extend=0
+            self.k = k_in
+            self.p_use = p_lin
+        self.k_max = np.max(self.k)
+            
         self.gams=.21# what is the number ?
 
-        if p_lin.size==0:
-            p_lin=self.p_cdm(k_in)*(2.*np.pi**2)/k_in**3
-        self.p_interp = interp1d(k_in,p_lin*k_in**3/(2.*np.pi**2))
+        if self.p_use.size==0:
+            self.p_use=self.p_cdm(self.k)*(2.*np.pi**2)/k_in**3
+        self.p_input = self.p_use*self.k**3/(2.*np.pi**2)
+        #spline might be more accurate, although slower 
+        self.p_interp = interp1d(self.k,self.p_input)
 
         self.c_threshold = halofit_params['c_threshold']
        #TODO check necessary r_min,r_max,n_r nint in wint are good
@@ -46,29 +68,40 @@ class halofitPk(object):
         #array should use generously sized r_max initially
         rs = np.arange(r_min,r_max,r_step)
         n_r = rs.size
-        sigs = np.zeros(n_r)
-        sig_d1s = np.zeros(n_r)
-        sig_d2s = np.zeros(n_r)
+#        sigs = np.zeros(n_r)
+#        sig_d1s = np.zeros(n_r)
+#        sig_d2s = np.zeros(n_r)
+        
+        sigs,sig_d1s,sig_d2s=self.wint(rs)
         #can safely cutoff if 1/sig is greater than 1, because that corresponds to a normalized growth factor>1 and 1/sig monotonically increases with higher r
         n_r_max = n_r
-        for i in range(0,n_r):
-            sig,d1,d2 = self.wint(rs[i])
-            sigs[i] = sig
-            sig_d1s[i] = d1
-            sig_d2s[i] = d2
-            if self.cutoff and 1./sig>1.:
-                n_r_max = i+1
-                sigs = sigs[0:n_r_max]
-                rs = rs[0:n_r_max]
-                sig_d1s = sig_d1s[0:n_r_max]
-                sig_d2s = sig_d2s[0:n_r_max]
-                break
+#        for i in range(0,n_r):
+#            sig,d1,d2 = self.wint(rs[i])
+#            sigs[i] = sig
+#            sig_d1s[i] = d1
+#            sig_d2s[i] = d2
+#            if self.cutoff and 1./sig>1.:
+#                n_r_max = i+1
+#                sigs = sigs[0:n_r_max]
+#                rs = rs[0:n_r_max]
+#                sig_d1s = sig_d1s[0:n_r_max]
+#                sig_d2s = sig_d2s[0:n_r_max]
+#                break
+        #extend range automatically if input r_max was not large enough to get to G=1 to prevent crashes
         if 1./sigs[-1]<1.:
-            warn('with given parameters,halofit will only work up G_norm='+str(1./sigs[-1])+', try increasing r_max')
-        self.n_r = n_r_max
+            warn('with given parameters,halofit will only work up G_norm='+str(1./sigs[-1])+', try increasing r_max: extending')
+            itr = 1
+            r_range = r_max-r_min
+            while 1./sigs[-1]<1. and itr<halofit_params['max_extend']:
+                rs = np.hstack((rs,np.arange(rs[-1]+r_step,rs[-1]+r_step+r_range,r_step)))
+                sigs,sig_d1s,sig_d2s=self.wint(rs)
+                itr+=1
+
+        self.n_r = n_r
         self.sigs = sigs 
-        self.g_max = (1./sigs)[-1]
-        self.g_min = (1./sigs)[0]
+        self.g_max = (1./sigs[-1])
+        self.g_min = (1./sigs[0])
+        #splines might give somewhat better results than interp1d for a given grid size, which is what this originally used, at the expense of time
         self.r_grow = interp1d(1./sigs,rs)
         self.sig_d1 = interp1d(rs,sig_d1s)
         self.sig_d2 = interp1d(rs,sig_d2s)
@@ -125,27 +158,30 @@ class halofitPk(object):
         #nint=np.floor((self.k_max)/2.)
         #print self.k_max/2.
         #TODO figure out what to do if k_max<2
-        nint =min(np.int(self.k_max/2.),1000)
+        nint =min(np.int(self.k_max/2.),self.k_fix/2.)
         t = ( np.arange(nint)+0.5 )/nint
         y = 1./t - 1.
-        rk = y
+        #rk = y
         #TODO check this is correct way to get d2
-        d2 = self.D2_L(rk,0.)
-        x2 = y*y*r*r
-        w1=np.exp(-x2)
+        d2 = self.D2_L(y,0.)
+        mult = d2/y/t**2/nint
+        x2 = np.outer(r**2,y**2)
+        w1=mult*np.exp(-x2)
         w2=2.*x2*w1
-        w3=4.*x2*(1.-x2)*w1
+        #w3=4.*x2*(1.-x2)*w1
+        #w3=2.*w2*(1.-x2)
 
-        mult = d2/y/t/t
-            
-        sum1 = np.sum(w1*mult)/nint
-        sum2 = np.sum(w2*mult)/nint
-        sum3 = np.sum(w3*mult)/nint
+        #sum1 = np.inner(mult,np.exp(-x2))   
+        sum1 = np.sum(w1,axis=1)
+        #sum2 = 2.*inner1d(w1,x2)
+        sum2 = np.sum(w2,axis=1)
+        sum3 = 2.*(sum2-inner1d(w2,x2))
+        #sum3 = np.sum(w3,axis=1)
                 
         sig = np.sqrt(sum1)
-        d1  = -sum2/sum1
-        d2  = -sum2*sum2/sum1/sum1 - sum3/sum1
-                
+        d1  = -sum2/sum1        
+        #d2  = -sum2**2/sum1**2 - sum3/sum1
+        d2  = -d1**2 - sum3/sum1
         return sig,d1,d2
 
 
@@ -243,15 +279,17 @@ class halofitPk(object):
         else:
             return pnl
                     
-    def D2_NL(self,rk,z,return_components = False,w_overwride=False):
+    def D2_NL(self,rk,z,return_components = False,w_overwride=False,fixed_w=-1.,grow_overwride=False,fixed_growth=1.):
         """
         halo model nonlinear fitting formula as described in 
         Appendix C of Smith et al. (2002)
         """
         rk = np.asarray(rk)
         #rn    = self.rneff
-        
-        growth = self.C.G_norm(z)
+        if not grow_overwride: 
+            growth = self.C.G_norm(z)
+        else:
+            growth = fixed_growth
         if np.max(growth)>self.g_max or np.min(growth)<self.g_min:
             raise ValueError('Growth factor exceeds precomputed range. Try increasing r_max to increase G max or decreasing r_min to decrease G min.')
 
@@ -269,7 +307,7 @@ class halofitPk(object):
         om_v  = self.C.OmegaL_z(z)
         #w = -0.758
         if w_overwride:
-            w=-1
+            w=fixed_w
         else:
             w=self.C.w_interp(z) #not sure if z dependent w is appropriate in halofit, possible answer in https://arxiv.org/pdf/0911.2454.pdf
        # #cf Bird, Viel, Haehnelt 2011 for extragam explanation (cosmosis)
@@ -348,25 +386,53 @@ if __name__=="__main__":
                 k=d1[:,0]; P1=d1[:,1]
                 
                 #k=np.logspace(-2,2,500)
-                CP=cp.CosmoPie()
-                HF2=halofitPk(CP,k2,P2)
-                HF=halofitPk(CP,k,P1)
-                Plin=HF.D2_L(k,0.)*np.pi**2*2/k**3
-                P=HF.D2_NL(k,0.)*np.pi**2*2/k**3
-                
-                
-                import matplotlib.pyplot as plt
+                CP=cp.CosmoPie(cosmology=defaults.cosmology)
+                do_k_fix_test=True
+                if do_k_fix_test:
+                    from camb_power import camb_pow
+                    camb_params=defaults.camb_params.copy()
+                    camb_params['maxkh']=10.
+                    camb_params['maxk']=10.
+                    k_lin,P_lin = camb_pow(defaults.cosmology,camb_params=camb_params)
+                    params1 = defaults.halofit_params.copy()
+                    params1['k_fix']=10000.
+                    params2=params1.copy()
+                    params2['k_fix']=500. #results look good at least to 500, probably can get away with lower k_fix
 
-                ax=plt.subplot(111)
-                ax.set_xscale('log')
-                ax.set_yscale('log')
-                ax.set_xlim(1e-3,100)
-                            
-                ax.plot(k,P, label='halofit')
-                ax.plot(k,Plin, label='linear')
-                ax.plot(k,P1, label='class ')
-                ax.plot(k2,HF2.D2_NL(k2,0.)*np.pi**2*2/k2**3, '--')
-                
-                plt.legend(loc=1)
-                plt.grid()
-                plt.show()
+                    hf1=halofitPk(CP,k_lin,P_lin,halofit_params=params1)
+                    P_nl_1=hf1.D2_NL(k_lin,0.)*np.pi**2*2/k_lin**3
+                    hf2=halofitPk(CP,k_lin,P_lin,halofit_params=params2)
+                    P_nl_2=hf2.D2_NL(k_lin,0.)*np.pi**2*2/k_lin**3
+                    
+                    print "avg deviation:",np.average(np.abs((P_nl_2)/(P_nl_1)-1.))
+                    print "max deviation:",np.max(np.abs((P_nl_2)/(P_nl_1)-1.))
+
+                    
+
+                do_time_test=False
+                if do_time_test:
+                    for itr in range(0,5000):
+                        HF2=halofitPk(CP,k2,P2)
+
+                do_plot_test=False 
+                if do_plot_test:
+                    HF=halofitPk(CP,k,P1)
+                    Plin=HF.D2_L(k,0.)*np.pi**2*2/k**3
+                    P=HF.D2_NL(k,0.)*np.pi**2*2/k**3
+                    
+                    
+                    import matplotlib.pyplot as plt
+
+                    ax=plt.subplot(111)
+                    ax.set_xscale('log')
+                    ax.set_yscale('log')
+                    ax.set_xlim(1e-3,100)
+                                
+                    ax.plot(k,P, label='halofit')
+                    ax.plot(k,Plin, label='linear')
+                    ax.plot(k,P1, label='class ')
+                    ax.plot(k2,HF2.D2_NL(k2,0.)*np.pi**2*2/k2**3, '--')
+                    
+                    plt.legend(loc=1)
+                    plt.grid()
+                  #  plt.show()

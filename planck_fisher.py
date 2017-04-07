@@ -61,6 +61,12 @@ def project_w0(fisher_mat,params=defaults.planck_fisher_params,return_project=Fa
     else:
         return fisher_new
 
+def get_w0wa_projected(params=defaults.planck_fisher_params):
+    fisher_mat = read_planck_fisher(params=params)
+    fisher_strip = fix_elements(fisher_mat,params=params)
+    fisher_project = project_w0wa(fisher_strip,params=params)
+    return fisher_project
+
 def get_w0_projected(params=defaults.planck_fisher_params):
     fisher_mat = read_planck_fisher(params=params)
     fisher_strip = fix_elements(fisher_mat,params=params)

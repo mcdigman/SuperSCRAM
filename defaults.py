@@ -96,7 +96,8 @@ cosmology_cosmosis={'Omegabh2' :0.049,
                                 'Yp'       : None,
                                 'As'        : 2.143*10**-9,
                                 'ns'       : 0.9681,
-                                'LogAs'   : np.log(2.143*10**-9)} #guess
+                                'LogAs'   : np.log(2.143*10**-9),
+                                'mnu'     :0.} #guess
 lensing_params = {  'z_resolution'    :0.005, #fine resolution
                     'z_min_integral'  :0.005, #lowest z
                     'z_max_integral'  :2,#highest z
@@ -122,7 +123,7 @@ lw_observable_list = ['d_number_density']
 lw_survey_params = {    'cross_bins': False} 
 basis_params = {    'allow_caching'         :True,
                     'n_bessel_oversample'   :100000,
-                    'k_max'                 :100.,
+                    'k_max'                 :10.,#TODO check
                     'k_min'                 :10**-4,
                     'n_radial_sample':100000 }
 polygon_params = {'res_healpix':6,'n_double':30}
@@ -147,8 +148,8 @@ fpt_params = {   'C_window':0.75,
                     'nu' :-2}
 camb_params = {'npoints':1000,
                 'minkh':1.1e-4,
-                'maxkh':1e5,
-                'kmax':20.0, #may need to be higher for some purposes,like 100, but makes things slower
+                'maxkh':10., #1e5
+                'kmax':10.0,#20 #may need to be higher for some purposes,like 100, but makes things slower
                 'leave_h':False,
                 'force_sigma8':True,
                 'return_sigma8':False
@@ -168,13 +169,26 @@ halofit_params = {'n_r':3000, #500
                     'r_min':0.05,#0.05
                     'r_step':0.01,
                     'c_threshold':0.001, #0.001
-                    'cutoff':True
+                    'cutoff':True,
+                    'max_extend':10,
+                    'extrap_wint':True,#
+                    'k_fix'     :500 #require integral in wint to go up this far if extrapolating
                     }
 wmatcher_params = {'w_step':0.01,
                     'w_min':-3.50,
                     'w_max':0.1,
                     'a_step':0.001,
                     'a_min':0.000917,
-                    'a_max':1.001,
+                    'a_max':1.005,
                     'integ_E_step':0.05}
-matter_power_params = {}
+matter_power_params = {'needs_halofit'  :True,
+                        'needs_fpt'     :True,
+                        'needs_wmatcher':True,
+                        'needs_camb_w_grid':True,
+                        'w_edge' : 0.001,
+                        'w_step' : 0.1,
+                        'min_n_w' : 3,
+                        'a_min' : 0.05,
+                        'a_max' : 1.01,
+                        'a_step' : 0.1,
+                        'nonlinear_model':'halofit'}

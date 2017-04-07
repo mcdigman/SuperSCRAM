@@ -7,6 +7,7 @@ import defaults
 from lensing_weight import q_shear
 from camb_power import camb_pow
 import scipy.special as spp
+import matter_power_spectrum as mps
 
 if __name__ == '__main__':
     base_dir = './'
@@ -143,7 +144,10 @@ if __name__ == '__main__':
     camb_params['minkh']=1.1e-4
     camb_params['maxkh']=100.
     camb_params['kmax']=1.
-    k_in,P_in=camb_pow(defaults.cosmology_cosmolike,camb_params=camb_params)
+    #k_in,P_in=camb_pow(defaults.cosmology_cosmolike,camb_params=camb_params)
+    P_in = mps.MatterPower(C)
+    k_in =P_in.k
+
     import matplotlib.pyplot as plt
     len_params = defaults.lensing_params.copy()
     len_params['smodel'] = 'custom_z' 

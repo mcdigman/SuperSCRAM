@@ -34,12 +34,13 @@ class sph_basis_k(object):
 			important! no little h in any of the calculations 
 		''' 
 	        print "sph_klim: begin init basis id: ",id(self)	
-		k_in,P_lin_in=C.get_P_lin()
+                P_lin_in=C.P_lin.linear_power(np.array([0.]))[:,0]
+                k_in = C.k
 	        #k = np.logspace(np.log10(np.min(k_in)),np.log10(np.max(k_in))-0.00001,6000000)
                 #k = k_in
                 self.params = params
-                kmin = params['k_min']
-                kmax = params['k_max']
+                kmin = np.min(k_in)#params['k_min']
+                kmax = np.max(k_in)#params['k_max']
 
                 self.allow_caching = params['allow_caching']
                 if self.allow_caching:
