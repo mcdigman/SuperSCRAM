@@ -1,0 +1,209 @@
+\documentclass[a4paper,11pt]{article}
+\pdfoutput=1 % if your are submitting a pdflatex (i.e. if you have
+             % images in pdf, png or jpg format)
+
+\usepackage{jcappub} % for details on the use of the package, please
+                     % see the JCAP-author-manual
+
+\usepackage[T1]{fontenc} % if needed
+\usepackage{natbib}
+\usepackage{amsmath}
+
+\title{\boldmath Super-Sample Covariance in Future Weak Lensing Surveys}
+
+%% %simple case: 2 authors, same institution
+%% \author{A. Uthor}
+%% \author{and A. Nother Author}
+%% \affiliation{Institution,\\Address, Country}
+
+% more complex case: 4 authors, 3 institutions, 2 footnotes
+\author{Mathew C. Digman,}
+\author{Joseph E. McEwen, and}
+\author{Christopher M. Hirata}
+
+% The "\note" macro will give a warning: "Ignoring empty anchor..."
+% you can safely ignore it.
+
+\affiliation{Center for Cosmology and AstroParticle Physics, Department of Physics, The Ohio State University, 191 W Woodruff Ave, Columbus OH 43210, USA}
+
+% e-mail addresses: one for each author, in the same order as the authors
+\emailAdd{digman.12@osu.edu}
+
+
+\abstract{}
+
+\newcommand{\dq}[1]{\frac{d^3 \mathbf{q}_{#1} }{(2 \pi)^3 } }
+\newcommand{\Pl}{P_\text{lin}} 
+\newcommand{\eqn}[1]{ \begin{equation} #1 \end{equation} } 
+\newcommand{\Mpc}{\text{Mpc}}
+\newcommand{\LegP}{{\cal P}}
+
+\newcommand{\obs}{\mathcal{O}}
+\newcommand{\sph}[2]{Y^\text{R}_{l_#1 m_#1}(\hat{#2})}
+
+\newcommand{\jl}[1]{j_{l_#1}}
+\newcommand{\dk}{\frac{ d^3 \mathbf{k}}{(2 \pi)^3}} 
+\newcommand{ \dkv}[1]{\frac{ d^3 \mathbf{k}_{#1}}{(2 \pi)^3}} 
+
+\newcommand{\code}{{\sc COSMO-SSC} }
+
+
+%%%%%%%%
+%journal abbrevations
+\newcommand{\sovast}{Sov. Astron.}
+\newcommand{\mnras}{Mon. Not. R. Astron. Soc.}
+\newcommand{\aj}{Astron. J.}
+\newcommand{\aap}{Astron. Astrophys.}
+\newcommand{\apjl}{Astrophys. J. Lett.}
+\newcommand{\jcap}{J. Cosmo. Astropart. Phys.}
+\newcommand{\pasj}{Proc. Astron. Soc. Japan}
+\newcommand{\physrep}{Phys. Rep.}
+\newcommand{\prd}{Phys.~Rev.~D}
+\newcommand{\physreps}{Phys. Rep.}
+\newcommand{\apj}{Astrophys. J.}
+\newcommand{\apjs}{Astrophys. J. Supp.}
+\newcommand{\nat}{Nature}
+%%%%%%%%
+
+\newcommand{\mdash}{---}
+
+\begin{document}
+\maketitle
+\flushbottom
+
+%TODO maybe mention inflation
+%TODO add in ongoing lensing experiments (kids, hypersuprime, etc)
+\section{Introduction}
+\label{sec:intro} 
+Observational cosmology has experienced a remarkable rebirth as a precision science in the last two decades. The 1998 discoveries of the accelerating expansion of the universe\cite{Perlmutter:1998np}\cite{Riess:1998cb} and neutrino oscillations\cite{Fukuda:1998mi} were the first discoveries in decades to clearly show that the standard models of physics remain fundamentally incomplete. Full sky surveys of the cosmic microwave background (CMB) by WMAP\cite{wmap1year}\cite{wmap9year} and Planck\cite{planck2015params}, as well as measurements of baryon acoustic oscillations (BAO) from The 2df Galaxy Redshift Survey\cite{2df2005}, BOSS\cite{boss2013}, and WiggleZ\cite{wigglez2012} have showcased the power of precision observational cosmology to constrain models for the evolution of the universe. At present, precision cosmology provides the only meaningful constraint on the absolute masses of neutrinos\cite{neutrinomasscosmology}, and may provide some of the best avenues for further advancement in fundamental physics beyond the standard model. 
+\\
+The cause of the accelerated expansion of the universe is tied to the origin and ultimate fate of the universe. Depending on how the acceleration changes over time, the universe could expand forever, re-collapse, rip itself apart, or do something else\cite{bigripcaldwell}\cite{fate_universe}. The most common explanation for the cause of cosmic acceleration is a fluid with positive energy density but negative pressure, called dark energy.  Dark energy models are characterized by an equation of state parameter $w\equiv \frac{p}{\rho}$, which relates its pressure $p$ and the energy density $\rho$\cite{constraining_de}. The simple case where $w=-1$ corresponds to a cosmological constant, which is the standard $\Lambda$CDM cosmological model. The most studied physical mechanisms which could produce a $w\neq-1$ would also allow $w$ to vary as a function of time, $w=w(z)$\cite{quintessence_caldwell}. Present cosmological observations do not give good constraints on $w(z)$ because errors on $w(z)$ at different times are highly correlated\cite{weinberg_probes}\cite{eos_pitfalls}. 
+\\
+Tomographic weak lensing surveys directly probe the statistical properties of the matter distribution at a specific redshift $z$, and hence can be used to constrain $w(z)$\cite{weinberg_probes}\cite{huterer_wl}. Ideally, the precision of weak lensing measurements would be limited primarily statistical uncertainties due to their limited sample of galaxies, which will be greatly reduced by the large volumes of future surveys, such as LSST\cite{lsst}, Euclid\cite{euclid}, and WFIRST\cite{wfirst}. However, future weak lensing surveys will also suffer from many other sources of error, which will need to be properly understood to avoid systematic biases in the results{schaan_shear_calibration}\cite{systematic_lensing_mandelbaum}\cite{systematic_lensing_massey}\cite{systematic_lensing_huterer}. One source 
+
+\section{Method}
+\label{sec:method}
+In this section, we present a framework and code for forecasting supersample effects on future observations in in a survey with a given geometry. The code is written and tested in Python 2.7 and uses the SciPy\cite{scipy} and NumPy\cite{numpy} libraries. The code itself is intended to be modular, and most elements can be interchanged or expanded. 
+\subsection{Matter Power Spectrum}
+\label{ssec:matter_power}
+The code provides several sample implementations of the matter power spectrum which can be used fully interchangeably, including Python implementations of the Takahashi\cite{takahashi_halofit} and Casarini\cite{casarini_halofit} revisions of the Halofit\cite{smith_halofit} model, linear matter power spectra from CAMB\cite{camb}, and the FAST-PT\cite{fastpt} implementation of the one loop power spectrum. Additionally, to demonstrate the flexibility of our framework, we have extended both Halofit and FAST-PT to facilitate an arbitrary $w(z)$ using the same procedure used in \cite{casarini_halofit} and \cite{casarini_halofit_math} to extend the Halofit model and Coyote emulator\cite{coyote_emulator}. 
+
+\subsection{Geometries}
+\label{ssec:geometries}
+We provide several possible methods of implementing survey geometries. Our $\texttt{pixel\_geo}$ class allows for representation of a window function in terms of an arbitrary pixelation of the sky. Our $\texttt{polygon\_geo}$ class allows a survey geometry to be input as an arbitrary bounding polygon with segments of great circles as edges, which can approximate any mask, and has the advantage that the spherical harmonic decomposition $a_{l m}$ can be calculated analytically. The \texttt{polygon\_pixel\_geo} combines these approaches and provides a specific implementation of a geometry pixelated using HEALPix\cite{HEALPix} which can be input as a bounding polygon, which allows comparison of analytic results from \texttt{polygon\_geo} and pixelated geometries. We also implemented the simple \texttt{rect\_geo} class which provides 'rectangular' geometries with two sides of fixed latitude $\theta$ and two sides of fixed longitude $\phi$, which can also be evaluated exactly. 
+
+\subsection{Short Wavelength Observables}
+\label{ssec:sw_observables}
+The \texttt{sw\_observable} module provides an interface which implementations of specific short wavelength observables must provide. A short wavelength observable must implement two methods: \texttt{get\_O\_I}  and \texttt{get\_dO\_I\_ddelta\_bar}, which should calculate $O_i$ and $\frac{\partial O}{\partial \bar{\delta}}$ respectively, and return them in the form of a vector. The \texttt{lensing\_observable} module provides implementations of several lensing observables. 
+\\
+We have specifically tested the shear-shear $(\gamma\gamma)$ lensing power spectrum as an observable, and have implemented the weight functions described in \cite{eifler_krause_cosmolike} necessary to calculate magnification-magnification $(\mu\mu)$, galaxy position-galaxy position $(gg)$, and the cross spectra $(\gamma\mu)$, $(\gamma g)$, and $(\mu g)$. We allow an arbitrary input redshift distribution for the source galaxies $p(z)$, and the code can be straightforwardly extended to allow for photometric redshift uncertainties, although we have not done so. 
+\\
+The projected power spectrum for a lensing observable can be written using the Limber approximation:
+\begin{align}\label{limber_power}
+P_{ij}(l)
+\end{align}
+\subsection{Cosmological Parameterizations}
+In order to properly calculate the response of a set of short wavelength observables $\{O_a\}$ to cosmological parameters $\{\Theta_i\}$, $\frac{\partial O_a}{\partial \Theta_i}$, a parametrization must be selected. The code allows its parametrization to be specified in the \texttt{cosmopie} module along with a set of rules for calculating derived parameters, so that the code's parametrization can easily be interchanged. Parameters relating to the dark energy equation of state $w(z)$ are handled separately from the rest. By default, the code uses $\{\Omega_m h^2,\Omega_b h^2,\Omega_k h^2, \Omega_d h^2, n_s,ln(A_s)\}$ as its basic set of parameters, where $\Omega_m,\Omega_b,\Omega_k$, and $\Omega_d$ are the total matter, baryon, curvature, dark energy densities respectively. This parametrization is chosen to be compatible with the parametrization in \cite{jdem_fom}. The code currently fixes $\Omega_k=0$ for simplicity, although it could be extended to support nonzero $\Omega_k$. 
+
+\subsection{Growth Factor}
+\label{ssec:growth_factor}
+Simply modifying the calculation of the linear growth factor accounts for most of the correction to the matter power spectrum from dark energy with a variable equation of state. In general relativity, the linear growth factor $G(a)$ evolves according to\cite{weinberg_probes} 
+\begin{align}\label{growth_time}
+0=G''(a)a^2 H^2(a)+G'\left(\ddot{a}+2a H^2(a)\right)-\frac{3}{2}\frac{\Omega_m H_0^2}{a^3}G,
+\end{align}
+where the primes denote derivatives with respect to a and the dots are derivatives with respect to cosmic time, and H(a) is the Hubble rate. In the presence of an arbitrary set of perfect fluids with densities $\{\Omega_i(a)\}$ and equations of state $\{w_i(a)\}$, the Hubble rate is
+\begin{align}\label{hubble_expansion}
+\frac{H(a)^2}{H_0^2}=\sum_i{\Omega_i e^{3\int_a^1(1+w_i(a'))\frac{1}{a'}da'}}
+\end{align}
+and we can use $D(a)\equiv\frac{G(a)}{a}$ to arrive at a differential equation for $D(a)$:
+\begin{align}\label{growth_diff}
+D''(a)=-\frac{1}{a}D'(a)\sum_i{\left(\frac{7}{2}-\frac{3}{2}w_i(a)\right)\Omega_i(a)}-\frac{1}{a^2}D(a),\sum_i{\frac{3}{2}\left(1-w_i(a)\right)\Omega_i(a)}
+\end{align}
+these equations take simple forms for constant w solutions, such as matter, with $w_m=0$, radiation with $w_r=\frac{1}{3}$, and curvature $w_k=-\frac{1}{3}$, and a cosmological constant $w_\Lambda=0$. For our purposes, we use the simplified forms for everything except dark energy, and use the trapezoidal rule to evaluate the integral in \eqref{hubble_expansion} for dark energy with a variable equation of state on a grid of $a$ values, then interpolate the result, which allows evaluation with any arbitrary input $w(a)$. The \texttt{cosmopie} module then evaluates $D(a)$ using SciPy's \texttt{odeint}. 
+
+\subsection{Modifying the Matter Power Spectrum}
+\label{spec:modify_matter}
+Motivated by the procedure in \cite{casarini_halofit_math}, for a given $w(z)$, the \texttt{w\_matcher} module calculates an effective equation of state for dark energy $\mathcal{W}(z)$ which represents, at a given $z$, the constant $w_{eff}$ which reproduces the same comoving distance to last scattering,
+\begin{align}\label{cas_cond1}
+\int_z^{z_{\text{lss}}}\frac{d z'}{E(z',w=\mathcal{W}(z))}=\int_z^{z_{\text{lss}}}\frac{d z'}{E(z',w=w(z))}
+\end{align}
+where $E(z)=H(z)/H_0$ and $z_{\text{lss}}=1089.90$. Currently, \texttt{w\_matcher} precomputes the left hand side of \eqref{cas_cond1} on a grid of possible $w$ and $z$ values and interpolates to match the right hand side. Then, the amplitude of the $z=0$ linear matter power spectrum must be rescaled by a factor of $\mathcal{G}^2(z)$, $P_{\text{lin}}(k,z=0)\rightarrow\mathcal{G}^2(z)P_{\text{lin}}(k,z=0)$ where $\mathcal{G}^2(z)$ is obtained from 
+\begin{align}\label{cas_cond2}
+\mathcal{G}^2(z)\left(\frac{G(z,w=\mathcal{W}(z))}{G(0,w=\mathcal{W}(z))}\right)^2=\left(\frac{G(z,w=w(z))}{G(0,w=w(z))}\right)^2.
+\end{align}
+Note that this condition is equivalent to (2.3) in \cite{casarini_halofit_math}, but this form is clearer in parameterizations where $\sigma_8$ is not a parameter. The \texttt{w\_matcher} module matches this condition by precomputing a grid of possible $G(z,w)$ values and interpolating for a given $\mathcal{W}(z)$. Once $\mathcal{W}(z)$ is evaluated, the model is treated as having that constant $w$ value in all respects for calculations involving that $z$ value; for example, in the linear power spectrum, a new $z=0$ matter power spectrum is retrieved from CAMB with that $w$ value because the small $k$ transfer function depends on $w$ (the present implementation of the code actually precomputes $P_{\text{lin}}(k,z=0,w)$ for a grid of possible $w$ values and interpolates, because CAMB calls are slow for our purposes, and the dependence of the transfer function on $w$ is minimal in the $k$ range of interest). 
+\\
+This approach should work for a variety of methods of calculating the nonlinear power spectrum and a variety of dark energy models, as discussed in \cite{casarini_halofit_2}. The \texttt{matter\_power\_spectrum} module can currently apply this approach to the linear matter power spectrum, the one loop power spectrum from FAST-PT, and Halofit. Inserting further models of the matter power spectrum only requires extending the \texttt{matter\_power\_spectrum} module, as the rest of the code requires no knowledge of which model for the nonlinear matter power spectrum \texttt{matter\_power\_spectrum} is using. 
+\subsection{Fisher Matrix Manipulation}
+Fisher matrix manipulations are handled by the \texttt{fisher\_matrix} module. The \texttt{fisher\_matrix} module is optimized to efficiently perform common manipulations on fisher matrices up to the memory limitations of the machine it runs on. For memory efficiency, it keeps its own internal representation of its matrices, so that it can perform many matrix operations in place, using SciPy's interface to the Fortran LAPACK library.  The specific internal operations of the \texttt{fisher\_matrix} module are intended to be largely opaque to the end user, with access through the interface provided, so that it can be optimized enough to efficiently handle fisher matrices for large numbers of cosmological observables. 
+
+
+
+\subsection{Mitigation Strategies}
+\section{Discussion} 
+
+\section{Acknowledgements} 
+We thank Elisabeth Krause for providing scripts to run COSMO-LIKE for calibration of our code, as well as for general discussions. 
+
+
+\bibliographystyle{JHEP.bst}
+\bibliography{ssc_bib}
+
+\appendix 
+\section{Basis Decomposition}
+\label{sec:basis}
+In the present code, we use a form of a spherical Fourier-Bessel basis, similar to the one described in \cite{spherical_fourier_bessel}. We use a spherical Bessel function for our radial basis and the real spherical harmonics for our angular basis, so that the elements of our basis can be written:
+\begin{align} \label{basis_decomp}
+\psi_\alpha(r, \theta, \phi) = j_{l_\alpha}(k_\alpha r) Y^\text{R}_{l_\alpha m_\alpha}(\theta, \phi) ~, 
+\end{align} 
+where $Y^\text{R}_{lm}(\theta, \phi) $ is the real spherical harmonic, $k_\alpha$ is a solution of $j_{l_\alpha}(k_\alpha R_{max})=0$, and $\alpha$ is an index running over all possible sets $(k_\alpha,l_\alpha,m_\alpha)$. The real spherical harmonics can be defined in terms of Legendre polynomials
+\begin{align}\label{real_harmonic2}
+Y^\text{R}_{lm} = \sqrt{\frac{2(l+1)}{4\pi}}\sqrt{\frac{(l-|m|)!}{(l+|m|)!}}P^m_l(\cos{\theta})
+\begin{cases}
+\sqrt{2}\sin{|m|\phi}&\text{if } m<0\\
+1& \text{if } m=0\\
+\sqrt{2}\cos{|m|\phi}&\text{if } m>0
+\end{cases}
+\end{align}
+We can then write a density fluctuation mode in this basis as
+\begin{align}\label{ss_mode}
+\delta_\alpha(k_\alpha)& = \int \delta(\mathbf{r}) \jl{\alpha}(k_\alpha r) \sph{\alpha}{r} d^3 \mathbf{r}~. 
+\end{align}
+\section{Response of observables to density fluctuations}
+To calculate the response of an observable $O_a$ to a density fluctuation mode $\delta_\alpha$, we can use the chain rule:
+\begin{align}\label{chain_obs}
+\frac{\partial O_a}{\partial\delta_\alpha}=\int_0^{z_{\text{max}}}dz~\frac{\partial O_a}{\partial \bar{\delta}}(z)\frac{\partial \bar{\delta}}{\partial \delta_\alpha}(z),
+\end{align}
+provided $\frac{\partial{O_a}}{\partial \bar{\delta}}(z)$ can be calculated. In the code, the integral in \eqref{chain_obs} is accomplished by calculating the integrand on a grid of $z$ values $\{z_i\}$ and using the trapezoidal rule. To calculate $\frac{\partial\bar{\delta}}{\partial\delta_\alpha}(z_i)$, we expand the mean density fluctuation $\bar{\delta}(z_i)$, in our basis: 
+\label{sec:density_fluct}
+\begin{align}\label{bar_delta}
+\bar{\delta}(z_i)= \displaystyle \sum_\alpha \frac{3}{r_{i+1}^3 - r_{i}^3} \int_{r_i}^ {r_{i+1} }dr ~ r^2 j_{l_\alpha}(k_\alpha r) \delta_\alpha(k_\alpha) \frac{1}{2\sqrt{\pi} a_{00}} \underbrace{ \iint\limits_\Omega d\Omega ~\sph{\alpha}{r}}_{a_{l_\alpha m_\alpha}} ~,
+\end{align}
+where $r$ is the comoving distance in the range $r_{i}\le r<r_{i+1}$, and $a_{l_\alpha m_\alpha}$ are the real spherical harmonic coefficients of a given survey window function $\Omega$. Note that in principle allowing for a survey with different window function geometries in different redshift bins is as simple as allowing  $a_{l_\alpha m_\alpha}=a_{l_\alpha m_\alpha}(r_i)$ to be a function of $r_i$, although we have not implemented this capability in the code at this time. We can use \eqref{bar_delta} to write the derivative:
+\begin{align}
+\frac{\partial \bar{\delta} }{ \partial \delta_\alpha}(z_i)=
+\frac{3}{r_{i+1}^3 - r_{i}^3} \int_{r_{i}}^ {r_{i+1} }dr ~ r^2 j_{l_\alpha}(k_\alpha r)  \frac{1}{2\sqrt{\pi} a_{00}} a_{l_\alpha m_\alpha}~.
+\end{align}
+\section{Projected Power Spectra}\label{projected_power}
+The angular correlation function $w_{AB}(\hat{n}\cdot\hat{n}')$ of the line of sight projections of two fields $A$ and $B$ can be expanded in terms of its angular power spectrum $C_{AB}\left(\ell\right)$\cite{extended_limber}:
+\begin{equation}
+w_{AB}(\hat{n}\cdot\hat{n}')\equiv\left<A(\hat{n})B(\hat{n}')\right>=\sum_{\ell}{\frac{2\ell+1}{4\pi}C_{AB}(\ell)P_\ell(\hat{n}\cdot\hat{n}')}
+\end{equation}
+Where $\hat{n}$ and $\hat{n}'$ are unit vectors in the direction of observation and $P_\ell$ are  Legendre polynomials. For a given field $A$, there is a weight function $q_A$ which relates the field to its line of sight projection $\tilde{A}(\hat{n})$, such that\cite{extended_limber}:
+\begin{equation}
+\tilde{A}(\hat{n}) = \int{dr q_A(\chi)A(\chi\hat{n})}
+\end{equation}
+
+where $\chi$ is the comoving coordinate. In terms of $q_A$ and $q_B$, the angular cross-power spectrum can be written:
+\begin{equation}\label{no limber}
+C_{AB}(\ell)\equiv\left<\tilde{A}_{lm}\tilde{B}_{lm}^*\right>=\int{d\chi_1 d\chi_2 q_A(\chi_1)q_B(\chi_2)\int{\frac{2 k^2 dk}{\pi} j_\ell(k \chi_1)j_\ell(k \chi_2)P_{AB}(k)}}
+\end{equation}
+
+where $j_\ell(k\chi)$ are spherical Bessel functions, and $k=\frac{\ell+\frac{1}{2}}{\chi}$. In practice, this integral is inconvenient to compute numerically due to the rapid oscillations of the spherical Bessel functions for $k\chi\gtrsim \ell+\frac{1}{2}$. Therefore, most authors write $C_{AB}$ using the Limber approximation, which can be taken by expanding this expression to lowest order in $\frac{1}{\ell+\frac{1}{2}}<<1$,
+\begin{equation}\label{limber_cab}
+C_{AB}(\ell)\cong\int_{0}^{\chi_{max}}{d\chi \frac{q_A(\chi)q_B(\chi)}{\chi^2}P_{\delta\delta}\left(k=\frac{(\ell+\frac{1}{2})}{\chi}\right)}.
+\end{equation}
+
+The code currently implements \eqref{limber_cab}. Note that for $\ell>>\frac{1}{2}$ many authors take $\ell+\frac{1}{2}\cong\ell$, although our code does not, for consistency with the implementation in CosmoSIS\cite{cosmosis}. The next order correction is suppressed by a factor of $\mathcal{O}((l+\frac{1}{2})^{-2})$, which is negligible for next generation weak lensing surveys. 
+%TODO where does the normalization factor come from in the notes?
+\end{document}

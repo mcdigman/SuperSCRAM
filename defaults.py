@@ -178,7 +178,7 @@ wmatcher_params = {'w_step':0.01,
                     'w_min':-3.50,
                     'w_max':0.1,
                     'a_step':0.001,
-                    'a_min':0.000917,
+                    'a_min':0.000916674,
                     'a_max':1.005,
                     'integ_E_step':0.05}
 matter_power_params = {'needs_halofit'  :True,
