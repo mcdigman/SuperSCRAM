@@ -137,10 +137,10 @@ nz_params = {   'data_source'   :'./data/CANDELS-GOODSS2.dat',
 
 hmf_params = {      'log10_min_mass'    :   6,
                     'log10_max_mass'    :   18,
-                    'n_grid'            :   3000,
-                    'z_resolution'      : 0.001,
+                    'n_grid'            :   500,
+                    'z_resolution'      : 0.01,
                     'z_min'             : 0.,
-                    'z_max'             : 3.}
+                    'z_max'             : 4.05}
 fpt_params = {   'C_window':0.75,
                     'n_pad':1000,
                     'low_extrap':-5,
@@ -160,7 +160,7 @@ dp_params = {'use_k3p':False,
 #amara refregier 2006 parameter forecast stuff
 cosmopie_params = {'p_space':'overwride'}
 planck_fisher_params ={ 'row_strip'     :np.array([3,5,6,7]),
-                        'fisher_source' :'F_Planck_tau0.01.dat',
+                        'fisher_source' :'data/F_Planck_tau0.01.dat',
                         'n_full'        :45,
                         'n_de'          :36,
                         'z_step'        :0.025}
@@ -190,5 +190,5 @@ matter_power_params = {'needs_halofit'  :True,
                         'min_n_w' : 3,
                         'a_min' : 0.05,
                         'a_max' : 1.01,
-                        'a_step' : 0.1,
+                        'a_step' : 0.05,
                         'nonlinear_model':'halofit'}

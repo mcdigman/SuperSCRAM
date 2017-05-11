@@ -7,6 +7,7 @@ class SourceDistribution:
         self.ps = ps
         self.zs = zs
         self.chis = chis
+        self.C = C
         self.params=params
 
 #gaussian source distribution
@@ -24,15 +25,13 @@ class ConstantZSource(SourceDistribution):
 
 #source distribution from cosmolike paper
 #cosmolike uses alpha=1.3, beta=1.5, z0=0.56
-class CosmolikeZSource(SourceDistribution):
+class CosmoLikeZSource(SourceDistribution):
     def __init__(self,zs,chis,C,alpha=1.24,beta=1.01,z0=0.51,params=defaults.lensing_params):
         ps = zs**alpha*np.exp(-(zs/z0)**beta)
         ps = dz_to_dchi(ps,zs,chis,C,params)
         SourceDistribution.__init__(self,ps,zs,chis,C,params)
 
 def get_source_distribution(smodel,zs,chis,C,params=defaults.lensing_params,ps=np.array([])):
-        z_min_dist = params['z_min_dist']
-        z_max_dist = params['z_max_dist']
         if smodel == 'gaussian':
             dist = GaussianZSource(zs,chis,C,zbar=params['zbar'],sigma=params['sigma'])
         elif smodel == 'constant':

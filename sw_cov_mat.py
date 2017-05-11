@@ -150,7 +150,7 @@ class SWCovMat(CovMat):
                     n_bc = sh_pow1.get_n_shape(class_b,class_c)
                 ns = np.array([n_ac,n_ad,n_bd,n_bc])
                 #TODO fix ns
-                self.gaussian_covar = np.diagflat(sh_pow1.cov_g_diag2(np.array([O_I_1.q1_pow,O_I_1.q2_pow,O_I_2.q1_pow,O_I_2.q2_pow]),ns))
+                self.gaussian_covar = np.diagflat(sh_pow1.cov_g_diag(np.array([O_I_1.q1_pow,O_I_1.q2_pow,O_I_2.q1_pow,O_I_2.q2_pow]),ns))
                 self.dimension = self.gaussian_covar.shape[0]
                 print "sw_cov_mat: covariance retrieved"
             else:

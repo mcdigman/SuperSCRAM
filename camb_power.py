@@ -1,4 +1,3 @@
-import sys, platform, os
 from time import time
 import numpy as np
 import camb
@@ -72,6 +71,7 @@ def camb_sigma8(cosmology,camb_params=defaults.camb_params):
 
     
 if __name__=='__main__':
+    import cosmopie as cp
     transfer_test = False
     if transfer_test:
         cosmo_a = defaults.cosmology.copy()
@@ -134,7 +134,6 @@ if __name__=='__main__':
             P_drecs = np.outer(C_d.G_norm(z_grid)**2/C_d.G_norm(z_grid[0])**2,P_ds[0])
             P_dgrow=P_ds/P_ds[0]
 
-        import cosmopie as cp
         import matplotlib.pyplot as plt
         #assert(np.all(P_dgrow==P_agrow))
         #plt.semilogx(kh_ds,1.-(P_dgrow/P_agrow).T)
@@ -257,7 +256,7 @@ if __name__=='__main__':
             Pfpt2s[itr] =Pls[itr]*(Gnorms[itr])**2+fpt.one_loop(Pls[itr],C_window=fpt_params['C_window'])*(Gnorms[itr])**4
             w4s[itr] = wm.match_w(Cs[itr],zs)
             mult4s[itr] = wm.match_growth(Cs[itr],zs,w4s[itr])
-            scales[itr] = wm.match_scale(Cs[itr],zs,w4s[itr])
+            scales[itr] = wm.match_scale(zs,w4s[itr])
             cosmo_eff = cosmo_start.copy()
             cosmo_eff['w'] = w4s[itr,0]
             cosmo_eff['de_model'] = 'constant_w'
@@ -299,7 +298,6 @@ if __name__=='__main__':
         
 #plt.loglog(kls.T,(cumtrapz(np.abs(Pnls-Phfs),kls,initial=0)).T)
     #k_in,P_in=camb_pow(C.cosmology)
-    #np.savetxt('P_default.csv',np.array([k_in,P_in]),delimiter=",")
     #camb_params = {'npoints':10000,
                 #'minkh':1.1e-4,
                 #'maxkh':1e5,

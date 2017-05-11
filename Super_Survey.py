@@ -1,6 +1,4 @@
 import numpy as np
-#from talk_to_class import class_objects 
-from FASTPTcode import FASTPT 
 from polygon_pixel_geo import polygon_pixel_geo
 from polygon_geo import polygon_geo
 
@@ -9,16 +7,10 @@ from cosmopie import CosmoPie
 from sph_klim import sph_basis_k
 from time import time 
 from Dn import DNumberDensityObservable
-import Dn
-import shear_power as sh_pow
-from hmf import ST_hmf
 
-import sys
 from geo import rect_geo
-from algebra_utils import ch_inv ,get_inv_cholesky
 import defaults
 import fisher_matrix as fm
-import lensing_observables as lo
 import copy
 from sw_survey import SWSurvey
 from lw_survey import LWSurvey
@@ -28,7 +20,7 @@ import matter_power_spectrum as mps
 class super_survey:
     ''' This class holds and returns information for all surveys
     ''' 
-    def __init__(self, surveys_sw, surveys_lw, r_max, l, n_zeros,k,basis,C,P_lin=None,get_a=False,do_mitigated=True,do_unmitigated=True):
+    def __init__(self, surveys_sw, surveys_lw, basis,C,get_a=False,do_mitigated=True,do_unmitigated=True):
     
       
         '''
@@ -86,7 +78,7 @@ class super_survey:
                 print "Super_Survey: mitigated run gave a="+str(self.a_vals)
         elif self.do_unmitigated:
             self.covs_sw,self.a_vals=self.get_SSC_covar(mitigation=False)     
-            print "Super_Survey: unmitigated run gave a="+str(self.a_no_mit)
+            print "Super_Survey: unmitigated run gave a="+str(self.a_vals)
         else:
             self.covs_sw=np.array([],dtype=object)
             self.a_vals = np.array([],dtype=object)
@@ -113,7 +105,6 @@ class super_survey:
      
     def get_SSC_covar(self,mitigation=True):
          
-        result=np.zeros_like(2,dtype=object)
         #TODO handle F_loc differently
         if mitigation:
             print "Super_Survey: getting SSC covar with mitigation"
@@ -127,7 +118,6 @@ class super_survey:
             print "Super_Survey: getting SSC covar without mitigation"
 
         Cov_SSC = np.zeros(self.N_surveys_sw,dtype=object) 
-        F_SSC = np.zeros((2,self.N_surveys_sw),dtype=object) 
         a_SSC = np.zeros((2,self.N_surveys_sw),dtype=object) 
 
         for i in range(0,self.N_surveys_sw):
@@ -143,24 +133,24 @@ class super_survey:
                 print "Super_Survey: a is "+str(a_SSC[i])+" for survey #"+str(i)
         self.F_fin = F_loc
         return Cov_SSC,a_SSC
-
-    def get_O_a(self):
-        D_O_a=np.zeros(self.N_O_a,dtype=object)
-        print 'Super_Survey: I have this many long wavelength observables', self.N_O_a 
-        for i in range(self.N_O_a):
-            O_a=self.O_a[i]
-            for key in O_a:
-                  
-                if key=='number density':
-                    data=O_a['number density']
-                    n_obs=np.array([data[0],data[1]])
-                    mass=data[2]
-                    print n_obs, mass
-                    X=DNumberDensityObservable(self.surveys_lw[0],defaults.dn_params,'lw1',self.C,self.basis,defaults.nz_params)
-                    D_O_a[i] = X.Fisher_alpha_beta()
-                    print "Super_Survey: min D_O_a element for lw observable #"+str(i)+": "+str(np.min(D_O_a[i][0]))
-                    print "Super_Survey: D_O_a for lw observable #"+str(i)+": ",D_O_a[i][0]
-        return D_O_a  
+    
+#    def get_O_a(self):
+#        D_O_a=np.zeros(self.N_O_a,dtype=object)
+##        print 'Super_Survey: I have this many long wavelength observables', self.N_O_a 
+#        for i in range(self.N_O_a):
+#            O_a=self.O_a[i]
+#            for key in O_a:
+#                  
+#                if key=='number density':
+#                    data=O_a['number density']
+#                    n_obs=np.array([data[0],data[1]])
+#                    mass=data[2]
+#                    print n_obs, mass
+#                    X=DNumberDensityObservable(self.surveys_lw[0],defaults.dn_params,'lw1',self.C,self.basis,defaults.nz_params)
+#                    D_O_a[i] = X.Fisher_alpha_beta()
+#                    print "Super_Survey: min D_O_a element for lw observable #"+str(i)+": "+str(np.min(D_O_a[i][0]))
+#                    print "Super_Survey: D_O_a for lw observable #"+str(i)+": ",D_O_a[i][0]
+#        return D_O_a  
 
     def get_O_I_all(self):
         O_I_list = np.zeros(self.N_O_I,dtype=object)
@@ -205,7 +195,7 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
     area_set = np.zeros((n_c,n_p,n_p))
     for itr3 in range(0,n_c):
         width1_set[itr3],width2_set[itr3],angle_set[itr3],area_set[itr3] = get_ellipse_specs(cov_set[itr3],dchi2=dchi2)
-    if box_widths is "adaptive":
+    if box_widths=="adaptive":
         box_widths = np.zeros(n_p)
         for itr3 in range(0,n_c):
             box_widths = np.max(np.array([box_widths,2.*np.sqrt(np.diag(cov_set[itr3]))]),axis=0)
@@ -403,7 +393,7 @@ if __name__=="__main__":
      
     print 'main: this is r_max: '+str(r_max)
      
-    SS=super_survey(surveys_sw, surveys_lw,r_max,l_sw,n_zeros,k,basis,P_lin=P,C=C,get_a=False,do_unmitigated=True,do_mitigated=True)
+    SS=super_survey(surveys_sw, surveys_lw,basis,C=C,get_a=False,do_unmitigated=True,do_mitigated=True)
 
     t2 = time()
     print "main: total run time "+str(t2-t1)+" s"
@@ -411,7 +401,6 @@ if __name__=="__main__":
     #print "fractional mitigation: ", SS.a_no_mit/SS.a_mit     
     rel_weights1 = SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0]*np.dot(SS.F_0.get_cov_cholesky(),SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0])
     rel_weights2 = SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0]*np.dot(SS.F_fin.get_cov_cholesky(),SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0])
-    #np.savetxt('rel_weights_k_026.txt',rel_weights)
 
  #   ax.plot(rel_weights)
  #   plt.show()
@@ -467,10 +456,13 @@ if __name__=="__main__":
 
     chol_plot=False
     if chol_plot:
+        import matplotlib.pyplot as plt
         ax = plt.subplot(111)
         for itr in range(1,5):
             #ax.plot(ax_ls,ax_ls*(ax_ls+1.)*np.dot(chol_gauss,SS_eig[1][:,-itr]))
-            ax.plot(np.dot(chol_gauss,SS_eig[1][:,-itr]))
+            #ax.plot(np.dot(chol_gauss,SS_eig[1][:,-itr]))
+            #TODO might just delete this
+            ax.plot(np.dot(chol_gauss,eig_params[:,-itr]))
     
         ax.legend(['1','2','3','4','5'])
         plt.show()

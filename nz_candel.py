@@ -1,11 +1,11 @@
 import numpy as np
+
 import defaults
 import hmf
 from cosmopie import CosmoPie
 from polygon_pixel_geo import polygon_pixel_geo
 from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
 from scipy.integrate import cumtrapz
-import sys
 from time import time
 #get dN/(dz dOmega)
 class NZCandel:
@@ -29,8 +29,10 @@ class NZCandel:
                 self.dN_dz+=np.exp(-(self.z_grid-self.zs_chosen[itr])**2/(2.*sigma**2))+np.exp(-(self.z_grid+self.zs_chosen[itr])**2/(2.*sigma**2))
             else:
                 self.dN_dz+=np.exp(-(self.z_grid-self.zs_chosen[itr])**2/(2.*sigma**2))
+
         self.dN_dz = self.dN_dz/(sigma*np.sqrt(2.*np.pi))
         #normalize to correct numerical errors/for galaxies beyond endpoints of grid
+        #TODO maybe shouldn't do this
         #result is in galaxy density/steradian
         self.dN_dz = self.zs_chosen.size*self.dN_dz/(np.trapz(self.dN_dz,self.z_grid)*self.params['area_sterad'])
         self.dN_dz_interp = interp1d(self.z_grid,self.dN_dz)
@@ -53,7 +55,7 @@ class NZCandel:
         #TODO maybe can be faster
         #TODO check this
         Gs = mf.Growth(geo.z_fine)
-        dns = mf.dndM_G_array(mass,Gs)
+        dns = mf.dndM_G(mass,Gs)
         for itr in range(0,geo.z_fine.size):
             dn = dns[:,itr]
             n_avgs = np.hstack((-(cumtrapz(dn[::-1],mass[::-1]))[::-1],0.))
@@ -76,11 +78,14 @@ class NZCandel:
 
 
 #TODO: check get_nz and get_M_cut agree 
-
+import matter_power_spectrum as mps
 if __name__=='__main__':
-    d=np.loadtxt('camb_m_pow_l.dat')
-    k=d[:,0]; P=d[:,1]
-    C=CosmoPie(k=k,P_lin=P,cosmology=defaults.cosmology)
+    #d=np.loadtxt('camb_m_pow_l.dat')
+    #k=d[:,0]; P=d[:,1]
+    C=CosmoPie(cosmology=defaults.cosmology)
+    P = mps.MatterPower(C)
+    C.P_lin = P
+    C.k = C.P_lin.k
     theta0=0.*np.pi/16.
     theta1=16.*np.pi/16.
     phi0=0.
@@ -95,28 +100,29 @@ if __name__=='__main__':
     zs=np.array([.01,1.01])
     z_fine = np.arange(0.01,4.0,0.01)
 
-    geo1 = polygon_pixel_geo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,res_healpix=res_choose)
-
-    nzc = NZCandel(defaults.nz_params)
-    mf = hmf.ST_hmf(C)
-    t1 = time() 
-    dN_dz = nzc.get_dN_dzdOmega(z_fine)
-    t2 = time()
-    print "total galaxies/steradian: "+str(np.trapz(dN_dz,z_fine))
-    print "found in: "+str(t2-t1)+" s"
-    nz = nzc.get_nz(geo1)
-    t3 = time()
-    print "nz found in: "+str(t3-t2)+" s"
-    m_cuts = nzc.get_M_cut(mf,geo1)
-    t4 = time()
-    print "m cuts found in: "+str(t4-t3)+" s"
-    n_halo = np.zeros(m_cuts.size)
-    n_halo= mf.n_avg_array(m_cuts,z_fine)
-    print "avg reconstruction error: "+str(np.average((n_halo-nz)/nz))
+    l_max = 25
+    geo1 = polygon_pixel_geo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max,res_healpix=res_choose)
+    for i in range(0,1):
+        nzc = NZCandel(defaults.nz_params)
+        mf = hmf.ST_hmf(C)
+        t1 = time() 
+        dN_dz = nzc.get_dN_dzdOmega(z_fine)
+        t2 = time()
+        print "total galaxies/steradian: "+str(np.trapz(dN_dz,z_fine))
+        print "found in: "+str(t2-t1)+" s"
+        nz = nzc.get_nz(geo1)
+        t3 = time()
+        print "nz found in: "+str(t3-t2)+" s"
+        m_cuts = nzc.get_M_cut(mf,geo1)
+        t4 = time()
+        print "m cuts found in: "+str(t4-t3)+" s"
+        n_halo = np.zeros(m_cuts.size)
+        n_halo= mf.n_avg(m_cuts,z_fine)
+        print "avg reconstruction error: "+str(np.average((n_halo-nz)/nz))
     import matplotlib.pyplot as plt
     ax = plt.subplot(111)
     ax.loglog(z_fine,m_cuts)
     ax.loglog(z_fine,6675415160366.4219*z_fine**2.3941494934544996)
     plt.xlabel('z')
     plt.ylabel('n(z)')
-    plt.show()
+    #plt.show()

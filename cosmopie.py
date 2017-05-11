@@ -9,7 +9,6 @@
 import numpy as np
 from numpy import pi 
 from scipy.integrate import romberg, quad, trapz,cumtrapz,odeint
-#from talk_to_class import class_objects
 import sys
 from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
 import defaults
@@ -20,7 +19,7 @@ import matter_power_spectrum as mps
 
 class CosmoPie :
         
-    def __init__(self,cosmology=defaults.cosmology, P_lin=None, k=None,lin_type='class',precompute=True,z_max=4.0,z_space=0.01,p_space=defaults.cosmopie_params['p_space'],needs_power=False,camb_params=defaults.camb_params,safe_sigma8=False,a_step=0.0008,a_step_de = 0.0001,a_extra=10,a_extra_de=100,G_in=None,G_safe=False,silent=False,wmatch=None):
+    def __init__(self,cosmology=defaults.cosmology, P_lin=None, k=None,p_space=defaults.cosmopie_params['p_space'],needs_power=False,camb_params=defaults.camb_params,safe_sigma8=False,a_step=0.0008,a_step_de = 0.0001,a_extra=10,a_extra_de=100,G_in=None,G_safe=False,silent=False,wmatch=None):
         # default to Planck 2015 values 
         self.silent=silent
         if not silent:
@@ -30,55 +29,56 @@ class CosmoPie :
         #define parameterization
         self.p_space=p_space
         #fill out cosmology
-        cosmology = add_derived_parameters(cosmology,self.p_space,safe_sigma8)
+        self.cosmology = cosmology.copy()
+        self.cosmology = add_derived_parameters(self.cosmology,self.p_space,safe_sigma8)
 
-        self.Omegabh2 = cosmology['Omegabh2']
-        self.Omegach2 = cosmology['Omegach2']
-        self.Omegamh2 = cosmology['Omegamh2']
-        self.OmegaL   = cosmology['OmegaL']
-        self.Omegam   = cosmology['Omegam']
-        self.ns = cosmology['ns']
-        self.H0       = cosmology['H0']
-        self.sigma8   = cosmology['sigma8']
-        self.h        = cosmology['h']
-        self.Omegak   = cosmology['Omegak']
-        self.Omegar   = cosmology['Omegar']
+        self.Omegabh2 = self.cosmology['Omegabh2']
+        self.Omegach2 = self.cosmology['Omegach2']
+        self.Omegamh2 = self.cosmology['Omegamh2']
+        self.OmegaL   = self.cosmology['OmegaL']
+        self.Omegam   = self.cosmology['Omegam']
+        self.ns =self.cosmology['ns']
+        self.H0       = self.cosmology['H0']
+        self.sigma8   = self.cosmology['sigma8']
+        self.h        = self.cosmology['h']
+        self.Omegak   = self.cosmology['Omegak']
+        self.Omegar   = self.cosmology['Omegar']
         
         #get multipliers in H(z) for OmegaL with an equation of state w(z)
-        self.de_model = cosmology.get('de_model')
+        self.de_model = self.cosmology.get('de_model')
         #default to assuming dark energy is constant
         if self.de_model is None:
             warn('no dark energy model specified, assuming w=-1')
             self.de_model = 'constant_w'
-            cosmology['de_model']=self.de_model
-            cosmology['w']=-1
+            self.cosmology['de_model']=self.de_model
+            self.cosmology['w']=-1
         #z grid for dark energy interpolation
         a_de = np.arange(1.+a_step_de*a_extra_de*2,a_step_de,-a_step_de)
         z_de = 1./a_de-1.
         #z_de = np.arange(0.,z_max,z_space)
         #TODO interpolation may introduce unnecessary error in exact cases
         if self.de_model=='constant_w':
-            self.de_mult = InterpolatedUnivariateSpline(z_de,(z_de+1.)**(3.*(1.+cosmology['w'])),k=1,ext=2)
-            self.ws = np.zeros(z_de.size)+cosmology['w']
+            self.de_mult = InterpolatedUnivariateSpline(z_de,(z_de+1.)**(3.*(1.+self.cosmology['w'])),k=1,ext=2)
+            self.ws = np.zeros(z_de.size)+self.cosmology['w']
             self.w_interp = InterpolatedUnivariateSpline(z_de,self.ws,k=1,ext=2) 
         elif self.de_model=='w0wa':
-            #self.ws = cosmology['w0']+(1.-1./(1.-z_grid_de))*cosmology['wa']
+            #self.ws = self.cosmology['w0']+(1.-1./(1.-z_grid_de))*self.cosmology['wa']
             #Chevallier-Polarski-Linder model, solution can be found in ie arXiv:1605.01475
-            self.de_mult=InterpolatedUnivariateSpline(z_de,np.exp(-3.*cosmology['wa']*z_de/(1.+z_de))*(1.+z_de)**(3.*(1.+cosmology['w0']+cosmology['wa'])),k=1,ext=2)
-            self.ws = cosmology['w0']+(1.-1./(1.+z_de))*cosmology['wa'] 
+            self.de_mult=InterpolatedUnivariateSpline(z_de,np.exp(-3.*self.cosmology['wa']*z_de/(1.+z_de))*(1.+z_de)**(3.*(1.+self.cosmology['w0']+self.cosmology['wa'])),k=1,ext=2)
+            self.ws = self.cosmology['w0']+(1.-1./(1.+z_de))*self.cosmology['wa'] 
             self.w_interp = InterpolatedUnivariateSpline(z_de,self.ws,k=1,ext=2) 
         elif self.de_model=='grid_w':
-            #ws = InterpolatedUnivariateSpline(cosmology['zs_de'],cosmology['ws_de'])(z_de)
+            #ws = InterpolatedUnivariateSpline(self.cosmology['zs_de'],self.cosmology['ws_de'])(z_de)
             #cf ie https://ned.ipac.caltech.edu/level5/March08/Frieman/Frieman2.html#note1, arXiv:1605.01475
-            de_integrand = (1.+cosmology['ws'])/(1.+cosmology['zs_de'])
-            de_mults_in = np.exp(3.*cumtrapz(de_integrand,cosmology['zs_de'],initial=0.)) #TODO check initial should actually be zero
-            self.de_mult = InterpolatedUnivariateSpline(cosmology['zs_de'],de_mults_in,k=2,ext=2) #k=2 so smooths some, check if this is a good idea.
-            self.w_interp = InterpolatedUnivariateSpline(cosmology['zs_de'],cosmology['ws'],k=2,ext=2)
+            de_integrand = (1.+self.cosmology['ws'])/(1.+self.cosmology['zs_de'])
+            de_mults_in = np.exp(3.*cumtrapz(de_integrand,self.cosmology['zs_de'],initial=0.)) #TODO check initial should actually be zero
+            self.de_mult = InterpolatedUnivariateSpline(self.cosmology['zs_de'],de_mults_in,k=2,ext=2) #k=2 so smooths some, check if this is a good idea.
+            self.w_interp = InterpolatedUnivariateSpline(self.cosmology['zs_de'],self.cosmology['ws'],k=2,ext=2)
         elif self.de_model=='jdem':
             #piecewise constant approximation over 36 values with z=0.025 spacing
-            ws_in = cosmology['ws36']
-            ws_set = np.zeros(zs_in.size)
+            ws_in = self.cosmology['ws36']
             zs_in = 0.025*np.arange(0,36)/(1-0.025*np.arange(0,36))
+            ws_set = np.zeros(zs_in.size)
             itr = 0
             for i in range(0,z_de.size):
                 if itr<zs_in.size-1:
@@ -87,22 +87,16 @@ class CosmoPie :
                         itr+=1
                 ws_set[i] = ws_in[itr] 
 
-            de_integrand = (1.+ws_set)/(1.+zs_de)
-            de_mults_in = np.exp(3.*cumtrapz(de_integrand,zs_de,initial=0.))
-            self.de_mult = InterpolatedUnivariateSpline(zs_de,de_mults_in,k=2,ext=2) #smoothing may help differential equations
-            self.w_interp = InterpolatedUnivariateSpline(zs_de,ws_set,k=2,ext=2)
+            de_integrand = (1.+ws_set)/(1.+zs_in)
+            de_mults_in = np.exp(3.*cumtrapz(de_integrand,zs_in,initial=0.))
+            self.de_mult = InterpolatedUnivariateSpline(zs_in,de_mults_in,k=2,ext=2) #smoothing may help differential equations
+            self.w_interp = InterpolatedUnivariateSpline(zs_in,ws_set,k=2,ext=2)
         else:
             raise ValueError('unrecognized dark energy model \''+str(self.de_model)+'\'')
 
-        self.cosmology=cosmology
         self.camb_params = camb_params.copy()
 
         
-        # if lin_type=='class':
-#                     X=class_objects(cosmology)
-#                     P=X.linear_power(self.k*self.h)/self.h**3
-#                     self.P_lin=P
-             
         # solar mass
         self.M_sun=1.9885*1e30 # kg
         
@@ -213,7 +207,6 @@ class CosmoPie :
     
     def dH_da(self,z):
         # the derivative of H with respect to a 
-        zp1=z + 1
         #TODO check this if anything actually uses it
         return -(1+z)*self.H0/2.*(3.*self.Omegam_z(z)+4.*self.Omegar_z(z)+2.*self.Omegak_z(z)+3.*(1.+self.w_interp(z))*self.OmegaL_z(z))                
 #                return -(1+z)**2*self.H0/2./self.Ez(z)*(3*self.Omegam*zp1**2 +4*self.Omegar*zp1**3  +2*self.Omegak*zp1 )
@@ -395,6 +388,7 @@ class CosmoPie :
         # critical threshold for spherical collapse, as given 
         # in the appendix of NFW 1997 
         #TODO fitting formula, probably not appropriate for the code anymore
+        #TODO why no z dependence anywhere?
         A=0.15*(12.*pi)**(2/3.)
         
         if ( (self.Omegam ==1) & (self.OmegaL==0)):
@@ -443,10 +437,15 @@ class CosmoPie :
             raise ValueError('You need to provide a linear power spectrum and k to get sigma valeus')
         if self.k is None:
             raise ValueError('You need to provide a linear power spectrum and k to get sigma valeus')
-        W=3.0*(np.sin(self.k*R)/self.k**3/R**3-np.cos(self.k*R)/self.k**2/R**2)
+        if isinstance(R,np.ndarray):
+            kr = np.outer(self.k,R)
+        else:
+            kr = self.k*R
+        W=3.0*(np.sin(kr)/kr**3-np.cos(kr)/kr**2)
         #P=self.G_norm(z)**2*self.P_lin
+        #TODO should be z dependence?
         P=self.P_lin.linear_power(np.array([0.]))[:,0]
-        I=trapz(W*W*P*self.k**3,np.log(self.k))/2./pi**2
+        I=trapz((W*W).T*P*self.k**3,np.log(self.k))/2./pi**2
         
         return np.sqrt(I)
             
@@ -467,7 +466,7 @@ class CosmoPie :
         return 1-self.Omegam_z(z)-self.OmegaL_z(z)-self.Omegar_z(z)
     
     def Omega_tot(self,z):
-        return self.Omegak_z(z) + self.OmegaL_z(z) + self.Omegam_L(z)+self.Omegar_z(z)
+        return self.Omegak_z(z) + self.OmegaL_z(z) + self.Omegam_z(z)+self.Omegar_z(z)
     
     def rho_bar(self,z):
         # return average density in units of solar mass and h^2 

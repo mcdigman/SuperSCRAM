@@ -5,7 +5,6 @@ import re
 from warnings import warn
 from sw_cov_mat import SWCovMat
 from Dn import DNumberDensityObservable
-import sys
 
 class LWSurvey:
     def __init__(self,geos,survey_id,basis,C,ls = np.array([]),params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params,prefetch_ddelta_bar=False):
@@ -23,8 +22,8 @@ class LWSurvey:
                 self.ddelta_bar_ddelta_alpha_list[i] = self.basis.D_delta_bar_D_delta_alpha(self.geos[i],tomography=True)
         else:
             self.ddelta_bar_stored = False
-        self.dn_params = defaults.dn_params
-        self.observable_names = generate_observable_names(self.geos,observable_list,params['cross_bins'])
+        self.dn_params = dn_params
+        self.observable_names = generate_observable_names(observable_list)
         self.observables = self.names_to_observables(self.observable_names)
         print "lw_survey: finished initializing long wavelength survey: "+str(survey_id)
 
@@ -60,15 +59,14 @@ class LWSurvey:
         itr = 0 
         for key in names:
             if re.match('^d_number_density',key):
-                observables[itr] = DNumberDensityObservable(self.geos,self.dn_params,self.survey_id,self.C,self.basis,self.ddelta_bar_ddelta_alpha_list,defaults.nz_params)
+                observables[itr] = DNumberDensityObservable(self.geos,self.dn_params,self.survey_id,self.C,self.basis,defaults.nz_params)
             else:
                 warn('unrecognized or unprocessable observable: \'',key,'\', skipping')
                 observables[itr] = None
             itr+=1
         return observables
      
-def generate_observable_names(geos,observable_list,cross_bins=defaults.lw_survey_params['cross_bins']):
-    rbins = geos[0].rbins
+def generate_observable_names(observable_list):
     names = {}
     for name in observable_list:
         if re.match('^d_number_density',name):

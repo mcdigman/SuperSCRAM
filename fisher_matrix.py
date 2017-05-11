@@ -7,7 +7,7 @@ REP_FISHER = 0
 REP_CHOL = 1
 REP_CHOL_INV = 2 
 REP_COVAR = 3
-DEFAULT_ALLOWED_CACHES = {REP_FISHER:False,REP_CHOL:False,REP_CHOL_INV:False,REP_COVAR:False}
+#DEFAULT_ALLOWED_CACHES = {REP_FISHER:False,REP_CHOL:False,REP_CHOL_INV:False,REP_COVAR:False}
 
 #things to watch out for: the output matrix may mutate if it was the internal matrix
 
@@ -15,7 +15,7 @@ DEFAULT_ALLOWED_CACHES = {REP_FISHER:False,REP_CHOL:False,REP_CHOL_INV:False,REP
 class fisher_matrix:
 
 
-    def __init__(self,input_matrix,input_type=REP_FISHER,initial_state = REP_FISHER,allowed_caches=DEFAULT_ALLOWED_CACHES,fix_input=False,silent=True):
+    def __init__(self,input_matrix,input_type=REP_FISHER,initial_state = REP_FISHER,fix_input=False,silent=True):
 
         self.silent=silent
         self.fix_input=fix_input

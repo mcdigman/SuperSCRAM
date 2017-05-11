@@ -1,5 +1,4 @@
 import numpy as np
-import cosmopie as cp
 from scipy.integrate import dblquad
 from sph_functions import Y_r
 from scipy.interpolate import InterpolatedUnivariateSpline
@@ -120,7 +119,7 @@ class rect_geo(geo):
     #function(phi,theta)
     def surface_integral(self,function):
         def integrand(phi,theta):
-            return function(phi,theta)*np.sin(theta) #TODO: evaluate if better way of inserting sin(theta)
+            return function(phi,theta)*np.sin(theta)
         I=dblquad(integrand,self.Theta[0],self.Theta[1], lambda phi: self.Phi[0], lambda phi: self.Phi[1])[0]
         #if (np.absolute(I) <= self.eps):
         #    return 0.0

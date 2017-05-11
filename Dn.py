@@ -1,15 +1,13 @@
 import numpy as np
-from numpy import pi 
 from hmf import ST_hmf
 from nz_candel import NZCandel
-import sys
 from lw_observable import LWObservable
 from fisher_matrix import fisher_matrix
 from warnings import warn
 
 
 class DNumberDensityObservable(LWObservable):
-    def __init__(self,geos,params,survey_id, C,basis,ddelta_bar_ddelta_alpha_list,nz_params): 
+    def __init__(self,geos,params,survey_id, C,basis,nz_params): 
         
         '''
             data should hold: 
@@ -71,15 +69,15 @@ class DNumberDensityObservable(LWObservable):
     
             if self.variable_cut: 
                 #for i in range1:
-                self.dn_ddelta_bar1=self.mf.bias_n_avg_array(self.M_cuts1[range1],self.geo1.z_fine[range1])
-                self.dn_ddelta_bar2=self.mf.bias_n_avg_array(self.M_cuts2[range2],self.geo2.z_fine[range2])
+                self.dn_ddelta_bar1=self.mf.bias_n_avg(self.M_cuts1[range1],self.geo1.z_fine[range1])
+                self.dn_ddelta_bar2=self.mf.bias_n_avg(self.M_cuts2[range2],self.geo2.z_fine[range2])
                 #for i in range2:
                  #   self.dn_ddelta_bar2[i]=self.mf.bias_avg(self.M_cuts2[i],self.geo2.z_fine[i])
             else: 
                 mass_array1 = np.full(range1.shape,min_mass)
-                self.dn_ddelta_bar1=self.mf.bias_n_avg_array(mass_array1,self.geo1.z_fine[range1])
+                self.dn_ddelta_bar1=self.mf.bias_n_avg(mass_array1,self.geo1.z_fine[range1])
                 mass_array2 = np.full(range2.shape,min_mass)
-                self.dn_ddelta_bar2=self.mf.bias_n_avg_array(mass_array2,self.geo2.z_fine[range2])
+                self.dn_ddelta_bar2=self.mf.bias_n_avg(mass_array2,self.geo2.z_fine[range2])
             print "Dn: getting d1,d2"
             #multiplier for integrand,TODO maybe better way
             self.integrand1 = np.expand_dims(self.dn_ddelta_bar1*self.geo1.r_fine[range1]**2,axis=1)
@@ -115,7 +113,7 @@ if __name__=="__main__":
     print 'hello'
     
     from defaults import cosmology 
-    from cosmopie import C
+    from cosmopie import CosmoPie
     d=np.loadtxt('Pk_Planck15.dat')
     k=d[:,0]; P=d[:,1]
     
@@ -141,7 +139,7 @@ if __name__=="__main__":
     
     from sph import sph_basis
     geo=sph_basis(r_max,l_alpha,n_zeros,k,P)
-    
-    O=DO_n(n_obs_dict,1e15,cp,geo)
+    #TODO write demo 
+    #O=DO_n(n_obs_dict,1e15,cp,geo)
     
     

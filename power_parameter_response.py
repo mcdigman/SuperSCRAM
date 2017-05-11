@@ -6,33 +6,31 @@ from scipy.interpolate import InterpolatedUnivariateSpline,interp1d
 import defaults
 import camb_power as cpow
 from warnings import warn
-import w_matcher as wm
 import matter_power_spectrum as mps
 
 #P_a is fiducial power spectrum 
 #parameter can be H0,Omegabh2,Omegach2,Omegak,ns,sigma8,h
 #include others such as omegam, w
-#use central finite difference because I think chris said to, check if it is actually necessary.
-def dp_dparameter(k_fid,P_fid,zs,C,parameter,pmodel='linear',epsilon=0.0001,log_param_deriv=False,fpt=None,fpt_params=defaults.fpt_params,camb_params=defaults.camb_params,dp_params=defaults.dp_params):
+#TODO need to change G_norm or does not work properly
+def dp_dparameter(k_fid,zs,C,parameter,pmodel='linear',epsilon=0.0001,log_param_deriv=False,fpt=None,fpt_params=defaults.fpt_params,camb_params=defaults.camb_params,dp_params=defaults.dp_params):
     cosmo_fid = C.cosmology.copy()
     print cosmo_fid
     #skip getting sigma8 if possible because it is slow
     if not parameter=='sigma8' and ('sigma8' not in cp.P_SPACES[cosmo_fid['p_space']]):
         cosmo_fid['skip_sigma8'] = True
-        camb_params = camb_params.copy()
-        camb_params['force_sigma8'] = False
+        camb_params_use = camb_params.copy()
+        camb_params_use['force_sigma8'] = False
     cosmo_a = get_perturbed_cosmology(cosmo_fid,parameter,epsilon,log_param_deriv=log_param_deriv)
     print "cosmo_a",cosmo_a
     cosmo_b = get_perturbed_cosmology(cosmo_fid,parameter,-epsilon,log_param_deriv=log_param_deriv)
     print "cosmo_b",cosmo_b
     #get perturbed linear power spectra from camb
-    k_a,P_a = cpow.camb_pow(cosmo_a,camb_params=camb_params) 
-    k_b,P_b = cpow.camb_pow(cosmo_b,camb_params=camb_params) 
+    k_a,P_a = cpow.camb_pow(cosmo_a,camb_params=camb_params_use) 
+    k_b,P_b = cpow.camb_pow(cosmo_b,camb_params=camb_params_use) 
     if not np.all(k_a==k_fid) or not(np.all(k_b==k_fid)):
         print "adapting k grid"
         P_a = InterpolatedUnivariateSpline(k_a,P_a,k=1)(k_fid)
         P_b = InterpolatedUnivariateSpline(k_b,P_b,k=1)(k_fid)
-
     if pmodel=='linear':
         pza = np.outer(P_a,C.G_norm(zs)**2) 
         pzb = np.outer(P_b,C.G_norm(zs)**2) 
@@ -50,8 +48,8 @@ def dp_dparameter(k_fid,P_fid,zs,C,parameter,pmodel='linear',epsilon=0.0001,log_
         p_lin_b = np.outer(P_b,C.G_norm(zs)**2) 
         one_loop_a = fpt.one_loop(P_a,C_window=fpt_params['C_window'])
         one_loop_b = fpt.one_loop(P_b,C_window=fpt_params['C_window'])
-        pza = plin_a+np.outer(one_loop_a,C.G_norm(zs)**4)
-        pzb = plin_b+np.outer(one_loop_b,C.G_norm(zs)**4)
+        pza = p_lin_a+np.outer(one_loop_a,C.G_norm(zs)**4)
+        pzb = p_lin_b+np.outer(one_loop_b,C.G_norm(zs)**4)
         #pza = np.zeros_like(p_lin_a)
         #pzb = np.zeros_like(p_lin_b)
         #for itr in range(0,zs.size):
@@ -75,7 +73,7 @@ def dp_dparameter(k_fid,P_fid,zs,C,parameter,pmodel='linear',epsilon=0.0001,log_
     
 #get set of perturbed cosmopies (including camb linear power spectrum) for getting derivatives, assuming using central finite difference method
 #TODO sigma8 handling is a mess
-def get_perturbed_cosmopies(C_fid,parameters,epsilons,log_param_derivs=np.array([]),wmatcher_params=defaults.wmatcher_params):
+def get_perturbed_cosmopies(C_fid,parameters,epsilons,log_param_derivs=np.array([])):
     cosmo_fid = C_fid.cosmology.copy()
     P_fid = C_fid.P_lin
     k_fid = C_fid.k
@@ -90,7 +88,7 @@ def get_perturbed_cosmopies(C_fid,parameters,epsilons,log_param_derivs=np.array(
     
     Cs_pert = np.zeros((parameters.size,2),dtype=object) 
 
-    de_model = cosmo_fid.get('de_model')
+    #de_model = cosmo_fid.get('de_model')
     #wmatch = C_fid.wmatch
 
     for i in range(0,parameters.size):
@@ -208,10 +206,10 @@ if __name__=="__main__":
             dp_params['log_deriv_direct']=True
 
             #attempt to replicate leftmost subplot at top of page 6 in Neyrinck 2011 arxiv:1105.2955v2
-            dp_ch2,pza,pzb = dp_dparameter(k_fid,P_fid,np.array([0.]),C,'Omegamh2',log_param_deriv=True,pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params,dp_params=dp_params)
-            dp_bh2,pza,pzb = dp_dparameter(k_fid,P_fid,np.array([0.]),C,'Omegabh2',log_param_deriv=True,pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params,dp_params=dp_params)
-            dp_s8,pza,pzb = dp_dparameter(k_fid,P_fid,np.array([0.]),C,'sigma8',log_param_deriv=True,pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params,dp_params=dp_params)
-            dp_ns,pza,pzb = dp_dparameter(k_fid,P_fid,np.array([0.]),C,'ns',pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params,dp_params=dp_params)
+            dp_ch2,pza,pzb = dp_dparameter(k_fid,np.array([0.]),C,'Omegamh2',log_param_deriv=True,pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params,dp_params=dp_params)
+            dp_bh2,pza,pzb = dp_dparameter(k_fid,np.array([0.]),C,'Omegabh2',log_param_deriv=True,pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params,dp_params=dp_params)
+            dp_s8,pza,pzb = dp_dparameter(k_fid,np.array([0.]),C,'sigma8',log_param_deriv=True,pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params,dp_params=dp_params)
+            dp_ns,pza,pzb = dp_dparameter(k_fid,np.array([0.]),C,'ns',pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params,dp_params=dp_params)
             min_index = 0
             max_index = np.argmin(k_fid<0.5)
          
@@ -251,11 +249,11 @@ if __name__=="__main__":
             k_fid,P_fid = cpow.camb_pow(cosmo_fid,camb_params=camb_params)
             #attempt to replicate leftmost subplot at top of page 6 in Neyrinck 2011 arxiv:1105.2955v2
             epsilon_h =0.02
-            dp_h,pza,pzb = dp_dparameter(k_fid,P_fid,np.array([0.]),C,'h',pmodel=pmodel_use,epsilon=epsilon_h,camb_params=camb_params,dp_params=dp_params)
+            dp_h,pza,pzb = dp_dparameter(k_fid,np.array([0.]),C,'h',pmodel=pmodel_use,epsilon=epsilon_h,camb_params=camb_params,dp_params=dp_params)
             epsilon_LogAs = 0.03 
-            dp_LogAs,pza,pzb = dp_dparameter(k_fid,P_fid,np.array([0.]),C,'LogAs',pmodel=pmodel_use,epsilon=epsilon_LogAs,camb_params=camb_params,dp_params=dp_params)
+            dp_LogAs,pza,pzb = dp_dparameter(k_fid,np.array([0.]),C,'LogAs',pmodel=pmodel_use,epsilon=epsilon_LogAs,camb_params=camb_params,dp_params=dp_params)
             epsilon_ns = 0.01
-            dp_ns,pza,pzb = dp_dparameter(k_fid,P_fid,np.array([0.]),C,'ns',pmodel=pmodel_use,epsilon=epsilon_ns,camb_params=camb_params,dp_params=dp_params)
+            dp_ns,pza,pzb = dp_dparameter(k_fid,np.array([0.]),C,'ns',pmodel=pmodel_use,epsilon=epsilon_ns,camb_params=camb_params,dp_params=dp_params)
             min_index = 0
             #max_index = np.argmin(k_fid<1.1)
             max_index = k_fid.size

@@ -42,18 +42,24 @@ class MatterPower:
         self.n_a = self.a_grid.size
 
         self.de_model = self.cosmology['de_model']  
-        if self.params['needs_wmatcher']:
+        self.get_w_matcher = self.params['needs_wmatcher'] and not self.de_model=='constant_w'
+        if self.get_w_matcher:
             if wm_in is not None and self.wm_safe:
                 self.wm = wm_in
             else:
                 self.wm = w_matcher.WMatcher(self.C,wmatcher_params=self.wmatcher_params)
-            w_match_grid = self.wm.match_w(self.C,self.z_grid)
-            #self.pow_mult_grid = self.wm.match_growth(self.C,self.z_grid,w_match_grid)
+            self.w_match_grid = self.wm.match_w(self.C,self.z_grid)
+            #TODO is this grid acceptably fine?
+            self.w_match_interp = InterpolatedUnivariateSpline(self.z_grid[::-1],self.w_match_grid[::-1],k=3,ext=2) 
+            self.pow_mult_grid = self.wm.match_growth(self.C,self.z_grid,self.w_match_grid)
+            #self.pow_mult_interp = InterpolatedUnivariateSpline(self.z_grid,self.pow_mult_grid,k=3,ext=2) 
             self.use_match_grid = True
         else:
             self.wm = None
-            w_match_grid = np.zeros(self.n_a)+self.cosmology['w']
+            self.w_match_grid = np.zeros(self.n_a)+self.cosmology['w']
+            self.w_match_interp = InterpolatedUnivariateSpline(self.z_grid,self.w_match_grid,k=3,ext=2) 
             self.pow_mult_grid = np.zeros(self.n_a)+1.
+            #self.pow_mult_interp = InterpolatedUnivariateSpline(self.z_grid,self.pow_mult_grid,k=3,ext=2) 
             self.use_match_grid = False
         #figure out an error checking method here
         #if np.any(w_match_grid>0.1):
@@ -61,8 +67,8 @@ class MatterPower:
         #needed because field can cluster on very large scales, see arXiv:astro-ph/9906174
         if self.params['needs_camb_w_grid'] and self.use_match_grid:
             #get a w grid that is no larger than it needs to be
-            w_min = np.min(w_match_grid)-self.params['w_edge']
-            w_max = np.max(w_match_grid)+self.params['w_edge']
+            w_min = np.min(self.w_match_grid)-self.params['w_edge']
+            w_max = np.max(self.w_match_grid)+self.params['w_edge']
             self.camb_w_grid = np.arange(w_min,w_max,self.params['w_step'])
             #make sure the grid has at least some minimum number of values
             if self.camb_w_grid.size<self.params['min_n_w']:
@@ -132,63 +138,79 @@ class MatterPower:
            # self.one_loops = np.array([])
     #get an effective sigma8 if appropriate
     def get_sigma8_eff(self,zs):
-        if self.params['needs_wmatcher']:
-            w_match_grid = self.wm.match_w(self.C,zs)
+        if self.use_match_grid:
+            #w_match_grid = self.wm.match_w(self.C,zs)
+            w_match_grid = self.w_match_interp(zs)
             pow_mult_grid = self.wm.match_growth(self.C,zs,w_match_grid)
+            #pow_mult_grid = self.pow_mult_interp(zs)
             return InterpolatedUnivariateSpline(self.camb_w_grid,self.camb_sigma8s,k=2)(w_match_grid)*np.sqrt(pow_mult_grid)
         else:
             return self.sigma8_in
 
     def linear_power(self,zs,const_pow_mult=1.):
-        if self.params['needs_wmatcher']:
-            w_match_grid = self.wm.match_w(self.C,zs)
+        if self.use_match_grid:
+            #w_match_grid = self.wm.match_w(self.C,zs)
+            w_match_grid = self.w_match_interp(zs)
             pow_mult_grid = self.wm.match_growth(self.C,zs,w_match_grid)*const_pow_mult
-        else:
-            w_match_grid = np.zeros(zs.size)+self.cosmology.w
-            pow_mult_grid = np.zeros(zs.size)+1.*const_pow_mult
+
         Gs = self.C.G_norm(zs)
         Ps = np.zeros((self.k.size,zs.size))
-        if self.use_camb_grid:
-            for i in range(0,zs.size):
-                Ps[:,i]=Gs[i]**2*pow_mult_grid[i]*self.camb_w_interp(self.k,w_match_grid[i]).flatten()
+        if self.use_match_grid:
+            if self.use_camb_grid:
+                for i in range(0,zs.size):
+                    Ps[:,i]=Gs[i]**2*pow_mult_grid[i]*self.camb_w_interp(self.k,w_match_grid[i]).flatten()
+            else:
+                Ps = np.outer(self.P_lin,Gs**2*pow_mult_grid)
         else:
-            Ps = np.outer(self.P_lin,Gs**2*pow_mult_grid)
+            Ps = np.outer(self.P_lin,Gs**2)
+
         return Ps
     #const_pow_mult allows adjusting sigma8 without creating a whole new power spectrum
     def nonlinear_power(self,zs,pmodel=defaults.matter_power_params['nonlinear_model'],const_pow_mult=1.,get_one_loop=False):
-        if self.params['needs_wmatcher']:
-            w_match_grid = self.wm.match_w(self.C,zs)
+        if self.use_match_grid:
+            #w_match_grid = self.wm.match_w(self.C,zs)
+            #TODO maybe allow override of interpolation
+            w_match_grid = self.w_match_interp(zs)
             pow_mult_grid = self.wm.match_growth(self.C,zs,w_match_grid)*const_pow_mult
-        else:
-            w_match_grid = np.zeros(zs.size)+self.cosmology.w
-            pow_mult_grid = np.zeros(zs.size)+1.*const_pow_mult
+        #else:
+        #    w_match_grid = np.zeros(zs.size)+self.cosmology.w
+        #    pow_mult_grid = np.zeros(zs.size)+1.*const_pow_mult
             
         G_norms = self.C.G_norm(zs)
-        Pbases = np.zeros((self.k.size,zs.size))
-        if self.use_camb_grid:
-            for i in range(0,zs.size):
-                Pbases[:,i]=pow_mult_grid[i]*self.camb_w_interp(self.k,w_match_grid[i]).flatten()
-        else:
-            Pbases = np.outer(self.P_lin,pow_mult_grid)
+        if self.use_match_grid:
+            Pbases = np.zeros((self.k.size,zs.size))
+            if self.use_camb_grid:
+                for i in range(0,zs.size):
+                    Pbases[:,i]=pow_mult_grid[i]*self.camb_w_interp(self.k,w_match_grid[i]).flatten()
+            else:
+                Pbases = np.outer(self.P_lin,pow_mult_grid)
         
-        Plin = G_norms**2*Pbases 
+        #Plin = G_norms**2*Pbases 
         P_nonlin = np.zeros((self.k.size,zs.size))
-        self.hf_C_calcs = np.zeros(zs.size,dtype=object)
-        self.hf_calcs = np.zeros(zs.size,dtype=object)
-        one_loops = np.zeros((self.k.size,zs.size))
+
         if pmodel=='halofit':
-            for i in range(0,zs.size):
-                cosmo_hf_i = self.cosmology.copy()
-                cosmo_hf_i['de_model'] = 'constant_w'
-                cosmo_hf_i['w'] = w_match_grid[i]
-                self.hf_C_calcs[i] = cp.CosmoPie(cosmology=cosmo_hf_i,silent=True,G_safe=True,G_in=InterpolatedUnivariateSpline(self.C.z_grid[::-1],self.wm.growth_interp(w_match_grid[i],self.C.a_grid)[::-1],ext=2,k=2))
-                self.hf_calcs[i] = halofit.halofitPk(self.hf_C_calcs[i],self.k,p_lin=Pbases[:,i],halofit_params=self.halofit_params)
-                P_nonlin[:,i] = 2.*np.pi**2*(self.hf_calcs[i].D2_NL(self.k,zs[i]).T/self.k**3)
+            if self.use_match_grid:
+                self.hf_C_calcs = np.zeros(zs.size,dtype=object)
+                self.hf_calcs = np.zeros(zs.size,dtype=object)
+                for i in range(0,zs.size):
+                    cosmo_hf_i = self.cosmology.copy()
+                    cosmo_hf_i['de_model'] = 'constant_w'
+                    cosmo_hf_i['w'] = w_match_grid[i]
+                    self.hf_C_calcs[i] = cp.CosmoPie(cosmology=cosmo_hf_i,silent=True,G_safe=True,G_in=InterpolatedUnivariateSpline(self.C.z_grid[::-1],self.wm.growth_interp(w_match_grid[i],self.C.a_grid)[::-1],ext=2,k=2))
+                    self.hf_calcs[i] = halofit.halofitPk(self.hf_C_calcs[i],self.k,p_lin=Pbases[:,i],halofit_params=self.halofit_params)
+                    P_nonlin[:,i] = 2.*np.pi**2*(self.hf_calcs[i].D2_NL(self.k,zs[i]).T/self.k**3)
+            else:
+                P_nonlin = 2.*np.pi**2*(self.hf.D2_NL(self.k,zs).T/self.k**3)
+
         elif pmodel=='fastpt':
-            for i in range(0,zs.size):
-                one_loops[:,i] = self.fpt.one_loop(Pbases[:,i],C_window=self.fpt_params['C_window'])
-                G_i = G_norms[i]
-                P_nonlin[:,i] =  Pbases[:,i]*G_i**2+one_loops[:,i]*G_i**4
+            if self.use_match_grid:
+                one_loops = np.zeros((self.k.size,zs.size))
+                for i in range(0,zs.size):
+                    one_loops[:,i] = self.fpt.one_loop(Pbases[:,i],C_window=self.fpt_params['C_window'])
+                    G_i = G_norms[i]
+                    P_nonlin[:,i] =  Pbases[:,i]*G_i**2+one_loops[:,i]*G_i**4
+            else:
+                P_nonlin = np.outer(self.P_lin,G_norms**2)+np.outer(self.one_loop,G_norms**4)
         if pmodel=='fastpt' and get_one_loop:
             return P_nonlin,one_loops
         elif get_one_loop:

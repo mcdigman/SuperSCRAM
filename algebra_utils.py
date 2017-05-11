@@ -126,7 +126,7 @@ if __name__=='__main__':
         AI2 = cholesky_inv_contract(A,V1,V2)
         #AI2 = np.linalg.pinv(A)
         t3 = time()
-        AI3 = np.dot(np.dot(V1,cholesky_inv(A)),V2)
+        AI3 = np.dot(np.dot(V1,ch_inv(A)),V2)
         t4 = time()
         times_chol2[i] = t4-t3
         times_chol1[i] = t3-t2

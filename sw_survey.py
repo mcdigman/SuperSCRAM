@@ -94,7 +94,7 @@ class SWSurvey:
             n1+=ds[i]
 
         return cov_mats
-
+    #TODO should return a proper object
     def get_SSC_cov(self,fisher_set,basis):
         print "sw_survey: begin computing sw covariance matrices"
         n_m = self.get_total_dimension()
@@ -116,7 +116,8 @@ class SWSurvey:
         for i in range(0,n_o):
             dO_ddelta_alpha_i=basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[i])
             for j in range(0,n_c):
-                #TODO is this right cholesky?
+                #TODO PRIORITY is this right cholesky? and/or should be inverted after?
+                
                 Ts[j,i] = fisher_set[j].contract_chol_right(dO_ddelta_alpha_i)
             #Ts[i] = basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[i])
         for i in range(0,n_o):
@@ -221,35 +222,4 @@ if __name__=='__main__':
     plt.xlabel('ls')
     plt.legend(['O_I','dO_I_ddelta_bar'])
     plt.show()
-
-
-#        cov_mats = np.zeros((self.get_N_O_I(),self.get_N_O_I()),dtype=object)
-#        for i in range(0,cov_mats.shape[0]):
-#            for j in range(0,cov_mats.shape[1]):
-#                cov = SWCovMat(self.observables[i],self.observables[j])
-#                cov_mats[i,j] = cov.get_total_covar()
-#        return cov_mats
-            
-if __name__=='__main__':
-    from geo import rect_geo
-    Theta = [np.pi/4.,np.pi/2.]
-    Phi = [0,np.pi/3.]
-    d=np.loadtxt('camb_m_pow_l.dat')
-    k=d[:,0]; P=d[:,1]
-    C=cp.CosmoPie(k=k,P_lin=P)
-    zs = np.array([0.1,0.8])
-    z_fine = np.arange(0.01,np.max(zs),0.01)
-    ls = np.arange(2,500)
-    geo = rect_geo(zs,Theta,Phi,C,z_fine)
-    sw_survey = SWSurvey(geo,'survey1',C,ls)
-    O_I_list = sw_survey.get_O_I_list()
-    dO_I_ddelta_bar_list = sw_survey.get_dO_I_ddelta_bar_list()
-    import matplotlib.pyplot as plt
-    ax  = plt.subplot(111)
-    ax.loglog(ls,O_I_list[0])
-    ax.loglog(ls,dO_I_ddelta_bar_list[0])
-    plt.xlabel('ls')
-    plt.legend(['O_I','dO_I_ddelta_bar'])
-    plt.show()
-
 

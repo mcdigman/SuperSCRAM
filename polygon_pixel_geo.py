@@ -17,6 +17,7 @@ import sys
 
 #get a healpix pixelated spherical polygon geo
 #TODO consider using sp_poly area for angular_area()
+#TODO consider smoothing to get area precisely correct
 class polygon_pixel_geo(pixel_geo):
         def __init__(self,zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max,res_healpix=defaults.polygon_params['res_healpix'],overwride_precompute=False):
             all_pixels = get_healpix_pixelation(res_choose=res_healpix)
@@ -275,10 +276,10 @@ def get_Y_r_table(l_max,thetas,phis):
 #res = 7 takes ~3.37 sec
 #res = 6 takes ~0.688 sec
 def get_healpix_pixelation(res_choose=6):
-    pixel_info = np.loadtxt('pixel_info.dat')
+    pixel_info = np.loadtxt('data/pixel_info.dat')
     area = pixel_info[res_choose,4]
     #tables from https://lambda.gsfc.nasa.gov/toolbox/tb_pixelcoords.cfm#pixelinfo
-    hdulist = fits.open('pixel_coords_map_ring_galactic_res'+str(res_choose)+'.fits')
+    hdulist = fits.open('data/pixel_coords_map_ring_galactic_res'+str(res_choose)+'.fits')
     data = hdulist[1].data
     pixels = np.zeros((data.size,3))
 

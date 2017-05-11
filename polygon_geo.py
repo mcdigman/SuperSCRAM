@@ -13,9 +13,7 @@ import scipy as sp
 from cosmopie import CosmoPie
 from scipy.interpolate import SmoothBivariateSpline
 from warnings import warn
-import scipy.special as spp
 import alm_utils as au
-import sys
 from assoc_legendre import assoc_legendre_p
 #get an exact spherical polygon geo
 class polygon_geo(geo):

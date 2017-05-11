@@ -4,6 +4,7 @@ class q_weight:
     def __init__(self,chis,qs,chi_min=0.,chi_max=np.inf):
         self.chi_min = chi_min
         self.chi_max = chi_max
+        self.chis = chis
         self.qs = qs
 
 class q_shear(q_weight):

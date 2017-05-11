@@ -1,14 +1,11 @@
 import numpy as np
-import FASTPTcode.FASTPT as FASTPT
-import halofit as hf
 import cosmopie as cp
 from scipy.interpolate import InterpolatedUnivariateSpline,RectBivariateSpline
 import defaults
-import camb_power as cpow
 import matter_power_spectrum as mps
 
 #supports either vector or scalar zbar, if zbar is vector returns (k_a.size,zbar.size) np array, otherwise k_a.size np array
-def dp_ddelta(k_a,P_a,zbar,C,pmodel='linear',epsilon=0.0001,halo_a=None,halo_b=None,fpt=None,fpt_params=defaults.fpt_params):
+def dp_ddelta(k_a,P_a,zbar,C,pmodel='linear',epsilon=0.0001):
     if pmodel=='linear':
         #support vector zbar
         if isinstance(zbar,np.ndarray) and zbar.size>1:
@@ -45,8 +42,8 @@ def dp_ddelta(k_a,P_a,zbar,C,pmodel='linear',epsilon=0.0001,halo_a=None,halo_b=N
             dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2,k=1).derivative(1))(k_a) 
             dp = 13./21.*C.sigma8*(pzb-pza)/epsilon+pza-1./3.*k_a*dpdk
     elif pmodel=='fastpt':
-        if fpt is None:
-            fpt = FASTPT.FASTPT(k_a,fpt_params['nu'],low_extrap=fpt_params['low_extrap'],high_extrap=fpt_params['high_extrap'],n_pad=fpt_params['n_pad'])
+        #if fpt is None:
+        #    fpt = FASTPT.FASTPT(k_a,fpt_params['nu'],low_extrap=fpt_params['low_extrap'],high_extrap=fpt_params['high_extrap'],n_pad=fpt_params['n_pad'])
         if isinstance(zbar,np.ndarray) and zbar.size>1:
             #plin = np.outer(P_a,C.G_norm(zbar)**2)
             #pza = np.zeros((k_a.size,zbar.size)) 
@@ -63,10 +60,10 @@ def dp_ddelta(k_a,P_a,zbar,C,pmodel='linear',epsilon=0.0001,halo_a=None,halo_b=N
         else:
             #plin = P_a*C.G_norm(zbar)**2
             #pza = plin+fpt.one_loop(plin,C_window=fpt_params['C_window'])
-            plin = P_a.linear_power(zbar)[:,0]
-            pza = P_a.nonlinear_power(zbar,pmodel='fastpt')[:,0]
+            #plin = P_a.linear_power(zbar)[:,0]
+            pza,one_loop = P_a.nonlinear_power(zbar,pmodel='fastpt',get_one_loop=True)[:,0]
             dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2,k=1).derivative(1))(k_a) 
-            dp = 47./21.*pza-1./3.*k_a*dpdk+26./21.*fpt.one_loop(plin,C_window=fpt_params['C_window'])
+            dp = 47./21.*pza-1./3.*k_a*dpdk+26./21.*one_loop
     else:
         raise ValueError('invalid pmodel option \''+str(pmodel)+'\'')
     return dp,pza

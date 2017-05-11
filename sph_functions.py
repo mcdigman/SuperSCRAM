@@ -18,7 +18,7 @@ from the_mad_house import e_message
 eps =np.finfo(float).eps
 z_cut=1e-2
 
-data=np.loadtxt('spherical_bessel_zeros_long.dat')
+data=np.loadtxt('data/spherical_bessel_zeros_long.dat')
 l_max_zeros = data.shape[0]-1
 def sph_Bessel_down(n,z):
 	n_start=n + int(np.sqrt(n*40)/2.) 

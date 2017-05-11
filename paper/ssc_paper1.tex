@@ -8,6 +8,7 @@
 \usepackage[T1]{fontenc} % if needed
 \usepackage{natbib}
 \usepackage{amsmath}
+\usepackage{bbold}
 
 \title{\boldmath Super-Sample Covariance in Future Weak Lensing Surveys}
 
@@ -72,18 +73,85 @@
 \flushbottom
 
 %TODO maybe mention inflation
-%TODO add in ongoing lensing experiments (kids, hypersuprime, etc)
+%TODO add in ongoing lensing experiments (kids\cite{kids}, hypersuprime\cite{hypersuprime}, desi\cite{desi}, pfs\cite{suprime_pfs}, pan-stares, cfhtlens, etc)
+%TODO window convolved power spectra?
+%TODO cite spherical geometry
 \section{Introduction}
 \label{sec:intro} 
 Observational cosmology has experienced a remarkable rebirth as a precision science in the last two decades. The 1998 discoveries of the accelerating expansion of the universe\cite{Perlmutter:1998np}\cite{Riess:1998cb} and neutrino oscillations\cite{Fukuda:1998mi} were the first discoveries in decades to clearly show that the standard models of physics remain fundamentally incomplete. Full sky surveys of the cosmic microwave background (CMB) by WMAP\cite{wmap1year}\cite{wmap9year} and Planck\cite{planck2015params}, as well as measurements of baryon acoustic oscillations (BAO) from The 2df Galaxy Redshift Survey\cite{2df2005}, BOSS\cite{boss2013}, and WiggleZ\cite{wigglez2012} have showcased the power of precision observational cosmology to constrain models for the evolution of the universe. At present, precision cosmology provides the only meaningful constraint on the absolute masses of neutrinos\cite{neutrinomasscosmology}, and may provide some of the best avenues for further advancement in fundamental physics beyond the standard model. 
 \\
 The cause of the accelerated expansion of the universe is tied to the origin and ultimate fate of the universe. Depending on how the acceleration changes over time, the universe could expand forever, re-collapse, rip itself apart, or do something else\cite{bigripcaldwell}\cite{fate_universe}. The most common explanation for the cause of cosmic acceleration is a fluid with positive energy density but negative pressure, called dark energy.  Dark energy models are characterized by an equation of state parameter $w\equiv \frac{p}{\rho}$, which relates its pressure $p$ and the energy density $\rho$\cite{constraining_de}. The simple case where $w=-1$ corresponds to a cosmological constant, which is the standard $\Lambda$CDM cosmological model. The most studied physical mechanisms which could produce a $w\neq-1$ would also allow $w$ to vary as a function of time, $w=w(z)$\cite{quintessence_caldwell}. Present cosmological observations do not give good constraints on $w(z)$ because errors on $w(z)$ at different times are highly correlated\cite{weinberg_probes}\cite{eos_pitfalls}. 
 \\
-Tomographic weak lensing surveys directly probe the statistical properties of the matter distribution at a specific redshift $z$, and hence can be used to constrain $w(z)$\cite{weinberg_probes}\cite{huterer_wl}. Ideally, the precision of weak lensing measurements would be limited primarily statistical uncertainties due to their limited sample of galaxies, which will be greatly reduced by the large volumes of future surveys, such as LSST\cite{lsst}, Euclid\cite{euclid}, and WFIRST\cite{wfirst}. However, future weak lensing surveys will also suffer from many other sources of error, which will need to be properly understood to avoid systematic biases in the results{schaan_shear_calibration}\cite{systematic_lensing_mandelbaum}\cite{systematic_lensing_massey}\cite{systematic_lensing_huterer}. One source 
+Tomographic weak lensing surveys directly probe the statistical properties of the matter distribution at a specific redshift $z$, and hence can be used to constrain $w(z)$\cite{weinberg_probes}\cite{huterer_wl}. Several completed and ongoing experiments have measured or will measure weak lensing, including KiDS\cite{kids}, the HSC\cite{hsc-wl} and PFS\cite{suprime_pfs} instruments on the Subaru telescope, DESI\cite{desi}, Pan-STARRS\cite{panstarrs} and CFHTLens\cite{cfhtlens}. Ideally, the precision of weak lensing measurements would be limited primarily statistical uncertainties due to their limited sample of galaxies, which will be greatly reduced by the large volumes of future surveys, such as LSST\cite{lsst}, Euclid\cite{euclid}, and WFIRST\cite{wfirst}. However, future weak lensing surveys will also suffer from many other sources of error, which will need to be properly understood to avoid systematic biases in the results\cite{schaan_shear_calibration}\cite{systematic_lensing_mandelbaum}\cite{systematic_lensing_massey}\cite{systematic_lensing_huterer}. One source of error for future experiments to consider is the coupling of measured results to density fluctuations with outside the survey window, called super-sample covariance (SSC).  The direct coupling between the amplitude of short wavelength modes, which fit in the survey window, and long wavelength modes, which do not, was described as beat-coupling in \cite{hamilton_ssc_orig1} and \cite{hamilton_ssc_orig2} and found to be the dominant contribution to the matter power spectrum covariance on small scales. Further studies have considered other aspects of the effect and described formalism for analyzing it\cite{lihu_ssc_signal}\cite{lihu_ssc_sim}\cite{takadahu_ssc}\cite{cov_jackknife}\cite{takadaspergel_ssc}\cite{deputter_ssc}. The SSC effect on lensing observations has been shown to depend strongly on the details of the survey geometry\cite{geom_wl_ssc}, and future experiments, such as WFIRST, should consider whether optimizing their survey windows to reduce SSC effects is worthwhile, subject to other practical instrument constraints, such as instrument slewing time, foregrounds, and calibration. Additionally, missions should consider whether combining other probes of long wavelength density fluctuations can be useful means of mitigating their covariances\cite{krause_eifler_cosmolike}\cite{eifler_krause_cosmolike}. 
+\\
+In this paper, we present a formalism and public code for estimating the SSC contribution to the covariances of future experiments, and investigating possible mitigation strategies in a realistic survey geometry. The code is intended to be modular and extensible to facilitate the addition of further observables, physical effects, and mitigation strategies. At this stage, the code provides simple forecasts of parameter constraints using the Fisher matrix, which is useful for estimation of the relative magnitude of effects and effectiveness of mitigation strategies, but it is not a substitute for a full Markov chain Monte Carlo (MCMC) likelihood code such as CosmoLike\cite{krause_eifler_cosmolike}\cite{eifler_krause_cosmolike}. We also do not analyze other sources of non-gaussian covariance, although the code could be extended to include them.
+ \\
+ In the preparation of this paper we have found that \cite{lacasa_cluster_counts} and \cite{lacasa_partial_sky} have independently applied a similar harmonic expansion formalism to calculate SSC effects on cluster counts including geometrical effects. We do not consider cluster counts in this paper, although support for them could be added to the code. 
+\section{Overview}
+\label{sec:Overview}
 
+For our analysis, we define three types of observables, which must be handled in separate ways: short wavelength (SW) observables denoted $\{O_I\}$, long wavelength (LW) observables denoted $\{O_a\}$, and cosmological parameters denoted $\{\Theta_i\}$. Short wavelength observables, discussed in \ref{ssec:sw_observables} are observables which can only directly probe fluctuations of shorter wavelength than the survey's window, such as the shear-shear lensing power spectrum, or cluster counts. Measurements of short wavelength observables are contaminated by long wavelength matter density fluctuations. Cosmological parameters, discussed in \ref{ssec:cosmo_param} are the parameters of interest for cosmological models, such as the physical matter density, $\Omega_m h^2$, the amplitude of fluctuations in the primordial matter power spectrum, $\ln{A_s}$, or the dark energy equation of state parameters $w_0$ and $w_a$. Short wavelength observables provide constraints on cosmological parameters, and the constraints  Long wavelength observables, discussed in \ref{ssec:lw_observables}, are independent sources of information, potentially provided by a different experiment, which directly probe matter density fluctuations with wavelength too long to fit in the survey, which can be used to mitigate the SSC contamination of short wavelength observables. In this paper and code we implement the difference in the number density of galaxies between two survey windows as a sample implementation of a possible long wavelength observables. Other possible long wavelength observables to investigate in future work include shearing of galaxies tangential to the boundary of a survey or CMB lensing. A sketch of the workflow of our mitigation procedure is provided in \ref{fig:workflow}, and a diagram of the parts of the code which accomplish the individual functions is provided in \ref{fig:codeflow}.
+\\
+\begin{figure}[!ht]
+ \centering
+\includegraphics[width=1\textwidth]{figures/workflow.png}
+  \caption{Conceptual overview of the basic workflow needed to obtain cosmological parameter forecasts. }
+\label{fig:workflow}
+\end{figure}
+
+\begin{figure}[!ht]
+ \centering
+\includegraphics[width=1\textwidth]{figures/codeflow.png}
+  \caption{Structure of the most important modules used by the code described in this paper to implement the workflow described in \ref{fig:workflow} }
+\label{fig:codeflow}
+\end{figure}
+
+To provide cosmological parameter forecasts, we calculate the total Fisher information matrix for the cosmological parameters by combining prior constraints and the Fisher matrices from any number of independent surveys of short wavelength observables:
+\begin{align}\label{fisher_param}
+F^{ij}_{\text{tot}}=F^{ij}_{\text{prior}}+\sum_{\text{surveys}}{F^{ij}_{\text{survey}}},
+\end{align}
+where the indices $i$ and $j$ run over all possible combinations of cosmological parameters. For the purposes of this paper, we use the WMAP priors\cite{jdem_fom} for $F^{ij}_{\text{prior}}$. To calculate  $F^{ij}_{\text{survey}}$, we use
+\begin{align}\label{fisher_survey}
+F^{ij}_{\text{survey}}=\frac{\partial O_I}{\partial \Theta_i} F^{IJ}_{\text{tot}}\frac{\partial O_J}{\partial \Theta_j},
+\end{align}
+where here $O_I$ are the short wavelength observables, which are vectors in general, and there is an implied sum over all combinations of $I$ and $J$. $F^{IJ}_{\text{tot}}=\left(C^{IJ}_{\text{tot}}\right)^{-1}$ is calculated as the inverse of the short wavelength covariance matrix, 
+
+\begin{align}\label{cov_sw_tot}
+C^{IJ}_{\text{tot}}=C^{IJ}_{\text{g}}+C^{IJ}_{\text{ng}}+C^{IJ}_{\text{SSC}},
+\end{align}
+where the gaussian covariance $C^{IJ}_{\text{g}}$ must be calculated for all pairs of observables, the non-gaussian covariance $C^{IJ}_{\text{ng}}$ is ignored for the rest of this analysis, and the super-sample covariance $C^{IJ}_{\text{SSC}}$ is the term our procedure is designed to calculate. We can write the SSC term as 
+\begin{align}\label{cov_ssc}
+C^{IJ}_{\text{SSC}} = \frac{\partial O^I}{\partial \delta_\alpha} (F^{\alpha\beta}_{\text{tot}})^{-1}\frac{\partial O^J}{\partial \delta_\beta} 
+\end{align}
+
+where the indices $\alpha$ and $\beta$ represent the basis modes described in \ref{sec:basis}, the response of the observable to a density fluctuation $\frac{\partial O^I}{\partial \delta_\alpha}$ is described in \ref{ssec:obs_response}. $F^{\alpha\beta}_\text{tot}$ is the Fisher information matrix decomposed in the basis, which includes the SSC contamination and any mitigation,
+\begin{align}\label{F_tot}
+F^{\alpha\beta}_{\text{tot}} = F^{\alpha\beta}_{\text{SSC}}+\sum_{n}{F^{\alpha\beta}_{n}}
+\end{align}
+where the mitigating Fisher information matrix for a long wavelength observable $F^{\alpha\beta}_{n}$ can be computed as in \ref{ssec:lw_observables}, and $F^{\alpha\beta}_{\text{SSC}}$ is calculated using \eqref{C_SSC}. The response to the long wavelength fluctuations and the Fisher information matrices of long wavelength observables contain explicit dependence on the geometry of the survey. Note that \eqref{F_tot} implicitly assumes that the long wavelength observables are statistically independent on large scales. Statistical independence is generally a reasonable assumption if the two observables are coming from different types of measurements, or non overlapping surveys. However, care must be taken to avoid adding the same information twice if, for example, the two observables were both mean galaxy number density fluctuations in overlapping survey windows. 
+\\
+It is worth noting that the SSC term is not purely an observational limitation from finite survey window size, and $C^{IJ}_{\text{SSC}}$ would not go to zero even for a full sky survey which surveyed all galaxies to the earliest red shift where galaxies had formed, because an important component of the SSC term is radial, so the observations would still be contaminated by longer wavelength primordial density fluctuations. Therefore, even such an extreme survey would need to calculate the SSC term to correctly forecast their error budget, and might benefit from mitigation strategies with certain longer wavelength observables, such as CMB lensing.
 \section{Method}
 \label{sec:method}
 In this section, we present a framework and code for forecasting supersample effects on future observations in in a survey with a given geometry. The code is written and tested in Python 2.7 and uses the SciPy\cite{scipy} and NumPy\cite{numpy} libraries. The code itself is intended to be modular, and most elements can be interchanged or expanded. 
+\subsection{Eigenvalue Analysis}
+\label{ssec:eig}
+Inspecting the individual values of the elements of the covariance matrix of the cosmological parameters $C^{ij}_{\text{tot}}$ can give a rough idea of the magnitude of the SSC contamination or effectiveness of a mitigation strategy, but a more systematic method is required to quantitatively assess the overall impact. A principle concern is that SSC contamination or a mitigation strategy can significantly degrade or improve the overall constraining power of some linear combination of parameters, $\sum_{n}{a_n \Theta_n}$, without being immediately obvious on visual inspection. The basic idea is to use one covariance matrix, such as $C^{ij}_{\text{g}}$, as a metric to assess the magnitude of the change in a specific direction in another, such as $C^{ij}_{\text{g+SSC}}=C^{ij}_{\text{g}}+C^{ij}_{\text{SSC}}$. To do this, we consider the product matrix 
+\begin{align}\label{m_tot_gauss}
+\mathcal{M}&=(C^{ij}_{\text{g+SSC}})(C^{ij}_{\text{g}})^{-1}\\
+&=(C^{ij}_{\text{g}}+C^{ij}_{\text{SSC}})(C^{ij}_{\text{g}})^{-1}\\
+&=\mathbb{1}+(C^{ij}_{\text{SSC}})(C^{ij}_{\text{g}})^{-1}
+\end{align}
+
+which has eigenvalues $\{\lambda\}$ and eigenvectors $\{v\}$ so $\mathcal{M}\cdot v=\lambda v$. All of the eigenvalues satisfy $\lambda\ge1$, and if we order the eigenvalues from largest to smallest, then the largest eigenvalue corresponds to the direction in parameter space most contaminated by the SSC term. An advantage of this formulation is that it cancels out any absolute scaling of the fiducial parameters. Note that in the special case where $C^{ij}_{\text{g}}=\mathbb{1}$, $\{\lambda\}$ reduce to the ordinary eigenvalues of  $C^{ij}_{\text{g+SSC}}$. When investigating the effectiveness of a mitigation strategy, there are three covariance matrices of interest:  $C^{ij}_{\text{g}}$,  $C^{ij}_{\text{g+SSC}}$, and $C^{ij}_{\text{g+SSC+mit}}$. Note that for this purpose all three matrices are taken to include any cosmological priors. Then we can find three useful sets of eigenvalues and eigenvectors: 
+\begin{align}\label{matrices}
+(C^{ij}_{\text{g+SSC}})(C^{ij}_{\text{g}})^{-1}\cdot v^g_{\text{SSC}}&=\lambda^g_{\text{SSC}} v^g_{\text{SSC}}, \\
+(C^{ij}_{\text{g+SSC+mit}})(C^{ij}_{\text{g}})^{-1}\cdot v^g_{\text{SSC+mit}}&=\lambda^g_{\text{SSC+mit}} v^g_{\text{SSC+mit}},\\
+(C^{ij}_{\text{g+SSC+mit}})(C^{ij}_{\text{g+SSC}})^{-1}\cdot v^\text{SSC}_{\text{SSC+mit}}&=\lambda^\text{SSC}_{\text{SSC+mit}} v^\text{SSC}_{\text{SSC+mit}}.
+\end{align}
+%TODO awkward
+ The eigenvectors associated with the largest few eigenvalues in $\lambda^g_{\text{SSC}}$, $\lambda^g_{\text{SSC+mit}}$, and $\lambda^g_{\text{SSC+mit}}$  correspond respectively to the directions most contaminated by SSC, the directions that remain most contaminated after mitigation, and the directions most improved by mitigation. With these eigenvectors, we can also consider combinations such as $\Delta \lambda^g_{\text{SSC+mit}}\equiv\lambda^g_{\text{SSC}}-(v^g_{\text{SSC}})^T\cdot (C^{ij}_{\text{g+SSC+mit}})\cdot v^g_{\text{SSC}}$, which is the improvement along the directions originally most contaminated. In principle, it is possible for all there sets of eigenvectors to be similar, such as when the SSC contamination is mostly focussed in one direction in parameter space. 
+
 \subsection{Matter Power Spectrum}
 \label{ssec:matter_power}
 The code provides several sample implementations of the matter power spectrum which can be used fully interchangeably, including Python implementations of the Takahashi\cite{takahashi_halofit} and Casarini\cite{casarini_halofit} revisions of the Halofit\cite{smith_halofit} model, linear matter power spectra from CAMB\cite{camb}, and the FAST-PT\cite{fastpt} implementation of the one loop power spectrum. Additionally, to demonstrate the flexibility of our framework, we have extended both Halofit and FAST-PT to facilitate an arbitrary $w(z)$ using the same procedure used in \cite{casarini_halofit} and \cite{casarini_halofit_math} to extend the Halofit model and Coyote emulator\cite{coyote_emulator}. 
@@ -102,8 +170,37 @@ The projected power spectrum for a lensing observable can be written using the L
 \begin{align}\label{limber_power}
 P_{ij}(l)
 \end{align}
+\subsection{Long Wavelength Observables}
+\label{ssec:lw_observables}
+Here, we describe a sample implementation of using the difference in the number densities of galaxies between two regions. For example, one of the regions could be the survey window in which the short wavelength observables of interest were measured, and the other could be a similarly sized window elsewhere on the sky surveyed for a different purpose. If the number densities of galaxies in both regions $n_1$ and $n_2$ can be measured, the difference should provide some information about any long wavelength density fluctuations. Writing the number densities are  then our observable is $\Delta n_{12}\equiv n_1-n_2$.  The number density can be written to linear order in perturbation theory as
+\begin{align}\label{number_density}
+n_1 &= \frac{3}{(r_\text{max}^3-r_\text{min}^3)\Omega_1}\int_{\Omega_1}d\Omega\int_{r_\text{min}}^{r_\text{max}}r^2 dr \bar{n}(r)\left[1+b(r)\delta(r,\Omega)\right]\\
+&= \frac{3}{(r_\text{max}^3-r_\text{min}^3)\Omega_1}\int_{\Omega_1}d\Omega\int_{r_\text{min}}^{r_\text{max}}r^2 dr \bar{n}(r)\left[1+b(r)\sum_\alpha{\delta_\alpha\psi_\alpha(r,\Omega)}\right]
+\end{align}
+where $b(r)$ is the bias, $\bar{n}(r)$ is the expected number density of galaxies at comoving distance $r$, $\Omega_1$ is the angular area of the survey window, and $\delta(r,\Omega)=\sum_\alpha{\delta_\alpha\psi_\alpha(r,\Omega)}$ is a density fluctuation expanded in our basis described in \ref{sec:basis}.
+Then, assuming the surveys in both windows have the same galaxy selection function, so that the expected number density of galaxies $\bar{n}(r)$ is the same, and so that both surveys have the same limiting $r_\text{min}$ and $r_\text{max}$, but allowing the survey windows to have different shapes, we have the response to long wavelength density perturbations:
+
+\begin{align}\label{number_density_response}
+\frac{\partial \Delta n_{12}}{\partial \delta_\alpha}&\equiv \frac{\partial n_1}{\partial \delta_\alpha}-\frac{\partial n_2}{\partial \delta_\alpha} \\
+&=  \frac{3}{r_\text{max}^3-r_\text{min}^3}\int_{r_\text{min}}^{r_\text{max}}r^2 dr \bar{n}(r)b(r)\left[\frac{1}{\Omega_1}\int_{\Omega_1}d\Omega \psi_{\alpha}(r,\Omega)-\frac{1}{\Omega_2}\int_{\Omega_2}d\Omega\psi_{\alpha}(r,\Omega)\right].
+\end{align}
+
+Assuming the probability distribution of galaxy numbers is given by a poisson distribution, which is uncorrelated at different distances to lowest order in perturbation theory, such that $\left<n\right>=\frac{3}{(r_\text{max}^3-r_\text{min}^3)}\int_{r_\text{min}}^{r_\text{max}}\bar{n}(r)$ depends on $r_\text{min}$ and $r_\text{max}$ only, we can calculate the variance:
+\begin{align}\label{number_density_variance}
+N_{12}\equiv Var\left(n_1-n_2\right) = \left<n\right>\left(\frac{1}{V_1}+\frac{1}{V_2}-2\frac{V_{1\cap 2}}{V_1 V_2}\right)
+\end{align}
+
+where for simplicity in the code we assume that the overlap area between the window functions $V_{1\cap 2}=0$, and we used $V_i \equiv \frac{(r_\text{max}^3-r_\text{min}^3)}{3}\Omega_i$. Note that we dropped any terms with nonzero $\delta_\alpha$ dependence to lowest order in perturbation theory. %TODO can I do that
+Then, we can write the Fisher matrix for this mitigation strategy
+\begin{align}\label{lw_ssc}
+F_1^{\alpha\beta}=\frac{\partial \Delta n_{12}}{\partial \delta_\alpha}(N_{12})^{-1}\frac{\partial \Delta n_{12}}{\partial \delta_\beta},
+\end{align}
+
+which can be added to $F_{\text{SSC}}^{\alpha\beta}$ in \eqref{F_tot} to mitigate the SSC contamination of short wavelength observables. In the code, we calculate a simulated $\bar{n}(r)$  as described in \ref{sec:nz_candels}.
+
 \subsection{Cosmological Parameterizations}
-In order to properly calculate the response of a set of short wavelength observables $\{O_a\}$ to cosmological parameters $\{\Theta_i\}$, $\frac{\partial O_a}{\partial \Theta_i}$, a parametrization must be selected. The code allows its parametrization to be specified in the \texttt{cosmopie} module along with a set of rules for calculating derived parameters, so that the code's parametrization can easily be interchanged. Parameters relating to the dark energy equation of state $w(z)$ are handled separately from the rest. By default, the code uses $\{\Omega_m h^2,\Omega_b h^2,\Omega_k h^2, \Omega_d h^2, n_s,ln(A_s)\}$ as its basic set of parameters, where $\Omega_m,\Omega_b,\Omega_k$, and $\Omega_d$ are the total matter, baryon, curvature, dark energy densities respectively. This parametrization is chosen to be compatible with the parametrization in \cite{jdem_fom}. The code currently fixes $\Omega_k=0$ for simplicity, although it could be extended to support nonzero $\Omega_k$. 
+\label{ssec:cosmo_param}
+In order to properly calculate the response of a set of short wavelength observables $\{O_I\}$ to cosmological parameters $\{\Theta_i\}$, $\frac{\partial O_I}{\partial \Theta_i}$, a parametrization must be selected. The code allows its parametrization to be specified in the \texttt{cosmopie} module along with a set of rules for calculating derived parameters, so that the code's parametrization can easily be interchanged. Parameters relating to the dark energy equation of state $w(z)$ are handled separately from the rest. By default, the code uses $\{\Omega_m h^2,\Omega_b h^2,\Omega_k h^2, \Omega_d h^2, n_s,\ln{A_s}\}$ as its basic set of parameters, where $\Omega_m,\Omega_b,\Omega_k$, and $\Omega_d$ are the total matter, baryon, curvature, dark energy densities respectively. This parametrization is chosen to be compatible with the parametrization in \cite{jdem_fom}. The code currently fixes $\Omega_k=0$ for simplicity, although it could be extended to support nonzero $\Omega_k$. 
 
 \subsection{Growth Factor}
 \label{ssec:growth_factor}
@@ -135,7 +232,7 @@ Note that this condition is equivalent to (2.3) in \cite{casarini_halofit_math},
 \\
 This approach should work for a variety of methods of calculating the nonlinear power spectrum and a variety of dark energy models, as discussed in \cite{casarini_halofit_2}. The \texttt{matter\_power\_spectrum} module can currently apply this approach to the linear matter power spectrum, the one loop power spectrum from FAST-PT, and Halofit. Inserting further models of the matter power spectrum only requires extending the \texttt{matter\_power\_spectrum} module, as the rest of the code requires no knowledge of which model for the nonlinear matter power spectrum \texttt{matter\_power\_spectrum} is using. 
 \subsection{Fisher Matrix Manipulation}
-Fisher matrix manipulations are handled by the \texttt{fisher\_matrix} module. The \texttt{fisher\_matrix} module is optimized to efficiently perform common manipulations on fisher matrices up to the memory limitations of the machine it runs on. For memory efficiency, it keeps its own internal representation of its matrices, so that it can perform many matrix operations in place, using SciPy's interface to the Fortran LAPACK library.  The specific internal operations of the \texttt{fisher\_matrix} module are intended to be largely opaque to the end user, with access through the interface provided, so that it can be optimized enough to efficiently handle fisher matrices for large numbers of cosmological observables. 
+Fisher matrix manipulations are handled by the \texttt{fisher\_matrix} module. The \texttt{fisher\_matrix} module is optimized to efficiently perform common manipulations on Fisher matrices up to the memory limitations of the machine it runs on. For memory efficiency, it keeps its own internal representation of its matrices, so that it can perform many matrix operations in place, using SciPy's interface to the Fortran LAPACK library.  The specific internal operations of the \texttt{fisher\_matrix} module are intended to be largely opaque to the end user, with access through the interface provided, so that it can be optimized enough to efficiently handle Fisher matrices for large numbers of cosmological observables. 
 
 
 
@@ -156,7 +253,7 @@ In the present code, we use a form of a spherical Fourier-Bessel basis, similar 
 \begin{align} \label{basis_decomp}
 \psi_\alpha(r, \theta, \phi) = j_{l_\alpha}(k_\alpha r) Y^\text{R}_{l_\alpha m_\alpha}(\theta, \phi) ~, 
 \end{align} 
-where $Y^\text{R}_{lm}(\theta, \phi) $ is the real spherical harmonic, $k_\alpha$ is a solution of $j_{l_\alpha}(k_\alpha R_{max})=0$, and $\alpha$ is an index running over all possible sets $(k_\alpha,l_\alpha,m_\alpha)$. The real spherical harmonics can be defined in terms of Legendre polynomials
+where $Y^\text{R}_{lm}(\theta, \phi) $ is the real spherical harmonic, $k_\alpha$ is a solution of $j_{l_\alpha}(k_\alpha R_{max})=0$, and $\alpha$ is an index running over all possible sets $(k_\alpha,l_\alpha,m_\alpha)$. In order to evaluate with a finite number of modes, we choose a cutoff $k_{\text{max}}$ and take all combinations of $(k_\alpha,l_\alpha,m_\alpha)$ which have $k_\alpha<k_{\text{max}}$. This cutoff procedure has the effect of gradually decreasing the number of modes included for a given $l_\alpha$ as $l_\alpha$ gets larger, and should converge faster than an arbitrary $l_{\text{max}}$ cutoff. The real spherical harmonics can be defined in terms of Legendre polynomials
 \begin{align}\label{real_harmonic2}
 Y^\text{R}_{lm} = \sqrt{\frac{2(l+1)}{4\pi}}\sqrt{\frac{(l-|m|)!}{(l+|m|)!}}P^m_l(\cos{\theta})
 \begin{cases}
@@ -167,14 +264,56 @@ Y^\text{R}_{lm} = \sqrt{\frac{2(l+1)}{4\pi}}\sqrt{\frac{(l-|m|)!}{(l+|m|)!}}P^m_
 \end{align}
 We can then write a density fluctuation mode in this basis as
 \begin{align}\label{ss_mode}
-\delta_\alpha(k_\alpha)& = \int \delta(\mathbf{r}) \jl{\alpha}(k_\alpha r) \sph{\alpha}{r} d^3 \mathbf{r}~. 
+\delta_\alpha(k_\alpha)& = \frac{1}{N_\alpha}\int \delta(\mathbf{r}) \jl{\alpha}(k_\alpha r) \sph{\alpha}{r} d^3 \mathbf{r}~\\
+& = \frac{1}{N_\alpha}\int \dk \delta(\mathbf{k}) \int_0^{r_\text{max}} dr^2 \jl{\alpha}(k_\alpha r) \int d^2 \hat{r} e^{ikr \hat{k} \cdot \hat{r}} \sph{\alpha}{r} \\
+& =\frac{4 \pi i^{l_\alpha}}{N_\alpha}\int  \dk \delta(\mathbf{k})  \sph{\alpha}{k}  \int_0^{r_\text{max}} dr^2 \jl{\alpha}(k_\alpha r) \jl{\alpha}(kr)  ~,
 \end{align}
-\section{Response of observables to density fluctuations}
-To calculate the response of an observable $O_a$ to a density fluctuation mode $\delta_\alpha$, we can use the chain rule:
+where $N_\alpha$ is a normalization factor, in the second equality we use $\delta(\mathbf{r})=(2\pi)^{-3} \int d^3 \mathbf{k} \exp(i \mathbf{k} \cdot \mathbf{r}) \delta(\mathbf{k})$, and in the third equality we use the identity
+\begin{align} 
+\int_{S^2} d^2 \hat{r} \sph{\alpha}{r} e^{i \mathbf{k} \cdot \mathbf{r}} = 4 \pi i^{l_\alpha} j_{l_\alpha}(k r)\sph{\alpha}{k}~. 
+\end{align}
+The normalization factor $N_\alpha$ is defined
+\begin{align}\label{normalization}
+N_\alpha&=\int{d^3\mathbf{r}\sph{\alpha}{r} \sph{\alpha}{r} j_\alpha(k_\alpha r) j_\alpha(k_\alpha r)} \\
+&=  I_\alpha(k_\alpha, r_{\text{max}})  \int_\Omega \sph{\alpha}{r} \sph{\alpha}{r} \hat{r}\\
+& =I_\alpha(k_\alpha, r_{\text{max}}),
+\end{align}
+where $ \int_\Omega \sph{\alpha}{r} \sph{\alpha}{r} \hat{r}=1$ and $ I_\alpha(k_\alpha, r_{\text{max}}) $ is defined
+\begin{align}\label{i_alpha}
+\begin{split} 
+I_\alpha(k,  r_\text{max}) & =  \int_0^{r_\text{max}}dr r^2 \jl{\alpha}(k_\alpha r) \jl{\alpha}( k r) \\
+& = \frac{\pi}{2} \sqrt{ \frac{1}{k _ \alpha k}} \int_0^{r_\text{max}}dr r J_{l_\alpha+ 1/2}(k_\alpha r)  J_{l_\alpha+ 1/2}( k r) \\
+& = \frac{\pi}{2} \frac{ r_\text{max}}{ \sqrt{ k _ \alpha k}}\frac{\left[k_\alpha J_{l_\alpha+ 1/2}( k  r_\text{max})J_{l_\alpha+ 1/2}'(k_\alpha  r_\text{max}) - k J_{l_\alpha+ 1/2}(k_\alpha  r_\text{max})J_{l_\alpha+ 1/2}'(k  r_\text{max})\right]}{k^2 - k_\alpha^2}\\
+& = \frac{\pi}{2} \frac{ r_\text{max}}{ \sqrt{ k _ \alpha k}}\frac{\left[k_\alpha J_{l_\alpha+ 1/2}( k  r_\text{max})J_{l_\alpha- 1/2}(k_\alpha  r_\text{max}) - k J_{l_\alpha+ 1/2}(k_\alpha  r_\text{max})J_{l_\alpha- 1/2}(k  r_\text{max})\right]}{k^2 - k_\alpha^2}\\
+& = \frac{\pi}{2} \frac{ r_\text{max}}{ \sqrt{ k _ \alpha k}}\frac{k_\alpha J_{l_\alpha+ 1/2}( k  r_{\text{max}})J_{l_\alpha- 1/2}(k_\alpha  r_\text{max})}{k^2 - k_\alpha^2}~,
+\end{split} 
+\end{align}
+where in the last step we have use $J_{l_\alpha+1/2}(k_\alpha r_max)=0$, from the defining property of $k_\alpha$. In the special case $k=k_\alpha$, we can simplify $N_\alpha = I_\alpha(k,r_\text{max})$ using Bessel function identities:
+\begin{align}
+N_\alpha = I_\alpha(k_\alpha,  r_\text{max}) & = \lim_{k\to k_\alpha} \frac{\pi}{2} \frac{ r_\text{max}}{ \sqrt{ k _ \alpha k}}\frac{k_\alpha J_{l_\alpha+ 1/2}( k  r_\text{max})J_{l_\alpha- 1/2}(k_\alpha  r_\text{max})}{k^2 - k_\alpha^2}\\
+&=\lim_{k\to k_\alpha}\frac{\pi r_\text{max}}{2} \frac{J_{l_\alpha+ 1/2}( r_\text{max})J_{l_\alpha- 1/2}(k_\alpha  r_\text{max})}{k^2 - k_\alpha^2}\label{pre_lhopital}\\
+&=\lim_{k\to k_\alpha}\frac{\pi r_\text{max}}{2} \frac{r_\text{max}J'_{l_\alpha+ 1/2}(k r_\text{max})J_{l_\alpha- 1/2}(k_\alpha  r_\text{max})}{2 k}\label{post_lhopital}\\
+&=\lim_{k\to k_\alpha}\frac{\pi r_\text{max}^2}{2} \frac{\left[\frac{l_\alpha+1/2}{k r_{\text{max}}}J_{l_\alpha+1/2}(k r_\text{max})-J_{l_\alpha+3/2}(k_\alpha{r_\text{max}})\right]J_{l_\alpha- 1/2}(k_\alpha  r_\text{max})}{2 k}\label{post_recurrence}\\
+&=-\frac{\pi r_\text{max}^2}{4 k_\alpha}J_{l_\alpha+3/2}(k_\alpha{r_\text{max}})J_{l_\alpha- 1/2}(k_\alpha  r_\text{max})\label{norm_final}.
+\end{align}
+With these definitions, we can calculate the covariance matrix $C^{\alpha\beta}_\text{SSC}=\left(F^{\alpha\beta}_\text{SSC}\right)^{-1}$ in our basis:
+
+\begin{align} \label{C_SSC}
+\begin{split} 
+C^{\alpha\beta}_{\text{SSC}}=\langle \delta_\alpha \delta_\beta \rangle &= \frac{ (4 \pi)^2}{N_\alpha N_\beta} \int  \dkv{1} \dkv{2} \langle \delta(\mathbf{k}_1) \delta^*(\mathbf{k}_2) \rangle \sph{\alpha}{k_1} \sph{\beta}{k_2} \\
+& \;\;\; \times   \int_0^{r_\text{max}}  dr r^2 \jl{\alpha}(k_\alpha r) \jl{\alpha}( k_1 r) \int_0^{r_\text{max}}  dr r^2 \jl{\beta}(k_\beta r) \jl{\beta}( k_2 r)  \\
+&= \frac{ (4 \pi)^2}{N_\alpha N_\beta} \int \dk P_{\delta\delta}(k) I_\alpha(k, r_\text{max}) \times I_\beta(k, r_\text{max})\sph{\alpha}{k_1}Y^R_{l_\beta m_\beta}(-\hat{k_1})\\
+&=\frac{2}{\pi N_\alpha N_\beta}\int{k^2 dk P_{\delta\delta}(k)(-1)^{l_\beta} \delta_{l_\alpha,l_\beta}\delta_{m_\alpha,m_\beta} I_\alpha(k, r_\text{max}) \times I_\beta(k, r_\text{max})}~,
+\end{split} 
+\end{align} 
+where $(2 \pi)^3 \delta^3_\text{D}( \mathbf{k} + \mathbf{k}') P_{\delta\delta}(k) =  \langle \delta(\mathbf{k}) \delta^*(\mathbf{k}') \rangle$ was used and $P_{\delta\delta}(k)$ is the matter power spectrum.
+\subsection{Response of observables to density fluctuations}
+\label{ssec:obs_response}
+To calculate the response of an observable $O_I$ to a density fluctuation mode $\delta_\alpha$, we can use the chain rule:
 \begin{align}\label{chain_obs}
-\frac{\partial O_a}{\partial\delta_\alpha}=\int_0^{z_{\text{max}}}dz~\frac{\partial O_a}{\partial \bar{\delta}}(z)\frac{\partial \bar{\delta}}{\partial \delta_\alpha}(z),
+\frac{\partial O_I}{\partial\delta_\alpha}=\int_0^{z_{\text{max}}}dz~\frac{\partial O_I}{\partial \bar{\delta}}(z)\frac{\partial \bar{\delta}}{\partial \delta_\alpha}(z),
 \end{align}
-provided $\frac{\partial{O_a}}{\partial \bar{\delta}}(z)$ can be calculated. In the code, the integral in \eqref{chain_obs} is accomplished by calculating the integrand on a grid of $z$ values $\{z_i\}$ and using the trapezoidal rule. To calculate $\frac{\partial\bar{\delta}}{\partial\delta_\alpha}(z_i)$, we expand the mean density fluctuation $\bar{\delta}(z_i)$, in our basis: 
+provided $\frac{\partial{O_I}}{\partial \bar{\delta}}(z)$ can be calculated. In the code, the integral in \eqref{chain_obs} is accomplished by calculating the integrand on a grid of $z$ values $\{z_i\}$ and using the trapezoidal rule. To calculate $\frac{\partial\bar{\delta}}{\partial\delta_\alpha}(z_i)$, we expand the mean density fluctuation $\bar{\delta}(z_i)$, in our basis: 
 \label{sec:density_fluct}
 \begin{align}\label{bar_delta}
 \bar{\delta}(z_i)= \displaystyle \sum_\alpha \frac{3}{r_{i+1}^3 - r_{i}^3} \int_{r_i}^ {r_{i+1} }dr ~ r^2 j_{l_\alpha}(k_\alpha r) \delta_\alpha(k_\alpha) \frac{1}{2\sqrt{\pi} a_{00}} \underbrace{ \iint\limits_\Omega d\Omega ~\sph{\alpha}{r}}_{a_{l_\alpha m_\alpha}} ~,
@@ -204,6 +343,71 @@ where $j_\ell(k\chi)$ are spherical Bessel functions, and $k=\frac{\ell+\frac{1}
 C_{AB}(\ell)\cong\int_{0}^{\chi_{max}}{d\chi \frac{q_A(\chi)q_B(\chi)}{\chi^2}P_{\delta\delta}\left(k=\frac{(\ell+\frac{1}{2})}{\chi}\right)}.
 \end{equation}
 
-The code currently implements \eqref{limber_cab}. Note that for $\ell>>\frac{1}{2}$ many authors take $\ell+\frac{1}{2}\cong\ell$, although our code does not, for consistency with the implementation in CosmoSIS\cite{cosmosis}. The next order correction is suppressed by a factor of $\mathcal{O}((l+\frac{1}{2})^{-2})$, which is negligible for next generation weak lensing surveys. 
+The code currently implements \eqref{limber_cab}. Note that for $\ell>>\frac{1}{2}$ many authors take $\ell+\frac{1}{2}\cong\ell$, although our code does not, as the correction does not affect the code's execution time, and also for consistency with other implementations such as the one in CosmoSIS\cite{cosmosis}. The next order correction is suppressed by a factor of $\mathcal{O}((l+\frac{1}{2})^{-2})$, which is negligible for next generation weak lensing surveys. 
 %TODO where does the normalization factor come from in the notes?
+
+\section{Analytic Polygon Geometry}
+Using Stoke's theorem, for a spherical polygon survey window, which has $N$ sides which are great circle arcs, we can write 
+\begin{align}\label{stokes_alm}
+a_{l m}&=\iint\limits_\Omega d\Omega ~Y^R_{l m}(\hat{r})\\
+ &=\sum_{n=1}^{N}\underbrace{\frac{1}{l(l+1)}\int_{\partial\Omega_n}\left(\vec{\nabla}Y^R_{l m}(\hat{r})\right)\cdot \hat{z}_n ds}_{\equiv\Delta_n a_{l m}^{\text{global}}},
+\end{align}
+where $\partial \Omega_n$ denotes integration over the boundary of the $n$th arc and $\hat{z}_n$ is a unit vector orthogonal to the two unit vectors whose tips touch the ends of the $n$th arc, such that if $\vec{p}_{n}$ is the unit vector at the start of the $n$th arc, $\hat{z}_n\equiv\frac{\vec{p}_{n+1} \times \vec{p}_{n}}{|\vec{p}_{n+1} \times \vec{p}_{n}|}$. The integral is most simple to evaluate if the great circle is along the equator at $\theta=\frac{\pi}{2}$, so for each side we rotate to a coordinate system where the side is along the equator, calculate $\Delta_n a_{l m}^{\text{side}}$ and rotate back to the global coordinate system using 
+\begin{align}\label{harmonic_rotate}
+\Delta_n a_{l m}^{\text{global}}=\sum_{m'=-l}^{m'=l}{D^n_{l m m'}\Delta_n a_{l m'}^{\text{side}}},
+\end{align}
+where $D^n_{l m m'}$ is a spherical harmonic rotation matrix. Then, using recurrence relations for the gradient of the spherical harmonic, it can be shown that
+%TODO fill in steps
+\begin{align}\label{harmonic_side}
+a_{l m'}^{\text{side}} =(-1)^{m'}\sqrt{\frac{(4 l^2-1)(l-|m|)(l+|m|)}{l(2 l^2+l-1)}}Y^R_{(l-1) m'}\left(\theta=\frac{\pi}{2},\phi=0\right)
+\begin{cases}
+\frac{1}{|m'|}\sin(\beta_n |m'|) &\text{if } m'>0\\
+\beta_n &\text{if }m'=0\\
+\frac{1}{|m'|}(1-\cos(\beta_n |m'|)) &\text{if }m'<0
+\end{cases}
+\end{align}
+where $\beta_n\equiv\cos^{-1}\left(\vec{p}_n\cdot\vec{p}_{n+1}\right)$. Now, defining $\theta_n\equiv-\cos^{-1}\left(\hat{z}_{n z}\right)$, $\gamma_n\equiv\text{mod}\left[tan^{-1}\left(\frac{-\hat{z}_{n x}}{\hat{z}_{n y}}\right), 2 \pi\right]$, $\omega_n\equiv-\tan^{-1}\left(\frac{\hat{x}'_{n y}}{\hat{x}'_{n x}}\right)$, where $\hat{x}'_n\equiv\{\hat{z}_{n y}p_{n x}-\hat{z}_{n x}p_{n y},\hat{z}_{n y} \hat{y}'_{n x}-\hat{z}_{n x}\hat{y}'_{n y},0\}$ and $\hat{y}'_n\equiv \hat{z}_n \times p_{n}$. Here $\omega_n$, $\theta_n$, and $\gamma_n$ are, by construction, the Euler angles for a z-x-z Euler rotation which transforms from a local coordinate system where the $n$th arc lies in the x-y plane to the global coordinate system, so that 
+\begin{align}\label{composite_rotation}
+D^n_{l m m'}=\sum_{m_1,m_2=-l}^{l}{D^z_{l m m_1}(\gamma_n)D^x_{l m_1 m_2}(\theta_n)D^z_{l m_2,m'}}(\omega_n),
+\end{align}
+where the rotation matrices are given by:
+\begin{align}\label{rot_z}
+\sum_{m'=-l}^l{D^z_{l m m'}(\omega) a'_{l m'}= 
+\begin{cases}
+\cos(|m|\omega)a'_{l |m|}+\sin(|m|\omega)a'_{l -|m|}&\text{if } m>0\\
+a'_{l |m|}&\text{if } m=0\\
+-\sin(|m|\omega)a'_{l |m|}+\cos(|m|\omega)a'_{l -|m|}&\text{if } m<0
+\end{cases}}
+\end{align}
+and, writing $D^x_{l}$ as a $(2l+1)\times (2l+1)$ matrix, $D^x_{l}(\theta)=E_{l}(\theta)+\mathbb{1}$, and $E_{l}(\theta)$ is computed by recursively applying the angle doubling formula $E_{l} = 2 E_{l}(\frac{\theta}{2})+\left(E_{l}(\frac{\theta}{2})\right)^2$ to the infinitesimal rotation matrix $E_{l}(\epsilon)=\mathcal{M}_l^{-1}\tilde{E}_{l}\mathcal{M}_l$, where 
+\begin{align}\label{E_complex}
+\tilde{E}_l(\epsilon)=-i\epsilon L_x(\epsilon)=\frac{-i\epsilon}{2}\left[\delta_{m,m'+1}\sqrt{(l+1-m)(l+m)}+\delta_{m,m'-1}\sqrt{(l-m)(l+1+m)}\right],
+\end{align}
+and $\mathcal{M}_l$ transforms $E_{l}$ to be real unitary matrix
+\begin{align}\label{m_mat}
+\mathcal{M}_{l m m'}=
+\begin{cases}
+\frac{1}{\sqrt{2}}&\text{if } m>0\text{ and } m'=m\\
+-i\frac{1}{\sqrt{2}}&\text{if } m>0\text{ and } m'=-m\\
+\frac{(-1)^m}{\sqrt{2}}&\text{if } m<0\text{ and } m'=-m\\
+i\frac{(-1)^m}{\sqrt{2}}&\text{if } m<0\text{ and } m'=m\\
+1&\text{if } m=0\text{ and } m'=0\\
+0&\text{otherwise}.
+\end{cases}
+\end{align}
+
+In our code, the number of doublings can be specified by the user;  approximately 30 doublings are sufficient for a rotation matrix to be accurate to within floating point precision. The repeated multiplications of $(2l+1)\times (2l+1)$ matrices are relatively time consuming for large $l$, so this procedure is somewhat slower than the pixelation based procedure to reach an acceptable level of convergence, although the final results are accurate to within numerical precision. A significant advantage of the analytic solution is that the results are not vulnerable to pathological input survey geometries, such as a geometry with many narrow stripes (perhaps chip gaps) masked out, aligned so that none of the stripes contained any pixel centroids, which would produce poor quality results in the pixel based geometry.
+
+\section{Galaxy Number Density}
+\label{sec:nz_candels}
+%TODO Candels acknowledgement? 'This work is based on observations taken by the CANDELS Multi-Cycle Treasury Program with the NASA/ESA HST, which is operated by the Association of Universities for Research in Astronomy, Inc., under NASA contract NAS5-26555.' seems excessive
+To simulate a sample redshift distribution for a future weak lensing survey, we take all galaxies in the CANDELS\cite{candels_1}\cite{candels_2} GOODS-S catalogue with I band magnitude less than a user selected cutoff (I<24 is used as a default). We then calculate a smoothed number density as a function of redshift using a Gaussian smoothing kernel with user specified width $\sigma$ and reflecting boundary conditions at $z=0$:
+\begin{align}\label{candels_dndzofz}
+\frac{dN}{dz d\Omega}(z)=\sum_{i}{\frac{1}{\sqrt{2\pi\sigma\Omega}}\left(e^{-\frac{(z-z_i)^2}{2\sigma^2}}+e^{-\frac{(z+z_i)^2}{2\sigma^2}}\right)},
+\end{align}
+where $\Omega$ is the area of the CANDELS survey. Then we can calculate $n(z)$:
+\begin{align}\label{candels_nofz}
+n(z) = \frac{1}{r(z)^2}\frac{dN}{dz d\Omega}(z)\frac{dz}{dr}(z).
+\end{align}
+Now, we want to use $n(z)$ to calculate $b(z)$, the bias. \cite{jenkins_hmf}\cite{sheth_tormen_hmf}
 \end{document}

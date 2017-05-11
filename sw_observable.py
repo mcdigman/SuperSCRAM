@@ -1,4 +1,3 @@
-import cosmopie as cp
 #short wavelength observable abstract class
 #Methods must be implemented 
 class SWObservable:

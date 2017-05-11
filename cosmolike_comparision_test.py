@@ -190,7 +190,7 @@ if __name__ == '__main__':
                         ns[2] = n_s#/trapz(sp.ps*(sp.chis>=chi_bins[z2,0])*(sp.chis<=chi_bins[z2,1])*1.,sp.chis)
                     if i2==i3:
                         ns[3] = n_s#/trapz(sp.ps*(sp.chis>=chi_bins[z2,0])*(sp.chis<=chi_bins[z2,1])*1.,sp.chis)
-                    cov_g_mat_flat[itr_out:itr_out+nbins_cosmo,itr_in:itr_in+nbins_cosmo] = np.diagflat(sp.cov_g_diag2(np.array([qs[i1],qs[i2],qs[i3],qs[i4]]),ns,delta_ls=dls,ls=l_mids))
+                    cov_g_mat_flat[itr_out:itr_out+nbins_cosmo,itr_in:itr_in+nbins_cosmo] = np.diagflat(sp.cov_g_diag(np.array([qs[i1],qs[i2],qs[i3],qs[i4]]),ns,delta_ls=dls,ls=l_mids))
                     #cov_ssc_mat_flat[itr_out:itr_out+nbins_cosmo,itr_in:itr_in+nbins_cosmo] = cov_ssc_mat[i1,i2,i3,i4]
                     if not itr_in==itr_out:
                         cov_g_mat_flat[itr_in:itr_in+nbins_cosmo,itr_out:itr_out+nbins_cosmo] = cov_g_mat_flat[itr_out:itr_out+nbins_cosmo,itr_in:itr_in+nbins_cosmo].T
@@ -218,7 +218,7 @@ if __name__ == '__main__':
 #                    if z2==z3:
 #                        ns[3] = n_s#/trapz(sp.ps*(sp.chis>=chi_bins[z2,0])*(sp.chis<=chi_bins[z2,1])*1.,sp.chis)
 #                    
-#                    cov_g_mat[z1,z2,z3,z4] = np.diagflat(sp.cov_g_diag2(np.array([qs[z1],qs[z2],qs[z3],qs[z4]]),ns,delta_ls=dls,ls=l_mids))
+#                    cov_g_mat[z1,z2,z3,z4] = np.diagflat(sp.cov_g_diag(np.array([qs[z1],qs[z2],qs[z3],qs[z4]]),ns,delta_ls=dls,ls=l_mids))
 #                    if not isinstance(cov_g_mat_cosmo[z1,z2,z3,z4],int):
 #                        if z1==0 and z2==0 and ((z3==3 and z4 ==0) or (z3 ==0 and z4==3)):
 #                            print np.diag(cov_g_mat[z1,z2,z3,z4])/np.diag(cov_g_mat_cosmo[z1,z2,z3,z4])

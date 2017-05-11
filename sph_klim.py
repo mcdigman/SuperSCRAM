@@ -1,12 +1,9 @@
 import numpy as np
-from numpy import pi, sqrt, sin, cos
 from sph_functions import j_n, jn_zeros_cut, dJ_n, Y_r
 from scipy.special import jv
 from scipy.integrate import trapz, quad,dblquad
 from scipy.interpolate import InterpolatedUnivariateSpline,interp1d
 from algebra_utils import ch_inv
-import scipy as sp
-import sys 
 from time import time
 import fisher_matrix as fm
 import defaults
@@ -19,7 +16,7 @@ def I_alpha(k_alpha,k,r_max,l_alpha):
 			
 			a=k_alpha*r_max; b=k*r_max 
 			l=l_alpha+.5
-                        return pi/2./sqrt(k_alpha*k)/(k_alpha**2 - k**2)*r_max*(-k_alpha*jv(l-1,a)*jv(l,b))
+                        return np.pi/2./np.sqrt(k_alpha*k)/(k_alpha**2 - k**2)*r_max*(-k_alpha*jv(l-1,a)*jv(l,b))
 
 class sph_basis_k(object): 
 	
@@ -70,7 +67,6 @@ class sph_basis_k(object):
 		self.l=l_alpha #TODO unnecessary
 		self.lm_map=np.zeros((l_alpha.size,3),dtype=object)  
 		self.lm=np.zeros((l_alpha.size,2),dtype=object)
-		m_size=np.zeros_like(l_alpha)   
 		C_size=0
 		for i in range(l_alpha.size):
 		    m=np.arange(-l_alpha[i], l_alpha[i]+1)    
@@ -198,7 +194,7 @@ class sph_basis_k(object):
 
 	    a_00=geo.a_lm(0,0)
             print "sph_klim: a_00="+str(a_00)
-	   # Omega=a_00*np.sqrt(4*pi) 
+	   # Omega=a_00*np.sqrt(4*np.pi) 
             r_cache = {} 
 
             #TODO move r binning to geo 

@@ -1,7 +1,6 @@
 import numpy as np
 import cosmopie as cp
 import halofit as hf
-from numpy import exp
 from scipy.interpolate import interp1d,interp2d
 from scipy.interpolate import InterpolatedUnivariateSpline,SmoothBivariateSpline,RectBivariateSpline
 import scipy.special as sp
@@ -16,12 +15,10 @@ from power_parameter_response import dp_dparameter
 from lensing_weight import q_shear,q_mag,q_num,q_k
 from lensing_source_distribution import get_source_distribution
 import matter_power_spectrum as mps
-import sph
-import re
 #TODO create derivative class than can change whole cosmology
 #TODO check integral boundaries ok
 class shear_power:
-    def __init__(self,k_in,C,zs,ls,omega_s,pmodel='halofit',P_in=None,ps=np.array([]),P_select=np.array([]),Cs=[],params=defaults.lensing_params,fpt_params=defaults.fpt_params,param_vary=None,mode=None):
+    def __init__(self,k_in,C,zs,ls,omega_s,pmodel='halofit',P_in=None,ps=np.array([]),params=defaults.lensing_params,param_vary=None,mode=None):
 	self.k_in = k_in
         self.C = C
         self.zs = zs
@@ -82,7 +79,7 @@ class shear_power:
         elif mode=='dc_dparameter':
             #TODO find analytic formula and fix this
             self.param_vary = param_vary
-            self.pow_interp = RectBivariateSpline(self.k_in,self.zs,dp_dparameter(self.k_in,P_in,self.zs,C=self.C,parameter=self.param_vary,pmodel=pmodel,epsilon=self.epsilon)[0],kx=1,ky=1)
+            self.pow_interp = RectBivariateSpline(self.k_in,self.zs,dp_dparameter(self.k_in,self.zs,C=self.C,parameter=self.param_vary,pmodel=pmodel,epsilon=self.epsilon)[0],kx=1,ky=1)
         else:
             raise ValueError('unrecognized mode \''+str(mode)+'\'')
 
@@ -121,23 +118,22 @@ class shear_power:
             return 0.
 
     
-    def cov_g_diag(self,c_ac,c_ad,c_bd,c_bc,n_ac=0,n_ad=0,n_bd=0,n_bc=0): #only return diagonal because all else are zero by kronecker delta
-        cov_diag = np.zeros(self.n_l) #assume same size for now
-        for i in range(0,self.n_l):
-            cov_diag[i] = 4.*np.pi/(self.omega_s*(2.*self.ls[i]+1.)*self.delta_l)*((c_ac[i]+n_ac)*(c_bd[i]+n_bd)+(c_ad[i]+n_ad)*(c_bc[i]+n_bc))
-        return cov_diag
+#    def cov_g_diag(self,c_ac,c_ad,c_bd,c_bc,n_ac=0,n_ad=0,n_bd=0,n_bc=0): #only return diagonal because all else are zero by kronecker delta
+#        cov_diag = np.zeros(self.n_l) #assume same size for now
+#        for i in range(0,self.n_l):
+#            cov_diag[i] = 4.*np.pi/(self.omega_s*(2.*self.ls[i]+1.)*self.delta_l)*((c_ac[i]+n_ac)*(c_bd[i]+n_bd)+(c_ad[i]+n_ad)*(c_bc[i]+n_bc))
+#        return cov_diag
     #method to match cosmolike ssc term
     #def cov_ssc(self,qs):
     #    qs[0].chi_min
     
     #take as an array of qs, ns, and rs instead of the matrices themselves
     #ns is [n_ac,n_ad,n_bd,n_bc]
-    def cov_g_diag2(self,qs,ns_in=[0,0,0,0],r_ac=np.array([]),r_ad=np.array([]),r_bd=np.array([]),r_bc=np.array([]),delta_ls=None,ls=None):
+    def cov_g_diag(self,qs,ns_in=[0,0,0,0],r_ac=np.array([]),r_ad=np.array([]),r_bd=np.array([]),r_bc=np.array([]),delta_ls=None,ls=None):
         cov_diag = np.zeros(self.n_l)
         if ls is None:
             ls = self.ls
         if delta_ls is None:
-            #TODO consider supporting different log bases
             #lmin = np.min(ls)
             #lmax = np.min(ls)
 
@@ -160,7 +156,6 @@ class shear_power:
         c_bd = Cll_q_q(self,qs[1],qs[3],r_bd).Cll()#*np.sqrt(4.*np.pi) 
         c_ad = Cll_q_q(self,qs[0],qs[3],r_ad).Cll()#*np.sqrt(4.*np.pi) 
         c_bc = Cll_q_q(self,qs[1],qs[2],r_bc).Cll()#*np.sqrt(4.*np.pi) 
-        #TODO put back delta l, removed the delta l because it should be one here
         for i in range(0,self.n_l): 
             cov_diag[i] = 1./(self.omega_s*(2.*self.ls[i]+1.)*delta_ls[i])*((c_ac[i]+ns[0])*(c_bd[i]+ns[2])+(c_ad[i]+ns[1])*(c_bc[i]+ns[3]))
             #(C13*C24+ C13*N24+N13*C24 + C14*C23+C14*N23+N14*C23+N13*N24+N14*N23)
@@ -219,27 +214,27 @@ class shear_power:
         n_ss = self.sigma2_e/(2.*self.n_gal)
         for i in range(0,z_bins.size-1):
             for j in range(0,z_bins.size-1):
-                covs[i,j] = np.diagflat(self.cov_g_diag2([q1s[i],q2s[i],q1s[j],q2s[j]],[n_ss,n_ss,n_ss,n_ss]))
+                covs[i,j] = np.diagflat(self.cov_g_diag([q1s[i],q2s[i],q1s[j],q2s[j]],[n_ss,n_ss,n_ss,n_ss]))
         return covs
     
-    def dc_ddelta_alpha(self,basis,z_bins,theta,phi,cname1='shear',cname2='shear'):
-        if not re.match('^dc',self.pmodel):
-            warn('pmodel: '+self.pmodel+' not recognized for derivative, dc_ddelta_alpha may give unexpected results')
-        dcs = np.zeros(self.n_l)
-        for i in range(0,z_bins.size-1):
-            chi_min = self.C.D_comov(z_bins[i])
-            chi_max = self.C.D_comov(z_bins[i+1])
-            dcs[i] = basis.D_delta_bar_D_delta_alpha(chi_min,chi_max,theta,phi)
-            if cname1 == 'shear' and cname2 == 'shear':
-                dcs[i] *= self.Cll_sh_sh(chi_max,chi_max,chi_min,chi_min).Cll()
-            elif cname1 == 'shear' and cname2 == 'num':
-                dcs[i] *= self.Cll_sh_g(chi_max,chi_max,chi_min,chi_min).Cll()
-            else:
-                warn('invalid cname1 \''+cname1+'\' or cname2 \''+cname2+'\' using shear shear')
-                cname1 = 'shear'
-                cname2 = 'shear'
-                dcs[i] *= self.Cll_sh_sh(chi_max,chi_max,chi_min,chi_min).Cll()
-        return dcs
+    #def dc_ddelta_alpha(self,basis,z_bins,theta,phi,cname1='shear',cname2='shear'):
+    #    if not re.match('^dc',self.pmodel):
+    #        warn('pmodel: '+self.pmodel+' not recognized for derivative, dc_ddelta_alpha may give unexpected results')
+    #    dcs = np.zeros(self.n_l)
+    #    for i in range(0,z_bins.size-1):
+    #        chi_min = self.C.D_comov(z_bins[i])
+    #        chi_max = self.C.D_comov(z_bins[i+1])
+    #        dcs[i] = basis.D_delta_bar_D_delta_alpha(chi_min,chi_max,theta,phi)
+    #        if cname1 == 'shear' and cname2 == 'shear':
+    #            dcs[i] *= self.Cll_sh_sh(chi_max,chi_max,chi_min,chi_min).Cll()
+    #        elif cname1 == 'shear' and cname2 == 'num':
+    #            dcs[i] *= self.Cll_sh_g(chi_max,chi_max,chi_min,chi_min).Cll()
+    #        else:
+    #            warn('invalid cname1 \''+cname1+'\' or cname2 \''+cname2+'\' using shear shear')
+    #            cname1 = 'shear'
+    #            cname2 = 'shear'
+    #            dcs[i] *= self.Cll_sh_sh(chi_max,chi_max,chi_min,chi_min).Cll()
+    #    return dcs
 
 
 class Cll_q_q:
@@ -291,53 +286,47 @@ class Cll_mag_g(Cll_q_q):
 class Cll_sh_g(Cll_q_q):
     def __init__(self,sp,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
         Cll_q_q.__init__(self,sp,q_shear(sp,chi_max=chi_max1,chi_min=chi_min1),q_num(sp,chi_max=chi_max2,chi_min=chi_min2),corr_param=sp.r_corr())
-class Cll_q_q_nolimber(Cll_q_q):
-    def __init__(self,sp,q1s,q2s,corr_param=np.array([])):
-        integrand1 = np.zeros((sp.n_z,sp.n_l))
-        #integrand2 = np.zeros((sp.n_z,sp.n_l))
-        integrand_total = np.zeros((sp.n_z,sp.n_l))
-        for i in range(0,sp.n_z):
-            window_int1 = np.zeros((sp.n_z,sp.n_l))
-        #    window_int2 = np.zeros((sp.n_z,sp.n_l))
-            for j in range(0,sp.n_z):
-                window_int1[j] = q1s.qs[j]/np.sqrt(sp.chis[j])*sp.jv(sp.ls+0.5,(sp.ls+0.5)/sp.chis[i]*sp.chis[j])
-         #       window_int2[j] = q2s.qs[j]/np.sqrt(sp.chis[j])*sp.jv(sp.ls+0.5,(sp.ls+0.5)/sp.chis[i]*sp.chis[j])
-            integrand1[i] = np.trapz(window_int1,sp.chis,axis=0)
-         #   integrand2[i] = np.trapz(window_int2,sp.chis,axis=0)
-            integrand_total[i] = integrand1[i]*integrand1[i]*sp.p_dd_use[:,i]*(sp.ls+0.5)**2/sp.chis[i]**3
-        self.integrand = integrand_total
-        self.chis = sp.chis
+#class Cll_q_q_nolimber(Cll_q_q):
+#    def __init__(self,sp,q1s,q2s,corr_param=np.array([])):
+#        integrand1 = np.zeros((sp.n_z,sp.n_l))
+#        #integrand2 = np.zeros((sp.n_z,sp.n_l))
+#        integrand_total = np.zeros((sp.n_z,sp.n_l))
+#        for i in range(0,sp.n_z):
+#            window_int1 = np.zeros((sp.n_z,sp.n_l))
+#        #    window_int2 = np.zeros((sp.n_z,sp.n_l))
+#            for j in range(0,sp.n_z):
+#                window_int1[j] = q1s.qs[j]/np.sqrt(sp.chis[j])*sp.jv(sp.ls+0.5,(sp.ls+0.5)/sp.chis[i]*sp.chis[j])
+#         #       window_int2[j] = q2s.qs[j]/np.sqrt(sp.chis[j])*sp.jv(sp.ls+0.5,(sp.ls+0.5)/sp.chis[i]*sp.chis[j])
+#            integrand1[i] = np.trapz(window_int1,sp.chis,axis=0)
+#         #   integrand2[i] = np.trapz(window_int2,sp.chis,axis=0)
+#            integrand_total[i] = integrand1[i]*integrand1[i]*sp.p_dd_use[:,i]*(sp.ls+0.5)**2/sp.chis[i]**3
+#        self.integrand = integrand_total
+#        self.chis = sp.chis
 
 #TODO make this work with current q design
-class Cll_q_q_order2(Cll_q_q):
-    def __init__(self,sp,q1s,q2s,corr_param=np.array([])):
-        integrand1 = np.zeros((sp.n_z,sp.n_l))
-        integrand2 = np.zeros((sp.n_z,sp.n_l))
-        if corr_param.size !=0: 
-            for i in range(0,sp.n_z):
-                integrand1[i] = q1s.qs[i]*q2s.qs[i]/sp.chis[i]**2*sp.p_dd_use[:,i]*corr_param[:,i]
-        else:
-            for i in range(0,sp.n_z):
-                integrand1[i] = q1s.qs[i]*q2s.qs[i]/sp.chis[i]**2*sp.p_dd_use[:,i]
-        for i in range(0,sp.n_z-1): #check edge case
-            term1 = sp.chis[i]**2/2.*(q1s.rs_d2[i]/q1s.rs[i]+q2s.rs_d2[i]/q2s.rs[i])
-            term2 = sp.chis[i]**3/6.*(q1s.rs_d3[i]/q1s.rs[i]+q2s.rs_d3[i]/q2s.rs[i])
-            integrand2[i] = -1./(sp.ls+0.5)**2*(term1+term2)*integrand1[i]
-        self.integrand=integrand1+integrand2
-        self.chis=sp.chis
+#class Cll_q_q_order2(Cll_q_q):
+#    def __init__(self,sp,q1s,q2s,corr_param=np.array([])):
+#        integrand1 = np.zeros((sp.n_z,sp.n_l))
+#        integrand2 = np.zeros((sp.n_z,sp.n_l))
+#        if corr_param.size !=0: 
+#            for i in range(0,sp.n_z):
+#                integrand1[i] = q1s.qs[i]*q2s.qs[i]/sp.chis[i]**2*sp.p_dd_use[:,i]*corr_param[:,i]
+#        else:
+#            for i in range(0,sp.n_z):
+#                integrand1[i] = q1s.qs[i]*q2s.qs[i]/sp.chis[i]**2*sp.p_dd_use[:,i]
+#        for i in range(0,sp.n_z-1): #check edge case
+#            term1 = sp.chis[i]**2/2.*(q1s.rs_d2[i]/q1s.rs[i]+q2s.rs_d2[i]/q2s.rs[i])
+#            term2 = sp.chis[i]**3/6.*(q1s.rs_d3[i]/q1s.rs[i]+q2s.rs_d3[i]/q2s.rs[i])
+#            integrand2[i] = -1./(sp.ls+0.5)**2*(term1+term2)*integrand1[i]
+#        self.integrand=integrand1+integrand2
+#        self.chis=sp.chis
 
 
 if __name__=='__main__':
     
 	C=cp.CosmoPie(cosmology=defaults.cosmology,p_space='jdem')
-        #d_t = np.loadtxt('chomp_pow_nlin.dat')
 #	d = np.loadtxt('Pk_Planck15.dat')
 	#d = np.loadtxt('camb_m_pow_l.dat')
-#	xiaod = np.loadtxt('power_spectrum_1.dat')
-#	intd = pickle.load(open('../CosmicShearPython/Cll_camb.pkl',mode='r'))
-        #chompd = np.loadtxt('sh_sh_comp.dat')
-#        revd = np.loadtxt('len_pow1.dat')
-#        k_in = chompd[:,0]
         #k_in = np.logspace(-5,2,200,base=10)
         #k_in = d[:,0]
     #    k_in = np.loadtxt('test_inputs/proj_1/k_h.txt')
@@ -353,7 +342,6 @@ if __name__=='__main__':
         #ls = np.loadtxt('test_inputs/proj_1/ell.txt')
 
         #ls = np.logspace(np.log10(2),np.log10(10000),3000,base=10)
-	#ls = chompd[:,0]	
 #	ls = revd[:,0]	
 	#t1 = time()
         #cosmo_a = defaults.cosmology.copy()
