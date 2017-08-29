@@ -27,7 +27,7 @@ class LensingPowerBase():
         self.dC_dparams = np.zeros((cosmo_param_list.size,2),dtype=object)
         if Cs_pert is None:
             Cs_pert = ppr.get_perturbed_cosmopies(C,cosmo_param_list,cosmo_param_epsilons,log_param_derivs) 
-        for i in range(0,cosmo_param_list.size):
+        for i in xrange(0,cosmo_param_list.size):
             self.dC_dparams[i,0] = sp.shear_power(Cs_pert[i,0].k,Cs_pert[i,0],self.geo.z_fine,ls,omega_s=omega_s,pmodel=params['pmodel_O'],mode='power',P_in=Cs_pert[i,0].P_lin,params=params)
             self.dC_dparams[i,1] = sp.shear_power(Cs_pert[i,1].k,Cs_pert[i,1],self.geo.z_fine,ls,omega_s=omega_s,pmodel=params['pmodel_O'],mode='power',P_in=Cs_pert[i,1].P_lin,params=params)
         
@@ -44,7 +44,7 @@ class LensingObservable(SWObservable):
         self.q2_dC = self.q2_handle(self.len_pow.dC_ddelta,self.r2[0],self.r2[1])
         self.q1_dparams = np.zeros((len_pow.cosmo_param_list.size,2),dtype=object)
         self.q2_dparams = np.zeros((len_pow.cosmo_param_list.size,2),dtype=object)
-        for itr in range(0,len_pow.cosmo_param_list.size): 
+        for itr in xrange(0,len_pow.cosmo_param_list.size): 
             self.q1_dparams[itr,0] = self.q1_handle(self.len_pow.dC_dparams[itr,0],self.r1[0],self.r1[1])
             self.q1_dparams[itr,1] = self.q1_handle(self.len_pow.dC_dparams[itr,1],self.r1[0],self.r1[1])
             self.q2_dparams[itr,0] = self.q2_handle(self.len_pow.dC_dparams[itr,0],self.r2[0],self.r2[1])
@@ -58,7 +58,7 @@ class LensingObservable(SWObservable):
         return sp.Cll_q_q(self.len_pow.dC_ddelta,self.q1_dC,self.q2_dC).Cll_integrand()
     def get_dO_I_dparameters(self):
         dO_dparams = np.zeros(self.len_pow.cosmo_param_list.size,dtype=object)
-        for itr in range(0,dO_dparams.size):
+        for itr in xrange(0,dO_dparams.size):
             Cll_low = sp.Cll_q_q(self.len_pow.dC_dparams[itr,0],self.q1_dparams[itr,0],self.q2_dparams[itr,0]).Cll()
             Cll_high = sp.Cll_q_q(self.len_pow.dC_dparams[itr,1],self.q1_dparams[itr,1],self.q2_dparams[itr,1]).Cll()
             dO_dparams[itr] = (Cll_high-Cll_low)/(2.*self.len_pow.cosmo_param_epsilons[itr])

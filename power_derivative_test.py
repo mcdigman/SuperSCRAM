@@ -51,7 +51,7 @@ if __name__=='__main__':
 
     ss_1 = Cll_q_q(sp1,q_shear1_1,q_shear1_2).Cll()
     #check that \partial C^{ij}/\partial \bar{\delta}(zs) \propto 1/(width of zs bin)*z^i*C^{ij}, where z^i ~ average z of closer z bin
-    for z_ind in range(5,100,10):
+    for z_ind in xrange(5,100,10):
         ind_min = 200
         ind_max = ind_min+z_ind
         dC_ss_integrand_1 = Cll_q_q(dC_ddelta1,q_shear1_1,q_shear1_2).Cll(chi_min=dC_ddelta1.chis[ind_min],chi_max=dC_ddelta1.chis[ind_max])

@@ -7,7 +7,7 @@ def read_planck_fisher(params = defaults.planck_fisher_params):
     col_is = fisher_d[:,1].astype(int)
     n_row = np.max(row_is)+1
     fisher_mat = np.zeros((n_row,n_row))
-    for itr in range(0,row_is.size):
+    for itr in xrange(0,row_is.size):
         fisher_mat[row_is[itr],col_is[itr]] = fisher_d[itr,2]
     #NOTE: element 8,14 is not identical to 14,8??? very close though,just symmetrize to eliminate the problem
     fisher_mat=(fisher_mat+fisher_mat.T)/2.
@@ -21,7 +21,7 @@ def fix_elements(fisher_mat,params=defaults.planck_fisher_params):
     rows = np.sort(rows)[::-1]
     #make sure does not change actual array
     fisher_new = fisher_mat.copy()
-    for i in range(0,rows.size):
+    for i in xrange(0,rows.size):
         fisher_new=np.delete(fisher_new,(rows[i]),axis=0)
         fisher_new=np.delete(fisher_new,(rows[i]),axis=1)
     return fisher_new

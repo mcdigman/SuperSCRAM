@@ -79,8 +79,8 @@ class polygon_pixel_geo(pixel_geo):
 
             itr = 0
 
-            for ll in range(0,l_max+1):
-                for mm in range(-ll,ll+1):
+            for ll in xrange(0,l_max+1):
+                for mm in xrange(-ll,ll+1):
                     #first try takes ~0.618 sec/iteration for 290 pixel region=> 2.1*10**-3 sec/(iteration pixel), much too slow
                     ls[itr] = ll
                     ms[itr] = mm
@@ -98,8 +98,8 @@ class polygon_pixel_geo(pixel_geo):
             
             lm_dict = {}
             itr = 0
-            for ll in range(0,l_max+1):
-                for mm in range(-ll,ll+1):
+            for ll in xrange(0,l_max+1):
+                for mm in xrange(-ll,ll+1):
                     ms[itr] = mm
                     ls[itr] = ll
                     lm_dict[(ll,mm)] = itr
@@ -112,7 +112,7 @@ class polygon_pixel_geo(pixel_geo):
 
             sin_phi_m = np.zeros((l_max+1,self.n_pix))
             cos_phi_m = np.zeros((l_max+1,self.n_pix))
-            for mm in range(0,l_max+1):
+            for mm in xrange(0,l_max+1):
                 sin_phi_m[mm] = np.sin(mm*self.pixels[:,1])
                 cos_phi_m[mm] = np.cos(mm*self.pixels[:,1])
 
@@ -120,11 +120,11 @@ class polygon_pixel_geo(pixel_geo):
 
             known_legendre = {(0,0):(np.zeros(self.n_pix)+1.),(1,0):cos_theta,(1,1):-abs_sin_theta}
 
-            for ll in range(0,l_max+1):
+            for ll in xrange(0,l_max+1):
                 if ll>=2:
                     known_legendre[(ll,ll-1)] = (2.*ll-1.)*cos_theta*known_legendre[(ll-1,ll-1)]
                     known_legendre[(ll,ll)] = -(2.*ll-1.)*abs_sin_theta*known_legendre[(ll-1,ll-1)] 
-                for mm in range(0,ll+1):
+                for mm in xrange(0,ll+1):
                     if mm<=ll-2:
                         known_legendre[(ll,mm)] = ((2.*ll-1.)/(ll-mm)*cos_theta*known_legendre[(ll-1,mm)]-(ll+mm-1.)/(ll-mm)*known_legendre[(ll-2,mm)])
 
@@ -153,8 +153,8 @@ class polygon_pixel_geo(pixel_geo):
             
             lm_dict = {}
             itr = 0
-            for ll in range(0,l_max+1):
-                for mm in range(-ll,ll+1):
+            for ll in xrange(0,l_max+1):
+                for mm in xrange(-ll,ll+1):
                     ms[itr] = mm
                     ls[itr] = ll
                     lm_dict[(ll,mm)] = itr
@@ -167,7 +167,7 @@ class polygon_pixel_geo(pixel_geo):
 
             sin_phi_m = np.zeros((l_max+1,thetas.size))
             cos_phi_m = np.zeros((l_max+1,thetas.size))
-            for mm in range(0,l_max+1):
+            for mm in xrange(0,l_max+1):
                 sin_phi_m[mm] = np.sin(mm*phis)
                 cos_phi_m[mm] = np.cos(mm*phis)
 
@@ -175,11 +175,11 @@ class polygon_pixel_geo(pixel_geo):
 
             known_legendre = {(0,0):(np.zeros(thetas.size)+1.),(1,0):cos_theta,(1,1):-abs_sin_theta}
 
-            for ll in range(0,l_max+1):
+            for ll in xrange(0,l_max+1):
                 if ll>=2:
                     known_legendre[(ll,ll-1)] = (2.*ll-1.)*cos_theta*known_legendre[(ll-1,ll-1)]
                     known_legendre[(ll,ll)] = -(2.*ll-1.)*abs_sin_theta*known_legendre[(ll-1,ll-1)] 
-                for mm in range(0,ll+1):
+                for mm in xrange(0,ll+1):
                     if mm<=ll-2:
                         known_legendre[(ll,mm)] = ((2.*ll-1.)/(ll-mm)*cos_theta*known_legendre[(ll-1,mm)]-(ll+mm-1.)/(ll-mm)*known_legendre[(ll-2,mm)])
 
@@ -210,7 +210,7 @@ def Y_r_2(ll,mm,theta,phi,known_legendre):
 def get_Y_r_dict(l_max,thetas,phis):
     ytable,ls,ms = get_Y_r_table(l_max,thetas,phis)
     ydict = {}
-    for itr in range(0,ls.size):
+    for itr in xrange(0,ls.size):
         ydict[(ls[itr],ms[itr])] = ytable[itr]
     return ydict
 def get_Y_r_table(l_max,thetas,phis):
@@ -222,8 +222,8 @@ def get_Y_r_table(l_max,thetas,phis):
             
     lm_dict = {}
     itr = 0
-    for ll in range(0,l_max+1):
-        for mm in range(-ll,ll+1):
+    for ll in xrange(0,l_max+1):
+        for mm in xrange(-ll,ll+1):
             ms[itr] = mm
             ls[itr] = ll
             lm_dict[(ll,mm)] = itr
@@ -236,7 +236,7 @@ def get_Y_r_table(l_max,thetas,phis):
 
     sin_phi_m = np.zeros((l_max+1,thetas.size))
     cos_phi_m = np.zeros((l_max+1,thetas.size))
-    for mm in range(0,l_max+1):
+    for mm in xrange(0,l_max+1):
         sin_phi_m[mm] = np.sin(mm*phis)
         cos_phi_m[mm] = np.cos(mm*phis)
 
@@ -244,11 +244,11 @@ def get_Y_r_table(l_max,thetas,phis):
 
     known_legendre = {(0,0):(np.zeros(thetas.size)+1.),(1,0):cos_theta,(1,1):-abs_sin_theta}
 
-    for ll in range(0,l_max+1):
+    for ll in xrange(0,l_max+1):
         if ll>=2:
             known_legendre[(ll,ll-1)] = (2.*ll-1.)*cos_theta*known_legendre[(ll-1,ll-1)]
             known_legendre[(ll,ll)] = -(2.*ll-1.)*abs_sin_theta*known_legendre[(ll-1,ll-1)] 
-        for mm in range(0,ll+1):
+        for mm in xrange(0,ll+1):
             if mm<=ll-2:
                 known_legendre[(ll,mm)] = ((2.*ll-1.)/(ll-mm)*cos_theta*known_legendre[(ll-1,mm)]-(ll+mm-1.)/(ll-mm)*known_legendre[(ll-2,mm)])
 
@@ -311,7 +311,7 @@ def is_contained(pixels,sp_poly):
     xyz_vals = sgv.radec_to_vector(pixels[:,1],pixels[:,0]-np.pi/2.,degrees=False)
     contained = np.zeros(pixels.shape[0],dtype=bool)
     #check if each point is contained in the polygon. This is fairly slow if the number of points is huge
-    for i in range(0,pixels.shape[0]):
+    for i in xrange(0,pixels.shape[0]):
         contained[i]= sp_poly.contains_point([xyz_vals[0][i],xyz_vals[1][i],xyz_vals[2][i]])
     return contained
 
@@ -323,7 +323,7 @@ def contains_points(pixels,sp_poly):
     inside_xyz = sp_poly._polygons[0]._inside
     inside_large = np.zeros_like(xyz_vals)
     inside_large+=inside_xyz
-    for itr in range(0,bounding_xyz.shape[0]-1):
+    for itr in xrange(0,bounding_xyz.shape[0]-1):
         #intersects+= great_circle_arc.intersects(bounding_xyz[itr], bounding_xyz[itr+1], inside_large, xyz_vals)
         intersects+= contains_intersect(bounding_xyz[itr], bounding_xyz[itr+1], inside_xyz, xyz_vals)
     return np.mod(intersects,2)==0
@@ -385,7 +385,7 @@ if __name__=='__main__':
     t2 = time()
     if do_old:
         print "polygon_pixel_geo: a_lm up to l="+str(l_max)+" time: "+str(t2-t1)+"s" 
-    for i in range(0,n_run):
+    for i in xrange(0,n_run):
         alm_recurse,ls,ms,_= pp_geo.get_a_lm_table(l_max)
     t3 = time()
     print "polygon_pixel_geo: a_lm_recurse in avg time: "+str((t3-t2)/n_run)+"s"
@@ -396,7 +396,7 @@ if __name__=='__main__':
         r_geo = rect_geo(zs,np.array([theta0,theta1]),np.array([phi0,phi1]),C,z_fine)
         if do_reconstruct:
             alm_rect = {}
-            for itr in range(0,ls.size):
+            for itr in xrange(0,ls.size):
                 alm_rect[(ls[itr],ms[itr])] = r_geo.a_lm(ls[itr],ms[itr])
     t4 =time()
     if do_rect:
@@ -417,7 +417,7 @@ if __name__=='__main__':
     if do_rect and do_reconstruct:
         totals_rect = pp_geo.reconstruct_from_alm(l_max,pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1],alm_rect)
     #if do_rect:
-    #    for itr in range(0,ls.size):
+    #    for itr in xrange(0,ls.size):
     #        totals_rect+=alm_rect[itr]*Y_r(ls[itr],ms[itr],pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1])
     #        totals_recurse+=alm_recurse[itr]*Y_r(ls[itr],ms[itr],pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1])
         #totals_recurse+=alm_recurse[itr]*Y_r_2(ls[itr],ms[itr],pp_geo.pixels[:,0],pp_geo.pixels[:,1],known_legendre)

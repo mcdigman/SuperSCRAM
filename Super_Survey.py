@@ -1,22 +1,24 @@
+
+from time import time 
+from warnings import warn
+
 import numpy as np
+import copy
+
 from polygon_pixel_geo import polygon_pixel_geo
 from polygon_geo import polygon_geo
-
 from cosmopie import CosmoPie 
-#import sph_basis as basis
 from sph_klim import sph_basis_k
-from time import time 
 from Dn import DNumberDensityObservable
-
 from geo import rect_geo
-import defaults
-import fisher_matrix as fm
-import copy
 from sw_survey import SWSurvey
 from lw_survey import LWSurvey
+
+import defaults
+import fisher_matrix as fm
 import planck_fisher
-from warnings import warn
 import matter_power_spectrum as mps
+
 class super_survey:
     ''' This class holds and returns information for all surveys
     ''' 
@@ -54,12 +56,12 @@ class super_survey:
         self.O_I=np.array([], dtype=object)
     
         #self.O_a=np.array([], dtype=object)
-        for i in range(self.N_surveys_sw): 
+        for i in xrange(self.N_surveys_sw): 
             survey=surveys_sw[i]
             #TODO why add N_O_I from different surveys?
             self.N_O_I=self.N_O_I + survey.get_N_O_I()          
         #TODO temp     
-        for i in range(self.N_surveys_lw):
+        for i in xrange(self.N_surveys_lw):
           
             survey=self.surveys_lw[i]
             self.N_O_a=self.N_O_a + survey.get_N_O_a()
@@ -110,7 +112,7 @@ class super_survey:
             print "Super_Survey: getting SSC covar with mitigation"
             F_loc = copy.deepcopy(self.F_0)
             #F_loc = self.basis.get_fisher(allow_caching=True)
-            for i in range(0,self.N_surveys_lw):
+            for i in xrange(0,self.N_surveys_lw):
                 self.surveys_lw[i].fisher_accumulate(F_loc)
             F_loc.switch_rep(fm.REP_CHOL)
         else:
@@ -120,7 +122,7 @@ class super_survey:
         Cov_SSC = np.zeros(self.N_surveys_sw,dtype=object) 
         a_SSC = np.zeros((2,self.N_surveys_sw),dtype=object) 
 
-        for i in range(0,self.N_surveys_sw):
+        for i in xrange(0,self.N_surveys_sw):
             survey=self.surveys_sw[i]
             if mitigation:
                 Cov_SSC[i] = survey.get_covars(np.array([self.F_0,F_loc]),self.basis)
@@ -137,7 +139,7 @@ class super_survey:
 #    def get_O_a(self):
 #        D_O_a=np.zeros(self.N_O_a,dtype=object)
 ##        print 'Super_Survey: I have this many long wavelength observables', self.N_O_a 
-#        for i in range(self.N_O_a):
+#        for i in xrange(self.N_O_a):
 #            O_a=self.O_a[i]
 #            for key in O_a:
 #                  
@@ -155,7 +157,7 @@ class super_survey:
     def get_O_I_all(self):
         O_I_list = np.zeros(self.N_O_I,dtype=object)
         N_O_I = 0
-        for i in range(0,self.N_surveys_sw):
+        for i in xrange(0,self.N_surveys_sw):
             survey = self.surveys_sw[i]
             N_O_I_survey = survey.get_N_O_I()
             O_I_list[N_O_I:N_O_I+N_O_I_survey] = survey.get_O_I_list()
@@ -167,8 +169,8 @@ def get_ellipse_specs(covs,dchi2=2.3):
     alpha =np.sqrt(dchi2)
     angles = np.zeros_like(covs)
     areas = np.zeros_like(covs)
-    for i in range(0,covs.shape[0]):
-        for j in range(0,covs.shape[1]):
+    for i in xrange(0,covs.shape[0]):
+        for j in xrange(0,covs.shape[1]):
             #cf arxiv:0906.4123 for explanation
             a_s[i,j] = np.sqrt((covs[i,i]+covs[j,j])/2.+np.sqrt((covs[i,i]-covs[j,j])**2/4.+covs[i,j]**2))
             b_s[i,j] = np.sqrt((covs[i,i]+covs[j,j])/2.-np.sqrt((covs[i,i]-covs[j,j])**2/4.+covs[i,j]**2))
@@ -193,18 +195,18 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
     width2_set = np.zeros((n_c,n_p,n_p))
     angle_set = np.zeros((n_c,n_p,n_p))
     area_set = np.zeros((n_c,n_p,n_p))
-    for itr3 in range(0,n_c):
+    for itr3 in xrange(0,n_c):
         width1_set[itr3],width2_set[itr3],angle_set[itr3],area_set[itr3] = get_ellipse_specs(cov_set[itr3],dchi2=dchi2)
     if box_widths=="adaptive":
         box_widths = np.zeros(n_p)
-        for itr3 in range(0,n_c):
+        for itr3 in xrange(0,n_c):
             box_widths = np.max(np.array([box_widths,2.*np.sqrt(np.diag(cov_set[itr3]))]),axis=0)
         box_widths*=adaptive_mult
 
     xbox_widths = box_widths
     ybox_widths = box_widths
-    for itr1 in range(0,n_p):
-        for itr2 in range(0,n_p): 
+    for itr1 in xrange(0,n_p):
+        for itr2 in xrange(0,n_p): 
             ax = ax_list[itr2,itr1]
             param1 = cosmo_param_list[itr1] 
             param2 = cosmo_param_list[itr2] 
@@ -212,7 +214,7 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
 
             #TODO check sense of rotation
             es = np.zeros(n_c,dtype=object)
-            for itr3  in range(0,n_c):
+            for itr3  in xrange(0,n_c):
                 es[itr3] = Ellipse(fid_point,width1_set[itr3][itr1,itr2],width2_set[itr3][itr1,itr2],angle=180./np.pi*angle_set[itr3][itr1,itr2],label=label_set[itr3])
                 ax.add_artist(es[itr3])
                 es[itr3].set_clip_box(ax.bbox)
@@ -458,7 +460,7 @@ if __name__=="__main__":
     if chol_plot:
         import matplotlib.pyplot as plt
         ax = plt.subplot(111)
-        for itr in range(1,5):
+        for itr in xrange(1,5):
             #ax.plot(ax_ls,ax_ls*(ax_ls+1.)*np.dot(chol_gauss,SS_eig[1][:,-itr]))
             #ax.plot(np.dot(chol_gauss,SS_eig[1][:,-itr]))
             #TODO might just delete this
@@ -472,8 +474,8 @@ if __name__=="__main__":
     if test_perturbation:
         #TOLERANCE below which an eigenvalue less than TOLERANCE*max eigenvalue is considered 0
         REL_TOLERANCE = 10**-8
-        f0 = SS.F_0.get_F_alpha_beta()
-        f1 = SS.F_fin.get_F_alpha_beta()
+        f0 = SS.F_0.get_fisher()
+        f1 = SS.F_fin.get_fisher()
         if not np.all(f0.T==f0):
             pert_test_fails+=1
             warn("unperturbed fisher matrix not symmetric, unacceptable")

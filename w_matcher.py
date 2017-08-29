@@ -33,7 +33,7 @@ class WMatcher:
         self.Gs = np.zeros((self.n_w,self.n_a))
             
 
-        for i in range(0,self.n_w):
+        for i in xrange(0,self.n_w):
            self.cosmos[i] = self.cosmo_fid.copy()
            self.cosmos[i]['w'] = self.ws[i]
            self.Cs[i] = cp.CosmoPie(cosmology=self.cosmos[i],silent=True)
@@ -47,7 +47,7 @@ class WMatcher:
 
         self.ind_switches = np.argmax(np.diff(self.integ_Es,axis=0)<0,axis=0)+1
         #there is a purely numerical issue that causes the integral to be non-monotonic, this loop eliminates the spurious behavior
-        for i in range(1,self.n_a):
+        for i in xrange(1,self.n_a):
             if self.ind_switches[i]>1:
                 if self.integ_Es[self.ind_switches[i]-1,i]-self.integ_Es[0,i]>=0:
                     self.integ_Es[0:(self.ind_switches[i]-1),i]=self.integ_Es[self.ind_switches[i]-1,i]
@@ -65,7 +65,7 @@ class WMatcher:
         integ_E_in_interp = InterpolatedUnivariateSpline(self.a_s,integ_E_in,k=2,ext=2)
         integ_E_targets = integ_E_in_interp(a_match)
         w_grid1 = np.zeros(a_match.size)
-        for itr in range(0,z_match.size):
+        for itr in xrange(0,z_match.size):
             iE_vals = self.integ_E_interp(self.ws,a_match[itr]).T[0]-integ_E_targets[itr]
             iG = np.argmax(iE_vals<=0.)
             #require some padding so can get very accurate interpolation results
@@ -86,8 +86,8 @@ class WMatcher:
 #        integ_E_in = integ_E_in_interp(self.a_s)
 #        integ_E_targets = integ_E_in_interp(a_match)
 #        w_grid1 = np.zeros(a_match.size)
-#        for itr in range(0,a_match.size):
-#            for i in range(0,self.n_a):
+#        for itr in xrange(0,a_match.size):
+#            for i in xrange(0,self.n_a):
 #                if a_match[itr]<self.a_s[i]:
 #                    print "searching at a="+str(a_match[itr])+" to match ai="+str(self.a_s[i])+" i="+str(i)
 #                    if self.ind_switches[i]>1:
@@ -114,7 +114,7 @@ class WMatcher:
 #        warned2 = 0
 #
 #        #start from 1 because there is a ghost cell at start because cumtrapz is 0 in first cell
-#        for i in range(1,self.n_a):
+#        for i in xrange(1,self.n_a):
 #            if (self.integ_Es[:,i][-1]>=integ_E_in[i] or self.integ_Es[:,i][0]<=integ_E_in[i]):
 #                #if np.any(1./(1.+z_match))
 #                last_val = np.abs(integ_E_in[i]-self.integ_Es[0,i])
@@ -122,7 +122,7 @@ class WMatcher:
 #                dir_st = np.sign(integ_E_in[i]-self.integ_Es[:,i])
 #                diff_st = np.sign(np.diff(self.integ_Es[:,i]))
 #                possible_w_is = np.array([],dtype=int)
-#                for itr in range(1,self.n_w):
+#                for itr in xrange(1,self.n_w):
 #                    this_dir = dir_st[itr]
 #                    if ((not this_dir==last_dir) and (not last_dir==0)) :#and last_dir==diff_st[itr-1]): 
 #                        possible_w_is=np.hstack((possible_w_is,np.array([itr])))
@@ -189,7 +189,7 @@ class WMatcher:
         pow_mult = np.zeros(n_z_in)
         #G_norm_fid = self.C_fid.G_norm(z_in)
         #TODO vectorize correctly
-        for itr in range(0,n_z_in):
+        for itr in xrange(0,n_z_in):
             pow_mult[itr]=(G_norm_ins[itr]/(self.G_interp(w_in[itr],a_in[itr])/self.G_interp(w_in[itr],1.)))**2
         #return multiplier for linear power spectrum from effective constant w model
         return pow_mult
@@ -206,7 +206,7 @@ class WMatcher:
         pow_scale = np.zeros(n_z_in)
         G_fid = self.C_fid.G(0)
         #TODO vectorize correctly
-        for itr in range(0,n_z_in):
+        for itr in xrange(0,n_z_in):
             pow_scale[itr]=(self.G_interp(w_in[itr],1.)/G_fid)**2
         #return multiplier for linear power spectrum from effective constant w model
         return pow_scale
@@ -238,13 +238,13 @@ if __name__=='__main__':
         w1s = wm.match_w(C_match_a,zs)
 
         #w2s = wm.match_w2(C_match_a,zs)
-        w3s = wm.match_w3(C_match_a,zs)
-        print "rms discrepancy methods 1 and 3="+str(np.linalg.norm(w3s-w1s)/w1s.size)
+        #w3s = wm.match_w3(C_match_a,zs)
+        #print "rms discrepancy methods 1 and 3="+str(np.linalg.norm(w3s-w1s)/w1s.size)
         print "rms discrepancy method 1 and input="+str(np.linalg.norm(w1s-C_match_a.w_interp(a_grid))/w1s.size)
         import matplotlib.pyplot as plt
         a_s = 1./(1.+zs)
         plt.plot(a_s,w1s)
-        plt.plot(a_s,w3s)
+        #plt.plot(a_s,w3s)
         plt.show()
 
 

@@ -18,7 +18,7 @@ class q_shear(q_weight):
         high_mask = (sp.chis<=chi_max)*1. #so only integrate from max(chi,chi_min)
         
         ps_norm = sp.ps*high_mask*low_mask/np.trapz(sp.ps*low_mask*high_mask,sp.chis) #TODO check normalization
-	for i in range(0,sp.n_z):
+        for i in xrange(0,sp.n_z):
             if chi_max<sp.chis[i]:
                 break
             if sp.C.Omegak==0.0:
@@ -44,7 +44,7 @@ class q_num(q_weight):
     def __init__(self,sp,chi_max=np.inf,chi_min=0.):
         q = np.zeros((sp.n_z,sp.n_l))
         self.b = self.bias(sp)
-        for i in range(0,sp.n_z):
+        for i in xrange(0,sp.n_z):
             if sp.chis[i]>chi_max:
                 break
             elif sp.chis[i]<chi_min:

@@ -39,16 +39,16 @@ class DNumberDensityObservable(LWObservable):
         else:
             self.n_avgs1 = np.zeros(self.geo1.z_fine.size)
             self.n_avgs2 = np.zeros(self.geo2.z_fine.size)
-            for i in range(0,self.geo1.z_fine.size):
+            for i in xrange(0,self.geo1.z_fine.size):
                 self.n_avgs1[i] = self.mf.n_avg(min_mass,self.geo1.z_fine[i])
-            for i in range(0,self.geo2.z_fine.size):
+            for i in xrange(0,self.geo2.z_fine.size):
                 self.n_avgs2[i] = self.mf.n_avg(min_mass,self.geo2.z_fine[i])
 
         if self.variable_cut:
             self.M_cuts1 = self.nzc.get_M_cut(self.mf,self.geo1)
             self.M_cuts2 = self.nzc.get_M_cut(self.mf,self.geo2)
      
-        for itr in range(0,self.n_bins):
+        for itr in xrange(0,self.n_bins):
             self.basis = basis 
             self.bounds1 = self.geo1.fine_indices[itr]
             self.bounds2 = self.geo2.fine_indices[itr]
@@ -103,7 +103,7 @@ class DNumberDensityObservable(LWObservable):
     def get_dO_a_ddelta_bar(self):
         return self.DO_a
         
-    def get_F_alpha_beta(self):
+    def get_fisher(self):
         return np.dot(np.dot(self.vs.T,self.Nab_i),self.vs)
                 
         
@@ -137,8 +137,8 @@ if __name__=="__main__":
     l_alpha=np.array([1,2,3,4,5])
     n_zeros=3
     
-    from sph import sph_basis
-    geo=sph_basis(r_max,l_alpha,n_zeros,k,P)
+    from sph_klim import sph_basis_k
+    geo=sph_basis_k(r_max,l_alpha,n_zeros,k,P)
     #TODO write demo 
     #O=DO_n(n_obs_dict,1e15,cp,geo)
     

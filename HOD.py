@@ -57,7 +57,7 @@ class HOD():
         
         I_2=np.zeros_like(k)
         
-        for i in range(k.size):
+        for i in xrange(k.size):
             
             I_2[i]=trapz(mf*M/rho_bar*u[i],M)/norm
         
@@ -82,7 +82,7 @@ class HOD():
       
         I_1h=np.zeros_like(k)
         I_2h=np.zeros_like(k)
-        for i in range(k.size):
+        for i in xrange(k.size):
             
             I_1h[i]=trapz(mf*n*np.absolute(u[i,:]*u[i,:]),M)
             I_2h[i]=trapz(mf*n_avg*b*u[i,:],M)

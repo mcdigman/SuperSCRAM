@@ -15,23 +15,23 @@ class geo:
         self.zs = z_coarse #index of the starts of the tomography bins
         self.C = C #cosmopie
         self.rs = np.zeros(self.zs.size) #comoving distances associated with the zs 
-        for i in range(0,self.zs.size):
+        for i in xrange(0,self.zs.size):
             self.rs[i] = self.C.D_comov(self.zs[i])
         self.z_fine = z_fine
         self.r_fine = np.zeros(self.z_fine.size)
-        for i in range(0,self.r_fine.size):
+        for i in xrange(0,self.r_fine.size):
             self.r_fine[i] = self.C.D_comov(self.z_fine[i])
 
         tot_area = self.angular_area() 
         self.volumes = np.zeros(self.zs.size-1) #volume of each tomography bin
-        for i in range(0,self.volumes.size):
+        for i in xrange(0,self.volumes.size):
             self.volumes[i] += (self.rs[i+1]**3-self.rs[i]**3)/3.*tot_area
         self.v_total = np.sum(self.volumes) #total volume of geo
 
         #list r and  z bins as [rmin,rmax] pairs (min in bin, max in bin) for convenience
         self.rbins = np.zeros((self.rs.size-1,2)) 
         self.zbins = np.zeros((self.zs.size-1,2))
-        for i in range(0,self.rs.size-1):
+        for i in xrange(0,self.rs.size-1):
             self.rbins[i,:] = self.rs[i:i+2]
             self.zbins[i,:] = self.zs[i:i+2]
         #TODO go to 0 more elegantly maybe
@@ -39,7 +39,7 @@ class geo:
         self.zbins_fine = np.zeros((self.z_fine.size,2))
         self.rbins_fine[0,:] = np.array([0.,self.r_fine[0]])
         self.zbins_fine[0,:] = np.array([0.,self.z_fine[0]])
-        for i in range(0,self.r_fine.size-1):
+        for i in xrange(0,self.r_fine.size-1):
             self.rbins_fine[i+1,:] = self.r_fine[i:i+2]
             self.zbins_fine[i+1,:] = self.z_fine[i:i+2]
 
@@ -47,7 +47,7 @@ class geo:
         #TODO check handling bin edges correctly
         self.fine_indices = np.zeros((self.zs.size-1,2),dtype=np.int)    
         self.fine_indices[0,0] = 0
-        for i in range(1,self.zs.size-1):
+        for i in xrange(1,self.zs.size-1):
             self.fine_indices[i-1,1] = np.argmax(self.z_fine>=self.zs[i])
             self.fine_indices[i,0] = self.fine_indices[i-1,1]
         self.fine_indices[-1,1] = self.z_fine.size
@@ -86,8 +86,8 @@ class geo:
         ms = np.zeros((1+l_max)**2,dtype=int)    
         alms = np.zeros((1+l_max)**2)    
         itr = 0
-        for ll in range(0,l_max+1):
-            for mm in range(-ll,ll+1):
+        for ll in xrange(0,l_max+1):
+            for mm in xrange(-ll,ll+1):
                 ls[itr] = ll
                 ms[itr] = mm
                 alms[itr] = self.a_lm(ll,mm)
@@ -108,7 +108,7 @@ class rect_geo(geo):
 
             
             #volumes = np.zeros(zs.size-1)
-            #for i in range(0,volumes.size):
+            #for i in xrange(0,volumes.size):
             #    volumes[i] = (phi2-phi1)*(np.cos(theta1)- np.cos(theta2))*(rs[i+1]**3-rs[i]**3)/3.
 
             #v_total=(phi2-phi1)*(np.cos(theta1)- np.cos(theta2))*(rs[-1]**3-rs[0]**3)/3.
@@ -138,7 +138,7 @@ class pixel_geo(geo):
     #TODO consider vectorizing sum
     def surface_integral(self,function):
         total = 0.
-        for i in range(0,self.pixels.shape[0]):
+        for i in xrange(0,self.pixels.shape[0]):
             total+=function(self.pixels[i,0],self.pixels[i,1])*self.pixels[i,2] #f(theta,phi)*A
         return total
 

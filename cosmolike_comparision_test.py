@@ -50,8 +50,8 @@ if __name__ == '__main__':
         zs = np.array([int(zbin_cosmo_1[itr]),int(zbin_cosmo_2[itr]),int(zbin_cosmo_3[itr]),int(zbin_cosmo_4[itr])])
         loc_mat1 = np.zeros((nbins_cosmo,nbins_cosmo))
         loc_mat2 = np.zeros((nbins_cosmo,nbins_cosmo))
-        for l1 in range(0,nbins_cosmo):
-            for l2 in range(0,nbins_cosmo):
+        for l1 in xrange(0,nbins_cosmo):
+            for l2 in xrange(0,nbins_cosmo):
                 loc_mat1[l1,l2] = cov_g_cosmo[itr]
                 loc_mat2[l1,l2] = cov_ssc_cosmo[itr]
                 itr+=1
@@ -69,11 +69,11 @@ if __name__ == '__main__':
     cov_g_mat_cosmo_flat = np.zeros((n_side*nbins_cosmo,n_side*nbins_cosmo))
     cov_ssc_mat_cosmo_flat = np.zeros((n_side*nbins_cosmo,n_side*nbins_cosmo))
     itr_out = 0
-    for i1 in range(tomo_bins_cosmo):
-        for i2 in range(i1,tomo_bins_cosmo):
+    for i1 in xrange(tomo_bins_cosmo):
+        for i2 in xrange(i1,tomo_bins_cosmo):
             itr_in = 0
-            for i3 in range(tomo_bins_cosmo):
-                for i4 in range(i3,tomo_bins_cosmo):
+            for i3 in xrange(tomo_bins_cosmo):
+                for i4 in xrange(i3,tomo_bins_cosmo):
                     assert(np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i3,i4,i1,i2].T))
                     assert(np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i1,i2,i4,i3].T))
                     assert(np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i2,i1,i3,i4].T))
@@ -93,15 +93,15 @@ if __name__ == '__main__':
     assert(np.all(cov_ssc_mat_cosmo_flat==cov_ssc_mat_cosmo_flat.T))
                     #if i1<=i2 and i3<=i4 
 #                    cov_g_mat_cosmo[i1,i2,i3,i4] = np.zeros((nbins_cosmo,nbins_cosmo))
-#                    for l1 in range(nbins_cosmo):
-#                        for l2 in range(nbins_cosmo):
+#                    for l1 in xrange(nbins_cosmo):
+#                        for l2 in xrange(nbins_cosmo):
                             
 
     
     Cll_shear_shear_cosmo = np.zeros((tomo_bins_cosmo,tomo_bins_cosmo),dtype=object)
     itr = 0
-    for i in range(tomo_bins_cosmo):
-        for j in range(i,tomo_bins_cosmo):
+    for i in xrange(tomo_bins_cosmo):
+        for j in xrange(i,tomo_bins_cosmo):
             #print i,j
             Cll_shear_shear_cosmo[i,j] =cosmo_shear[:,itr+1]
             if not i==j:
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     l_mids = np.zeros(nbins_cosmo)
     dls = np.zeros(nbins_cosmo)
 
-    for i in range(l_mids.size):
+    for i in xrange(l_mids.size):
         l_starts[i] = np.exp(np.log(lmin_cosmo)+i*log_dl)
         l_mids[i] = np.exp(np.log(lmin_cosmo)+(i+0.5)*log_dl)
         dls[i] = (np.exp(np.log(lmin_cosmo)+(i+1.)*log_dl)- np.exp(np.log(lmin_cosmo)+i*log_dl))
@@ -125,10 +125,10 @@ if __name__ == '__main__':
     z_bin_starts = np.zeros(tomo_bins_cosmo)
     chi_bins = np.zeros((tomo_bins_cosmo,2))
     z_fine[0] +=0.00001
-    for i in range(0,tomo_bins_cosmo):
+    for i in xrange(0,tomo_bins_cosmo):
        z_bin_starts[i] = np.min(z_fine[cum_n_z>=1./tomo_bins_cosmo*i])
 
-    for i in range(0,tomo_bins_cosmo):
+    for i in xrange(0,tomo_bins_cosmo):
         if i==tomo_bins_cosmo-1:
             chi_next = C.D_comov(np.max(z_fine))
         else:
@@ -156,12 +156,12 @@ if __name__ == '__main__':
     
     sp = shear_power(k_in,C,z_fine,l_mids,fsky_cosmo,pmodel='halofit',mode='power',P_in=P_in,ps=n_z,params=len_params)
     qs = np.zeros(tomo_bins_cosmo,dtype=object)
-    for i in range(qs.size):
+    for i in xrange(qs.size):
         qs[i] = q_shear(sp,chi_bins[i,0],chi_bins[i,1])
     Cll_shear_shear = np.zeros((tomo_bins_cosmo,tomo_bins_cosmo),dtype=object)
     ratio_means = np.zeros((tomo_bins_cosmo,tomo_bins_cosmo))
-    for i in range(qs.size):
-        for j in range(qs.size):
+    for i in xrange(qs.size):
+        for j in xrange(qs.size):
             Cll_shear_shear[i,j] = Cll_q_q(sp,qs[i],qs[j]).Cll()
             ratio_means[i,j] = np.average(Cll_shear_shear[i,j]/Cll_shear_shear_cosmo[i,j])
             assert(np.allclose(Cll_shear_shear[i,j],Cll_shear_shear_cosmo[i,j],rtol=RTOL,atol=ATOL))
@@ -169,18 +169,18 @@ if __name__ == '__main__':
     print np.average(ratio_means)
 
 
-    #for i in range(dls.size):
+    #for i in xrange(dls.size):
         #print "l,dl,frac",l_mids[i],dls[i],1./(fsky_cosmo*(2.*l_mids[i]+1.)*dls[i])
 
     cov_g_mat_flat = np.zeros_like(cov_g_mat_cosmo_flat)
     cov_ssc_mat_flat = np.zeros_like(cov_g_mat_cosmo_flat)
 
     itr_out = 0
-    for i1 in range(tomo_bins_cosmo):
-        for i2 in range(i1,tomo_bins_cosmo):
+    for i1 in xrange(tomo_bins_cosmo):
+        for i2 in xrange(i1,tomo_bins_cosmo):
             itr_in = 0
-            for i3 in range(tomo_bins_cosmo):
-                for i4 in range(i3,tomo_bins_cosmo):
+            for i3 in xrange(tomo_bins_cosmo):
+                for i4 in xrange(i3,tomo_bins_cosmo):
                     ns = np.array([0.,0.,0.,0.])
                     if i1==i3:
                         ns[0] = n_s#/trapz(sp.ps*(sp.chis>=chi_bins[z1,0])*(sp.chis<=chi_bins[z1,1])*1.,sp.chis)
@@ -203,11 +203,11 @@ if __name__ == '__main__':
    
 #    cov_g_mat = np.zeros((tomo_bins_cosmo,tomo_bins_cosmo,tomo_bins_cosmo,tomo_bins_cosmo),dtype=object)
 #    cov_g_rat_means = np.zeros_like(cov_g_mat)
-#    for z1 in range(0,tomo_bins_cosmo): 
+#    for z1 in xrange(0,tomo_bins_cosmo): 
 #        print "z1 adj trap",z1,n_s/trapz(sp.ps*(sp.chis>=chi_bins[z1,0])*(sp.chis<=chi_bins[z1,1])*1.,sp.chis),trapz(sp.ps*(sp.chis>=chi_bins[z1,0])*(sp.chis<=chi_bins[z1,1])*1.,sp.chis)
-#        for z2 in range(0,tomo_bins_cosmo): 
-#            for z3 in range(0,tomo_bins_cosmo): 
-#                for z4 in range(0,tomo_bins_cosmo): 
+#        for z2 in xrange(0,tomo_bins_cosmo): 
+#            for z3 in xrange(0,tomo_bins_cosmo): 
+#                for z4 in xrange(0,tomo_bins_cosmo): 
 #                    ns = np.array([0.,0.,0.,0.])
 #                    if z1==z3:
 #                        ns[0] = n_s#/trapz(sp.ps*(sp.chis>=chi_bins[z1,0])*(sp.chis<=chi_bins[z1,1])*1.,sp.chis)

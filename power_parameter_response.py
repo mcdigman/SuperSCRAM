@@ -52,7 +52,7 @@ def dp_dparameter(k_fid,zs,C,parameter,pmodel='linear',epsilon=0.0001,log_param_
         pzb = p_lin_b+np.outer(one_loop_b,C.G_norm(zs)**4)
         #pza = np.zeros_like(p_lin_a)
         #pzb = np.zeros_like(p_lin_b)
-        #for itr in range(0,zs.size):
+        #for itr in xrange(0,zs.size):
         #    pza[:,itr] = p_lin_a[:,itr] + fpt.one_loop(p_lin_a[:,itr],C_window=fpt_params['C_window'])
         #    pzb[:,itr] = p_lin_b[:,itr] + fpt.one_loop(p_lin_b[:,itr],C_window=fpt_params['C_window'])            
     else:
@@ -91,7 +91,7 @@ def get_perturbed_cosmopies(C_fid,parameters,epsilons,log_param_derivs=np.array(
     #de_model = cosmo_fid.get('de_model')
     #wmatch = C_fid.wmatch
 
-    for i in range(0,parameters.size):
+    for i in xrange(0,parameters.size):
 
         #skip evaulating sigma8 unless now unless it is necessary (it is slow), will get it later 
         if (not parameters[i]=='sigma8') and ('sigma8' not in cp.P_SPACES[cosmo_fid['p_space']]):

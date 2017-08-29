@@ -19,7 +19,7 @@ import matter_power_spectrum as mps
 #TODO check integral boundaries ok
 class shear_power:
     def __init__(self,k_in,C,zs,ls,omega_s,pmodel='halofit',P_in=None,ps=np.array([]),params=defaults.lensing_params,param_vary=None,mode=None):
-	self.k_in = k_in
+        self.k_in = k_in
         self.C = C
         self.zs = zs
         self.ls = ls
@@ -44,7 +44,7 @@ class shear_power:
         self.omegas = np.zeros(self.n_z)
 
         self.p_dd_use=np.zeros((self.n_l,self.n_z))
-	self.ps = np.zeros(self.n_z)
+        self.ps = np.zeros(self.n_z)
 
         self.params = params
                     
@@ -90,15 +90,15 @@ class shear_power:
         #TODO eliminate self.omegas, it is constant.
         self.omegas = self.C.Omegam
 
-	self.k_use = np.outer((self.ls+0.5),1./self.chi_As)
+        self.k_use = np.outer((self.ls+0.5),1./self.chi_As)
         
         #loop appears necessary due to uneven grid spacing in k_use
-        for i in range(0,self.n_z):
+        for i in xrange(0,self.n_z):
             self.p_dd_use[:,i] = self.pow_interp(self.k_use[:,i],zs[i])[:,0]
 
         self.dchis=self.C.D_comov_dz(zs)
 
-	self.sc_as = 1/(1+self.zs)
+        self.sc_as = 1/(1+self.zs)
 
         self.p_gg_use = self.p_dd_use #temporary for testing purposes
         self.p_gd_use = self.p_dd_use #temporary for testing purposes
@@ -112,15 +112,15 @@ class shear_power:
         return self.p_gd_use/np.sqrt(self.p_dd_use*self.p_gg_use)
     
     def get_n_shape(self,class_1,class_2):
-        try:
+        #try:
             return self.n_map[class_1][class_2]
-        except KeyError:
-            return 0.
+        #except KeyError:
+        #    return 0 
 
     
 #    def cov_g_diag(self,c_ac,c_ad,c_bd,c_bc,n_ac=0,n_ad=0,n_bd=0,n_bc=0): #only return diagonal because all else are zero by kronecker delta
 #        cov_diag = np.zeros(self.n_l) #assume same size for now
-#        for i in range(0,self.n_l):
+#        for i in xrange(0,self.n_l):
 #            cov_diag[i] = 4.*np.pi/(self.omega_s*(2.*self.ls[i]+1.)*self.delta_l)*((c_ac[i]+n_ac)*(c_bd[i]+n_bd)+(c_ad[i]+n_ad)*(c_bc[i]+n_bc))
 #        return cov_diag
     #method to match cosmolike ssc term
@@ -140,7 +140,7 @@ class shear_power:
             #log_dl = (np.log(lmax)-np.log(lmin))/ls.size
             #delta_ls = np.zeros(self.ls.size)
             #get delta_las form midpoints of delta_l cells
-            #for i in range(l_mids.size):
+            #for i in xrange(l_mids.size):
             #    delta_ls[i] = (np.exp(np.log(lmin)+(i+1.)*log_dl)- np.exp(np.log(lmin)+i*log_dl))
             #numerically differentiate without worrying about ghost cells
             delta_ls = InterpolatedUnivariateSpline(np.arange(0,ls.size),ls).derivative(1)(np.arange(0,ls.size))
@@ -156,7 +156,7 @@ class shear_power:
         c_bd = Cll_q_q(self,qs[1],qs[3],r_bd).Cll()#*np.sqrt(4.*np.pi) 
         c_ad = Cll_q_q(self,qs[0],qs[3],r_ad).Cll()#*np.sqrt(4.*np.pi) 
         c_bc = Cll_q_q(self,qs[1],qs[2],r_bc).Cll()#*np.sqrt(4.*np.pi) 
-        for i in range(0,self.n_l): 
+        for i in xrange(0,self.n_l): 
             cov_diag[i] = 1./(self.omega_s*(2.*self.ls[i]+1.)*delta_ls[i])*((c_ac[i]+ns[0])*(c_bd[i]+ns[2])+(c_ad[i]+ns[1])*(c_bc[i]+ns[3]))
             #(C13*C24+ C13*N24+N13*C24 + C14*C23+C14*N23+N14*C23+N13*N24+N14*N23)
             #cov_diag[i] = 1./(self.omega_s*(2.*ls[i]+1.)*delta_ls[i])*(c_ac[i]*c_bd[i]+c_ac[i]*ns[2]+ns[0]*c_bd[i]+c_ad[i]*c_bc[i]+ns[3]*c_ad[i]+ns[1]*c_bc[i]+ns[0]*ns[2]+ns[1]*ns[3])
@@ -164,7 +164,7 @@ class shear_power:
 
     def bin_cov_by_l(self,cov_diag,l_starts): 
         binned_c = np.zeros(l_starts.size) #add fisher matrices then take 1/F_bin
-        for i in range(0,l_starts.size):
+        for i in xrange(0,l_starts.size):
             if i == l_starts.size-1:
                 l_end = l_starts.size
             else:
@@ -181,7 +181,7 @@ class shear_power:
         n_t = thetas.size
         tans = np.zeros(n_t)
         kg_pow = Cll_k_g(self).Cll()
-        for i in range(0,n_t):
+        for i in xrange(0,n_t):
             if with_limber:
                 tans[i] = np.trapz((2.*self.ls+1.)/(4.*np.pi*self.ls*(self.ls+1.))*kg_pow*sp.lpmv(2,ls,np.cos(thetas[i])),ls)
             else:
@@ -193,7 +193,7 @@ class shear_power:
         covs = np.zeros((z_bins.size-1,z_bins.size-1,self.n_l,self.n_l))
         q1s = np.empty(z_bins.size-1,dtype=object)
         q2s = np.empty(z_bins.size-1,dtype=object)
-        for i in range(0,z_bins.size-1):
+        for i in xrange(0,z_bins.size-1):
             chi_min = self.C.D_comov(z_bins[i])
             chi_max = self.C.D_comov(z_bins[i+1])
             if cname1 == 'shear':
@@ -212,8 +212,8 @@ class shear_power:
                 warn('invalid value \''+cname2+'\' for cname2 using shear instead')
                 q2s[i] = q_shear(self,chi_min,chi_max)
         n_ss = self.sigma2_e/(2.*self.n_gal)
-        for i in range(0,z_bins.size-1):
-            for j in range(0,z_bins.size-1):
+        for i in xrange(0,z_bins.size-1):
+            for j in xrange(0,z_bins.size-1):
                 covs[i,j] = np.diagflat(self.cov_g_diag([q1s[i],q2s[i],q1s[j],q2s[j]],[n_ss,n_ss,n_ss,n_ss]))
         return covs
     
@@ -221,7 +221,7 @@ class shear_power:
     #    if not re.match('^dc',self.pmodel):
     #        warn('pmodel: '+self.pmodel+' not recognized for derivative, dc_ddelta_alpha may give unexpected results')
     #    dcs = np.zeros(self.n_l)
-    #    for i in range(0,z_bins.size-1):
+    #    for i in xrange(0,z_bins.size-1):
     #        chi_min = self.C.D_comov(z_bins[i])
     #        chi_max = self.C.D_comov(z_bins[i+1])
     #        dcs[i] = basis.D_delta_bar_D_delta_alpha(chi_min,chi_max,theta,phi)
@@ -242,10 +242,10 @@ class Cll_q_q:
         self.integrand = np.zeros((sp.n_z,sp.n_l))
         self.chis = sp.chis
         if corr_param.size !=0: 
-           for i in range(0,sp.n_z):
+           for i in xrange(0,sp.n_z):
                 self.integrand[i] = q1s.qs[i]*q2s.qs[i]/sp.chi_As[i]**2*sp.p_dd_use[:,i]*corr_param[:,i]
         else:
-            for i in range(0,sp.n_z):
+            for i in xrange(0,sp.n_z):
                 self.integrand[i] = q1s.qs[i]*q2s.qs[i]/sp.chi_As[i]**2*sp.p_dd_use[:,i]
     def Cll(self,chi_min=0,chi_max=np.inf):
         high_mask = (self.chis<=chi_max)*1.
@@ -291,10 +291,10 @@ class Cll_sh_g(Cll_q_q):
 #        integrand1 = np.zeros((sp.n_z,sp.n_l))
 #        #integrand2 = np.zeros((sp.n_z,sp.n_l))
 #        integrand_total = np.zeros((sp.n_z,sp.n_l))
-#        for i in range(0,sp.n_z):
+#        for i in xrange(0,sp.n_z):
 #            window_int1 = np.zeros((sp.n_z,sp.n_l))
 #        #    window_int2 = np.zeros((sp.n_z,sp.n_l))
-#            for j in range(0,sp.n_z):
+#            for j in xrange(0,sp.n_z):
 #                window_int1[j] = q1s.qs[j]/np.sqrt(sp.chis[j])*sp.jv(sp.ls+0.5,(sp.ls+0.5)/sp.chis[i]*sp.chis[j])
 #         #       window_int2[j] = q2s.qs[j]/np.sqrt(sp.chis[j])*sp.jv(sp.ls+0.5,(sp.ls+0.5)/sp.chis[i]*sp.chis[j])
 #            integrand1[i] = np.trapz(window_int1,sp.chis,axis=0)
@@ -309,12 +309,12 @@ class Cll_sh_g(Cll_q_q):
 #        integrand1 = np.zeros((sp.n_z,sp.n_l))
 #        integrand2 = np.zeros((sp.n_z,sp.n_l))
 #        if corr_param.size !=0: 
-#            for i in range(0,sp.n_z):
+#            for i in xrange(0,sp.n_z):
 #                integrand1[i] = q1s.qs[i]*q2s.qs[i]/sp.chis[i]**2*sp.p_dd_use[:,i]*corr_param[:,i]
 #        else:
-#            for i in range(0,sp.n_z):
+#            for i in xrange(0,sp.n_z):
 #                integrand1[i] = q1s.qs[i]*q2s.qs[i]/sp.chis[i]**2*sp.p_dd_use[:,i]
-#        for i in range(0,sp.n_z-1): #check edge case
+#        for i in xrange(0,sp.n_z-1): #check edge case
 #            term1 = sp.chis[i]**2/2.*(q1s.rs_d2[i]/q1s.rs[i]+q2s.rs_d2[i]/q2s.rs[i])
 #            term2 = sp.chis[i]**3/6.*(q1s.rs_d3[i]/q1s.rs[i]+q2s.rs_d3[i]/q2s.rs[i])
 #            integrand2[i] = -1./(sp.ls+0.5)**2*(term1+term2)*integrand1[i]
@@ -324,26 +324,26 @@ class Cll_sh_g(Cll_q_q):
 
 if __name__=='__main__':
     
-	C=cp.CosmoPie(cosmology=defaults.cosmology,p_space='jdem')
-#	d = np.loadtxt('Pk_Planck15.dat')
-	#d = np.loadtxt('camb_m_pow_l.dat')
+        C=cp.CosmoPie(cosmology=defaults.cosmology,p_space='jdem')
+#       d = np.loadtxt('Pk_Planck15.dat')
+        #d = np.loadtxt('camb_m_pow_l.dat')
         #k_in = np.logspace(-5,2,200,base=10)
         #k_in = d[:,0]
     #    k_in = np.loadtxt('test_inputs/proj_1/k_h.txt')
 #        k_in = np.logspace(-4,5,5000,base=10)
-#	zs = np.logspace(-2,np.log10(3),50,base=10)
-	zs = np.arange(0.1,1.0,0.1)
+#       zs = np.logspace(-2,np.log10(3),50,base=10)
+        zs = np.arange(0.1,1.0,0.1)
        # zs = np.loadtxt('test_inputs/proj_1/z.txt')
        # zs[0] = 10**-3
         #zs = np.arange(0.005,2,0.0005)
-        #ls = np.unique(np.logspace(0,4,3000,dtype=int))*1.0	
+        #ls = np.unique(np.logspace(0,4,3000,dtype=int))*1.0
         ls = np.arange(1,5000)
         epsilon = 0.0001
         #ls = np.loadtxt('test_inputs/proj_1/ell.txt')
 
         #ls = np.logspace(np.log10(2),np.log10(10000),3000,base=10)
-#	ls = revd[:,0]	
-	#t1 = time()
+#       ls = revd[:,0]
+        #t1 = time()
         #cosmo_a = defaults.cosmology.copy()
         #k_a = d[:,0]
         #P_a = d[:,1]
@@ -360,7 +360,7 @@ if __name__=='__main__':
         do_power_response3 = False
 
         if do_power_response1:
-	    ax = plt.subplot(111)
+            ax = plt.subplot(111)
             zbar = np.array([0.1,1.0])
             dcalt1,p1a = dp_ddelta(k_a,P_a,zbar,C,pmodel='linear')
             dcalt2,p2a = dp_ddelta(k_a,P_a,zbar,C,pmodel='halofit')

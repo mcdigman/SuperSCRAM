@@ -11,8 +11,8 @@ class ThetaPhiList:
             phi_need=np.linspace(0.,2.*np.pi,n_side)
             self.thetas = np.zeros(n_side**2)
             self.phis = np.zeros(n_side**2)
-            for i in range(0,n_side):
-                for j in range(0,n_side):
+            for i in xrange(0,n_side):
+                for j in xrange(0,n_side):
                     self.thetas[n_side*i+j] = theta_need[j]
                     self.phis[n_side*i+j] = phi_need[i]
         else:
@@ -28,7 +28,7 @@ def test_Y_R_agreement1(theta_phis):
     l_max = 30
     Y_r_1s,ls,ms = ppg.get_Y_r_table(l_max,thetas,phis)
     Y_r_2s = np.zeros_like(Y_r_1s)
-    for itr in range(0,ls.size):
+    for itr in xrange(0,ls.size):
         Y_r_2s[itr] = sph.Y_r(ls[itr],ms[itr],thetas,phis)
     assert(np.allclose(Y_r_1s,Y_r_2s))
 

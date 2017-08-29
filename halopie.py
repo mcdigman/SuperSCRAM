@@ -27,7 +27,7 @@ def N_cluster(M,zbins,Omega_s,dV,dndM):
     
     N_i=np.zeros(zbins.size-1)
     z_i=np.zeros_like(N_i)
-    for i in range(1,zbins.size):
+    for i in xrange(1,zbins.size):
         a=zbins[i-1]
         b=zbins[i]
         z_i[i-1]=(a+b)/2.
@@ -53,7 +53,7 @@ def N_clus_rich(lambda_bin,M,zbins,Omega_s,dV,dndM,params):
     def I(zp):
     
         p=np.zeros_like(M)
-        for i in range(M.size):
+        for i in xrange(M.size):
             def I_richness(richness):
                 return pdf_Mz(params,richness,M[i],zp)
             p[i]=quad(I_richness,a,b)[0]
@@ -65,7 +65,7 @@ def N_clus_rich(lambda_bin,M,zbins,Omega_s,dV,dndM,params):
     
     N_i=np.zeros(zbins.size-1)
     z_i=np.zeros_like(N_i)
-    for i in range(1,zbins.size):
+    for i in xrange(1,zbins.size):
         a=zbins[i-1]
         b=zbins[i]
         z_i[i-1]=(a+b)/2.

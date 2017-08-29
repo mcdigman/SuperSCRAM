@@ -14,7 +14,7 @@ class CovMat:
         self.n_ssc = ssc_covar_set.shape[0]
         self.f_ssc_set = np.zeros(self.n_ssc,dtype=object)
         self.f_tot_set = np.zeros(self.n_ssc,dtype=object)
-        for i in range(0,self.n_ssc):
+        for i in xrange(0,self.n_ssc):
             self.f_ssc_set[i] = fm.fisher_matrix(ssc_covar_set[i],input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
             self.f_tot_set[i] = fm.fisher_matrix(gaussian_covar+nongaussian_covar+ssc_covar_set[i],input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
         self.param_prior = param_prior
@@ -26,12 +26,12 @@ class CovMat:
         return self.f_nongaussian.get_covar()
     def get_ssc_covar(self):
         ssc_cov_set = np.zeros((self.n_ssc,self.dimension,self.dimension))
-        for i in range(0,self.n_ssc):
+        for i in xrange(0,self.n_ssc):
             ssc_cov_set[i] = self.f_ssc_set[i].get_covar()
         return ssc_cov_set
     def get_total_covar(self):
         tot_cov_set = np.zeros((self.n_ssc,self.dimension,self.dimension))
-        for i in range(0,self.n_ssc):
+        for i in xrange(0,self.n_ssc):
             tot_cov_set[i] = self.f_tot_set[i].get_covar()
         return tot_cov_set
         #return self.get_gaussian_covar()+self.get_nongaussian_covar()+self.get_ssc_covar()
@@ -45,26 +45,26 @@ class CovMat:
         else:
             f_tot_param_set = np.zeros(self.n_ssc,dtype=object)
             if gaussian_only:
-                for i in range(0,self.n_ssc):
-                    f_tot_param_set[i] = self.f_gaussian.contract_fisher(basis,basis,identical_inputs=True,return_fisher=True)
+                for i in xrange(0,self.n_ssc):
+                    f_tot_param_set[i] = self.f_gaussian.project_fisher(basis)
                 self.f_tot_save_g = f_tot_param_set
                 print "g",f_tot_param_set[0].get_covar()
             else:
-                #f_ng_param =self.f_nongaussian.contract_fisher(basis,basis,identical_inputs=True,return_fisher=True)
-                #f_ssc_param = self.f_ssc.contract_fisher(basis,basis,identical_inputs=True,return_fisher=True)
-                for i in range(0,self.n_ssc):
-                    f_tot_param_set[i] = self.f_tot_set[i].contract_fisher(basis,basis,identical_inputs=True,return_fisher=True)
+                #f_ng_param =self.f_nongaussian.project_fisher(basis)
+                #f_ssc_param = self.f_ssc.project_fisher(basis)
+                for i in xrange(0,self.n_ssc):
+                    f_tot_param_set[i] = self.f_tot_set[i].project_fisher(basis)
                 self.f_tot_save_full = f_tot_param_set
                 #print "ssc",f_ssc_param.get_covar()
                 #print "g",f_g_param.get_covar()
             if self.param_prior is not None:
                 #TODO watch number of inverses
-                for i in range(0,self.n_ssc):
+                for i in xrange(0,self.n_ssc):
                     f_tot_param_set[i].add_fisher(self.param_prior)
             #TODO save n_params a better way
             n_params = self.param_prior.shape[0]
             cov_set = np.zeros((self.n_ssc,n_params,n_params))
-            for i in range(0,self.n_ssc):
+            for i in xrange(0,self.n_ssc):
                 cov_set[i] = f_tot_param_set[i].get_covar()
             return cov_set#f_ng_param.get_covar()+f_ssc_param.get_covar() 
 
@@ -76,7 +76,7 @@ class CovMat:
         mat_retrieved_set = np.zeros((self.n_ssc,self.dimension,self.dimension))
         eig_set = np.zeros(self.n_ssc,dtype=object)
         ssc_cov_set = self.get_ssc_covar()
-        for i in range(0,mat_retrieved_set.shape[0]):
+        for i in xrange(0,mat_retrieved_set.shape[0]):
             #TODO do not really need to save mat_retrieved_set
             mat_retrieved_set[i] = (np.identity(self.dimension)+np.dot(np.dot(chol_cov,ssc_cov_set[i]),chol_cov.T))
             eig_set[i] = np.linalg.eigh(mat_retrieved_set[i])
@@ -84,10 +84,10 @@ class CovMat:
 
     #TODO refactor
     def get_SS_eig_param(self,basis,cross=False):
-        f_g_param =  self.f_gaussian.contract_fisher(basis,basis,identical_inputs=True,return_fisher=True)
+        f_g_param =  self.f_gaussian.project_fisher(basis)
         f_tot_param_set = np.zeros(self.n_ssc,dtype=object)
-        for i in range(0,self.n_ssc):
-            f_tot_param_set[i] = self.f_tot_set[i].contract_fisher(basis,basis,identical_inputs=True,return_fisher=True)
+        for i in xrange(0,self.n_ssc):
+            f_tot_param_set[i] = self.f_tot_set[i].project_fisher(basis)
             if self.param_prior is not None:
                 f_tot_param_set[i].add_fisher(self.param_prior)
         if self.param_prior is not None:
@@ -97,16 +97,16 @@ class CovMat:
             n_param = self.param_prior.shape[0]
             mat_retrieved_set = np.zeros((self.n_ssc,n_param,n_param))
             eig_set = np.zeros(self.n_ssc,dtype=object)
-            for i in range(0,self.n_ssc):
+            for i in xrange(0,self.n_ssc):
                 mat_retrieved_set[i] = (np.identity(chol_cov.shape[0])+np.dot(np.dot(chol_cov,f_tot_param_set[i].get_covar()),chol_cov.T))
                 eig_set[i] = np.linalg.eigh(mat_retrieved_set[i])
         else:
             n_param = self.param_prior.shape[0]
             eig_set = np.zeros((self.n_ssc,self.n_ssc),dtype=object)
             mat_retrieved_set = np.zeros((self.n_ssc,self.n_ssc,n_param,n_param))
-            for i in range(0,self.n_ssc):
+            for i in xrange(0,self.n_ssc):
                 chol_cov = get_inv_cholesky(f_tot_param_set[i].get_covar())
-                for j in range(0,self.n_ssc):
+                for j in xrange(0,self.n_ssc):
                     mat_retrieved_set[i,j] = (np.identity(chol_cov.shape[0])+np.dot(np.dot(chol_cov,f_tot_param_set[j].get_covar()),chol_cov.T))
                     eig_set[i,j] = np.linalg.eigh(mat_retrieved_set[i,j])
 
@@ -126,8 +126,8 @@ class SWCovMat(CovMat):
                 print "sw_cov_mat: retrieving covariance"
                 class_a = O_I_1.q1_pow.__class__
                 class_b = O_I_1.q2_pow.__class__
-                class_c = O_I_1.q1_pow.__class__
-                class_d = O_I_1.q2_pow.__class__
+                class_c = O_I_2.q1_pow.__class__
+                class_d = O_I_2.q2_pow.__class__
                 
                 #under current assumptions only need sh_pow1
                 sh_pow1 = O_I_1.len_pow.C_pow

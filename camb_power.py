@@ -163,7 +163,7 @@ if __name__=='__main__':
         As = np.zeros(nA)
         s8s = np.zeros(nA)
         epsilon = 0.04
-        for itr in range(0,nA):
+        for itr in xrange(0,nA):
             cosmo_strip = strip_cosmology(cosmo_start,p_space='jdem')
             cosmo_fid = add_derived_parameters(cosmo_strip)
             As[itr] = cosmo_fid['As'] 
@@ -240,7 +240,7 @@ if __name__=='__main__':
         transfer_mods = np.zeros((n_w,k_0.size))
 
         print "begin loop"
-        for itr in range(0,ws.size):
+        for itr in xrange(0,ws.size):
             cosmo_start['w'] = ws[itr]
             Cs[itr]=cp.CosmoPie(cosmo_start,needs_power=False)
             Gs[itr] = Cs[itr].G(0.)

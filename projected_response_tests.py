@@ -33,7 +33,7 @@ if __name__=='__main__':
     import matplotlib.pyplot as plt
     ax = plt.subplot(111)
     plt.grid()
-    for i in range(0,geo1.rbins.shape[0]):
+    for i in xrange(0,geo1.rbins.shape[0]):
         rbin = geo1.rbins[i]
         q1_dC = sp.q_shear(sp1,rbin[0],rbin[1])
         dc_ddelta = sp.Cll_q_q(sp1,q1_dC,q1_dC).Cll() 

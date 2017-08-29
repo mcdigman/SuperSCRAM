@@ -13,8 +13,8 @@ import pytest
 
 def check_mutually_orthonormal(vectors):
     fails = 0
-    for itr1 in range(0,vectors.shape[0]):
-        for itr2  in range(0,vectors.shape[0]):
+    for itr1 in xrange(0,vectors.shape[0]):
+        for itr2  in xrange(0,vectors.shape[0]):
             prod =np.sum(vectors[itr1]*vectors[itr2],axis=1)
             if itr1==itr2:
                 if not np.allclose(prod,np.zeros(vectors[itr1].shape[0])+1.):
@@ -148,7 +148,7 @@ def get_param_set(indices):
     return params
 
 index_sets = [[2,0],[1,0],[1,1],[1,2],[1,3],[1,4]]
-for itr in range(0,6):
+for itr in xrange(0,6):
     index_sets.append(np.array([0,itr]))
     index_sets.append(np.array([0,itr+6]))
 
@@ -243,7 +243,7 @@ def test_rotational_suite(geo_input):
     x2_1 = np.zeros((nt,3))
     y2_1 = np.zeros((nt,3))
     z2_1 = np.zeros((nt,3))
-    for itr in range(0,nt):
+    for itr in xrange(0,nt):
         rot12[itr] = np.array([[np.cos(omegas[itr]),np.sin(omegas[itr]),0],[-np.sin(omegas[itr]),np.cos(omegas[itr]),0],[0,0,1]]) 
         x2_1[itr] = np.dot(rot12[itr].T,x1_1[itr])
         y2_1[itr] = np.dot(rot12[itr].T,y1_1[itr])
@@ -293,7 +293,7 @@ def test_rotational_suite(geo_input):
     x3_2 = np.zeros((nt,3))
     y3_2 = np.zeros((nt,3))
     z3_2 = np.zeros((nt,3))
-    for itr in range(0,nt):
+    for itr in xrange(0,nt):
         rot23[itr] = np.array([[1.,0.,0.],[0.,np.cos(thetas_a[itr]),np.sin(thetas_a[itr])],[0,-np.sin(thetas_a[itr]),np.cos(thetas_a[itr])]]) 
         x3_2[itr] = np.dot(rot23[itr].T,x2_2[itr])
         y3_2[itr] = np.dot(rot23[itr].T,y2_2[itr])
@@ -326,7 +326,7 @@ def test_rotational_suite(geo_input):
     x4_3 = np.zeros((nt,3))
     y4_3 = np.zeros((nt,3))
     z4_3 = np.zeros((nt,3))
-    for itr in range(0,nt):
+    for itr in xrange(0,nt):
         rot34[itr] = np.array([[np.cos(gammas[itr]),np.sin(gammas[itr]),0],[-np.sin(gammas[itr]),np.cos(gammas[itr]),0],[0,0,1]]) 
         x4_3[itr] = np.dot(rot34[itr].T,x3_3[itr])
         y4_3[itr] = np.dot(rot34[itr].T,y3_3[itr])
@@ -376,8 +376,8 @@ if __name__=='__main__':
    
     my_table = poly_geo.alm_table.copy()
     #get rect_geo to cache the values in the table
-    for ll in range(0,l_max+1):
-        for mm in range(0,ll+1):
+    for ll in xrange(0,l_max+1):
+        for mm in xrange(0,ll+1):
             gts.r_geo.a_lm(ll,mm)
             if mm>0:
                 gts.r_geo.a_lm(ll,-mm)

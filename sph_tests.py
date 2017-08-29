@@ -28,7 +28,7 @@ class TestAlmMathematicaAgree1(unittest.TestCase):
         geo1 = rect_geo(zs,Theta,Phi,C,z_fine)
     
         alm_py = np.zeros_like(alm_math)
-        for i in range(0,lm_table.shape[0]):
+        for i in xrange(0,lm_table.shape[0]):
             alm_py[i] =geo1.a_lm(lm_table[i,0],lm_table[i,1])# sph.a_lm(geo1,lm_table[i,0],lm_table[i,1])
        
         alm_math1 = alm_math[alm_math>0]
@@ -74,7 +74,7 @@ class TestAlmMathematicaAgree1(unittest.TestCase):
         for ll in ls:       
             ks = jn_zeros_cut(ll,k_cut*r_max)/r_max
             ll_m = mpmath.mpf(ll)
-            for i in range(0,ks.size):
+            for i in xrange(0,ks.size):
                 kk_m = mpmath.mpf(ks[i])
 
                 r_int_exact = float(1./((3.+ll_m)*mpmath.gamma(1.5+ll_m))/2.**(ll_m+1.)*kk_m**ll_m*mpmath.sqrt(mpmath.pi)*(mpmath.hyp1f2(1.5+ll_m/2.,2.5+ll_m/2.,1.5+ll_m,-1./4*kk_m**2*r2_m**2)*r2_m**(3+ll_m)-r1_m**(3+ll_m)*mpmath.hyp1f2(1.5+ll_m/2.,2.5+ll_m/2.,1.5+ll_m,-1./4.*kk_m**2*r1_m**2)))
@@ -121,7 +121,7 @@ class TestAlmMathematicaAgree1(unittest.TestCase):
         bad_count = 0
         for ll in ls:       
             ks = jn_zeros_cut(ll,k_cut*r_max)/r_max
-            for i in range(0,ks.size):
+            for i in xrange(0,ks.size):
                 r_int_exact = 1./((3.+ll)*sp.gamma(1.5+ll))/2.**(ll+1)*ks[i]**ll*np.sqrt(np.pi)*(sp.hyp1f2(1.5+ll/2.,2.5+ll/2.,1.5+ll,-1./4*ks[i]**2*r2**2)[0]*r2**(3+ll)-r1**(3+ll)*sp.hyp1f2(1.5+ll/2.,2.5+ll/2.,1.5+ll,-1./4.*ks[i]**2*r1**2)[0])
                 r_int_compute = sph.R_int([r1,r2],ks[i],ll)
                 if np.abs(r_int_exact)>0.:

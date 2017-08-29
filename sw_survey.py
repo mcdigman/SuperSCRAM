@@ -37,56 +37,56 @@ class SWSurvey:
 
     def get_total_dimension(self):
         dim = 0
-        for i in range(self.observables.size):
+        for i in xrange(self.observables.size):
             dim+=self.observables[i].get_dimension()
         return dim
     
     def get_dimension_list(self):
         dim_list = np.zeros(self.get_N_O_I(),dtype=np.int_)
-        for i in range(dim_list.size):
+        for i in xrange(dim_list.size):
             dim_list[i] = self.observables[i].get_dimension()
         return dim_list 
 
     def get_O_I_list(self):
         O_I_list = np.zeros(self.observables.size,dtype=object)
-        for i in range(0,self.observables.size):
+        for i in xrange(0,self.observables.size):
             O_I_list[i] = self.observables[i].get_O_I()
         return O_I_list
 
     def get_dO_I_ddelta_bar_list(self):
         dO_I_ddelta_bar_list = np.zeros(self.observables.size,dtype=object)
-        for i in range(self.observables.size):
+        for i in xrange(self.observables.size):
             dO_I_ddelta_bar_list[i] = self.observables[i].get_dO_I_ddelta_bar()
         return dO_I_ddelta_bar_list
 
     def get_dO_I_dparameter_list(self):
         dO_I_dparam_list = np.zeros((self.cosmo_param_list.size,self.observables.size),dtype=object)
-        for i in range(self.observables.size):
+        for i in xrange(self.observables.size):
             dO_I_dparam_list[:,i] = self.observables[i].get_dO_I_dparameters()
         return dO_I_dparam_list
 
     def get_dO_I_dparameter_array(self):
         dO_I_dparam_list = self.get_dO_I_dparameter_list()
         print dO_I_dparam_list.shape
-        dO_I_dparam_array = np.zeros((dO_I_dparam_list.shape[0],self.get_total_dimension()))
+        dO_I_dparam_array = np.zeros((self.get_total_dimension(),dO_I_dparam_list.shape[0]))
         print dO_I_dparam_array.shape
-        for i in range(0,dO_I_dparam_list.shape[0]):
+        for i in xrange(0,dO_I_dparam_list.shape[0]):
             itr = 0
-            for j in range(0,self.get_N_O_I()):
+            for j in xrange(0,self.get_N_O_I()):
                 n_k = dO_I_dparam_list[i][j].size
-                dO_I_dparam_array[i,itr:itr+n_k] = dO_I_dparam_list[i,j]
+                dO_I_dparam_array[itr:itr+n_k,i] = dO_I_dparam_list[i,j]
                 itr+=n_k
         return dO_I_dparam_array
 
-
+    #TODO make consistent cov vs covar
     def get_gaussian_cov(self):
         cov_mats = np.zeros((self.get_total_dimension(),self.get_total_dimension()))
         ds = self.get_dimension_list()
         #n1 and n2 are to track indices so cov_mats can be a float array instead of an array of objects
         n1 = 0
-        for i in range(0,self.get_N_O_I()):
+        for i in xrange(0,self.get_N_O_I()):
             n2 = 0
-            for j in range(0,self.get_N_O_I()):
+            for j in xrange(0,self.get_N_O_I()):
                 cov = SWCovMat(self.observables[i],self.observables[j])
                 cov_mats[n1:n1+ds[i],n2:n2+ds[j]] = cov.get_gaussian_covar()
                 cov_mats[n2:n2+ds[j],n1:n1+ds[i]] = cov.get_gaussian_covar()
@@ -113,18 +113,18 @@ class SWSurvey:
 
         n_o = self.get_N_O_I()
         Ts = np.zeros((n_c,n_o),dtype=object)
-        for i in range(0,n_o):
+        for i in xrange(0,n_o):
             dO_ddelta_alpha_i=basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[i])
-            for j in range(0,n_c):
+            for j in xrange(0,n_c):
                 #TODO PRIORITY is this right cholesky? and/or should be inverted after?
                 
                 Ts[j,i] = fisher_set[j].contract_chol_right(dO_ddelta_alpha_i)
             #Ts[i] = basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[i])
-        for i in range(0,n_o):
+        for i in xrange(0,n_o):
             n2 = 0
           #  T_i = basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[i])
          #   print "sw_survey: T_i shape: "+str(T_i.shape)
-            for j in range(0,i+1):
+            for j in xrange(0,i+1):
                 print "sw_survey "+str(self.get_survey_id())+": Calc d delta alpha for observable 1,2 #:"+str(i)+","+str(j)
                 #print Ts[i]
                 #print Ts[j]
@@ -132,7 +132,7 @@ class SWSurvey:
               #  T_j = basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[j])
                # cov_mats[n1:n1+ds[i],n2:n2+ds[j]] = np.dot(np.dot(Ts[i].T,fisher.get_covar()),Ts[j])
                 #cov_mats[n1:n1+ds[i],n2:n2+ds[j]] = fisher.contract_covar(Ts[i].T,Ts[j])
-                for k in range(0,n_c):
+                for k in xrange(0,n_c):
                     cov_mats[k,n1:n1+ds[i],n2:n2+ds[j]] = np.dot(Ts[k,i].T,Ts[k,j])
                     if not i==j:
                         cov_mats[k,n2:n2+ds[i],n1:n1+ds[j]] = cov_mats[k,n1:n1+ds[i],n2:n2+ds[j]].T
@@ -182,10 +182,10 @@ def generate_observable_names(geo,observable_list,cross_bins=defaults.sw_survey_
     names = {}
     for name in observable_list:
         if re.match('^len',name):
-            for i in range(0,rbins.shape[0]):
+            for i in xrange(0,rbins.shape[0]):
                 r1 = rbins[i]
                 if cross_bins:
-                    for j in range(0,rbins.shape[0]):
+                    for j in xrange(0,rbins.shape[0]):
                         #Only take r1<=r2
                         if i>j: 
                             pass 
@@ -203,11 +203,15 @@ def generate_observable_names(geo,observable_list,cross_bins=defaults.sw_survey_
 
 if __name__=='__main__':
     from geo import rect_geo
+    import matter_power_spectrum as mps
     Theta = [np.pi/4.,np.pi/2.]
     Phi = [0,np.pi/3.]
-    d=np.loadtxt('camb_m_pow_l.dat')
-    k=d[:,0]; P=d[:,1]
-    C=cp.CosmoPie(k=k,P_lin=P)
+    #d=np.loadtxt('camb_m_pow_l.dat')
+    #k=d[:,0]; P=d[:,1]
+    C=cp.CosmoPie(cosmology=defaults.cosmology)
+    P = mps.MatterPower(C)
+    C.P_lin = P
+    C.k = P.k
     zs = np.array([0.1,0.8])
     z_fine = np.arange(0.01,np.max(zs),0.01)
     ls = np.arange(2,500)

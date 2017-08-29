@@ -75,7 +75,7 @@ class halofitPk(object):
         sigs,sig_d1s,sig_d2s=self.wint(rs)
         #can safely cutoff if 1/sig is greater than 1, because that corresponds to a normalized growth factor>1 and 1/sig monotonically increases with higher r
         n_r_max = n_r
-#        for i in range(0,n_r):
+#        for i in xrange(0,n_r):
 #            sig,d1,d2 = self.wint(rs[i])
 #            sigs[i] = sig
 #            sig_d1s[i] = d1
@@ -411,7 +411,7 @@ if __name__=="__main__":
 
                 do_time_test=False
                 if do_time_test:
-                    for itr in range(0,5000):
+                    for itr in xrange(0,5000):
                         HF2=halofitPk(CP,k2,P2)
 
                 do_plot_test=False 

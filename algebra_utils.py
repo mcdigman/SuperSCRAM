@@ -1,9 +1,9 @@
 import numpy as np
-from scipy.linalg import solve_triangular,solve
-import scipy.linalg
+import scipy.linalg as spl
+
 from warnings import warn
 
-#TODO: In the long run, some of these functions would benifit from some low level optimizations, like doing cholesky decompositions
+#TODO: In the long run, some of these functions would benefit from some low level optimizations, like doing cholesky decompositions
 #and inverses in place (or even lower level, like storing two cholesky decompositions in the same matrix and just masking the one we don't need when doing any given operation), 
 #because the memory consumption of these matrices is the code's primary performance bottleneck.
 #scipy.linalg.cholesky's overwrite_a option is not reliable for doing things in place, so I would probably need
@@ -18,11 +18,11 @@ def get_inv_cholesky(A,lower=True):
 #Get the cholesky decomposition of the inverse of a matrix a
 #TODO add safety checks,tests
 def get_cholesky_inv(A,lower=True):
-    return np.rot90(scipy.linalg.lapack.dtrtri(cholesky_inplace(np.rot90(A,2),lower=(not lower),inplace=False),lower=(not lower))[0],2)
+    return np.rot90(spl.lapack.dtrtri(cholesky_inplace(np.rot90(A,2),lower=(not lower),inplace=False),lower=(not lower))[0],2)
 
-#TODO: replace with scipy.linalg.lapack.dtrtri
+#TODO: replace with spl.lapack.dtrtri
 def invert_triangular(A,lower=True):
-    return solve_triangular(A,np.identity(A.shape[0]),lower=lower,overwrite_b=True)
+    return spl.solve_triangular(A,np.identity(A.shape[0]),lower=lower,overwrite_b=True)
 
 def get_mat_from_inv_cholesky(A,lower=True):
     chol_mat = invert_triangular(A,lower)
@@ -30,14 +30,14 @@ def get_mat_from_inv_cholesky(A,lower=True):
 
 #compute inverse of positive definite matrix using cholesky decomposition
 #cholesky_given = True if A already is the cholesky decomposition of the covariance
-#TODO: replace part with scipy.linalg.lapack.dpotri
+#TODO: replace part with spl.lapack.dpotri
 def ch_inv(A,cholesky_given=False,lower=True):
     #chol = np.linalg.cholesky(A)
     #chol_inv = np.linalg.solve(np.linalg.cholesky(A),np.identity(A.shape[0]))
     if cholesky_given:
         chol_inv = A
     else:
-        #chol_inv = solve_triangular(np.linalg.cholesky(A),np.identity(A.shape[0]),lower=lower,overwrite_b=True)
+        #chol_inv = spl.solve_triangular(np.linalg.cholesky(A),np.identity(A.shape[0]),lower=lower,overwrite_b=True)
         chol_inv = get_inv_cholesky(A,lower=lower)
     if lower:
         return np.dot(chol_inv.T,chol_inv)
@@ -56,16 +56,16 @@ def cholesky_inv_contract(A,vec1,vec2,cholesky_given=False,identical_inputs=Fals
     #TODO: check if memory profile worse
     if identical_inputs:
         if lower:
-            right_side = np.dot(chol_inv,vec2)
+            right_side = np.dot(chol_inv,vec1)
         else:
 
-            right_side = np.dot(chol_inv.T,vec2)
+            right_side = np.dot(chol_inv.T,vec1)
         result = np.dot(right_side.T,right_side)
     else:
         if lower:
-            result = np.dot(np.dot(vec1,chol_inv.T),np.dot(chol_inv,vec2))
+            result = np.dot(np.dot(vec1.T,chol_inv.T),np.dot(chol_inv,vec2))
         else:
-            result = np.dot(np.dot(vec1,chol_inv),np.dot(chol_inv.T,vec2))
+            result = np.dot(np.dot(vec1.T,chol_inv),np.dot(chol_inv.T,vec2))
 
     return result
 
@@ -88,17 +88,17 @@ def cholesky_inplace(A,inplace=True,fatal_errors=False,lower=True):
             warn('algebra_utils: Cannot do cholesky decomposition in place on C continguous numpy array. will output to return value',RuntimeWarning)
             try_inplace = False
     
-    #scipy.linalg.cholesky won't do them in place TODO actually handle it
+    #spl.cholesky won't do them in place TODO actually handle it
     if not A.dtype == np.float_:
         raise ValueError('algebra_utils: cholesky_inplace currently only supports arrays with dtype=np.float_')
 
     #TODO maybe workaround, determine actual threshold (46253 is just largest successful run)
     if A.shape[0] > 46253:
         warn('algebra_utils: dpotrf may segfault for matrices this large, due to a bug in certain lapack/blas implementations')
-    #result = scipy.linalg.cholesky(A,lower=lower,overwrite_a=try_inplace)
-    result,info = scipy.linalg.lapack.dpotrf(A,lower=lower,clean=1, overwrite_a=try_inplace)
+    #result = spl.cholesky(A,lower=lower,overwrite_a=try_inplace)
+    result,info = spl.lapack.dpotrf(A,lower=lower,clean=1, overwrite_a=try_inplace)
     
-    #Something went wrong. (scipy.linalg.cholesky and np.linalg.cholesky should fail too)
+    #Something went wrong. (spl.cholesky and np.linalg.cholesky should fail too)
     #if not info==0:
     #    raise RuntimeError('algebra_utils: dpotrf failed with nonzero exit status')
 
@@ -114,7 +114,7 @@ if __name__=='__main__':
     times_chol1 = np.zeros(n_iter)
     times_chol2 = np.zeros(n_iter)
     times_inv = np.zeros(n_iter)
-    for i in range(n_iter):
+    for i in xrange(n_iter):
         A = np.random.random((n_A,n_A))
         A = np.dot(A.T,A)
         V1 = np.random.random(n_A)

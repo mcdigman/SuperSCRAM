@@ -80,7 +80,7 @@ class CosmoPie :
             zs_in = 0.025*np.arange(0,36)/(1-0.025*np.arange(0,36))
             ws_set = np.zeros(zs_in.size)
             itr = 0
-            for i in range(0,z_de.size):
+            for i in xrange(0,z_de.size):
                 if itr<zs_in.size-1:
                     #just extend last z value as far as needed if necessary
                     if zs_in[itr]>=z_de[i]:
@@ -103,7 +103,7 @@ class CosmoPie :
         # parsec 
         self.pc=3.08567758149*1e16 # m 
         
-        # Newton's constant 
+        # Newton's constant (CODATA value) 
         self.GN=6.67408*10**(-11) # m^3/kg/s^2
         
         # speed of light 
@@ -129,7 +129,7 @@ class CosmoPie :
 #                    #subtract the cumulative result from G_base so final result is \int_z^{1e4}(integrand)
 #                    integrand2 = (1.+z_grid)*self.H0**3/self.H(z_grid)**3
 #                    self.G_p = interp1d(z_grid,2.5*self.Omegam/self.H0*self.H(z_grid)*(G_base-cumtrapz(integrand2,z_grid,initial=0.)))
-#               #     for i in range(0,z_grid.size):
+#               #     for i in xrange(0,z_grid.size):
 #               #         G_arr[i] = self.G(z_grid[i])
 #               #     self.G_p = interp1d(z_grid, G_arr)
 #                self.precompute=precompute
@@ -265,21 +265,21 @@ class CosmoPie :
     def D_A_array(self,z):
 
         d=np.zeros_like(z)
-        for i in range(z.size):
+        for i in xrange(z.size):
             d[i]=self.D_A(z[i])
         return d 
 
     def D_c_A_array(self,z):
 
         d=np.zeros_like(z)
-        for i in range(z.size):
+        for i in xrange(z.size):
             d[i]=self.D_comov_A(z[i])
         return d 
     
     def D_c_array(self,z):
 
         d=np.zeros_like(z)
-        for i in range(z.size):
+        for i in xrange(z.size):
             d[i]=self.D_comov(z[i])
         return d 
         
@@ -355,7 +355,7 @@ class CosmoPie :
 #        #G does not currently support vector inputs unless precomputed TODO could fix that
 #        if (not self.precompute) and isinstance(z,np.ndarray):
 #            result = np.zeros(z.size)
-#            for i in range(z.size):
+#            for i in xrange(z.size):
 #                result[i] = self.G_norm(z[i])
 #        else:
 #            return self.G(z)/G_0 
@@ -376,7 +376,7 @@ class CosmoPie :
 #            return G_norm(z)
 #        else:
 #            result=np.zeros(z.size)
-#            for i in range(z.size):
+#            for i in xrange(z.size):
 #                result[i]=self.G_norm(z[i])
 #            return result 
                     
@@ -471,7 +471,7 @@ class CosmoPie :
     def rho_bar(self,z):
         # return average density in units of solar mass and h^2 
         return self.rho_crit(z)*self.Omegam_z(z)
-    
+    #critical density should be about 2.77536627*10^11 h^2 M_sun/Mpc^-3 at z=0 according to pdg table 
     def rho_crit(self,z):
         # return critical density in units of solar mass and h^2 
         factor=1e12/self.M_sun*self.pc           
@@ -631,7 +631,7 @@ if __name__=="__main__":
         D1=np.zeros(80)
         D2=np.zeros(80)
         D3=np.zeros(80)
-        for i in range(80):
+        for i in xrange(80):
                 D1[i]=C.D_A(z[i])/C.DH
                 D2[i]=C.D_L(z[i])/C.DH
                 D3[i]=C.DV(z[i])/C.DH

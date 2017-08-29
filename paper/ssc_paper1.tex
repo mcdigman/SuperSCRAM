@@ -18,7 +18,7 @@
 %% \affiliation{Institution,\\Address, Country}
 
 % more complex case: 4 authors, 3 institutions, 2 footnotes
-\author{Mathew C. Digman,}
+\author{Matthew C. Digman,}
 \author{Joseph E. McEwen, and}
 \author{Christopher M. Hirata}
 
@@ -170,22 +170,24 @@ The projected power spectrum for a lensing observable can be written using the L
 \begin{align}\label{limber_power}
 P_{ij}(l)
 \end{align}
+
+
 \subsection{Long Wavelength Observables}
 \label{ssec:lw_observables}
 Here, we describe a sample implementation of using the difference in the number densities of galaxies between two regions. For example, one of the regions could be the survey window in which the short wavelength observables of interest were measured, and the other could be a similarly sized window elsewhere on the sky surveyed for a different purpose. If the number densities of galaxies in both regions $n_1$ and $n_2$ can be measured, the difference should provide some information about any long wavelength density fluctuations. Writing the number densities are  then our observable is $\Delta n_{12}\equiv n_1-n_2$.  The number density can be written to linear order in perturbation theory as
 \begin{align}\label{number_density}
-n_1 &= \frac{3}{(r_\text{max}^3-r_\text{min}^3)\Omega_1}\int_{\Omega_1}d\Omega\int_{r_\text{min}}^{r_\text{max}}r^2 dr \bar{n}(r)\left[1+b(r)\delta(r,\Omega)\right]\\
-&= \frac{3}{(r_\text{max}^3-r_\text{min}^3)\Omega_1}\int_{\Omega_1}d\Omega\int_{r_\text{min}}^{r_\text{max}}r^2 dr \bar{n}(r)\left[1+b(r)\sum_\alpha{\delta_\alpha\psi_\alpha(r,\Omega)}\right]
+n_1 &= \frac{3}{(r_\text{max}^3-r_\text{min}^3)\Omega_1}\int_{\Omega_1}d\Omega\int_{r_\text{min}}^{r_\text{max}}r^2 dr n(r)\left[1+b(r)\delta(r,\Omega)\right]\\
+&= \frac{3}{(r_\text{max}^3-r_\text{min}^3)\Omega_1}\int_{\Omega_1}d\Omega\int_{r_\text{min}}^{r_\text{max}}r^2 dr n(r)\left[1+b(r)\sum_\alpha{\delta_\alpha\psi_\alpha(r,\Omega)}\right]
 \end{align}
-where $b(r)$ is the bias, $\bar{n}(r)$ is the expected number density of galaxies at comoving distance $r$, $\Omega_1$ is the angular area of the survey window, and $\delta(r,\Omega)=\sum_\alpha{\delta_\alpha\psi_\alpha(r,\Omega)}$ is a density fluctuation expanded in our basis described in \ref{sec:basis}.
-Then, assuming the surveys in both windows have the same galaxy selection function, so that the expected number density of galaxies $\bar{n}(r)$ is the same, and so that both surveys have the same limiting $r_\text{min}$ and $r_\text{max}$, but allowing the survey windows to have different shapes, we have the response to long wavelength density perturbations:
+where $b(r)$ is the linear bias, $n(r)$ is the expected number density of galaxies at comoving distance $r$, $\Omega_1$ is the angular area of the survey window, and $\delta(r,\Omega)=\sum_\alpha{\delta_\alpha\psi_\alpha(r,\Omega)}$ is a density fluctuation expanded in our basis described in \ref{sec:basis}. A simulated bias and number density are calculated using the CANDELS GOODS-S catalogue and the Sheth-Tormen halo mass function, as described in \ref{sec:nz_candels}.
+Assuming the surveys in both windows have the same galaxy selection function, so that the expected number density of galaxies $n(r)$ are the same, and that both surveys have the same limiting $r_\text{min}$ and $r_\text{max}$, but allowing the survey windows to have different shapes, we have the response to long wavelength density perturbations:
 
 \begin{align}\label{number_density_response}
 \frac{\partial \Delta n_{12}}{\partial \delta_\alpha}&\equiv \frac{\partial n_1}{\partial \delta_\alpha}-\frac{\partial n_2}{\partial \delta_\alpha} \\
-&=  \frac{3}{r_\text{max}^3-r_\text{min}^3}\int_{r_\text{min}}^{r_\text{max}}r^2 dr \bar{n}(r)b(r)\left[\frac{1}{\Omega_1}\int_{\Omega_1}d\Omega \psi_{\alpha}(r,\Omega)-\frac{1}{\Omega_2}\int_{\Omega_2}d\Omega\psi_{\alpha}(r,\Omega)\right].
+&=  \frac{3}{r_\text{max}^3-r_\text{min}^3}\int_{r_\text{min}}^{r_\text{max}}r^2 dr n(r)b(r)\left[\frac{1}{\Omega_1}\int_{\Omega_1}d\Omega \psi_{\alpha}(r,\Omega)-\frac{1}{\Omega_2}\int_{\Omega_2}d\Omega\psi_{\alpha}(r,\Omega)\right].
 \end{align}
 
-Assuming the probability distribution of galaxy numbers is given by a poisson distribution, which is uncorrelated at different distances to lowest order in perturbation theory, such that $\left<n\right>=\frac{3}{(r_\text{max}^3-r_\text{min}^3)}\int_{r_\text{min}}^{r_\text{max}}\bar{n}(r)$ depends on $r_\text{min}$ and $r_\text{max}$ only, we can calculate the variance:
+Assuming the probability distribution of galaxy numbers is given by a poisson distribution, which is uncorrelated at different distances to lowest order in perturbation theory, such that $\left<n\right>=\frac{3}{(r_\text{max}^3-r_\text{min}^3)}\int_{r_\text{min}}^{r_\text{max}}n(r)$ depends on $r_\text{min}$ and $r_\text{max}$ only, we can calculate the variance:
 \begin{align}\label{number_density_variance}
 N_{12}\equiv Var\left(n_1-n_2\right) = \left<n\right>\left(\frac{1}{V_1}+\frac{1}{V_2}-2\frac{V_{1\cap 2}}{V_1 V_2}\right)
 \end{align}
@@ -196,7 +198,7 @@ Then, we can write the Fisher matrix for this mitigation strategy
 F_1^{\alpha\beta}=\frac{\partial \Delta n_{12}}{\partial \delta_\alpha}(N_{12})^{-1}\frac{\partial \Delta n_{12}}{\partial \delta_\beta},
 \end{align}
 
-which can be added to $F_{\text{SSC}}^{\alpha\beta}$ in \eqref{F_tot} to mitigate the SSC contamination of short wavelength observables. In the code, we calculate a simulated $\bar{n}(r)$  as described in \ref{sec:nz_candels}.
+which can be added to $F_{\text{SSC}}^{\alpha\beta}$ in \eqref{F_tot} to mitigate the SSC contamination of short wavelength observables. 
 
 \subsection{Cosmological Parameterizations}
 \label{ssec:cosmo_param}
@@ -234,6 +236,9 @@ This approach should work for a variety of methods of calculating the nonlinear 
 \subsection{Fisher Matrix Manipulation}
 Fisher matrix manipulations are handled by the \texttt{fisher\_matrix} module. The \texttt{fisher\_matrix} module is optimized to efficiently perform common manipulations on Fisher matrices up to the memory limitations of the machine it runs on. For memory efficiency, it keeps its own internal representation of its matrices, so that it can perform many matrix operations in place, using SciPy's interface to the Fortran LAPACK library.  The specific internal operations of the \texttt{fisher\_matrix} module are intended to be largely opaque to the end user, with access through the interface provided, so that it can be optimized enough to efficiently handle Fisher matrices for large numbers of cosmological observables. 
 
+
+\subsection{Separate Universe Response}
+The response of a the matter power spectrum to a long wavelength density fluctuation can be approximated by treating the overdense region as a 'separate universe', \cite{chiang_response}\cite{baldauf_response}
 
 
 \subsection{Mitigation Strategies}
@@ -401,7 +406,7 @@ In our code, the number of doublings can be specified by the user;  approximatel
 \section{Galaxy Number Density}
 \label{sec:nz_candels}
 %TODO Candels acknowledgement? 'This work is based on observations taken by the CANDELS Multi-Cycle Treasury Program with the NASA/ESA HST, which is operated by the Association of Universities for Research in Astronomy, Inc., under NASA contract NAS5-26555.' seems excessive
-To simulate a sample redshift distribution for a future weak lensing survey, we take all galaxies in the CANDELS\cite{candels_1}\cite{candels_2} GOODS-S catalogue with I band magnitude less than a user selected cutoff (I<24 is used as a default). We then calculate a smoothed number density as a function of redshift using a Gaussian smoothing kernel with user specified width $\sigma$ and reflecting boundary conditions at $z=0$:
+To simulate a sample redshift distribution for a future weak lensing survey, we take all galaxies in the CANDELS\cite{candels_1}\cite{candels_2} GOODS-S catalogue with I band magnitude below a selected cutoff (I<24 is used as a default). We then calculate a simple smoothed number density as a function of redshift using a Gaussian smoothing kernel with user specified width $\sigma$ and reflecting boundary conditions at $z=0$:
 \begin{align}\label{candels_dndzofz}
 \frac{dN}{dz d\Omega}(z)=\sum_{i}{\frac{1}{\sqrt{2\pi\sigma\Omega}}\left(e^{-\frac{(z-z_i)^2}{2\sigma^2}}+e^{-\frac{(z+z_i)^2}{2\sigma^2}}\right)},
 \end{align}
@@ -409,5 +414,24 @@ where $\Omega$ is the area of the CANDELS survey. Then we can calculate $n(z)$:
 \begin{align}\label{candels_nofz}
 n(z) = \frac{1}{r(z)^2}\frac{dN}{dz d\Omega}(z)\frac{dz}{dr}(z).
 \end{align}
-Now, we want to use $n(z)$ to calculate $b(z)$, the bias. \cite{jenkins_hmf}\cite{sheth_tormen_hmf}
+Now, we want to use $n(z)$ to calculate $b(z)$, the bias. Because we are simply demonstrating a possible mitigation strategy and not attempting to model it in detail, we adopt a simple approximation in which we use this $n(z)$ to extract a $M_\text{min}$ for the halo mass function and use that to calculate the bias, neglecting any subtleties from the mass-luminosity relationship. To do this, we use the Sheth-Tormen halo mass function \cite{sheth_tormen_hmf}\cite{hmf_hu}\cite{hmf_reed},
+\begin{align}\label{hmf_f}
+n(M_\text{min},z)=\int_{M_\text{min}}^\infty{\frac{dn}{dM}dM}=\int_{M_\text{min}}^\infty\frac{\bar{\rho}}{M}\frac{d \ln{\sigma^{-1}}}{dM}f(\sigma)dM
+\end{align}
+where $\bar{\rho}$ is the background matter density in units of $h^2 M_\odot \text{Mpc}^{-3}$,
+ and $\sigma(M,z)$ is given by 
+\begin{align}
+\sigma^2(M,z)=\frac{G^2(z)}{2\pi^2G_0}\int_0^\infty k^2 dk P_\text{lin}(k)W^2(k,M),
+\end{align}
+where $W(k,M)=W(k,R)= \frac{3}{(k r)^2}\left(\frac{\sin{k r}}{k r}-\cos{k r}\right)$ is the Fourier transform of a spherical top hat window function, and $R=\frac{1}{h}(\frac{3M}{4\pi\bar{\rho}})^{1/3}$, $P_\text{lin}$ is the linear power spectrum and $G(z)$ is the linear growth factor. The Sheth-Tormen Mass function itself is
+\begin{align}\label{f_shethtormen}
+f(\sigma) = A\sqrt{\frac{2a}{\pi}}\left(1+\left(\frac{\sigma^2}{a\delta_c^2}\right)^p\right)e^{-a\frac{\delta_c^2}{\sigma^2}},
+\end{align}
+where $A=0.3222$, $a=0.707$, and $p=0.3$ are empirically fit parameters, and we take $\delta_c=1.686$ to be the critical overdensity for spherical collapse to avoid considering any cosmology dependence. From here numerically solve $n(M_\text{min},z)=n(z)$ to obtain $M_\text{min}$. Then to calculate the linear bias, we use 
+\begin{align}\label{b_shethtormen}
+b(\sigma)= 1+\frac{\frac{a\delta_c^2}{\sigma^2}-1}{\delta_c}+\frac{2p}{\delta_c\left(1+\left(\frac{a\delta_c^2}{\sigma^2}\right)^p\right)},
+\end{align}
+where $\sigma^2=\sigma^2(M_\text{min},z)$. The code could be extended to use improved fitting functions such as in \cite{jenkins_hmf} or \cite{hmf_tinker}, although the Sheth-Tormen functions are sufficient for the demonstration in this paper.
+
 \end{document}
+

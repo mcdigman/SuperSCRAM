@@ -64,8 +64,8 @@ if __name__ == '__main__':
         zs = np.array([int(zbin_cosmo_1[itr]),int(zbin_cosmo_2[itr]),int(zbin_cosmo_3[itr]),int(zbin_cosmo_4[itr])])
         loc_mat1 = np.zeros((nbins_cosmo,nbins_cosmo))
         loc_mat2 = np.zeros((nbins_cosmo,nbins_cosmo))
-        for l1 in range(0,nbins_cosmo):
-            for l2 in range(0,nbins_cosmo):
+        for l1 in xrange(0,nbins_cosmo):
+            for l2 in xrange(0,nbins_cosmo):
                 loc_mat1[l1,l2] = cov_g_cosmo[itr]
                 loc_mat2[l1,l2] = cov_ssc_cosmo[itr]
                 itr+=1
@@ -83,11 +83,11 @@ if __name__ == '__main__':
     cov_g_mat_cosmo_flat = np.zeros((n_side*nbins_cosmo,n_side*nbins_cosmo))
     cov_ssc_mat_cosmo_flat = np.zeros((n_side*nbins_cosmo,n_side*nbins_cosmo))
     itr_out = 0
-    for i1 in range(tomo_bins_cosmo):
-        for i2 in range(i1,tomo_bins_cosmo):
+    for i1 in xrange(tomo_bins_cosmo):
+        for i2 in xrange(i1,tomo_bins_cosmo):
             itr_in = 0
-            for i3 in range(tomo_bins_cosmo):
-                for i4 in range(i3,tomo_bins_cosmo):
+            for i3 in xrange(tomo_bins_cosmo):
+                for i4 in xrange(i3,tomo_bins_cosmo):
                     assert(np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i3,i4,i1,i2].T))
                     assert(np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i1,i2,i4,i3].T))
                     assert(np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i2,i1,i3,i4].T))
@@ -107,15 +107,15 @@ if __name__ == '__main__':
     assert(np.all(cov_ssc_mat_cosmo_flat==cov_ssc_mat_cosmo_flat.T))
                     #if i1<=i2 and i3<=i4 
 #                    cov_g_mat_cosmo[i1,i2,i3,i4] = np.zeros((nbins_cosmo,nbins_cosmo))
-#                    for l1 in range(nbins_cosmo):
-#                        for l2 in range(nbins_cosmo):
+#                    for l1 in xrange(nbins_cosmo):
+#                        for l2 in xrange(nbins_cosmo):
                             
 
     
     Cll_shear_shear_cosmo = np.zeros((tomo_bins_cosmo,tomo_bins_cosmo),dtype=object)
     itr = 0
-    for i in range(tomo_bins_cosmo):
-        for j in range(i,tomo_bins_cosmo):
+    for i in xrange(tomo_bins_cosmo):
+        for j in xrange(i,tomo_bins_cosmo):
             #print i,j
             Cll_shear_shear_cosmo[i,j] =cosmo_shear[:,itr+1]
             if not i==j:
@@ -127,7 +127,7 @@ if __name__ == '__main__':
     l_mids = np.zeros(nbins_cosmo)
     dls = np.zeros(nbins_cosmo)
 
-    for i in range(l_mids.size):
+    for i in xrange(l_mids.size):
         l_starts[i] = np.exp(np.log(lmin_cosmo)+i*log_dl)
         l_mids[i] = np.exp(np.log(lmin_cosmo)+(i+0.5)*log_dl)
         dls[i] = (np.exp(np.log(lmin_cosmo)+(i+1.)*log_dl)- np.exp(np.log(lmin_cosmo)+i*log_dl))
@@ -139,10 +139,10 @@ if __name__ == '__main__':
     z_bin_starts = np.zeros(tomo_bins_cosmo)
     chi_bins = np.zeros((tomo_bins_cosmo,2))
     z_fine[0] +=0.00001
-    for i in range(0,tomo_bins_cosmo):
+    for i in xrange(0,tomo_bins_cosmo):
         z_bin_starts[i] = np.min(z_fine[cum_n_z>=1./tomo_bins_cosmo*i])
 
-    for i in range(0,tomo_bins_cosmo):
+    for i in xrange(0,tomo_bins_cosmo):
         if i==tomo_bins_cosmo-1:
             chi_next = C.D_comov(np.max(z_fine))
         else:
@@ -178,7 +178,7 @@ if __name__ == '__main__':
     phi1s = np.zeros(n_steps+2)
     phi1s[0] = phi0
     phi1s[-1] = phi0
-    for itr in range(1,n_steps+1):
+    for itr in xrange(1,n_steps+1):
                 phi1s[itr] = phi0+itr*2.*np.pi/n_steps
     phi1s = phi1s[::-1]
     phi2s = phi1s

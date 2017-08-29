@@ -1,13 +1,14 @@
 import numpy as np
+
 import defaults
 
 #utility functions for manipulating real spherical harmonic alm, used by polygon_geo
 
 #rotate alms around z axis by angle gamma_alpha
-def rot_alm_z(d_alm_table_in,angles,ls,l_ind=0):
+def rot_alm_z(d_alm_table_in,angles,ls):
     d_alm_table_out = np.zeros_like(d_alm_table_in) 
     n_v = angles.size
-    for l_itr in range(0,ls.size):
+    for l_itr in xrange(0,ls.size):
         ll = ls[l_itr]
         d_alm_table_out[l_itr] = np.zeros((2*ll+1,n_v))
         ms = np.arange(1,ll+1)
@@ -21,7 +22,7 @@ def rot_alm_z(d_alm_table_in,angles,ls,l_ind=0):
 def rot_alm_x(d_alm_table_in,angles,ls,n_double=defaults.polygon_params['n_double']):
     d_alm_table_out=np.zeros_like(d_alm_table_in)
     n_v = angles.size
-    for l_itr in range(0,ls.size): 
+    for l_itr in xrange(0,ls.size): 
         ll = ls[l_itr]
         d_alm_table_out[l_itr] = np.zeros((2*ll+1,n_v))
         ms = np.arange(-ll,ll)
@@ -49,11 +50,11 @@ def rot_alm_x(d_alm_table_in,angles,ls,n_double=defaults.polygon_params['n_doubl
         #check m_mat is actually unitary
         #assert(np.allclose(np.identity(m_mat.shape[0]),np.dot(np.conjugate(m_mat.T),m_mat)))
         #TODO add assertion  for correct sparseness structure
-        for itr in range(0,n_v):
+        for itr in xrange(0,n_v):
             epsilon = angles[itr]/2**n_double
             el_mat = epsilon*el_mat_real.copy()
             #use angle doubling fomula to get to correct angle
-            for itr2 in range(0,n_double):
+            for itr2 in xrange(0,n_double):
                 el_mat = 2*el_mat+np.dot(el_mat,el_mat)
             d_mat = el_mat+np.identity(el_mat.shape[0])
             d_alm_table_out[l_itr][:,itr] = np.dot(d_mat,d_alm_table_in[l_itr][:,itr])

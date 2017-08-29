@@ -18,7 +18,7 @@ class LWSurvey:
         self.ddelta_bar_ddelta_alpha_list = np.zeros(self.geos.size,dtype = object)
         if prefetch_ddelta_bar:
             self.ddelta_bar_stored = True
-            for i in range(0,self.geos.size):
+            for i in xrange(0,self.geos.size):
                 self.ddelta_bar_ddelta_alpha_list[i] = self.basis.D_delta_bar_D_delta_alpha(self.geos[i],tomography=True)
         else:
             self.ddelta_bar_stored = False
@@ -30,7 +30,7 @@ class LWSurvey:
     def get_ddelta_bar_ddelta_alpha_list(self,force_recompute=False):
         if not self.ddelta_bar_stored or force_recompute:
             self.ddelta_bar_stored = True
-            for i in range(0,self.geos.size):
+            for i in xrange(0,self.geos.size):
                 self.ddelta_bar_ddelta_alpha_list[i] = self.basis.D_delta_bar_D_delta_alpha(self.geos[i],tomography=True)
         return self.ddelta_bar_ddelta_alpha_list
 
@@ -39,18 +39,18 @@ class LWSurvey:
 
     def get_dO_a_ddelta_bar_list(self):
         dO_a_ddelta_bar_list = np.zeros(self.observables.size,dtype=object)
-        for i in range(self.observables.size):
+        for i in xrange(self.observables.size):
             dO_a_ddelta_bar_list[i] = self.observables[i].get_dO_a_ddelta_bar()
         return dO_a_ddelta_bar_list
 
     def fisher_accumulate(self,fisher_0):
-        for i in range(0,self.get_N_O_a()):
+        for i in xrange(0,self.get_N_O_a()):
             
-            #print "fisher", np.linalg.eigvals(self.observables[i].get_F_alpha_beta())[0]
-            fisher_0.add_fisher(self.observables[i].get_F_alpha_beta())
+            #print "fisher", np.linalg.eigvals(self.observables[i].get_fisher())[0]
+            fisher_0.add_fisher(self.observables[i].get_fisher())
     def get_total_rank(self):
         rank = 0
-        for itr in range(0,self.observables.size):
+        for itr in xrange(0,self.observables.size):
             if not self.observables[itr] is None:
                 rank+=self.observables[itr].get_rank()
         return rank
@@ -100,12 +100,12 @@ if __name__=='__main__':
     ax  = plt.subplot(111)
     fisher = basis.get_fisher()
     T = lw_survey.get_ddelta_bar_ddelta_alpha_list()[0][0]
-    a1 = fisher.contract_covar(T,T)
+    a1 = fisher.project_covar(T)
     print a1
     lw_survey.fisher_accumulate(fisher)
-    a2 = fisher.contract_covar(T,T)
+    a2 = fisher.project_covar(T)
     print a2
-    #ax.loglog(np.diag(fisher.get_F_alpha_beta()))
+    #ax.loglog(np.diag(fisher.get_fisher()))
     #ax.loglog(dO_a_ddelta_bar_list[0])
     #plt.xlabel('ls')
     #plt.legend(['dO_I_ddelta_bar'])

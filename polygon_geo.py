@@ -59,7 +59,7 @@ class polygon_geo(geo):
             self.internal_angles5 = np.zeros(self.n_v)
             self.angle_opps = np.zeros(self.n_v)
 
-            for itr1 in range(0,self.n_v):
+            for itr1 in xrange(0,self.n_v):
                 itr2 = itr1+1
                 pa1 = self.bounding_xyz[itr1] #vertex 1
                 pa2 = self.bounding_xyz[itr2] #vertex 2
@@ -129,11 +129,11 @@ class polygon_geo(geo):
             Y_r_dict = get_Y_r_dict(np.max(ls),np.zeros(1)+np.pi/2.,np.zeros(1))
             self.factorials = sp.misc.factorial(np.arange(0,2*np.max(ls)+1))
             #coeff_table = {(1,0):1,(1,1):0}
-#            for ll in range(1,np.max(ls)):
+#            for ll in xrange(1,np.max(ls)):
 #                #TODO use other legendre function to be safe
 #                coeff_table[(ll+1,0)] = assoc_legendre_p(ll,0,0.)
 #                coeff_table[(ll+1,ll+1)] = 0.
-#                for mm in range(1,ll+1):
+#                for mm in xrange(1,ll+1):
 #                    if mm<ll:
 #                        if ll==25 and mm==3:
 #                            print coeff_table[(ll,mm+1)]
@@ -143,10 +143,10 @@ class polygon_geo(geo):
 #                    else:
 #                        coeff_table[(ll+1,mm)] = -1./(2.*mm)*((ll+mm-1.)*np.sqrt((ll+mm)/(ll+mm+1.))*coeff_table[(ll,mm-1)])
                    # sys.exit()
-            for l_itr in range(0,ls.size):
+            for l_itr in xrange(0,ls.size):
                 ll=ls[l_itr]
                 d_alm_table1[l_itr] = np.zeros((2*ll+1,self.n_v))
-                for mm in range(0,ll+1):
+                for mm in xrange(0,ll+1):
                     #TODO lpmv may be introducing error
                     #if np.abs(coeff_table[(ll,mm)]-np.sqrt(self.factorials[ll-mm]/self.factorials[ll+mm])*spp.lpmv(mm,ll-1,0.))/(np.sqrt(self.factorials[ll-mm]/self.factorials[ll+mm])*spp.lpmv(mm,ll-1,0.))>1.0:
                     #    print ll,mm
@@ -178,9 +178,9 @@ class polygon_geo(geo):
             d_alm_table3 = au.rot_alm_x(d_alm_table2,self.theta_alphas,ls,n_double=self.n_double)
             d_alm_table4 = au.rot_alm_z(d_alm_table3,self.gamma_alphas,ls)
 
-            for l_itr in range(0,ls.size):
+            for l_itr in xrange(0,ls.size):
                 ll = ls[l_itr] 
-                for mm in range(0,ll+1):
+                for mm in xrange(0,ll+1):
                     if mm==0:
                         self.alm_table[(ll,mm)] = np.sum(d_alm_table4[l_itr][ll+mm])
                     else:
@@ -215,8 +215,8 @@ def get_poly(theta_vertices,phi_vertices,theta_in,phi_in):
 
 def check_mutually_orthonormal(vectors):
     fails = 0
-    for itr1 in range(0,vectors.shape[0]):
-        for itr2  in range(0,vectors.shape[0]):
+    for itr1 in xrange(0,vectors.shape[0]):
+        for itr2  in xrange(0,vectors.shape[0]):
             prod =np.sum(vectors[itr1]*vectors[itr2],axis=1)
             if itr1==itr2:
                 if not np.allclose(prod,np.zeros(vectors[itr1].shape[0])+1.):
@@ -253,7 +253,7 @@ if __name__=='__main__':
     phis = np.zeros(n_steps+2)
     phis[0] = phi0
     phis[-1] = phi0
-    for itr in range(1,n_steps+1):
+    for itr in xrange(1,n_steps+1):
         phis[itr] = phi0+itr*2.*np.pi/n_steps
     phis = phis[::-1]
     #thetas = np.array([theta0,theta0,theta0,theta0,theta0,theta0,theta0,theta0])
@@ -300,8 +300,8 @@ if __name__=='__main__':
    
     my_table = poly_geo.alm_table.copy()
     #get rect_geo to cache the values in the table
-    #for ll in range(0,l_max+1):
-    #    for mm in range(0,ll+1):
+    #for ll in xrange(0,l_max+1):
+    #    for mm in xrange(0,ll+1):
     #        r_geo.a_lm(ll,mm)
     #        if mm>0:
     #            r_geo.a_lm(ll,-mm)

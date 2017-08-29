@@ -81,7 +81,7 @@ class MatterPower:
             self.camb_sigma8s = np.zeros(self.n_cw)
             print "camb grid",self.camb_w_grid
             #get grid of camb power spectra for various w values 
-            for i in range(0,self.n_cw):
+            for i in xrange(0,self.n_cw):
                 self.camb_cosmos[i] = self.cosmology.copy()
                 self.camb_cosmos[i]['de_model'] = 'constant_w'
                 self.camb_cosmos[i]['w'] = self.camb_w_grid[i]
@@ -111,7 +111,7 @@ class MatterPower:
             #    self.hfs = np.zeros(self.n_cw,dtype=object)
             #    self.camb_Cs = np.zeros(self.n_cw,dtype=object)
             #    self.hf_w_pows = np.zeros((self.k.size,self.n_cw))
-            #    for i in range(0,self.n_cw):
+            #    for i in xrange(0,self.n_cw):
             #        self.camb_Cs[i] = cp.CosmoPie(cosmology=self.camb_cosmos[i],silent=True,G_safe=True,G_in=InterpolatedUnivariateSpline(C_in.z_grid[::-1],self.wm.growth_interp(self.camb_w_grid[i],C_in.a_grid)[::-1],ext=2,k=2))
             #        self.hfs[i] = halofit.halofitPk(self.camb_Cs[i],self.k,self.camb_w_pows[:,i])
              #       self.hf_w_pows[:,i] = hfs[i].D2_NL(self.k,w_overwride=True,fixed_w=self.camb_w_grid[i])
@@ -129,7 +129,7 @@ class MatterPower:
             self.one_loop = self.fpt.one_loop(self.P_lin,C_window=self.fpt_params['C_window'])
            # if self.use_camb_grid:
            #     self.one_loops = np.zeros((self.k,self.n_cw))
-           #     for i in range(0,self.n_cw):
+           #     for i in xrange(0,self.n_cw):
            #         self.one_loops[:,i] = self.fpt.one_loop(self.camb_w_pows[:,i],C_window=fpt_params['C_window'])
            # self.one_loops = np.array([])
         else:
@@ -146,25 +146,29 @@ class MatterPower:
             return InterpolatedUnivariateSpline(self.camb_w_grid,self.camb_sigma8s,k=2)(w_match_grid)*np.sqrt(pow_mult_grid)
         else:
             return self.sigma8_in
-
+    #TODO const_pow_mult unnecessary
     def linear_power(self,zs,const_pow_mult=1.):
         if self.use_match_grid:
             #w_match_grid = self.wm.match_w(self.C,zs)
             w_match_grid = self.w_match_interp(zs)
-            pow_mult_grid = self.wm.match_growth(self.C,zs,w_match_grid)*const_pow_mult
-
+            pow_mult_grid = self.wm.match_growth(self.C,zs,w_match_grid)
+        #TODO fix scalar input
         Gs = self.C.G_norm(zs)
-        Ps = np.zeros((self.k.size,zs.size))
+        if isinstance(zs,np.ndarray):
+            n_z = zs.size
+        else:
+            n_z = 1
+        Ps = np.zeros((self.k.size,n_z))
         if self.use_match_grid:
             if self.use_camb_grid:
-                for i in range(0,zs.size):
+                for i in xrange(0,n_z):
                     Ps[:,i]=Gs[i]**2*pow_mult_grid[i]*self.camb_w_interp(self.k,w_match_grid[i]).flatten()
             else:
                 Ps = np.outer(self.P_lin,Gs**2*pow_mult_grid)
         else:
             Ps = np.outer(self.P_lin,Gs**2)
 
-        return Ps
+        return Ps*const_pow_mult
     #const_pow_mult allows adjusting sigma8 without creating a whole new power spectrum
     def nonlinear_power(self,zs,pmodel=defaults.matter_power_params['nonlinear_model'],const_pow_mult=1.,get_one_loop=False):
         if self.use_match_grid:
@@ -175,42 +179,49 @@ class MatterPower:
         #else:
         #    w_match_grid = np.zeros(zs.size)+self.cosmology.w
         #    pow_mult_grid = np.zeros(zs.size)+1.*const_pow_mult
+        if isinstance(zs,np.ndarray):
+            n_z = zs.size
+        else:
+            n_z = 1
             
         G_norms = self.C.G_norm(zs)
         if self.use_match_grid:
-            Pbases = np.zeros((self.k.size,zs.size))
+            Pbases = np.zeros((self.k.size,n_z))
             if self.use_camb_grid:
-                for i in range(0,zs.size):
+                for i in xrange(0,n_z):
                     Pbases[:,i]=pow_mult_grid[i]*self.camb_w_interp(self.k,w_match_grid[i]).flatten()
             else:
                 Pbases = np.outer(self.P_lin,pow_mult_grid)
         
         #Plin = G_norms**2*Pbases 
-        P_nonlin = np.zeros((self.k.size,zs.size))
+        P_nonlin = np.zeros((self.k.size,n_z))
 
         if pmodel=='halofit':
             if self.use_match_grid:
-                self.hf_C_calcs = np.zeros(zs.size,dtype=object)
-                self.hf_calcs = np.zeros(zs.size,dtype=object)
-                for i in range(0,zs.size):
+                self.hf_C_calcs = np.zeros(n_z,dtype=object)
+                self.hf_calcs = np.zeros(n_z,dtype=object)
+                for i in xrange(0,n_z):
                     cosmo_hf_i = self.cosmology.copy()
                     cosmo_hf_i['de_model'] = 'constant_w'
                     cosmo_hf_i['w'] = w_match_grid[i]
+                    #TODO shouldn't be self
                     self.hf_C_calcs[i] = cp.CosmoPie(cosmology=cosmo_hf_i,silent=True,G_safe=True,G_in=InterpolatedUnivariateSpline(self.C.z_grid[::-1],self.wm.growth_interp(w_match_grid[i],self.C.a_grid)[::-1],ext=2,k=2))
                     self.hf_calcs[i] = halofit.halofitPk(self.hf_C_calcs[i],self.k,p_lin=Pbases[:,i],halofit_params=self.halofit_params)
                     P_nonlin[:,i] = 2.*np.pi**2*(self.hf_calcs[i].D2_NL(self.k,zs[i]).T/self.k**3)
             else:
-                P_nonlin = 2.*np.pi**2*(self.hf.D2_NL(self.k,zs).T/self.k**3)
-
+                hf_calc = halofit.halofitPk(self.C,self.k,p_lin=self.P_lin*const_pow_mult,halofit_params=self.halofit_params)
+                P_nonlin = 2.*np.pi**2*(hf_calc.D2_NL(self.k,zs).T/self.k**3).T
+                
         elif pmodel=='fastpt':
             if self.use_match_grid:
-                one_loops = np.zeros((self.k.size,zs.size))
-                for i in range(0,zs.size):
-                    one_loops[:,i] = self.fpt.one_loop(Pbases[:,i],C_window=self.fpt_params['C_window'])
+                one_loops = np.zeros((self.k.size,n_z))
+                for i in xrange(0,n_z):
                     G_i = G_norms[i]
-                    P_nonlin[:,i] =  Pbases[:,i]*G_i**2+one_loops[:,i]*G_i**4
+                    one_loops[:,i] = self.fpt.one_loop(Pbases[:,i],C_window=self.fpt_params['C_window'])*G_i**4
+                    P_nonlin[:,i] =  Pbases[:,i]*G_i**2+one_loops[:,i]
             else:
-                P_nonlin = np.outer(self.P_lin,G_norms**2)+np.outer(self.one_loop,G_norms**4)
+                one_loops = np.outer(self.one_loop,G_norms**4)
+                P_nonlin = np.outer(self.P_lin,G_norms**2)+one_loops
         if pmodel=='fastpt' and get_one_loop:
             return P_nonlin,one_loops
         elif get_one_loop:
