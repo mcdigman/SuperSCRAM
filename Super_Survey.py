@@ -18,6 +18,7 @@ import defaults
 import fisher_matrix as fm
 import planck_fisher
 import matter_power_spectrum as mps
+import multi_fisher as mf
 
 class super_survey:
     ''' This class holds and returns information for all surveys
@@ -53,39 +54,48 @@ class super_survey:
         self.basis = basis 
         self.N_O_I=0
         self.N_O_a=0   
-        self.O_I=np.array([], dtype=object)
-    
+        #self.O_I=np.array([], dtype=object)
+
         #self.O_a=np.array([], dtype=object)
         for i in xrange(self.N_surveys_sw): 
-            survey=surveys_sw[i]
-            #TODO why add N_O_I from different surveys?
-            self.N_O_I=self.N_O_I + survey.get_N_O_I()          
-        #TODO temp     
-        for i in xrange(self.N_surveys_lw):
-          
-            survey=self.surveys_lw[i]
-            self.N_O_a=self.N_O_a + survey.get_N_O_a()
-            #self.O_a=np.append(self.O_a,survey['O_a'])
+            self.N_O_I=self.N_O_I + surveys_sw[i].get_N_O_I()          
+
+        for i in xrange(self.N_surveys_lw): 
+            self.N_O_a=self.N_O_a + surveys_lw[i].get_N_O_a()
               
         print('Super_Survey: there are '+str(self.N_O_I)+' short wavelength and '+str(self.N_O_a)+' long wavelength observables')
         #self.O_a_data=self.get_O_a()
         #self.O_I_data=self.get_O_I(k,P_lin)
-        self.O_I_data = self.get_O_I_all()
-        self.F_0 = self.basis.get_fisher()
-        if self.do_mitigated:
-            #self.cov_mit,self.a_mit=self.get_SSC_covar(mitigation=True)     
-            self.covs_sw,self.a_vals=self.get_SSC_covar(mitigation=True)     
-            #self.cov_no_mit,self.a_no_mit=self.get_SSC_covar(mitigation=False)     
-            if self.get_a:
-                print "Super_Survey: mitigated run gave a="+str(self.a_vals)
-        elif self.do_unmitigated:
-            self.covs_sw,self.a_vals=self.get_SSC_covar(mitigation=False)     
-            print "Super_Survey: unmitigated run gave a="+str(self.a_vals)
-        else:
-            self.covs_sw=np.array([],dtype=object)
-            self.a_vals = np.array([],dtype=object)
+        #self.O_I_data = self.get_O_I_all()
+        #self.F_0 = self.basis.get_fisher()
 
-        self.covs_params = self.surveys_sw[0].get_cov_tot_parameters(self.covs_sw[0])
+        #TODO support multiple sw surveys with multi_fisher
+        de_prior_params = defaults.planck_fisher_params
+        self.multi_f = mf.multi_fisher(basis,surveys_sw[0],surveys_lw,prior_params=de_prior_params)
+
+#        if self.do_mitigated:
+#            #self.cov_mit,self.a_mit=self.get_SSC_covar(mitigation=True)     
+#            #self.covs_sw,self.a_vals=self.get_SSC_covar(mitigation=True)     
+#            self.covs_mit = self.multi_f.get_fisher(mf.f_spec_mit,mf.f_return_sw_par)
+#            self.covs_no_mit = self.multi_f.get_fisher(mf.f_spec_no_mit,mf.f_return_sw_par)
+#            self.a_vals = self.multi_f.get_a_lw()
+#            self.covs_sw = np.array([self.covs_no_mit[1],self.covs_mit[1]])
+#            #self.cov_no_mit,self.a_no_mit=self.get_SSC_covar(mitigation=False)     
+        self.f_set = self.multi_f.get_fisher_set()
+        if self.get_a:
+            self.a_vals = self.multi_f.get_a_lw()
+            print "Super_Survey: mitigated run gave a="+str(self.a_vals)
+        else:
+            self.a_vals = np.zeros(2)
+#        elif self.do_unmitigated:
+#            #self.covs_sw,self.a_vals=self.get_SSC_covar(mitigation=False)     
+#            print "Super_Survey: unmitigated run gave a="+str(self.a_vals)
+#        else:
+#            self.covs_sw=np.array([],dtype=object)
+#            self.a_vals = np.array([],dtype=object)
+
+        #self.covs_params = self.surveys_sw[0].get_cov_tot_parameters(self.covs_sw[0])
+        #self.covs_params = np.array([self.covs_no_mit[2],self.covs_mit[2]])
         #if self.do_mitigated:
          #   self.c_mit_params = self.surveys_sw[0].get_cov_tot_parameters(self.cov_mit[0])
             #self.c_no_mit_params = self.surveys_sw[0].get_cov_tot_parameters(self.cov_no_mit[0])
@@ -95,8 +105,9 @@ class super_survey:
             #self.f_no_mit_params = self.surveys_sw[0].get_fisher_parameters(self.f_no_mit) 
             #self.f_mit = fm.fisher_matrix(self.cov_mit[0].get_total_covar(),input_type=fm.REP_COVAR,fix_input=False)
             #self.f_mit_params = self.surveys_sw[0].get_fisher_parameters(self.f_mit) 
-        #TODO iterate
-        self.covs_g_params = self.surveys_sw[0].get_cov_tot_parameters(self.covs_sw[0],gaussian_only=True)
+        #self.covs_g_params = self.surveys_sw[0].get_cov_tot_parameters(self.covs_sw[0],gaussian_only=True)
+        self.covs_g = self.multi_f.get_fisher(mf.f_spec_g,mf.f_return_par)
+        self.covs_g_params = self.covs_g[2] 
         #self.f_gaussian = fm.fisher_matrix(self.cov_no_mit[0].get_gaussian_covar(),input_type=fm.REP_COVAR,fix_input=True)
         #self.f_gaussian_params = self.surveys_sw[0].get_fisher_parameters(self.f_gaussian)
 
@@ -105,36 +116,36 @@ class super_survey:
         print 'Super_Survey: run time', t2-t1
      
      
-    def get_SSC_covar(self,mitigation=True):
-         
-        #TODO handle F_loc differently
-        if mitigation:
-            print "Super_Survey: getting SSC covar with mitigation"
-            F_loc = copy.deepcopy(self.F_0)
-            #F_loc = self.basis.get_fisher(allow_caching=True)
-            for i in xrange(0,self.N_surveys_lw):
-                self.surveys_lw[i].fisher_accumulate(F_loc)
-            F_loc.switch_rep(fm.REP_CHOL)
-        else:
-            F_loc = self.F_0
-            print "Super_Survey: getting SSC covar without mitigation"
-
-        Cov_SSC = np.zeros(self.N_surveys_sw,dtype=object) 
-        a_SSC = np.zeros((2,self.N_surveys_sw),dtype=object) 
-
-        for i in xrange(0,self.N_surveys_sw):
-            survey=self.surveys_sw[i]
-            if mitigation:
-                Cov_SSC[i] = survey.get_covars(np.array([self.F_0,F_loc]),self.basis)
-            else:
-                Cov_SSC[i] = survey.get_covars(np.array([self.F_0]),self.basis)
-            
-            if self.get_a:
-                T=self.basis.D_delta_bar_D_delta_alpha(survey.geo,tomography=True)[0]
-                a_SSC[i]=F_loc.contract_covar(T.T,T,identical_inputs=True)
-                print "Super_Survey: a is "+str(a_SSC[i])+" for survey #"+str(i)
-        self.F_fin = F_loc
-        return Cov_SSC,a_SSC
+#    def get_SSC_covar(self,mitigation=True):
+#         
+#        if mitigation:
+#            print "Super_Survey: getting SSC covar with mitigation"
+#            F_loc = copy.deepcopy(self.multi_f.get_fisher(mf.f_spec_no_mit,mf.f_return_lw))
+#            #F_loc = self.basis.get_fisher(allow_caching=True)
+#            for i in xrange(0,self.N_surveys_lw):
+#                self.surveys_lw[i].fisher_accumulate(F_loc)
+#            F_loc.switch_rep(fm.REP_CHOL)
+#        else:
+#            F_loc = self.multi_f.get_fisher(mf.f_spec_no_mit,mf.f_return_lw)
+#            print "Super_Survey: getting SSC covar without mitigation"
+#
+#        Cov_SSC = np.zeros(self.N_surveys_sw,dtype=object) 
+#        a_SSC = np.zeros((self.N_surveys_sw,2),dtype=object) 
+#
+#        for i in xrange(0,self.N_surveys_sw):
+#            survey=self.surveys_sw[i]
+#            if mitigation:
+#                Cov_SSC[i] = survey.get_covars(np.array([self.multi_f.get_fisher(mf.f_spec_no_mit,f_return_lw),SS.multi_f.get_fisher(mf.f_spec_mit,f_return_lw)]),self.basis)
+#            else:
+#                Cov_SSC[i] = survey.get_covars(np.array([self.multi_f.get_fisher(mf.f_spec_no_mit,mf.f_return_lw),None]),self.basis)
+#            
+#            if self.get_a:
+#                T=self.basis.D_delta_bar_D_delta_alpha(survey.geo,tomography=True)[0]
+#                a_SSC[i,0]=self.multi_f.get_fisher(mf.f_spec_no_mit,mf.f_return_lw),None]).contract_covar(T,T,identical_inputs=True)
+#                a_SSC[i,1]=F_loc.contract_covar(T,T,identical_inputs=True)
+#                print "Super_Survey: a is "+str(a_SSC[i])+" for survey #"+str(i)
+#        self.F_fin = F_loc
+#        return Cov_SSC,a_SSC
     
 #    def get_O_a(self):
 #        D_O_a=np.zeros(self.N_O_a,dtype=object)
@@ -154,14 +165,14 @@ class super_survey:
 #                    print "Super_Survey: D_O_a for lw observable #"+str(i)+": ",D_O_a[i][0]
 #        return D_O_a  
 
-    def get_O_I_all(self):
-        O_I_list = np.zeros(self.N_O_I,dtype=object)
-        N_O_I = 0
-        for i in xrange(0,self.N_surveys_sw):
-            survey = self.surveys_sw[i]
-            N_O_I_survey = survey.get_N_O_I()
-            O_I_list[N_O_I:N_O_I+N_O_I_survey] = survey.get_O_I_list()
-        return O_I_list
+#    def get_O_I_all(self):
+#        O_I_list = np.zeros(self.N_O_I,dtype=object)
+#        N_O_I = 0
+#        for i in xrange(0,self.N_surveys_sw):
+#            survey = self.surveys_sw[i]
+#            N_O_I_survey = survey.get_N_O_I()
+#            O_I_list[N_O_I:N_O_I+N_O_I_survey] = survey.get_O_I_list()
+#        return O_I_list
 def get_ellipse_specs(covs,dchi2=2.3):
     a_s = np.zeros_like(covs)
     b_s = np.zeros_like(covs)
@@ -395,14 +406,14 @@ if __name__=="__main__":
      
     print 'main: this is r_max: '+str(r_max)
      
-    SS=super_survey(surveys_sw, surveys_lw,basis,C=C,get_a=False,do_unmitigated=True,do_mitigated=True)
+    SS=super_survey(surveys_sw, surveys_lw,basis,C=C,get_a=True,do_unmitigated=True,do_mitigated=True)
 
     t2 = time()
     print "main: total run time "+str(t2-t1)+" s"
      
     #print "fractional mitigation: ", SS.a_no_mit/SS.a_mit     
-    rel_weights1 = SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0]*np.dot(SS.F_0.get_cov_cholesky(),SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0])
-    rel_weights2 = SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0]*np.dot(SS.F_fin.get_cov_cholesky(),SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0])
+    rel_weights1 = SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0]*np.dot(SS.multi_f.get_fisher(mf.f_spec_no_mit,mf.f_return_lw)[0].get_cov_cholesky(),SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0])
+    rel_weights2 = SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0]*np.dot(SS.multi_f.get_fisher(mf.f_spec_mit,mf.f_return_lw)[0].get_cov_cholesky(),SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0])
 
  #   ax.plot(rel_weights)
  #   plt.show()
@@ -415,11 +426,19 @@ if __name__=="__main__":
     #SS_eig =  SS.cov_no_mit[0].get_SS_eig()[0]
     #SS_eig_mit =  SS.cov_mit[0].get_SS_eig()[0]
     try:
-        SS_eigs = SS.covs_sw[0].get_SS_eig()
-        chol_gauss = np.linalg.cholesky(SS.covs_sw[0].get_gaussian_covar())
-        print "main: unmitigated lambda1,2: "+str(SS_eigs[0][0][-1])+","+str(SS_eigs[0][0][-2])
-        print "main: mitigated lambda1,2: "+str(SS_eigs[1][0][-1])+","+str(SS_eigs[1][0][-2])
-        print "n lambda>1.00000001: "+str(np.sum(np.abs(SS_eigs[0][0][0])>1.00000001))
+        mit_eigs_sw = SS.f_set[2][1].get_cov_eig_metric(SS.f_set[0][1])
+        no_mit_eigs_sw = SS.f_set[1][1].get_cov_eig_metric(SS.f_set[0][1])
+
+        mit_eigs_par = SS.f_set[2][2].get_cov_eig_metric(SS.f_set[0][2])
+        no_mit_eigs_par = SS.f_set[1][2].get_cov_eig_metric(SS.f_set[0][2])
+        print "main: unmitigated sw lambda1,2: "+str(no_mit_eigs_sw[0][-1])+","+str(no_mit_eigs_sw[0][-2])
+        print "main: mitigated sw lambda1,2: "+str(mit_eigs_sw[0][-1])+","+str(mit_eigs_sw[0][-2])
+        print "main: n sw mit lambda>2.00000001: "+str(np.sum(np.abs(mit_eigs_sw[0])>2.00000001))
+        print "main: n sw no mit lambda>2.00000001: "+str(np.sum(np.abs(no_mit_eigs_sw[0])>2.00000001))
+        print "main: unmitigated par lambda1,2: "+str(no_mit_eigs_par[0][-1])+","+str(no_mit_eigs_par[0][-2])
+        print "main: mitigated par lambda1,2: "+str(mit_eigs_par[0][-1])+","+str(mit_eigs_par[0][-2])
+        print "main: n par mit lambda>2.00000001: "+str(np.sum(np.abs(mit_eigs_par[0])>2.00000001))
+        print "main: n par no mit lambda>2.00000001: "+str(np.sum(np.abs(no_mit_eigs_par[0])>2.00000001))
     except:
         warn('Eig value failed')
 #    print "SS eigenvals:",SS_eig[0]
@@ -437,8 +456,7 @@ if __name__=="__main__":
     print 'phi width',(geo1.rs[1]+geo1.rs[0])/2.*(Phi1[1]-Phi1[0])*np.sin((Theta1[1]+Theta1[0])/2)
     ax_ls = np.hstack((l_sw,l_sw))
     
-    v= SS.surveys_sw[0].get_dO_I_dparameter_array()
-    eig_params = SS.covs_sw[0].get_SS_eig_param(v)
+    #v= SS.surveys_sw[0].get_dO_I_dparameter_array()
     #eig_nm = SS.cov_no_mit[0].get_SS_eig_param(v)
     #eig_m = SS.cov_mit[0].get_SS_eig_param(v)
 
@@ -451,7 +469,8 @@ if __name__=="__main__":
         opacity_set = np.array([1.0,1.0,1.0])
         box_widths = np.array([0.015,0.005,0.0005,0.005,0.1,0.05])
         dchi2 = 2.3
-        cov_set = np.array([SS.covs_params[1],SS.covs_params[0],SS.covs_g_params[0]])
+        #cov_set = np.array([SS.covs_params[1],SS.covs_params[0],SS.covs_g_params[0]])
+        cov_set = np.array([SS.f_set[2][2].get_covar(),SS.f_set[1][2].get_covar(),SS.f_set[0][2].get_covar()])
         label_set = np.array(["ssc+mit+g","ssc+g","g"])
         make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',cosmo_param_list,C,dchi2=dchi2)
 
@@ -460,6 +479,11 @@ if __name__=="__main__":
     if chol_plot:
         import matplotlib.pyplot as plt
         ax = plt.subplot(111)
+        chol_gauss = SS.f_set[0][2].get_cov_choleksy()#np.linalg.cholesky(SS.covs_sw[0].get_gaussian_covar())
+        #eig_params = SS.covs_sw[0].get_SS_eig_param(v)
+        eig_params = np.zeros(2,dtype=object)
+        eig_params[0] = SS.f_set[1][2].get_cov_eig_metric(SS.covs_g_params)
+        eig_params[1] = SS.f_set[2][2].get_cov_eig_metric(SS.covs_g_params)
         for itr in xrange(1,5):
             #ax.plot(ax_ls,ax_ls*(ax_ls+1.)*np.dot(chol_gauss,SS_eig[1][:,-itr]))
             #ax.plot(np.dot(chol_gauss,SS_eig[1][:,-itr]))
@@ -469,13 +493,13 @@ if __name__=="__main__":
         ax.legend(['1','2','3','4','5'])
         plt.show()
     #TODO make testing module for this
-    test_perturbation=False
+    test_perturbation=True
     pert_test_fails = 0
     if test_perturbation:
         #TOLERANCE below which an eigenvalue less than TOLERANCE*max eigenvalue is considered 0
         REL_TOLERANCE = 10**-8
-        f0 = SS.F_0.get_fisher()
-        f1 = SS.F_fin.get_fisher()
+        f0 = SS.multi_f.get_fisher(mf.f_spec_no_mit,mf.f_return_lw)[0].get_fisher()
+        f1 = SS.multi_f.get_fisher(mf.f_spec_mit,mf.f_return_lw)[0].get_fisher()
         if not np.all(f0.T==f0):
             pert_test_fails+=1
             warn("unperturbed fisher matrix not symmetric, unacceptable")
@@ -510,14 +534,12 @@ if __name__=="__main__":
             pert_test_fails+=1
             warn("some eigenvalues fail interlace theorem, unacceptable")
 
-
-        c0 = SS.F_0.get_covar()
-        c1 = SS.F_fin.get_covar()
-        if not np.allclose(c0,c0.T):
+        c0 = SS.multi_f.get_fisher(mf.f_spec_no_mit,mf.f_return_lw)[0].get_covar()
+        c1 = SS.multi_f.get_fisher(mf.f_spec_mit,mf.f_return_lw)[0].get_covar()
+        if not np.all(c0==c0.T):
             pert_test_fails+=1
             warn("unperturbed covariance not symmetric, unacceptable")
-        #TODO investigate possible deviation from exactness here
-        if not np.allclose(c1,c1.T):
+        if not np.all(c1==c1.T):
             warn("perturbed covariance not symmetric, unacceptable")
         eigc0 = np.linalg.eigh(c0)[0]
         eigc1 = np.linalg.eigh(c1)[0]
@@ -537,16 +559,18 @@ if __name__=="__main__":
             print "All fisher matrix sanity checks passed"
         else:
             warn(str(pert_test_fails)+" fisher matrix sanity checks failed")
-    test_eigs = False
+    test_eigs = True
     eig_test_fails = 0
     if test_eigs:
         REL_TOLERANCE = 10**-8
-        c_sscs = SS.covs_sw[0].get_ssc_covar()
-        c_ssc0 = c_sscs[0]
+        #c_sscs = SS.multi_f.get_fisher(mf.f_spec_SSC_no_mit,mf.f_return_sw).get_covar()#SS.covs_sw[0].get_ssc_covar()
+        c_ssc0 = SS.multi_f.get_fisher(mf.f_spec_SSC_no_mit,mf.f_return_sw)[1].get_covar()#SS.covs_sw[0].get_ssc_covar()
+        #c_ssc0 = c_sscs[0]
         if not np.allclose(c_ssc0,c_ssc0.T):
             eig_test_fails+=1
             warn("unperturbed result covariance not symmetric, unacceptable")
-        c_ssc1 = c_sscs[1]
+        #c_ssc1 = c_sscs[1]
+        c_ssc1 = SS.multi_f.get_fisher(mf.f_spec_SSC_mit,mf.f_return_sw)[1].get_covar()#SS.covs_sw[0].get_ssc_covar()
         if not np.allclose(c_ssc1,c_ssc1.T):
             eig_test_fails+=1
             warn("perturbed result covariance not symmetric, unacceptable")
@@ -562,7 +586,7 @@ if __name__=="__main__":
         if np.any(eig_ssc1<0):
             eig_test_fails+=1
             warn("perturbed result cov not positive semidefinite, unacceptable")
-        cg = SS.cov_no_mit[0].get_gaussian_covar()
+        cg = SS.f_set[0][1].get_covar()
         eigsys_cg = np.linalg.eigh(cg)
         eig_cg = eigsys_cg[0].copy()
         eig_mitprod = np.real(np.linalg.eig(np.dot(np.linalg.inv(c_ssc0+cg),c_ssc1+cg))[0])

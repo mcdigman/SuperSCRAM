@@ -1,16 +1,21 @@
-import fisher_matrix as fm
-import numpy as np
-import copy as copy
+import copy 
 import planck_fisher
 import defaults
 
-fisher_spec_mit={'lw_base':True,'lw_mit':True,'sw_g':True,'sw_ng':True,'par_prior':True}
-fisher_spec_no_mit={'lw_base':True,'lw_mit':False,'sw_g':True,'sw_ng':True,'par_prior':True}
-fisher_spec_g={'lw_base':False,'lw_mit':False,'sw_g':True,'sw_ng':False,'par_prior':True}
-fisher_returns_par = {'lw':False,'sw':False,'par':True}
+import fisher_matrix as fm
+import numpy as np
+
+f_spec_mit={'lw_base':True,'lw_mit':True,'sw_g':True,'sw_ng':True,'par_prior':True}
+f_spec_no_mit={'lw_base':True,'lw_mit':False,'sw_g':True,'sw_ng':True,'par_prior':True}
+f_spec_g={'lw_base':False,'lw_mit':False,'sw_g':True,'sw_ng':False,'par_prior':True}
+f_spec_SSC_mit={'lw_base':True,'lw_mit':True,'sw_g':False,'sw_ng':False,'par_prior':False}
+f_spec_SSC_no_mit={'lw_base':True,'lw_mit':False,'sw_g':False,'sw_ng':False,'par_prior':False}
+f_return_par = {'lw':False,'sw':False,'par':True}
+f_return_sw_par = {'lw':False,'sw':True,'par':True}
+f_return_sw = {'lw':False,'sw':True,'par':False}
+f_return_lw = {'lw':True,'sw':False,'par':False}
 #master class for managing fisher matrix manipulations
 class multi_fisher:
-    #input: fisher_base, which should be the fisher_matrix object F_0 in the basis, specified by basis
     #input: basis, an sph_basis_k object or compatible standard
     #input: sw_survey, ans sw_survey objects
     def __init__(self,basis,sw_survey,lw_surveys, prior_params=defaults.planck_fisher_params):
@@ -36,18 +41,16 @@ class multi_fisher:
             itr+=self.d_sizes[i]
         self.n_sw = self.sw_survey.get_total_dimension()
 
-        #TODO fix transpose issue
         self.sw_to_parameter_array=sw_survey.get_dO_I_dparameter_array()
         
         #sw covariances to add
-        self.sw_g_covar = fm.fisher_matrix(self.sw_survey.get_gaussian_cov(),input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,silent=True)
-        self.sw_ng_covar = fm.fisher_matrix(self.sw_survey.get_nongaussian_cov(),input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,silent=True)
+        self.sw_g_covar = fm.fisher_matrix(self.sw_survey.get_gaussian_covar(),input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,silent=True)
+        self.sw_ng_covar = fm.fisher_matrix(self.sw_survey.get_nongaussian_covar(),input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,silent=True)
 
 #        self.sw_SSC_no_mit_covar = self.lw_F_no_mit.project_covar(self.lw_to_sw_array)
 #        self.sw_SSC_mit_covar = self.lw_F_mit.project_covar(self.lw_to_sw_array)
 
         #get total sw covariances
-        #TODO maybe make more general, ie just add list of covariance matrices
 #        self.sw_tot_no_mit = copy.deepcopy(self.sw_SSC_no_mit_covar)
 #        self.sw_tot_no_mit.add_covar(self.sw_g_covar)
 #        self.sw_tot_no_mit.add_covar(self.sw_ng_covar)
@@ -69,77 +72,86 @@ class multi_fisher:
 #        self.par_tot_mit = copy.deepcopy(self.par_tot_mit_no_prior)
 #        self.par_tot_mit.add_fisher(self.fisher_priors)
 
-    #get a fisher matrix as specificed by fisher_spec and fisher_returns
+    #get a fisher matrix as specificed by f_spec and f_return
     #for example the following combination would return the parameter fisher matrix including lw mitigation, sw gaussian and nonguassian covariance
-    #fisher_spec={'lw_base':True,'lw_mit':True,'sw_g':True,'sw_ng':True,'par_prior':True}
-    #fisher_returns = {'lw':False,'sw':False,'par':True}
-    def get_fisher(self,fisher_spec,fisher_returns):
-        lw_fisher=None;sw_fisher=None;par_fisher=None
-        if fisher_returns['lw'] or fisher_returns['sw'] or fisher_returns['par']:
-            lw_fisher = self.get_lw_fisher(fisher_spec)
-            if (fisher_returns['sw'] or fisher_returns['par']):
+    #f_spec={'lw_base':True,'lw_mit':True,'sw_g':True,'sw_ng':True,'par_prior':True}
+    #f_return = {'lw':False,'sw':False,'par':True}
+    def get_fisher(self,f_spec,f_return):
+        if f_return['lw'] or f_return['sw'] or f_return['par']:
+            lw_fisher = self.get_lw_fisher(f_spec)
+            if f_return['sw'] or f_return['par']:
                 if lw_fisher is None:
                     fisher_from_lw=None
                 else:
                     fisher_from_lw = lw_fisher.project_covar(self.lw_to_sw_array)
-                sw_fisher = self.get_sw_fisher(fisher_spec,fisher_from_lw)
-                if fisher_returns['par']:
+                sw_fisher = self.get_sw_fisher(f_spec,fisher_from_lw)
+                if f_return['par']:
                     if sw_fisher is None:
                         fisher_from_sw=None
                     else:
                         fisher_from_sw = sw_fisher.project_fisher(self.sw_to_parameter_array)
-                    par_fisher = self.get_par_fisher(fisher_spec,fisher_from_sw)
+                    par_fisher = self.get_par_fisher(f_spec,fisher_from_sw)
 
         #avoid returning unwanted arrays to allow garbage collection
         results = np.array([None,None,None])
-        if fisher_returns['lw']:
+        if f_return['lw']:
             results[0] = lw_fisher
-        if fisher_returns['sw']:
+        if f_return['sw']:
             results[1] = sw_fisher
-        if fisher_returns['par']:
+        if f_return['par']:
             results[2] = par_fisher
         return results
 
     #get a parameter fisher matrix with a given projected sw matrix with or without priors 
-    def get_par_fisher(self,fisher_spec,fisher_from_sw):
+    def get_par_fisher(self,f_spec,fisher_from_sw):
         if fisher_from_sw is None:
-            if fisher_spec['par_prior']:
+            if f_spec['par_prior']:
                 return copy.deepcopy(self.fisher_priors)
             else:
                 return None
 
         result = copy.deepcopy(fisher_from_sw)
 
-        if fisher_spec['par_prior']:
+        if f_spec['par_prior']:
             result.add_fisher(self.fisher_priors)
 
         return result
         
     #get a lw fisher with or without mitigation
-    def get_lw_fisher(self,fisher_spec):
-        if fisher_spec['lw_base'] and not fisher_spec['lw_mit']:
+    def get_lw_fisher(self,f_spec):
+        if f_spec['lw_base'] and not f_spec['lw_mit']:
             return self.lw_F_no_mit 
-        elif fisher_spec['lw_base'] and fisher_spec['lw_mit']:
+        elif f_spec['lw_base'] and f_spec['lw_mit']:
             return self.lw_F_mit
-        elif not fisher_spec['lw_base'] and fisher_spec['lw_mit']:
-            raise ValueError('multi_fisher does not support mitigation with ssc contamination')
+        elif not f_spec['lw_base'] and f_spec['lw_mit']:
+            raise ValueError('multi_fisher does not support mitigation without ssc contamination')
         else:
             return None
 
     #get a sw fisher with given projected lw matrix and with or without gaussian and nongaussian components
-    def get_sw_fisher(self,fisher_spec,fisher_from_lw):
+    def get_sw_fisher(self,f_spec,fisher_from_lw):
         if fisher_from_lw is None:
-            if fisher_spec['sw_g'] or fisher_spec['sw_ng']:
+            if f_spec['sw_g'] or f_spec['sw_ng']:
                 sw_result = fm.fisher_matrix(np.zeros((self.n_sw,self.n_sw)),input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,silent=True)
             else:
                 return None
         else:
             sw_result = copy.deepcopy(fisher_from_lw)
-        if fisher_spec['sw_g']:
+        if f_spec['sw_g']:
             sw_result.add_covar(self.sw_g_covar)
-        if fisher_spec['sw_ng']:
+        if f_spec['sw_ng']:
             sw_result.add_covar(self.sw_ng_covar)
         return sw_result
         
+    def get_fisher_set(self):
+        result = np.zeros(3,dtype=object)
+        result[0] = self.get_fisher(f_spec_g,f_return_sw_par)
+        result[1] = self.get_fisher(f_spec_no_mit,f_return_sw_par)
+        result[2] = self.get_fisher(f_spec_mit,f_return_sw_par)
+        return result
+
+    def get_a_lw(self):
+        project_lw_a = self.basis.D_delta_bar_D_delta_alpha(self.sw_survey.geo,tomography=True)[0]
+        return np.array([self.lw_F_no_mit.project_covar(project_lw_a).get_covar(),self.lw_F_mit.project_covar(project_lw_a).get_covar()])
 
 

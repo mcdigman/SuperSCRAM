@@ -104,7 +104,9 @@ class DNumberDensityObservable(LWObservable):
         return self.DO_a
         
     def get_fisher(self):
-        return np.dot(np.dot(self.vs.T,self.Nab_i),self.vs)
+        result= np.dot(np.dot(self.vs.T,self.Nab_i),self.vs)
+        #symmetrize to avoid accumulating numerical errors, should have very small effect
+        return (result+result.T)/2.
                 
         
 

@@ -78,8 +78,7 @@ class SWSurvey:
                 itr+=n_k
         return dO_I_dparam_array
 
-    #TODO make consistent cov vs covar
-    def get_gaussian_cov(self):
+    def get_gaussian_covar(self):
         cov_mats = np.zeros((self.get_total_dimension(),self.get_total_dimension()))
         ds = self.get_dimension_list()
         #n1 and n2 are to track indices so cov_mats can be a float array instead of an array of objects
@@ -94,68 +93,64 @@ class SWSurvey:
             n1+=ds[i]
 
         return cov_mats
-    #TODO should return a proper object
-    def get_SSC_cov(self,fisher_set,basis):
-        print "sw_survey: begin computing sw covariance matrices"
-        n_m = self.get_total_dimension()
-        n_c = fisher_set.shape[0]
-        cov_mats = np.zeros((n_c,n_m,n_m))
-
-        #short circuit get_dO_I_ddelta_bar_list() if the result won't be used
-        if n_m==0:
-            print "sw_survey: no sw covariance matrices to compute"
-            return cov_mats
-        ds = self.get_dimension_list()
-        #n1 and n2 are to track indices so cov_mats can be a float array instead of an array of objects
-        n1 = 0
-        #TODO consider not getting this whole list initially
-        dO_I_ddelta_bar_list = self.get_dO_I_ddelta_bar_list()
-
-        n_o = self.get_N_O_I()
-        Ts = np.zeros((n_c,n_o),dtype=object)
-        for i in xrange(0,n_o):
-            dO_ddelta_alpha_i=basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[i])
-            for j in xrange(0,n_c):
-                #TODO PRIORITY is this right cholesky? and/or should be inverted after?
-                
-                Ts[j,i] = fisher_set[j].contract_chol_right(dO_ddelta_alpha_i)
-            #Ts[i] = basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[i])
-        for i in xrange(0,n_o):
-            n2 = 0
-          #  T_i = basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[i])
-         #   print "sw_survey: T_i shape: "+str(T_i.shape)
-            for j in xrange(0,i+1):
-                print "sw_survey "+str(self.get_survey_id())+": Calc d delta alpha for observable 1,2 #:"+str(i)+","+str(j)
-                #print Ts[i]
-                #print Ts[j]
-                #print np.dot(Ts[i].T,Ts[j])
-              #  T_j = basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[j])
-               # cov_mats[n1:n1+ds[i],n2:n2+ds[j]] = np.dot(np.dot(Ts[i].T,fisher.get_covar()),Ts[j])
-                #cov_mats[n1:n1+ds[i],n2:n2+ds[j]] = fisher.contract_covar(Ts[i].T,Ts[j])
-                for k in xrange(0,n_c):
-                    cov_mats[k,n1:n1+ds[i],n2:n2+ds[j]] = np.dot(Ts[k,i].T,Ts[k,j])
-                    if not i==j:
-                        cov_mats[k,n2:n2+ds[i],n1:n1+ds[j]] = cov_mats[k,n1:n1+ds[i],n2:n2+ds[j]].T
-
-
-                n2+=ds[j]
-            n1+=ds[i]
-        print "sw_survey: finished computing sw covariance matrices"
-        return cov_mats
+#    def get_SSC_cov(self,fisher_set,basis):
+#        print "sw_survey: begin computing sw covariance matrices"
+#        n_m = self.get_total_dimension()
+#        n_c = fisher_set.shape[0]
+#        cov_mats = np.zeros((n_c,n_m,n_m))
+#
+#        #short circuit get_dO_I_ddelta_bar_list() if the result won't be used
+#        if n_m==0:
+#            print "sw_survey: no sw covariance matrices to compute"
+#            return cov_mats
+#        ds = self.get_dimension_list()
+#        #n1 and n2 are to track indices so cov_mats can be a float array instead of an array of objects
+#        n1 = 0
+#        #TODO consider not getting this whole list initially
+#        dO_I_ddelta_bar_list = self.get_dO_I_ddelta_bar_list()
+#
+#        n_o = self.get_N_O_I()
+#        Ts = np.zeros((n_c,n_o),dtype=object)
+#        for i in xrange(0,n_o):
+#            dO_ddelta_alpha_i=basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[i])
+#            for j in xrange(0,n_c):
+#                Ts[j,i] = fisher_set[j].contract_chol_right(dO_ddelta_alpha_i)
+#            #Ts[i] = basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[i])
+#        for i in xrange(0,n_o):
+#            n2 = 0
+#          #  T_i = basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[i])
+#         #   print "sw_survey: T_i shape: "+str(T_i.shape)
+#            for j in xrange(0,i+1):
+#                print "sw_survey "+str(self.get_survey_id())+": Calc d delta alpha for observable 1,2 #:"+str(i)+","+str(j)
+#                #print Ts[i]
+#                #print Ts[j]
+#                #print np.dot(Ts[i].T,Ts[j])
+#              #  T_j = basis.D_O_I_D_delta_alpha(self.geo,dO_I_ddelta_bar_list[j])
+#               # cov_mats[n1:n1+ds[i],n2:n2+ds[j]] = np.dot(np.dot(Ts[i].T,fisher.get_covar()),Ts[j])
+#                #cov_mats[n1:n1+ds[i],n2:n2+ds[j]] = fisher.contract_covar(Ts[i].T,Ts[j])
+#                for k in xrange(0,n_c):
+#                    cov_mats[k,n1:n1+ds[i],n2:n2+ds[j]] = np.dot(Ts[k,i].T,Ts[k,j])
+#                    if not i==j:
+#                        cov_mats[k,n2:n2+ds[i],n1:n1+ds[j]] = cov_mats[k,n1:n1+ds[i],n2:n2+ds[j]].T
+#
+#
+#                n2+=ds[j]
+#            n1+=ds[i]
+#        print "sw_survey: finished computing sw covariance matrices"
+#        return cov_mats
     
-    def get_nongaussian_cov(self):
+    def get_nongaussian_covar(self):
         return np.zeros((self.get_total_dimension(),self.get_total_dimension()))
     
-    #get the covariance matrices, and a fisher matrix for the total covariance
-    def get_covars(self,fisher_set,basis):
-        cov_mats =  CovMat(self.get_gaussian_cov(),self.get_nongaussian_cov(),self.get_SSC_cov(fisher_set,basis),self.get_total_dimension(),self.param_priors)
-        #fisher_c = fm.fisher_matrix(cov_mats.get_total_covar(),input_type=fm.REP_COVAR,fix_input=False)
-        return cov_mats
+#    #get the covariance matrices, and a fisher matrix for the total covariance
+#    def get_covars(self,fisher_set,basis):
+#        cov_mats =  CovMat(self.get_gaussian_cov(),self.get_nongaussian_cov(),self.get_SSC_cov(fisher_set,basis),self.get_total_dimension(),self.param_priors)
+#        #fisher_c = fm.fisher_matrix(cov_mats.get_total_covar(),input_type=fm.REP_COVAR,fix_input=False)
+#        return cov_mats
    
-    def get_cov_tot_parameters(self,cov_mats,gaussian_only=False):
-        #TODO cache
-        v = self.get_dO_I_dparameter_array()
-        return cov_mats.get_cov_sum_param_basis(v,gaussian_only=gaussian_only)
+#    def get_cov_tot_parameters(self,cov_mats,gaussian_only=False):
+#        v = self.get_dO_I_dparameter_array()
+#        return cov_mats.get_cov_sum_param_basis(v,gaussian_only=gaussian_only)
         
     def names_to_observables(self,names):
         observables = np.zeros(len(names.keys()),dtype=object)

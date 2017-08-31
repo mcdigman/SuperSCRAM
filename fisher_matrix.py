@@ -1,7 +1,7 @@
 import numpy as np
 import scipy as sp
 import scipy.linalg
-from algebra_utils import ch_inv,cholesky_inv_contract,get_inv_cholesky,invert_triangular,get_mat_from_inv_cholesky,cholesky_inplace,get_cholesky_inv
+from algebra_utils import cholesky_inv_contract,get_inv_cholesky,invert_triangular,cholesky_inplace,get_cholesky_inv
 from warnings import warn
 REP_FISHER = 0
 REP_CHOL = 1
@@ -90,7 +90,9 @@ class fisher_matrix:
             if not self.silent:
                 print("fisher_matrix "+str(id(self))+": covar cache miss")
             copy_safe = True
-            result = ch_inv(self.get_cov_cholesky(),cholesky_given=True,lower=False)
+            chol_cov =self.get_cov_cholesky()
+            result = np.dot(chol_cov,chol_cov.T)
+            result = (result+result.T)/2.
 
         #TODO protect internal_mat/allow override
         if copy_output and not copy_safe:
@@ -103,7 +105,7 @@ class fisher_matrix:
     def contract_covar(self,v1,v2,identical_inputs=False,return_fisher=False):
         if not self.silent:
             print "fisher_matrix "+str(id(self))+": contracting covariance"
-        result = cholesky_inv_contract(self.get_cov_cholesky().T,v1,v2,cholesky_given=True,identical_inputs=identical_inputs)
+        result = cholesky_inv_contract(self.get_cov_cholesky().T,v1,v2,cholesky_given=True,identical_inputs=identical_inputs,lower=True)
         if return_fisher:
             return fisher_matrix(result,input_type=REP_COVAR,initial_state=REP_COVAR,fix_input=False,silent=self.silent)
         else:
@@ -123,11 +125,17 @@ class fisher_matrix:
 
     #project using fisher
     def project_fisher(self,v1):
-        return self.contract_fisher(v1,v1,identical_inputs=True,return_fisher=True)
+        result = self.contract_fisher(v1,v1,identical_inputs=True,return_fisher=False)
+        #symmetrize to avoid accumulating numerical discrepancies
+        result = (result+result.T)/2.
+        return fisher_matrix(result,input_type=REP_FISHER,initial_state=REP_FISHER,fix_input=False,silent=self.silent)
 
     #project using covar
     def project_covar(self,v1):
-        return self.contract_covar(v1,v1,identical_inputs=True,return_fisher=True)
+        result = self.contract_covar(v1,v1,identical_inputs=True,return_fisher=False)
+        #symmetrize to avoid accumulating numerical discrepancies
+        result = (result+result.T)/2.
+        return fisher_matrix(result,input_type=REP_COVAR,initial_state=REP_COVAR,fix_input=False,silent=self.silent)
     #for use in sw_survey
     #contract v with the cholesky decomposition of the covariance, L^T.v
     def contract_chol_right(self,v):
@@ -153,11 +161,11 @@ class fisher_matrix:
                 print "fisher_matrix ",id(self)," cholesky decomposition inv cache miss"
             copy_safe = True
             if self.internal_state == REP_CHOL:
-                result = invert_triangular(self.internal_mat)
+                result = invert_triangular(self.internal_mat,lower=True)
             elif self.internal_state == REP_FISHER:
                 result = np.rot90(cholesky_inplace(np.rot90(self.internal_mat,2),inplace=False,lower=False),2)
             elif self.internal_state == REP_COVAR:
-                result = get_inv_cholesky(self.internal_mat)
+                result = get_inv_cholesky(self.internal_mat,lower=True)
             else:
                 raise ValueError("fisher_matrix "+str(id(self))+": unrecognized internal state "+str(self.internal_state))
 
@@ -181,15 +189,15 @@ class fisher_matrix:
             if self.internal_state == REP_CHOL_INV :
                 if not self.silent:
                     print "fisher_matrix "+str(id(self)),": getting cholesky decomposition of covariance matrix from its inverse, size: "+str(self.internal_mat.nbytes/10**6)+" megabytes"
-                result = invert_triangular(self.internal_mat)
+                result = invert_triangular(self.internal_mat,lower=True)
             elif self.internal_state == REP_COVAR:
                 if not self.silent:
                     print "fisher_matrix "+str(id(self)),": getting cholesky decomposition of covariance matrix directly, size: "+str(self.internal_mat.nbytes/10**6)+" megabytes"
-                result = cholesky_inplace(self.internal_mat,inplace=inplace)
+                result = cholesky_inplace(self.internal_mat,inplace=inplace,lower=True)
             elif self.internal_state == REP_FISHER:
                 if not self.silent:
                     print "fisher_matrix "+str(id(self)),": getting cholesky decomposition of covariance matrix from F_alpha_beta, size: "+str(self.internal_mat.nbytes/10**6)+" megabytes"
-                result = get_cholesky_inv(self.internal_mat)
+                result = get_cholesky_inv(self.internal_mat,lower=True)
             else:
                 raise ValueError("fisher_matrix "+str(id(self))+": unrecognized internal state "+str(self.internal_state))
 
@@ -220,4 +228,14 @@ class fisher_matrix:
             return result.copy()
         else:
             return result
+
+    #get the eigenvalues solving C^{ij}metric^{-1 ij}v=lambda v
+    #metric is itself a fisher_matrix object
+    def get_cov_eig_metric(self,metric):
+        metric_chol_inv = metric.get_cov_cholesky_inv()
+        covar_use = self.get_covar()
+        #use algebra trick with cholesky decompositions to get symmetric matrix with desired eigenvalues
+        mat_retrieved = np.identity(covar_use.shape[0])+np.dot(np.dot(metric_chol_inv,covar_use),metric_chol_inv.T)
+        eig_set = np.linalg.eigh(mat_retrieved)
+        return eig_set
 
