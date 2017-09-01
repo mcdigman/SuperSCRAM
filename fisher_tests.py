@@ -89,8 +89,8 @@ class ManualFisherFromCov1:
         self.chol_cov = cholesky_inplace(self.cov,inplace=False,lower=True)
         self.chol_cov_i = invert_triangular(self.chol_cov,lower=True)
         self.fab = ch_inv(self.cov,cholesky_given=False)
-atol_rel_use=1e-3
-rtol_use=1e-8
+atol_rel_use=1e-7
+rtol_use=1e-6
 
 #includes random tests
 test_list = [[1,1],[2,1],[3,1],[4,1],[5,1],[7,1],[8,1],[8,1],[1,0],[2,0],[3,0],[4,0],[5,0],[7,0],[8,0],[8,0]]

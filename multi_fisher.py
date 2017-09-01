@@ -5,6 +5,8 @@ import defaults
 import fisher_matrix as fm
 import numpy as np
 
+from warnings import warn
+
 f_spec_mit={'lw_base':True,'lw_mit':True,'sw_g':True,'sw_ng':True,'par_prior':True}
 f_spec_no_mit={'lw_base':True,'lw_mit':False,'sw_g':True,'sw_ng':True,'par_prior':True}
 f_spec_g={'lw_base':False,'lw_mit':False,'sw_g':True,'sw_ng':False,'par_prior':True}
@@ -31,21 +33,25 @@ class multi_fisher:
             self.lw_surveys[i].fisher_accumulate(self.lw_F_mit)
 
         #prepare to project lw basis to sw basis
-        self.dO_I_ddelta_bar_list = self.sw_survey.get_dO_I_ddelta_bar_list()
-        self.n_o = self.dO_I_ddelta_bar_list.size
-        self.lw_to_sw_array =np.zeros((self.basis.get_size(),self.sw_survey.get_total_dimension()))
-        self.d_sizes=self.sw_survey.get_dimension_list()
-        itr=0
-        for i in xrange(0,self.n_o):
-            self.lw_to_sw_array[:,itr:itr+self.d_sizes[i]] = self.basis.D_O_I_D_delta_alpha(self.sw_survey.geo,self.dO_I_ddelta_bar_list[i])
-            itr+=self.d_sizes[i]
+        #self.dO_I_ddelta_bar_list = self.sw_survey.get_dO_I_ddelta_bar_list()
+        self.n_o = self.sw_survey.get_N_O_I()
+        #self.lw_to_sw_array =np.zeros((self.basis.get_size(),self.sw_survey.get_total_dimension()))
+        #self.d_sizes=self.sw_survey.get_dimension_list()
+        #itr=0
+        #for i in xrange(0,self.n_o):
+        #    self.lw_to_sw_array[:,itr:itr+self.d_sizes[i]] = self.basis.D_O_I_D_delta_alpha(self.sw_survey.geo,self.dO_I_ddelta_bar_list[i])
+        #    itr+=self.d_sizes[i]
+
+        self.lw_to_sw_array = self.basis.D_O_I_D_delta_alpha(self.sw_survey.geo,self.sw_survey.get_dO_I_ddelta_bar_array())
+
         self.n_sw = self.sw_survey.get_total_dimension()
 
-        self.sw_to_parameter_array=sw_survey.get_dO_I_dparameter_array()
+        self.sw_to_par_array=sw_survey.get_dO_I_dpar_array()
         
         #sw covariances to add
-        self.sw_g_covar = fm.fisher_matrix(self.sw_survey.get_gaussian_covar(),input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,silent=True)
-        self.sw_ng_covar = fm.fisher_matrix(self.sw_survey.get_nongaussian_covar(),input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,silent=True)
+        self.sw_non_SSC_covars = self.sw_survey.get_non_SSC_sw_covar_arrays()
+        self.sw_g_covar = fm.fisher_matrix(self.sw_non_SSC_covars[0],input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,silent=True)
+        self.sw_ng_covar = fm.fisher_matrix(self.sw_non_SSC_covars[1],input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,silent=True)
 
 #        self.sw_SSC_no_mit_covar = self.lw_F_no_mit.project_covar(self.lw_to_sw_array)
 #        self.sw_SSC_mit_covar = self.lw_F_mit.project_covar(self.lw_to_sw_array)
@@ -60,12 +66,23 @@ class multi_fisher:
 #        self.sw_tot_mit.add_covar(self.sw_ng_covar)
         
         #get parameter fisher matrices
-#        self.par_tot_no_mit_no_prior = self.sw_tot_no_mit.project_fisher(self.sw_to_parameter_array) 
-#        self.par_tot_mit_no_prior = self.sw_tot_mit.project_fisher(self.sw_to_parameter_array) 
+#        self.par_tot_no_mit_no_prior = self.sw_tot_no_mit.project_fisher(self.sw_to_par_array) 
+#        self.par_tot_mit_no_prior = self.sw_tot_mit.project_fisher(self.sw_to_par_array) 
         
         #get prior fisher matrix
         #TODO make possible to choose
-        self.fisher_priors = fm.fisher_matrix(planck_fisher.get_w0wa_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
+        if self.sw_survey.C.de_model=='w0wa':
+            self.fisher_priors = fm.fisher_matrix(planck_fisher.get_w0wa_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
+        elif self.sw_survey.C.de_model=='constant_w':
+            self.fisher_priors = fm.fisher_matrix(planck_fisher.get_w0_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
+        elif self.sw_survey.C.de_model=='jdem':
+            self.fisher_priors = fm.fisher_matrix(planck_fisher.get_jdem_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
+        else:
+            warn('unknown prior parametrization: '+str(self.sw_survey.C.de_model)+' will not use priors for de')
+            self.fisher_priors = fm.fisher_matrix(planck_fisher.get_no_de_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
+
+
+
         #get full parameter fisher matrices with priors  
 #        self.par_tot_no_mit = copy.deepcopy(self.par_tot_no_mit_no_prior)
 #        self.par_tot_no_mit.add_fisher(self.fisher_priors)
@@ -89,7 +106,7 @@ class multi_fisher:
                     if sw_fisher is None:
                         fisher_from_sw=None
                     else:
-                        fisher_from_sw = sw_fisher.project_fisher(self.sw_to_parameter_array)
+                        fisher_from_sw = sw_fisher.project_fisher(self.sw_to_par_array)
                     par_fisher = self.get_par_fisher(f_spec,fisher_from_sw)
 
         #avoid returning unwanted arrays to allow garbage collection

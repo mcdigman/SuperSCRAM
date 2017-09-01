@@ -48,11 +48,11 @@ class TestCosmosisAgreement1(unittest.TestCase):
 #            ax = plt.subplot(111)
 #            ax.set_xlabel('l',size=20)
 #            ax.set_ylabel('l(l+1)$C^{AB}(2\pi)^{-1}$')
-#            ax.loglog(ls*C.h,ls*(ls*C.h+1.)*sh_pow1/(2.*np.pi)/C.h**2)
+#            ax.loglog(ls,sh_pow1)
 #            ax.loglog(ls*C.h,ls*(ls*C.h+1.)*sh_pow1_gg/(2.*np.pi)/C.h**2)
 #            ax.loglog(ls*C.h,ls*(ls*C.h+1.)*sh_pow1_sg/(2.*np.pi)/C.h**2)
 #            ax.loglog(ls*C.h,ls*(ls*C.h+1.)*sh_pow1_mm/(2.*np.pi)/C.h)
-#            ax.loglog(ls,ls*(ls+1.)*sh_pow_cosm/(2.*np.pi))
+#            ax.loglog(ls,sh_pow_cosm)
 #            ax.loglog(ls,ls*(ls+1.)*gal_pow_cosm/(2.*np.pi))
 #            ax.loglog(ls,ls*(ls+1.)*sg_pow_cosm/(2.*np.pi))
 #            ax.loglog(ls,ls*(ls+1.)*mm_pow_cosm/(2.*np.pi))
@@ -61,12 +61,12 @@ class TestCosmosisAgreement1(unittest.TestCase):
             #get ratio of calculated value to expected value from cosmosis
             #use -np.inf as filler for interpolation when l value is not in ls*C.h,filter it later
             ss_rat = (sh_pow_cosm-(interp1d(ls,sh_pow1,bounds_error=False,fill_value=-np.inf)(ls)))/sh_pow_cosm
-    
             gg_rat = (gal_pow_cosm-(interp1d(ls,sh_pow1_gg,bounds_error=False,fill_value=-np.inf)(ls)))/gal_pow_cosm
             sg_rat = (sg_pow_cosm-(interp1d(ls,sh_pow1_sg,bounds_error=False,fill_value=-np.inf)(ls)))/sg_pow_cosm
             mm_rat = (mm_pow_cosm-(interp1d(ls,sh_pow1_mm*C.h,bounds_error=False,fill_value=-np.inf)(ls)))/mm_pow_cosm 
             ###TODO### examine discrepancy in powers of h (comes from magnification_prefactor)
-
+ #           ax.plot(ls,ss_rat)
+ #           plt.show()
             mean_ss_err = np.mean(abs(ss_rat)[abs(ss_rat)<np.inf])
             mean_gg_err = np.mean(abs(gg_rat)[abs(gg_rat)<np.inf])
             mean_sg_err = np.mean(abs(sg_rat)[abs(sg_rat)<np.inf])
@@ -102,13 +102,17 @@ class TestCosmosisHalofitAgreement1(unittest.TestCase):
             TOLERANCE_MEAN = 0.2
             cp_params = defaults.cosmopie_params
             cp_params['p_space'] = 'overwride'
-            C=cp.CosmoPie(cosmology=defaults.cosmology_cosmosis,p_space='overwride')
+            camb_params = defaults.camb_params.copy()
+            camb_params['maxkh']=1e5
+            camb_params['kmax']=100.
+            camb_params['npoints']=1000
+            C=cp.CosmoPie(cosmology=defaults.cosmology_cosmosis,p_space='overwride',camb_params=camb_params)
             #d = np.loadtxt('test_inputs/proj_1/camb_m_pow_l.dat')
             #d = np.loadtxt('test_inputs/proj_1/p_k_lin.dat')
             #k_in = d[:,0]
             #P_in = d[:,1]
             #k_in,P_in = camb_pow(defaults.cosmology_cosmosis)
-            P_in = mps.MatterPower(C)
+            P_in = mps.MatterPower(C,camb_params=camb_params)
             k_in = P_in.k
             zs = np.loadtxt('test_inputs/proj_2/z.txt')
             zs[0] = 10**-3

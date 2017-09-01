@@ -7,7 +7,6 @@ import copy
 
 from polygon_pixel_geo import polygon_pixel_geo
 from polygon_geo import polygon_geo
-from cosmopie import CosmoPie 
 from sph_klim import sph_basis_k
 from Dn import DNumberDensityObservable
 from geo import rect_geo
@@ -19,6 +18,7 @@ import fisher_matrix as fm
 import planck_fisher
 import matter_power_spectrum as mps
 import multi_fisher as mf
+import cosmopie as cp
 
 class super_survey:
     ''' This class holds and returns information for all surveys
@@ -30,7 +30,7 @@ class super_survey:
         1) surveys is an array containing the informaiton for all the surveys.
         2) r_max is the maximum radial super mode 
         3) l angular super modes
-        4) cosmology is the comological parameters etc. 
+        4) cosmology is the comological pars etc. 
         ''' 
                          
         t1=time()
@@ -94,22 +94,22 @@ class super_survey:
 #            self.covs_sw=np.array([],dtype=object)
 #            self.a_vals = np.array([],dtype=object)
 
-        #self.covs_params = self.surveys_sw[0].get_cov_tot_parameters(self.covs_sw[0])
+        #self.covs_params = self.surveys_sw[0].get_cov_tot_pars(self.covs_sw[0])
         #self.covs_params = np.array([self.covs_no_mit[2],self.covs_mit[2]])
         #if self.do_mitigated:
-         #   self.c_mit_params = self.surveys_sw[0].get_cov_tot_parameters(self.cov_mit[0])
-            #self.c_no_mit_params = self.surveys_sw[0].get_cov_tot_parameters(self.cov_no_mit[0])
+         #   self.c_mit_params = self.surveys_sw[0].get_cov_tot_pars(self.cov_mit[0])
+            #self.c_no_mit_params = self.surveys_sw[0].get_cov_tot_pars(self.cov_no_mit[0])
         #elif self.do_unmitigated:
-            #self.c_no_mit_params = self.surveys_sw[0].get_cov_tot_parameters(self.cov_no_mit[0])
+            #self.c_no_mit_params = self.surveys_sw[0].get_cov_tot_pars(self.cov_no_mit[0])
             #self.f_no_mit = fm.fisher_matrix(self.cov_no_mit[0].get_total_covar(),input_type=fm.REP_COVAR,fix_input=False)
-            #self.f_no_mit_params = self.surveys_sw[0].get_fisher_parameters(self.f_no_mit) 
+            #self.f_no_mit_params = self.surveys_sw[0].get_fisher_pars(self.f_no_mit) 
             #self.f_mit = fm.fisher_matrix(self.cov_mit[0].get_total_covar(),input_type=fm.REP_COVAR,fix_input=False)
-            #self.f_mit_params = self.surveys_sw[0].get_fisher_parameters(self.f_mit) 
-        #self.covs_g_params = self.surveys_sw[0].get_cov_tot_parameters(self.covs_sw[0],gaussian_only=True)
+            #self.f_mit_params = self.surveys_sw[0].get_fisher_pars(self.f_mit) 
+        #self.covs_g_pars = self.surveys_sw[0].get_cov_tot_pars(self.covs_sw[0],gaussian_only=True)
         self.covs_g = self.multi_f.get_fisher(mf.f_spec_g,mf.f_return_par)
-        self.covs_g_params = self.covs_g[2] 
+        self.covs_g_pars = self.covs_g[2] 
         #self.f_gaussian = fm.fisher_matrix(self.cov_no_mit[0].get_gaussian_covar(),input_type=fm.REP_COVAR,fix_input=True)
-        #self.f_gaussian_params = self.surveys_sw[0].get_fisher_parameters(self.f_gaussian)
+        #self.f_gaussian_params = self.surveys_sw[0].get_fisher_pars(self.f_gaussian)
 
         t2=time()
         print 'Super_Survey: all done'
@@ -191,17 +191,17 @@ def get_ellipse_specs(covs,dchi2=2.3):
     areas = np.pi*width1s*width2s
     return width1s,width2s,angles,areas
 
-def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_param_list,C,dchi2,adaptive_mult=1.05):
+def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_par_list,C,dchi2,adaptive_mult=1.05):
     import matplotlib.pyplot as plt
     import matplotlib.ticker as ticker
     from matplotlib.patches import Ellipse
-    n_p = cosmo_param_list.size
+    n_p = cosmo_par_list.size
     fig,ax_list = plt.subplots(n_p,n_p)
     #width1s_g,width2s_g,angles_g,areas_g = get_ellipse_specs(SS.c_g_params,dchi2=dchi2)
     #width1s_no_mit,width2s_no_mit,angles_no_mit,areas_no_mit = get_ellipse_specs(SS.c_no_mit_params,dchi2=dchi2)
     #width1s_mit,width2s_mit,angles_mit,areas_mit = get_ellipse_specs(SS.c_mit_params,dchi2=dchi2)
     n_c = cov_set.shape[0]
-    n_p = cosmo_param_list.shape[0]
+    n_p = cosmo_par_list.shape[0]
     width1_set = np.zeros((n_c,n_p,n_p))
     width2_set = np.zeros((n_c,n_p,n_p))
     angle_set = np.zeros((n_c,n_p,n_p))
@@ -219,8 +219,8 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
     for itr1 in xrange(0,n_p):
         for itr2 in xrange(0,n_p): 
             ax = ax_list[itr2,itr1]
-            param1 = cosmo_param_list[itr1] 
-            param2 = cosmo_param_list[itr2] 
+            param1 = cosmo_par_list[itr1] 
+            param2 = cosmo_par_list[itr2] 
             fid_point = np.array([C.cosmology[param1],C.cosmology[param2]])
 
             #TODO check sense of rotation
@@ -288,8 +288,11 @@ if __name__=="__main__":
     cosmo_fid['w0'] = cosmo_fid['w']
     cosmo_fid['wa'] = 0.
     cosmo_fid['de_model'] = 'w0wa'
-    C=CosmoPie(cosmology=cosmo_fid,p_space='jdem',camb_params=camb_params)
-    #C=CosmoPie(cosmology=defaults.cosmology,p_space='basic',needs_power=True)
+    if cosmo_fid['de_model'] == 'jdem':
+        for i in xrange(0,36):
+            cosmo_fid['ws36_'+str(i)] = -1.
+    C=cp.CosmoPie(cosmology=cosmo_fid,p_space='jdem',camb_params=camb_params)
+    #C=cp.CosmoPie(cosmology=defaults.cosmology,p_space='basic',needs_power=True)
     #k,P=C.get_P_lin()
     P=mps.MatterPower(C,camb_params)
     k=P.k
@@ -367,22 +370,36 @@ if __name__=="__main__":
     #TODO put in defaults
     lenless_defaults = defaults.sw_survey_params.copy()
     lenless_defaults['needs_lensing'] = False
+    if cosmo_fid['de_model'] == 'w0wa':
+        cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w','wa'])
+        cosmo_par_epsilons = np.array([0.002,0.0005,0.0001,0.0005,0.1,0.1,0.1])
+    elif cosmo_fid['de_model'] == 'constant_w':
+        cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w'])
+        cosmo_par_epsilons = np.array([0.002,0.0005,0.0001,0.0005,0.1,0.1])
+    elif cosmo_fid['de_model'] == 'jdem':
+        cosmo_par_list = ['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs']
+        cosmo_par_list.extend(cp.JDEM_LIST)
+        cosmo_par_list = np.array(cosmo_par_list,dtype=object)
+        cosmo_par_epsilons = np.full(41,0.2)
+        cosmo_par_epsilons[0:5] = np.array([0.002,0.0005,0.0001,0.0005,0.1])
 
-    cosmo_param_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w','wa'])
-    cosmo_param_epsilons = np.array([0.002,0.0005,0.0001,0.0005,0.1,0.1,0.1])
-    #cosmo_param_list = np.array(['LogAs','w'])
-    #cosmo_param_epsilons = np.array([0.001,0.001])
+    else:
+        raise ValueError('not prepared to handle '+str(cosmo_fid['de_model']))
 
-    param_priors = planck_fisher.get_w0wa_projected(params=defaults.planck_fisher_params)
-    #cosmo_param_list = np.array(['Omegamh2','Omegabh2'])
-    #cosmo_param_epsilons = np.array([0.001,0.001])
-    #cosmo_param_list = np.array(['Omegamh2','Omegabh2','ns','h','sigma8'])
+    #cosmo_par_list = np.array(['LogAs','w'])
+    #cosmo_par_epsilons = np.array([0.001,0.001])
+    #TODO eliminate
+    #param_priors = planck_fisher.get_w0wa_projected(params=defaults.planck_fisher_params)
+    #param_priors = planck_fisher.get_w0_projected(params=defaults.planck_fisher_params)
+    #cosmo_par_list = np.array(['Omegamh2','Omegabh2'])
+    #cosmo_par_epsilons = np.array([0.001,0.001])
+    #cosmo_par_list = np.array(['Omegamh2','Omegabh2','ns','h','sigma8'])
     #note that currently (poorly implemented derivative) in jdem, OmegaLh2 and LogAs are both almost completely unconstrained but nondegenerate, while in basic, h and sigma8 are not constrained but are almost completely degenerate
-    survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,cosmo_param_list = cosmo_param_list,cosmo_param_epsilons=cosmo_param_epsilons,len_params=loc_lens_params,param_priors=param_priors) 
+    survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,cosmo_par_list = cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,len_params=loc_lens_params) 
     #survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=loc_lens_params) 
  
     #survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = np.array([]),len_params=loc_lens_params) 
-    survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=lenless_defaults,observable_list = np.array([]),cosmo_param_list = np.array([],dtype=object),cosmo_param_epsilons=np.array([]),len_params=loc_lens_params,param_priors=param_priors) 
+    #survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=lenless_defaults,observable_list = np.array([]),cosmo_par_list = np.array([],dtype=object),cosmo_par_epsilons=np.array([]),len_params=loc_lens_params,param_priors=param_priors) 
      
      
 
@@ -456,11 +473,11 @@ if __name__=="__main__":
     print 'phi width',(geo1.rs[1]+geo1.rs[0])/2.*(Phi1[1]-Phi1[0])*np.sin((Theta1[1]+Theta1[0])/2)
     ax_ls = np.hstack((l_sw,l_sw))
     
-    #v= SS.surveys_sw[0].get_dO_I_dparameter_array()
+    #v= SS.surveys_sw[0].get_dO_I_dpar_array()
     #eig_nm = SS.cov_no_mit[0].get_SS_eig_param(v)
     #eig_m = SS.cov_mit[0].get_SS_eig_param(v)
 
-    ellipse_plot=True
+    ellipse_plot=False
     if ellipse_plot:
         no_mit_color = np.array([1.,0.,0.])
         mit_color = np.array([0.,1.,0.])
@@ -469,10 +486,10 @@ if __name__=="__main__":
         opacity_set = np.array([1.0,1.0,1.0])
         box_widths = np.array([0.015,0.005,0.0005,0.005,0.1,0.05])
         dchi2 = 2.3
-        #cov_set = np.array([SS.covs_params[1],SS.covs_params[0],SS.covs_g_params[0]])
+        #cov_set = np.array([SS.covs_params[1],SS.covs_params[0],SS.covs_g_pars[0]])
         cov_set = np.array([SS.f_set[2][2].get_covar(),SS.f_set[1][2].get_covar(),SS.f_set[0][2].get_covar()])
         label_set = np.array(["ssc+mit+g","ssc+g","g"])
-        make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',cosmo_param_list,C,dchi2=dchi2)
+        make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',cosmo_par_list,C,dchi2=dchi2)
 
 
     chol_plot=False
@@ -480,15 +497,15 @@ if __name__=="__main__":
         import matplotlib.pyplot as plt
         ax = plt.subplot(111)
         chol_gauss = SS.f_set[0][2].get_cov_choleksy()#np.linalg.cholesky(SS.covs_sw[0].get_gaussian_covar())
-        #eig_params = SS.covs_sw[0].get_SS_eig_param(v)
-        eig_params = np.zeros(2,dtype=object)
-        eig_params[0] = SS.f_set[1][2].get_cov_eig_metric(SS.covs_g_params)
-        eig_params[1] = SS.f_set[2][2].get_cov_eig_metric(SS.covs_g_params)
+        #eig_pars = SS.covs_sw[0].get_SS_eig_param(v)
+        eig_pars = np.zeros(2,dtype=object)
+        eig_pars[0] = SS.f_set[1][2].get_cov_eig_metric(SS.covs_g_pars)
+        eig_pars[1] = SS.f_set[2][2].get_cov_eig_metric(SS.covs_g_pars)
         for itr in xrange(1,5):
             #ax.plot(ax_ls,ax_ls*(ax_ls+1.)*np.dot(chol_gauss,SS_eig[1][:,-itr]))
             #ax.plot(np.dot(chol_gauss,SS_eig[1][:,-itr]))
             #TODO might just delete this
-            ax.plot(np.dot(chol_gauss,eig_params[:,-itr]))
+            ax.plot(np.dot(chol_gauss,eig_pars[:,-itr]))
     
         ax.legend(['1','2','3','4','5'])
         plt.show()

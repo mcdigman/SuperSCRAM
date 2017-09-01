@@ -7,36 +7,36 @@ from warnings import warn
 from algebra_utils import get_inv_cholesky
 import fisher_matrix as fm
 import sys
-class CovMat:
-    def __init__(self,gaussian_covar,nongaussian_covar,ssc_covar_set,dimension,param_prior=None):
-        self.f_gaussian = fm.fisher_matrix(gaussian_covar,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
-        self.f_nongaussian = fm.fisher_matrix(nongaussian_covar,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
-        self.n_ssc = ssc_covar_set.shape[0]
-        self.f_ssc_set = np.zeros(self.n_ssc,dtype=object)
-        self.f_tot_set = np.zeros(self.n_ssc,dtype=object)
-        for i in xrange(0,self.n_ssc):
-            self.f_ssc_set[i] = fm.fisher_matrix(ssc_covar_set[i],input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
-            self.f_tot_set[i] = fm.fisher_matrix(gaussian_covar+nongaussian_covar+ssc_covar_set[i],input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
-        self.param_prior = param_prior
-        self.dimension = dimension
-
-    def get_gaussian_covar(self):
-        return self.f_gaussian.get_covar()
-    def get_nongaussian_covar(self):
-        return self.f_nongaussian.get_covar()
-    def get_ssc_covar(self):
-        ssc_cov_set = np.zeros((self.n_ssc,self.dimension,self.dimension))
-        for i in xrange(0,self.n_ssc):
-            ssc_cov_set[i] = self.f_ssc_set[i].get_covar()
-        return ssc_cov_set
-    def get_total_covar(self):
-        tot_cov_set = np.zeros((self.n_ssc,self.dimension,self.dimension))
-        for i in xrange(0,self.n_ssc):
-            tot_cov_set[i] = self.f_tot_set[i].get_covar()
-        return tot_cov_set
-        #return self.get_gaussian_covar()+self.get_nongaussian_covar()+self.get_ssc_covar()
-    def get_dimension(self):
-        return self.dimension
+#class CovMat:
+#    def __init__(self,gaussian_covar,nongaussian_covar,ssc_covar_set,dimension,param_prior=None):
+#        self.f_gaussian = fm.fisher_matrix(gaussian_covar,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
+#        self.f_nongaussian = fm.fisher_matrix(nongaussian_covar,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
+#        self.n_ssc = ssc_covar_set.shape[0]
+#        self.f_ssc_set = np.zeros(self.n_ssc,dtype=object)
+#        self.f_tot_set = np.zeros(self.n_ssc,dtype=object)
+#        for i in xrange(0,self.n_ssc):
+#            self.f_ssc_set[i] = fm.fisher_matrix(ssc_covar_set[i],input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
+#            self.f_tot_set[i] = fm.fisher_matrix(gaussian_covar+nongaussian_covar+ssc_covar_set[i],input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
+#        self.param_prior = param_prior
+#        self.dimension = dimension
+#
+#    def get_gaussian_covar(self):
+#        return self.f_gaussian.get_covar()
+#    def get_nongaussian_covar(self):
+#        return self.f_nongaussian.get_covar()
+#    def get_ssc_covar(self):
+#        ssc_cov_set = np.zeros((self.n_ssc,self.dimension,self.dimension))
+#        for i in xrange(0,self.n_ssc):
+#            ssc_cov_set[i] = self.f_ssc_set[i].get_covar()
+#        return ssc_cov_set
+#    def get_total_covar(self):
+#        tot_cov_set = np.zeros((self.n_ssc,self.dimension,self.dimension))
+#        for i in xrange(0,self.n_ssc):
+#            tot_cov_set[i] = self.f_tot_set[i].get_covar()
+#        return tot_cov_set
+#        #return self.get_gaussian_covar()+self.get_nongaussian_covar()+self.get_ssc_covar()
+#    def get_dimension(self):
+#        return self.dimension
 #    def get_cov_sum_param_basis(self,basis,gaussian_only=False):
 #        #handle empty basis to avoid errors
 #        if basis.size==0:
@@ -114,8 +114,7 @@ class CovMat:
 
     
     
-#TODO noncompliant with CovMat
-class SWCovMat(CovMat):
+class SWCovMat:
     def __init__(self,O_I_1,O_I_2):
         self.gaussian_covar = 0.
         self.dimension = 0
@@ -155,8 +154,10 @@ class SWCovMat(CovMat):
                 warn("sw_cov_mat: unhandled observable pair in constructor")
         else:
             warn("sw_cov_mat: unhandled observable pair in constructor")
-        #TODO handle nongaussian covariance,return matrix
-        self.nongaussian_covar = 0.
-        self.ssc_covar = np.array([0.])
-        CovMat.__init__(self,self.gaussian_covar,self.nongaussian_covar,self.ssc_covar,self.dimension)
-
+        self.nongaussian_covar = np.zeros(self.gaussian_covar.shape)
+#        self.ssc_covar = np.array([0.])
+#        CovMat.__init__(self,self.gaussian_covar,self.nongaussian_covar,self.ssc_covar,self.dimension)
+    def get_gaussian_covar_array(self):
+        return self.gaussian_covar
+    def get_nongaussian_covar_array(self):
+        return self.nongaussian_covar

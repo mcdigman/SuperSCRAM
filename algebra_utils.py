@@ -50,7 +50,6 @@ def cholesky_inv_contract(A,vec1,vec2,cholesky_given=False,identical_inputs=Fals
         chol_inv = A
     else:
         chol_inv = get_inv_cholesky(A,lower)
-    #chol_inv = np.linalg.solve(np.linalg.cholesky(A),np.identity(A.shape[0]))
 
     #potentially Save some time if inputs are identical
     #TODO: check if memory profile worse
@@ -66,6 +65,29 @@ def cholesky_inv_contract(A,vec1,vec2,cholesky_given=False,identical_inputs=Fals
             result = np.dot(np.dot(vec1.T,chol_inv.T),np.dot(chol_inv,vec2))
         else:
             result = np.dot(np.dot(vec1.T,chol_inv),np.dot(chol_inv.T,vec2))
+
+    return result
+
+def cholesky_contract(A,vec1,vec2,cholesky_given=False,identical_inputs=False,lower=True):
+    if cholesky_given:
+        chol = A
+    else:
+        chol = cholesky_inplace(A,lower=lower,inplace=False)
+
+    #potentially Save some time if inputs are identical
+    #TODO: check if memory profile worse
+    if identical_inputs:
+        if lower:
+            right_side = np.dot(chol.T,vec1)
+        else:
+
+            right_side = np.dot(chol,vec1)
+        result = np.dot(right_side.T,right_side)
+    else:
+        if lower:
+            result = np.dot(np.dot(vec1.T,chol),np.dot(chol.T,vec2))
+        else:
+            result = np.dot(np.dot(vec1.T,chol.T),np.dot(chol,vec2))
 
     return result
 

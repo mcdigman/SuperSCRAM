@@ -9,7 +9,6 @@ def read_planck_fisher(params = defaults.planck_fisher_params):
     fisher_mat = np.zeros((n_row,n_row))
     for itr in xrange(0,row_is.size):
         fisher_mat[row_is[itr],col_is[itr]] = fisher_d[itr,2]
-    #NOTE: element 8,14 is not identical to 14,8??? very close though,just symmetrize to eliminate the problem
     fisher_mat=(fisher_mat+fisher_mat.T)/2.
     return fisher_mat
 
@@ -41,7 +40,7 @@ def project_w0wa(fisher_mat,params=defaults.planck_fisher_params):
     dwzdwa =zs/(1.+zs)
     project_mat[n_new-1,n_new-2::] = dwzdwa
     fisher_new= np.dot(np.dot(project_mat,fisher_mat),project_mat.T)
-    return fisher_new
+    return (fisher_new+fisher_new.T)/2.
 
 
 def project_w0(fisher_mat,params=defaults.planck_fisher_params,return_project=False):
@@ -56,22 +55,46 @@ def project_w0(fisher_mat,params=defaults.planck_fisher_params,return_project=Fa
     project_mat[n_new-1,n_new-1::] = dwzdw0
     fisher_new= np.dot(np.dot(project_mat,fisher_mat),project_mat.T)
     fisher_new = fisher_new[0:n_new,0:n_new]
+    fisher_new = (fisher_new+fisher_new.T)/2.
     if return_project:
         return fisher_new,project_mat
     else:
         return fisher_new
 
+#def get_ws36_to_w0wa_project(params):
+    
+
+def project_no_de(fisher_mat,params=defaults.planck_fisher_params):
+    n_de = params['n_de']
+    n_new= fisher_mat.shape[0]-(n_de) #will project 36 dark energy entries to 0
+    fisher_new=np.zeros((n_new,n_new))
+    #all the bins have constant change wrt w0
+    project_mat = np.zeros((n_new,fisher_mat.shape[0]))
+    project_mat[0:n_new,0:n_new] = np.identity(n_new)
+    return (fisher_new+fisher_new.T)/2.
+
+def get_jdem_projected(params=defaults.planck_fisher_params):
+    fisher_mat = read_planck_fisher(params=params)
+    fisher_strip = fix_elements(fisher_mat,params=params)
+    return fisher_strip
+
+def get_no_de_projected(params=defaults.planck_fisher_params):
+    fisher_mat = read_planck_fisher(params=params)
+    fisher_strip = fix_elements(fisher_mat,params=params)
+    fisher_project = project_no_de(fisher_strip,params=params)
+    return fisher_project
+
 def get_w0wa_projected(params=defaults.planck_fisher_params):
     fisher_mat = read_planck_fisher(params=params)
     fisher_strip = fix_elements(fisher_mat,params=params)
     fisher_project = project_w0wa(fisher_strip,params=params)
-    return (fisher_project+fisher_project.T)/2.
+    return fisher_project
 
 def get_w0_projected(params=defaults.planck_fisher_params):
     fisher_mat = read_planck_fisher(params=params)
     fisher_strip = fix_elements(fisher_mat,params=params)
     fisher_project = project_w0(fisher_strip,params=params)
-    return (fisher_project+fisher_project.T)/2.
+    return fisher_project
 
 if __name__=='__main__':
     param_1 = defaults.planck_fisher_params.copy()

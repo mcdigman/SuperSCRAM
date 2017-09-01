@@ -1,3 +1,4 @@
+import re
 import numpy as np
 import FASTPTcode.FASTPT as FASTPT
 import halofit as hf
@@ -12,18 +13,18 @@ import matter_power_spectrum as mps
 #parameter can be H0,Omegabh2,Omegach2,Omegak,ns,sigma8,h
 #include others such as omegam, w
 #TODO need to change G_norm or does not work properly
-def dp_dparameter(k_fid,zs,C,parameter,pmodel='linear',epsilon=0.0001,log_param_deriv=False,fpt=None,fpt_params=defaults.fpt_params,camb_params=defaults.camb_params,dp_params=defaults.dp_params):
+def dp_dpar(k_fid,zs,C,parameter,pmodel='linear',epsilon=0.0001,log_param_deriv=False,fpt=None,fpt_params=defaults.fpt_params,camb_params=defaults.camb_params,dp_params=defaults.dp_params):
     cosmo_fid = C.cosmology.copy()
-    print cosmo_fid
+    #print cosmo_fid
     #skip getting sigma8 if possible because it is slow
     if not parameter=='sigma8' and ('sigma8' not in cp.P_SPACES[cosmo_fid['p_space']]):
         cosmo_fid['skip_sigma8'] = True
         camb_params_use = camb_params.copy()
         camb_params_use['force_sigma8'] = False
     cosmo_a = get_perturbed_cosmology(cosmo_fid,parameter,epsilon,log_param_deriv=log_param_deriv)
-    print "cosmo_a",cosmo_a
+    #print "cosmo_a",cosmo_a
     cosmo_b = get_perturbed_cosmology(cosmo_fid,parameter,-epsilon,log_param_deriv=log_param_deriv)
-    print "cosmo_b",cosmo_b
+    #print "cosmo_b",cosmo_b
     #get perturbed linear power spectra from camb
     k_a,P_a = cpow.camb_pow(cosmo_a,camb_params=camb_params_use) 
     k_b,P_b = cpow.camb_pow(cosmo_b,camb_params=camb_params_use) 
@@ -73,7 +74,7 @@ def dp_dparameter(k_fid,zs,C,parameter,pmodel='linear',epsilon=0.0001,log_param_
     
 #get set of perturbed cosmopies (including camb linear power spectrum) for getting derivatives, assuming using central finite difference method
 #TODO sigma8 handling is a mess
-def get_perturbed_cosmopies(C_fid,parameters,epsilons,log_param_derivs=np.array([])):
+def get_perturbed_cosmopies(C_fid,pars,epsilons,log_param_derivs=np.array([])):
     cosmo_fid = C_fid.cosmology.copy()
     P_fid = C_fid.P_lin
     k_fid = C_fid.k
@@ -81,31 +82,31 @@ def get_perturbed_cosmopies(C_fid,parameters,epsilons,log_param_derivs=np.array(
 
     #default assumption is ordinary derivative, can do log deriv in parameter also
     #if log_param_derivs[i] == True, will do log deriv
-    if not log_param_derivs.size==parameters.size:
-        log_param_derivs = np.zeros(parameters.size,dtype=bool)
+    if not log_param_derivs.size==pars.size:
+        log_param_derivs = np.zeros(pars.size,dtype=bool)
     if epsilons is None:
-        epsilons = np.zeros(parameters.size)+0.0001
+        epsilons = np.zeros(pars.size)+0.0001
     
-    Cs_pert = np.zeros((parameters.size,2),dtype=object) 
+    Cs_pert = np.zeros((pars.size,2),dtype=object) 
 
     #de_model = cosmo_fid.get('de_model')
     #wmatch = C_fid.wmatch
 
-    for i in xrange(0,parameters.size):
+    for i in xrange(0,pars.size):
 
         #skip evaulating sigma8 unless now unless it is necessary (it is slow), will get it later 
-        if (not parameters[i]=='sigma8') and ('sigma8' not in cp.P_SPACES[cosmo_fid['p_space']]):
+        if (not pars[i]=='sigma8') and ('sigma8' not in cp.P_SPACES[cosmo_fid['p_space']]):
             cosmo_fid['skip_sigma8'] = True
             camb_params['force_sigma8'] = False
             camb_params['return_sigma8'] = True
 
-        cosmo_a = get_perturbed_cosmology(cosmo_fid,parameters[i],epsilons[i],log_param_derivs[i])
-        cosmo_b = get_perturbed_cosmology(cosmo_fid,parameters[i],-epsilons[i],log_param_derivs[i])
+        cosmo_a = get_perturbed_cosmology(cosmo_fid,pars[i],epsilons[i],log_param_derivs[i])
+        cosmo_b = get_perturbed_cosmology(cosmo_fid,pars[i],-epsilons[i],log_param_derivs[i])
 
         #handle dark energy
         #use wmatcher for all dark energy for now TODO consider actually calculating power in some way, because of possible ns degeneracy issue
         
-        #if parameters[i] in cp.DE_METHODS[de_model] and not de_model=='constant_w':
+        #if pars[i] in cp.DE_METHODS[de_model] and not de_model=='constant_w':
         #    k_a=k_fid
         #    k_b=k_fid
         #    P_a=P_fid
@@ -124,7 +125,7 @@ def get_perturbed_cosmopies(C_fid,parameters,epsilons,log_param_derivs=np.array(
         #    k_b = k_fid
 
         #set cosmopie power spectrum appropriately
-        if parameters[i] in cp.GROW_SAFE:
+        if pars[i] in cp.GROW_SAFE:
             C_a = cp.CosmoPie(cosmo_a,p_space=cosmo_fid['p_space'],safe_sigma8=True,G_safe=True,G_in=C_fid.G_p)
             C_b = cp.CosmoPie(cosmo_b,p_space=cosmo_fid['p_space'],safe_sigma8=True,G_safe=True,G_in=C_fid.G_p)
             P_a = mps.MatterPower(C_a,k_in=k_fid,camb_params=camb_params,wm_in=P_fid.wm,wm_safe=True)
@@ -142,7 +143,7 @@ def get_perturbed_cosmopies(C_fid,parameters,epsilons,log_param_derivs=np.array(
         C_b.P_lin = P_b
         C_b.k = k_b
 
-        if not parameters[i]=='sigma8' and ('sigma8' not in cp.P_SPACES[cosmo_fid['p_space']]):
+        if not pars[i]=='sigma8' and ('sigma8' not in cp.P_SPACES[cosmo_fid['p_space']]):
             cosmo_a['sigma8'] = P_a.get_sigma8_eff(zs=np.array([0.]))[0]
             cosmo_b['sigma8'] = P_b.get_sigma8_eff(zs=np.array([0.]))[0]
             cosmo_a.pop('skip_sigma8',None)
@@ -158,6 +159,7 @@ def get_perturbed_cosmopies(C_fid,parameters,epsilons,log_param_derivs=np.array(
 def get_perturbed_cosmology(cosmo_old,parameter,epsilon=0.0001,log_param_deriv=False):
     cosmo_new = cosmo_old.copy()
     if cosmo_new.get(parameter) is not None:
+
         if log_param_deriv:
             cosmo_new[parameter] = np.exp(np.log(cosmo_old[parameter])+epsilon)   
         else:
@@ -165,10 +167,11 @@ def get_perturbed_cosmology(cosmo_old,parameter,epsilon=0.0001,log_param_deriv=F
         #TODO reconcile
         if cosmo_old['de_model'] == 'w0wa' and parameter=='w':
             cosmo_new['w0'] = cosmo_new['w']
+        
 
         if parameter not in cp.P_SPACES.get(cosmo_new.get('p_space')) and parameter not in cp.DE_METHODS[cosmo_new.get('de_model')]:
             warn('parameter \''+str(parameter)+'\' may not support derivatives with the parameter set \''+str(cosmo_new.get('p_space'))+'\'')
-        return cp.add_derived_parameters(cosmo_new)
+        return cp.add_derived_pars(cosmo_new)
     else:
         raise ValueError('undefined parameter in cosmology \''+str(parameter)+'\'')
 
@@ -206,10 +209,10 @@ if __name__=="__main__":
             dp_params['log_deriv_direct']=True
 
             #attempt to replicate leftmost subplot at top of page 6 in Neyrinck 2011 arxiv:1105.2955v2
-            dp_ch2,pza,pzb = dp_dparameter(k_fid,np.array([0.]),C,'Omegamh2',log_param_deriv=True,pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params,dp_params=dp_params)
-            dp_bh2,pza,pzb = dp_dparameter(k_fid,np.array([0.]),C,'Omegabh2',log_param_deriv=True,pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params,dp_params=dp_params)
-            dp_s8,pza,pzb = dp_dparameter(k_fid,np.array([0.]),C,'sigma8',log_param_deriv=True,pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params,dp_params=dp_params)
-            dp_ns,pza,pzb = dp_dparameter(k_fid,np.array([0.]),C,'ns',pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params,dp_params=dp_params)
+            dp_ch2,pza,pzb = dp_dpar(k_fid,np.array([0.]),C,'Omegamh2',log_param_deriv=True,pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params,dp_params=dp_params)
+            dp_bh2,pza,pzb = dp_dpar(k_fid,np.array([0.]),C,'Omegabh2',log_param_deriv=True,pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params,dp_params=dp_params)
+            dp_s8,pza,pzb = dp_dpar(k_fid,np.array([0.]),C,'sigma8',log_param_deriv=True,pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params,dp_params=dp_params)
+            dp_ns,pza,pzb = dp_dpar(k_fid,np.array([0.]),C,'ns',pmodel=pmodel_use,epsilon=epsilon,camb_params=camb_params,dp_params=dp_params)
             min_index = 0
             max_index = np.argmin(k_fid<0.5)
          
@@ -244,16 +247,16 @@ if __name__=="__main__":
             cosmo_fid['LogAs']=-19.9229844537
             cosmo_fid = cp.strip_cosmology(cosmo_fid,'lihu',overwride=['tau','Yp'])
             cosmo_fid['skip_sigma8']=True
-            cosmo_fid = cp.add_derived_parameters(cosmo_fid)
+            cosmo_fid = cp.add_derived_pars(cosmo_fid)
             C=cp.CosmoPie(cosmology=cosmo_fid,p_space='lihu')
             k_fid,P_fid = cpow.camb_pow(cosmo_fid,camb_params=camb_params)
             #attempt to replicate leftmost subplot at top of page 6 in Neyrinck 2011 arxiv:1105.2955v2
             epsilon_h =0.02
-            dp_h,pza,pzb = dp_dparameter(k_fid,np.array([0.]),C,'h',pmodel=pmodel_use,epsilon=epsilon_h,camb_params=camb_params,dp_params=dp_params)
+            dp_h,pza,pzb = dp_dpar(k_fid,np.array([0.]),C,'h',pmodel=pmodel_use,epsilon=epsilon_h,camb_params=camb_params,dp_params=dp_params)
             epsilon_LogAs = 0.03 
-            dp_LogAs,pza,pzb = dp_dparameter(k_fid,np.array([0.]),C,'LogAs',pmodel=pmodel_use,epsilon=epsilon_LogAs,camb_params=camb_params,dp_params=dp_params)
+            dp_LogAs,pza,pzb = dp_dpar(k_fid,np.array([0.]),C,'LogAs',pmodel=pmodel_use,epsilon=epsilon_LogAs,camb_params=camb_params,dp_params=dp_params)
             epsilon_ns = 0.01
-            dp_ns,pza,pzb = dp_dparameter(k_fid,np.array([0.]),C,'ns',pmodel=pmodel_use,epsilon=epsilon_ns,camb_params=camb_params,dp_params=dp_params)
+            dp_ns,pza,pzb = dp_dpar(k_fid,np.array([0.]),C,'ns',pmodel=pmodel_use,epsilon=epsilon_ns,camb_params=camb_params,dp_params=dp_params)
             min_index = 0
             #max_index = np.argmin(k_fid<1.1)
             max_index = k_fid.size

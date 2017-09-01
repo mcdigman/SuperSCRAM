@@ -11,7 +11,7 @@ import camb_power as cpow
 import FASTPTcode.matter_power_spt as mps
 from warnings import warn 
 from power_response import dp_ddelta
-from power_parameter_response import dp_dparameter
+from power_parameter_response import dp_dpar
 from lensing_weight import q_shear,q_mag,q_num,q_k
 from lensing_source_distribution import get_source_distribution
 import matter_power_spectrum as mps
@@ -36,7 +36,7 @@ class shear_power:
         
 
         self.n_map = {q_shear:{q_shear:(self.sigma2_e/(2.*self.n_gal))}}
-        print self.n_map[q_shear][q_shear]
+        #print self.n_map[q_shear][q_shear]
         self.n_k = self.k_in.size
         self.n_l = self.ls.size
         self.n_z = self.zs.size
@@ -61,25 +61,25 @@ class shear_power:
             elif pmodel=='halofit':
                 #self.halo = hf.halofitPk(self.C,k_in,P_in)
                 #self.pow_interp = RectBivariateSpline(self.k_in,self.zs,2*np.pi**2*(self.halo.D2_NL(self.k_in,self.zs).T/self.k_in**3).T)
-                self.pow_interp = RectBivariateSpline(self.k_in,self.zs,P_in.nonlinear_power(self.zs,pmodel='halofit'),kx=2,ky=2)
+                self.pow_interp = RectBivariateSpline(self.k_in,self.zs,P_in.get_matter_power(self.zs,pmodel='halofit'),kx=2,ky=2)
             elif pmodel=='fastpt':
                 #TODO use defaults
                 #fpt = FASTPT.FASTPT(k_in,fpt_params['nu'],low_extrap=-5,high_extrap=5,n_pad=800)
                 #one_loop = fpt.one_loop(P_in,C_window=fpt_params['C_window']) 
                 #one_loop is proportional to amplitude of input power spectrum squared, so multiply by G^4 to rescale correctly
                 #self.pow_interp = RectBivariateSpline(self.k_in,self.zs,np.outer(P_in,self.Gs**2)+np.outer(one_loop,self.Gs**4))
-                self.pow_interp = RectBivariateSpline(self.k_in,self.zs,P_in.nonlinear_power(self.zs,pmodel='fastpt'),kx=2,ky=2)
+                self.pow_interp = RectBivariateSpline(self.k_in,self.zs,P_in.get_matter_power(self.zs,pmodel='fastpt'),kx=2,ky=2)
             elif pmodel=='linear':
-                self.pow_interp = RectBivariateSpline(self.k_in,self.zs,P_in.linear_power(self.zs),kx=2,ky=2)
+                self.pow_interp = RectBivariateSpline(self.k_in,self.zs,P_in.get_matter_power(self.zs,pmodel='linear'),kx=2,ky=2)
                 #self.pow_interp = RectBivariateSpline(self.k_in,self.zs,np.outer(P_in,self.Gs**2),kx=1,ky=1)
             else:
                 raise ValueError('unrecognized pmodel\''+str(pmodel)+'\' for mode \''+str(mode)+'\'')
         elif mode == 'dc_ddelta':
             self.pow_interp = RectBivariateSpline(k_in,zs,dp_ddelta(k_in,P_in,zs,C=self.C,pmodel=pmodel,epsilon=self.epsilon)[0],kx=2,ky=2) 
-        elif mode=='dc_dparameter':
+        elif mode=='dc_dpar':
             #TODO find analytic formula and fix this
             self.param_vary = param_vary
-            self.pow_interp = RectBivariateSpline(self.k_in,self.zs,dp_dparameter(self.k_in,self.zs,C=self.C,parameter=self.param_vary,pmodel=pmodel,epsilon=self.epsilon)[0],kx=1,ky=1)
+            self.pow_interp = RectBivariateSpline(self.k_in,self.zs,dp_dpar(self.k_in,self.zs,C=self.C,parameter=self.param_vary,pmodel=pmodel,epsilon=self.epsilon)[0],kx=1,ky=1)
         else:
             raise ValueError('unrecognized mode \''+str(mode)+'\'')
 
@@ -156,23 +156,24 @@ class shear_power:
         c_bd = Cll_q_q(self,qs[1],qs[3],r_bd).Cll()#*np.sqrt(4.*np.pi) 
         c_ad = Cll_q_q(self,qs[0],qs[3],r_ad).Cll()#*np.sqrt(4.*np.pi) 
         c_bc = Cll_q_q(self,qs[1],qs[2],r_bc).Cll()#*np.sqrt(4.*np.pi) 
-        for i in xrange(0,self.n_l): 
-            cov_diag[i] = 1./(self.omega_s*(2.*self.ls[i]+1.)*delta_ls[i])*((c_ac[i]+ns[0])*(c_bd[i]+ns[2])+(c_ad[i]+ns[1])*(c_bc[i]+ns[3]))
+        #for i in xrange(0,self.n_l): 
+        #    cov_diag[i] = 1./(self.omega_s*(2.*self.ls[i]+1.)*delta_ls[i])*((c_ac[i]+ns[0])*(c_bd[i]+ns[2])+(c_ad[i]+ns[1])*(c_bc[i]+ns[3]))
+        cov_diag = 1./(self.omega_s*(2.*self.ls+1.)*delta_ls)*((c_ac+ns[0])*(c_bd+ns[2])+(c_ad+ns[1])*(c_bc+ns[3]))
             #(C13*C24+ C13*N24+N13*C24 + C14*C23+C14*N23+N14*C23+N13*N24+N14*N23)
             #cov_diag[i] = 1./(self.omega_s*(2.*ls[i]+1.)*delta_ls[i])*(c_ac[i]*c_bd[i]+c_ac[i]*ns[2]+ns[0]*c_bd[i]+c_ad[i]*c_bc[i]+ns[3]*c_ad[i]+ns[1]*c_bc[i]+ns[0]*ns[2]+ns[1]*ns[3])
         return cov_diag
 
-    def bin_cov_by_l(self,cov_diag,l_starts): 
-        binned_c = np.zeros(l_starts.size) #add fisher matrices then take 1/F_bin
-        for i in xrange(0,l_starts.size):
-            if i == l_starts.size-1:
-                l_end = l_starts.size
-            else:
-                l_end = l_starts[i+1]
-            fisher_mat=(np.sum(1./cov_diag[l_starts[i]:l_end]))/float(l_end-l_starts[i])
-            #fisher matrix sum of covariance eigenvalues divided by delta l, not sure if this is correct
-            binned_c[i] = 1./fisher_mat
-        return binned_c
+#    def bin_cov_by_l(self,cov_diag,l_starts): 
+#        binned_c = np.zeros(l_starts.size) #add fisher matrices then take 1/F_bin
+#        for i in xrange(0,l_starts.size):
+#            if i == l_starts.size-1:
+#                l_end = l_starts.size
+#            else:
+#                l_end = l_starts[i+1]
+#            fisher_mat=(np.sum(1./cov_diag[l_starts[i]:l_end]))/float(l_end-l_starts[i])
+#            #fisher matrix sum of covariance eigenvalues divided by delta l, not sure if this is correct
+#            binned_c[i] = 1./fisher_mat
+#        return binned_c
     
     #stacked tangential shear, note ls must be successive integers to work correctly
     #note that exact result is necessary if result must be self-consistent (ie tan_shear(theta)=tan_shear(theta+2*pi)) for theta not <<1
@@ -189,33 +190,33 @@ class shear_power:
 
         return tans
 
-    def cov_mats(self,z_bins,cname1='shear',cname2='shear'):
-        covs = np.zeros((z_bins.size-1,z_bins.size-1,self.n_l,self.n_l))
-        q1s = np.empty(z_bins.size-1,dtype=object)
-        q2s = np.empty(z_bins.size-1,dtype=object)
-        for i in xrange(0,z_bins.size-1):
-            chi_min = self.C.D_comov(z_bins[i])
-            chi_max = self.C.D_comov(z_bins[i+1])
-            if cname1 == 'shear':
-                q1s[i] = q_shear(self,chi_min,chi_max)
-            elif cname1 == 'num':
-                q1s[i] = q_num(self,chi_min,chi_max)
-            else:
-                warn('invalid value \''+cname1+'\' for cname1 using shear instead')
-                q1s[i] = q_shear(self,chi_min,chi_max)
-
-            if cname2 == 'shear':
-                q2s[i] = q_shear(self,chi_min,chi_max)
-            elif cname2 == 'num':
-                q2s[i] = q_num(self,chi_min,chi_max)
-            else:
-                warn('invalid value \''+cname2+'\' for cname2 using shear instead')
-                q2s[i] = q_shear(self,chi_min,chi_max)
-        n_ss = self.sigma2_e/(2.*self.n_gal)
-        for i in xrange(0,z_bins.size-1):
-            for j in xrange(0,z_bins.size-1):
-                covs[i,j] = np.diagflat(self.cov_g_diag([q1s[i],q2s[i],q1s[j],q2s[j]],[n_ss,n_ss,n_ss,n_ss]))
-        return covs
+#    def cov_mats(self,z_bins,cname1='shear',cname2='shear'):
+#        covs = np.zeros((z_bins.size-1,z_bins.size-1,self.n_l,self.n_l))
+#        q1s = np.empty(z_bins.size-1,dtype=object)
+#        q2s = np.empty(z_bins.size-1,dtype=object)
+#        for i in xrange(0,z_bins.size-1):
+#            chi_min = self.C.D_comov(z_bins[i])
+#            chi_max = self.C.D_comov(z_bins[i+1])
+#            if cname1 == 'shear':
+#                q1s[i] = q_shear(self,chi_min,chi_max)
+#            elif cname1 == 'num':
+#                q1s[i] = q_num(self,chi_min,chi_max)
+#            else:
+#                warn('invalid value \''+cname1+'\' for cname1 using shear instead')
+#                q1s[i] = q_shear(self,chi_min,chi_max)
+#
+#            if cname2 == 'shear':
+#                q2s[i] = q_shear(self,chi_min,chi_max)
+#            elif cname2 == 'num':
+#                q2s[i] = q_num(self,chi_min,chi_max)
+#            else:
+#                warn('invalid value \''+cname2+'\' for cname2 using shear instead')
+#                q2s[i] = q_shear(self,chi_min,chi_max)
+#        n_ss = self.sigma2_e/(2.*self.n_gal)
+#        for i in xrange(0,z_bins.size-1):
+#            for j in xrange(0,z_bins.size-1):
+#                covs[i,j] = np.diagflat(self.cov_g_diag([q1s[i],q2s[i],q1s[j],q2s[j]],[n_ss,n_ss,n_ss,n_ss]))
+#        return covs
     
     #def dc_ddelta_alpha(self,basis,z_bins,theta,phi,cname1='shear',cname2='shear'):
     #    if not re.match('^dc',self.pmodel):
@@ -242,11 +243,14 @@ class Cll_q_q:
         self.integrand = np.zeros((sp.n_z,sp.n_l))
         self.chis = sp.chis
         if corr_param.size !=0: 
-           for i in xrange(0,sp.n_z):
-                self.integrand[i] = q1s.qs[i]*q2s.qs[i]/sp.chi_As[i]**2*sp.p_dd_use[:,i]*corr_param[:,i]
+#           for i in xrange(0,sp.n_z):
+#                self.integrand[i] = q1s.qs[i]*q2s.qs[i]/sp.chi_As[i]**2*sp.p_dd_use[:,i]*corr_param[:,i]
+            #q1s and q2s may need to be transposed if using galaxy lensing because of bias, has no effect on shear shear lensing
+            self.integrand = (q1s.qs.T*q2s.qs.T/sp.chi_As**2*sp.p_dd_use*corr_param).T
         else:
-            for i in xrange(0,sp.n_z):
-                self.integrand[i] = q1s.qs[i]*q2s.qs[i]/sp.chi_As[i]**2*sp.p_dd_use[:,i]
+#            for i in xrange(0,sp.n_z):
+#                self.integrand[i] = q1s.qs[i]*q2s.qs[i]/sp.chi_As[i]**2*sp.p_dd_use[:,i]
+            self.integrand = (q1s.qs.T*q2s.qs.T/sp.chi_As**2*sp.p_dd_use).T
     def Cll(self,chi_min=0,chi_max=np.inf):
         high_mask = (self.chis<=chi_max)*1.
         low_mask = (self.chis>=chi_min)*1.
@@ -380,7 +384,7 @@ if __name__=='__main__':
         
         if do_power_response2:
             ax = plt.subplot(111)
-            sp_dch2 = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit',P_in=P_a,param_vary='Omegamh2',mode='dc_dparameter') 
+            sp_dch2 = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit',P_in=P_a,param_vary='Omegamh2',mode='dc_dpar') 
             sp1 = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit',P_in=P_a,param_vary='Omegamh2',mode='power') 
             chi_min = C.D_comov(0.)
             chi_max = C.D_comov(0.9)
@@ -390,11 +394,11 @@ if __name__=='__main__':
             plt.show()
         if do_power_response3:
             ax = plt.subplot(111)
-            #sp_dmh2 = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit',P_in=P_a,param_vary='Omegamh2',mode='dc_dparameter') 
-            #sp_dbh2 = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit',P_in=P_a,param_vary='Omegabh2',mode='dc_dparameter') 
-            sp_dlh2 = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit',P_in=P_a,param_vary='OmegaLh2',mode='dc_dparameter') 
-            #sp_dns = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit',P_in=P_a,param_vary='ns',mode='dc_dparameter') 
-            sp_dLogAs = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit',P_in=P_a,param_vary='LogAs',mode='dc_dparameter') 
+            #sp_dmh2 = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit',P_in=P_a,param_vary='Omegamh2',mode='dc_dpar') 
+            #sp_dbh2 = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit',P_in=P_a,param_vary='Omegabh2',mode='dc_dpar') 
+            sp_dlh2 = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit',P_in=P_a,param_vary='OmegaLh2',mode='dc_dpar') 
+            #sp_dns = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit',P_in=P_a,param_vary='ns',mode='dc_dpar') 
+            sp_dLogAs = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit',P_in=P_a,param_vary='LogAs',mode='dc_dpar') 
             #dc_ss_dmh2 = Cll_sh_sh(sp_dmh2).Cll()  
             #dc_ss_dbh2 = Cll_sh_sh(sp_dbh2).Cll()  
             dc_ss_dlh2 = Cll_sh_sh(sp_dlh2).Cll()  

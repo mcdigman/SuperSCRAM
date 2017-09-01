@@ -4,10 +4,11 @@ import defaults
 import re
 from warnings import warn
 import lensing_observables as lo
-from sw_cov_mat import CovMat,SWCovMat
+from sw_cov_mat import SWCovMat
 import fisher_matrix as fm
+
 class SWSurvey:
-    def __init__(self,geo,survey_id,C,ls = np.array([]),cosmo_param_list=np.array([],dtype=object),cosmo_param_epsilons=np.array([]),params=defaults.sw_survey_params,observable_list=defaults.sw_observable_list,len_params=defaults.lensing_params,ps=np.array([]),param_priors=None):
+    def __init__(self,geo,survey_id,C,ls = np.array([]),cosmo_par_list=np.array([],dtype=object),cosmo_par_epsilons=np.array([]),params=defaults.sw_survey_params,observable_list=defaults.sw_observable_list,len_params=defaults.lensing_params,ps=np.array([])):
         print "sw_survey: began initializing survey: "+str(survey_id)
         self.geo = geo
         self.params = params
@@ -15,16 +16,16 @@ class SWSurvey:
         self.C = C # cosmopie 
         self.ls = ls
         self.survey_id = survey_id
-        self.cosmo_param_list = cosmo_param_list
+        self.cosmo_par_list = cosmo_par_list
         if self.needs_lensing:
-            self.len_pow = lo.LensingPowerBase(self.geo,self.ls,survey_id,C=C,params=len_params,cosmo_param_list=cosmo_param_list,cosmo_param_epsilons=cosmo_param_epsilons,ps=ps)
+            self.len_pow = lo.LensingPowerBase(self.geo,self.ls,survey_id,C=C,params=len_params,cosmo_par_list=cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,ps=ps)
             self.len_params = len_params
         else:
             self.len_pow = None
             self.len_params = None
 
-        self.param_priors = param_priors
-
+        self.n_param = cosmo_par_list.size
+        
         self.observable_names = generate_observable_names(self.geo,observable_list,params['cross_bins'])
         self.observables = self.names_to_observables(self.observable_names)
         print "sw_survey: finished initializing survey: "+str(survey_id)
@@ -47,39 +48,59 @@ class SWSurvey:
             dim_list[i] = self.observables[i].get_dimension()
         return dim_list 
 
-    def get_O_I_list(self):
-        O_I_list = np.zeros(self.observables.size,dtype=object)
-        for i in xrange(0,self.observables.size):
-            O_I_list[i] = self.observables[i].get_O_I()
-        return O_I_list
-
-    def get_dO_I_ddelta_bar_list(self):
-        dO_I_ddelta_bar_list = np.zeros(self.observables.size,dtype=object)
+#    def get_O_I_list(self):
+#        O_I_list = np.zeros(self.observables.size,dtype=object)
+#        for i in xrange(0,self.observables.size):
+#            O_I_list[i] = self.observables[i].get_O_I()
+#        return O_I_list
+    def get_O_I_array(self):
+        O_I_array = np.zeros(self.get_N_O_I(),self.get_total_dimension())
+        itr = 0
+        ds = self.get_dimension_list()
         for i in xrange(self.observables.size):
-            dO_I_ddelta_bar_list[i] = self.observables[i].get_dO_I_ddelta_bar()
-        return dO_I_ddelta_bar_list
+            O_I_array[:,itr:itr+ds[i]] = self.observables[i].get_O_I()
+            itr+=ds[i]
+        return O_I_array
+#
+#    def get_dO_I_ddelta_bar_list(self):
+#        dO_I_ddelta_bar_list = np.zeros(self.observables.size,dtype=object)
+#        for i in xrange(self.observables.size):
+#            dO_I_ddelta_bar_list[i] = self.observables[i].get_dO_I_ddelta_bar()
+#        return dO_I_ddelta_bar_list
 
-    def get_dO_I_dparameter_list(self):
-        dO_I_dparam_list = np.zeros((self.cosmo_param_list.size,self.observables.size),dtype=object)
+    def get_dO_I_ddelta_bar_array(self):
+        dO_I_ddelta_bar_array = np.zeros((self.geo.z_fine.size,self.get_total_dimension()))
+        itr = 0
+        ds = self.get_dimension_list()
         for i in xrange(self.observables.size):
-            dO_I_dparam_list[:,i] = self.observables[i].get_dO_I_dparameters()
-        return dO_I_dparam_list
+            dO_I_ddelta_bar_array[:,itr:itr+ds[i]] = self.observables[i].get_dO_I_ddelta_bar()
+            itr+=ds[i]
+        return dO_I_ddelta_bar_array
 
-    def get_dO_I_dparameter_array(self):
-        dO_I_dparam_list = self.get_dO_I_dparameter_list()
-        print dO_I_dparam_list.shape
-        dO_I_dparam_array = np.zeros((self.get_total_dimension(),dO_I_dparam_list.shape[0]))
-        print dO_I_dparam_array.shape
-        for i in xrange(0,dO_I_dparam_list.shape[0]):
-            itr = 0
-            for j in xrange(0,self.get_N_O_I()):
-                n_k = dO_I_dparam_list[i][j].size
-                dO_I_dparam_array[itr:itr+n_k,i] = dO_I_dparam_list[i,j]
-                itr+=n_k
-        return dO_I_dparam_array
 
-    def get_gaussian_covar(self):
-        cov_mats = np.zeros((self.get_total_dimension(),self.get_total_dimension()))
+#    def get_dO_I_dpar_list(self):
+#        dO_I_dpar_list = np.zeros((self.n_param,self.observables.size),dtype=object)
+#        for i in xrange(self.observables.size):
+#            dO_I_dpar_list[:,i] = self.observables[i].get_dO_I_dpars()
+#        return dO_I_dpar_list
+
+    def get_dO_I_dpar_array(self):
+        #dO_I_dpar_list = self.get_dO_I_dpar_list()
+        #print "sw_survey: observable response list shape: "+str(dO_I_dpar_list.shape)
+        #TODO make n_param an actual variable
+        dO_I_dpar_array = np.zeros((self.get_total_dimension(),self.n_param))
+        #print "sw_survey: observable response array shape: "+str(dO_I_dpar_array.shape)
+        ds = self.get_dimension_list()
+        #for i in xrange(0,self.n_param):
+        itr = 0
+        for i in xrange(0,self.get_N_O_I()):
+            #n_k = dO_I_dpar_list[i,j].size
+            dO_I_dpar_array[itr:itr+ds[i],:] = self.observables[i].get_dO_I_dpars()
+            itr+=ds[i]
+        return dO_I_dpar_array
+    #get an array of gaussian, nongaussian sw covariance matrices for the observables
+    def get_non_SSC_sw_covar_arrays(self):
+        cov_mats = np.zeros((2,self.get_total_dimension(),self.get_total_dimension()))
         ds = self.get_dimension_list()
         #n1 and n2 are to track indices so cov_mats can be a float array instead of an array of objects
         n1 = 0
@@ -87,8 +108,10 @@ class SWSurvey:
             n2 = 0
             for j in xrange(0,self.get_N_O_I()):
                 cov = SWCovMat(self.observables[i],self.observables[j])
-                cov_mats[n1:n1+ds[i],n2:n2+ds[j]] = cov.get_gaussian_covar()
-                cov_mats[n2:n2+ds[j],n1:n1+ds[i]] = cov.get_gaussian_covar()
+                cov_mats[0,n1:n1+ds[i],n2:n2+ds[j]] = cov.get_gaussian_covar_array()
+                cov_mats[0,n2:n2+ds[j],n1:n1+ds[i]] = cov_mats[0,n1:n1+ds[i],n2:n2+ds[j]]
+                cov_mats[1,n1:n1+ds[i],n2:n2+ds[j]] = cov.get_nongaussian_covar_array()
+                cov_mats[1,n2:n2+ds[j],n1:n1+ds[i]] = cov_mats[1,n1:n1+ds[i],n2:n2+ds[j]]
                 n2+=ds[j]
             n1+=ds[i]
 
@@ -139,8 +162,8 @@ class SWSurvey:
 #        print "sw_survey: finished computing sw covariance matrices"
 #        return cov_mats
     
-    def get_nongaussian_covar(self):
-        return np.zeros((self.get_total_dimension(),self.get_total_dimension()))
+#    def get_nongaussian_covar(self):
+#        return np.zeros((self.get_total_dimension(),self.get_total_dimension()))
     
 #    #get the covariance matrices, and a fisher matrix for the total covariance
 #    def get_covars(self,fisher_set,basis):
@@ -148,8 +171,8 @@ class SWSurvey:
 #        #fisher_c = fm.fisher_matrix(cov_mats.get_total_covar(),input_type=fm.REP_COVAR,fix_input=False)
 #        return cov_mats
    
-#    def get_cov_tot_parameters(self,cov_mats,gaussian_only=False):
-#        v = self.get_dO_I_dparameter_array()
+#    def get_cov_tot_pars(self,cov_mats,gaussian_only=False):
+#        v = self.get_dO_I_dpar_array()
 #        return cov_mats.get_cov_sum_param_basis(v,gaussian_only=gaussian_only)
         
     def names_to_observables(self,names):
@@ -212,11 +235,11 @@ if __name__=='__main__':
     ls = np.arange(2,500)
     geo = rect_geo(zs,Theta,Phi,C,z_fine)
     sw_survey = SWSurvey(geo,'survey1',C,ls)
-    O_I_list = sw_survey.get_O_I_list()
+    O_I_array = sw_survey.get_O_I_array()
     dO_I_ddelta_bar_list = sw_survey.get_dO_I_ddelta_bar_list()
     import matplotlib.pyplot as plt
     ax  = plt.subplot(111)
-    ax.loglog(ls,O_I_list[0])
+    ax.loglog(ls,O_I_array[0:ls])
     ax.loglog(ls,dO_I_ddelta_bar_list[0])
     plt.xlabel('ls')
     plt.legend(['O_I','dO_I_ddelta_bar'])

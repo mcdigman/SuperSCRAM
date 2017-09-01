@@ -104,7 +104,7 @@ lensing_params = {  'z_resolution'    :0.005, #fine resolution
                     'z_max_integral'  :2,#highest z
                     'pmodel_O'        :'halofit', #default method for finding p grid
                     'pmodel_dO_ddelta':'halofit', #default method for finding dp/ddeltabar grid
-                    'pmodel_dO_dparameter':'halofit',#default method for finding dp/dparameter grid
+                    'pmodel_dO_dpar':'halofit',#default method for finding dp/dpar grid
                     'n_gal'           :118000000*4.,#118000000 galaxies/rad^2=10 galaxies/arcmin^2
                     'delta_l'         :1., #binning window
                     'sigma2_e'        :0.27**2*2, #other noise term

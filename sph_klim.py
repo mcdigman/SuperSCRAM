@@ -32,7 +32,7 @@ class sph_basis_k(object):
                 important! no little h in any of the calculations
         '''
         print "sph_klim: begin init basis id: ",id(self)
-        P_lin_in=C.P_lin.linear_power(np.array([0.]))[:,0]
+        P_lin_in=C.P_lin.get_matter_power(np.array([0.]),pmodel='linear')[:,0]
         k_in = C.k
         #k = np.logspace(np.log10(np.min(k_in)),np.log10(np.max(k_in))-0.00001,6000000)
         #k = k_in

@@ -41,7 +41,6 @@ class WMatcher:
            self.integ_Es[i] = cumtrapz(1./(self.a_s**2*E_as),self.a_s,initial=0.)
            #self.integ_Es[i] = InterpolatedUnivariateSpline(self.integ_as,integ_Es_i,k=2,ext=2)(self.a_s) 
            self.Gs[i] = self.Cs[i].G(self.zs)
-        #TODO temp crossed off G_interp for debugging
         self.G_interp = RectBivariateSpline(self.ws,self.a_s,self.Gs,kx=2,ky=2)
         #self.integ_E_interp = RectBivariateSpline(self.ws,self.a_s,self.integ_Es,kx=2,ky=2)
 

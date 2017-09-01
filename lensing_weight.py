@@ -51,6 +51,6 @@ class q_num(q_weight):
                 continue
             else:
                 q[i] = sp.ps[i]*self.b[:,i]
-                q_weight.__init__(self,sp.chis,q,chi_min=chi_min,chi_max=chi_max)
+        q_weight.__init__(self,sp.chis,q,chi_min=chi_min,chi_max=chi_max)
     def bias(self,sp):
         return np.sqrt(sp.p_gg_use/sp.p_dd_use)

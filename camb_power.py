@@ -155,7 +155,7 @@ if __name__=='__main__':
 
     fit_test = False
     if fit_test:
-        from cosmopie import add_derived_parameters,strip_cosmology
+        from cosmopie import add_derived_pars,strip_cosmology
         cosmo_start = defaults.cosmology.copy()
         cosmo_start['h']=0.7;cosmo_start['ns']=0.96;cosmo_start['Omegamh2']=0.14014;cosmo_start['Omegabh2']=0.02303;cosmo_start['Omegakh2']=0.;cosmo_start['OmegaL']=0.67
         cosmo_start['sigma8']=0.82;cosmo_start['OmegaLh2']=0.32683
@@ -165,7 +165,7 @@ if __name__=='__main__':
         epsilon = 0.04
         for itr in xrange(0,nA):
             cosmo_strip = strip_cosmology(cosmo_start,p_space='jdem')
-            cosmo_fid = add_derived_parameters(cosmo_strip)
+            cosmo_fid = add_derived_pars(cosmo_strip)
             As[itr] = cosmo_fid['As'] 
             s8s[itr] = camb_sigma8(cosmo_fid)
             cosmo_start['LogAs']+=epsilon
@@ -187,7 +187,7 @@ if __name__=='__main__':
 
         cosmo_start = defaults.cosmology.copy()
         import cosmopie as cp
-        cosmo_start = cp.add_derived_parameters(cosmo_start,p_space='jdem')
+        cosmo_start = cp.add_derived_pars(cosmo_start,p_space='jdem')
         cosmo_start['de_model']='constant_w'
         cosmo_start['w']=-1
         cosmo_start['mnu'] = 0.

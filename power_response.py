@@ -11,34 +11,34 @@ def dp_ddelta(k_a,P_a,zbar,C,pmodel='linear',epsilon=0.0001):
         #TODO evaluate if redshift dependence (anywhere) needs to include Chiang & Wagner correction 4.17 
         #support vector zbar
         if isinstance(zbar,np.ndarray) and zbar.size>1:
-            pza = P_a.linear_power(zbar)
+            pza = P_a.get_matter_power(zbar,pmodel='linear')
             #degree must be at least 2 for derivative, apparently
             dpdk = RectBivariateSpline(k_a,zbar,pza,kx=2,ky=1)(k_a,zbar,dx=1) 
             dp = 47./21.*pza-1./3.*(k_a*dpdk.T).T
         #TODO support scalar zbar everywhere
         else:
-            pza = P_a.linear_power(zbar)[:,0]
+            pza = P_a.get_matter_power(zbar,pmodel='linear')[:,0]
             dpdk = (InterpolatedUnivariateSpline(k_a,pza,ext=2,k=1).derivative(1))(k_a)
             dp = 47./21.*pza-1./3.*(k_a*dpdk)
     elif pmodel=='halofit':
         if isinstance(zbar,np.ndarray) and zbar.size>1:
-            pza = P_a.nonlinear_power(zbar,pmodel='halofit',const_pow_mult=1.)
-            pzb = P_a.nonlinear_power(zbar,pmodel='halofit',const_pow_mult=(1.+epsilon/C.sigma8)**2)
+            pza = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=1.)
+            pzb = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=(1.+epsilon/C.sigma8)**2)
             dpdk = RectBivariateSpline(k_a,zbar,pza,kx=2,ky=1)(k_a,zbar,dx=1) 
             dp = 13./21.*C.sigma8*(pzb-pza)/epsilon+pza-1./3.*(k_a*dpdk.T).T
         else:
             #TODO should really be central
-            pza = P_a.nonlinear_power(zbar,pmodel='halofit',const_pow_mult=1.)[:,0]
-            pzb = P_a.nonlinear_power(zbar,pmodel='halofit',const_pow_mult=(1.+epsilon/C.sigma8)**2)[:,0]
+            pza = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=1.)[:,0]
+            pzb = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=(1.+epsilon/C.sigma8)**2)[:,0]
             dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2,k=1).derivative(1))(k_a) 
             dp = 13./21.*C.sigma8*(pzb-pza)/epsilon+pza-1./3.*k_a*dpdk
     elif pmodel=='fastpt':
         if isinstance(zbar,np.ndarray) and zbar.size>1:
-            pza,one_loop = P_a.nonlinear_power(zbar,pmodel='fastpt',get_one_loop=True)
+            pza,one_loop = P_a.get_matter_power(zbar,pmodel='fastpt',get_one_loop=True)
             dpdk = RectBivariateSpline(k_a,zbar,pza,kx=2,ky=1)(k_a,zbar,dx=1) 
             dp = 47./21.*pza-1./3.*(k_a*(dpdk.T)).T+26./21.*one_loop
         else:
-            pza,one_loop = P_a.nonlinear_power(zbar,pmodel='fastpt',get_one_loop=True)
+            pza,one_loop = P_a.get_matter_power(zbar,pmodel='fastpt',get_one_loop=True)
             pza=pza[:,0]
             one_loop=one_loop[:,0]
             dpdk = (InterpolatedUnivariateSpline(k_a,pza,ext=2,k=1).derivative(1))(k_a) 

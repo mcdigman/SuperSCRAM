@@ -145,32 +145,33 @@ class MatterPower:
             #pow_mult_grid = self.pow_mult_interp(zs)
             return InterpolatedUnivariateSpline(self.camb_w_grid,self.camb_sigma8s,k=2)(w_match_grid)*np.sqrt(pow_mult_grid)
         else:
-            return self.sigma8_in
+            return self.sigma8_in+np.zeros(zs.size)
     #TODO const_pow_mult unnecessary
-    def linear_power(self,zs,const_pow_mult=1.):
-        if self.use_match_grid:
-            #w_match_grid = self.wm.match_w(self.C,zs)
-            w_match_grid = self.w_match_interp(zs)
-            pow_mult_grid = self.wm.match_growth(self.C,zs,w_match_grid)
-        #TODO fix scalar input
-        Gs = self.C.G_norm(zs)
-        if isinstance(zs,np.ndarray):
-            n_z = zs.size
-        else:
-            n_z = 1
-        Ps = np.zeros((self.k.size,n_z))
-        if self.use_match_grid:
-            if self.use_camb_grid:
-                for i in xrange(0,n_z):
-                    Ps[:,i]=Gs[i]**2*pow_mult_grid[i]*self.camb_w_interp(self.k,w_match_grid[i]).flatten()
-            else:
-                Ps = np.outer(self.P_lin,Gs**2*pow_mult_grid)
-        else:
-            Ps = np.outer(self.P_lin,Gs**2)
-
-        return Ps*const_pow_mult
+#    def linear_power(self,zs,const_pow_mult=1.):
+#        if self.use_match_grid:
+#            #w_match_grid = self.wm.match_w(self.C,zs)
+#            w_match_grid = self.w_match_interp(zs)
+#            pow_mult_grid = self.wm.match_growth(self.C,zs,w_match_grid)
+#        #TODO fix scalar input
+#        Gs = self.C.G_norm(zs)
+#        if isinstance(zs,np.ndarray):
+#            n_z = zs.size
+#        else:
+#            n_z = 1
+#        Ps = np.zeros((self.k.size,n_z))
+#        if self.use_match_grid:
+#            if self.use_camb_grid:
+#                for i in xrange(0,n_z):
+#                    Ps[:,i]=Gs[i]**2*pow_mult_grid[i]*self.camb_w_interp(self.k,w_match_grid[i]).flatten()
+#            else:
+#                Ps = np.outer(self.P_lin,Gs**2*pow_mult_grid)
+#        else:
+#            Ps = np.outer(self.P_lin,Gs**2)
+#
+#        return Ps*const_pow_mult
     #const_pow_mult allows adjusting sigma8 without creating a whole new power spectrum
-    def nonlinear_power(self,zs,pmodel=defaults.matter_power_params['nonlinear_model'],const_pow_mult=1.,get_one_loop=False):
+    #TODO change name to get_matter_power
+    def get_matter_power(self,zs,pmodel=defaults.matter_power_params['nonlinear_model'],const_pow_mult=1.,get_one_loop=False):
         if self.use_match_grid:
             #w_match_grid = self.wm.match_w(self.C,zs)
             #TODO maybe allow override of interpolation
@@ -192,22 +193,24 @@ class MatterPower:
                     Pbases[:,i]=pow_mult_grid[i]*self.camb_w_interp(self.k,w_match_grid[i]).flatten()
             else:
                 Pbases = np.outer(self.P_lin,pow_mult_grid)
-        
+        else:
+            Pbases = np.outer(self.P_lin,np.full(n_z,1.))*const_pow_mult
+
         #Plin = G_norms**2*Pbases 
         P_nonlin = np.zeros((self.k.size,n_z))
-
-        if pmodel=='halofit':
+        if pmodel=='linear':
+            P_nonlin = Pbases*G_norms**2
+        elif pmodel=='halofit':
             if self.use_match_grid:
-                self.hf_C_calcs = np.zeros(n_z,dtype=object)
-                self.hf_calcs = np.zeros(n_z,dtype=object)
+                hf_C_calcs = np.zeros(n_z,dtype=object)
+                hf_calcs = np.zeros(n_z,dtype=object)
                 for i in xrange(0,n_z):
                     cosmo_hf_i = self.cosmology.copy()
                     cosmo_hf_i['de_model'] = 'constant_w'
                     cosmo_hf_i['w'] = w_match_grid[i]
-                    #TODO shouldn't be self
-                    self.hf_C_calcs[i] = cp.CosmoPie(cosmology=cosmo_hf_i,silent=True,G_safe=True,G_in=InterpolatedUnivariateSpline(self.C.z_grid[::-1],self.wm.growth_interp(w_match_grid[i],self.C.a_grid)[::-1],ext=2,k=2))
-                    self.hf_calcs[i] = halofit.halofitPk(self.hf_C_calcs[i],self.k,p_lin=Pbases[:,i],halofit_params=self.halofit_params)
-                    P_nonlin[:,i] = 2.*np.pi**2*(self.hf_calcs[i].D2_NL(self.k,zs[i]).T/self.k**3)
+                    hf_C_calcs[i] = cp.CosmoPie(cosmology=cosmo_hf_i,silent=True,G_safe=True,G_in=InterpolatedUnivariateSpline(self.C.z_grid[::-1],self.wm.growth_interp(w_match_grid[i],self.C.a_grid)[::-1],ext=2,k=2))
+                    hf_calcs[i] = halofit.halofitPk(hf_C_calcs[i],self.k,p_lin=Pbases[:,i],halofit_params=self.halofit_params)
+                    P_nonlin[:,i] = 2.*np.pi**2*(hf_calcs[i].D2_NL(self.k,zs[i]).T/self.k**3)
             else:
                 hf_calc = halofit.halofitPk(self.C,self.k,p_lin=self.P_lin*const_pow_mult,halofit_params=self.halofit_params)
                 P_nonlin = 2.*np.pi**2*(hf_calc.D2_NL(self.k,zs).T/self.k**3).T
@@ -242,7 +245,7 @@ if __name__ == '__main__':
     if do_plottest:
         import matplotlib.pyplot as plt
         zs = np.array([1.])
-        #Pzs = mps.linear_power(zs)
+        #Pzs = mps.get_matter_power(zs,pmodel='linear')
         cosmo_2 = cosmo_in.copy()
         cosmo_2['de_model']='w0wa'
         cosmo_2['wa'] =0.#-0.5
@@ -251,9 +254,9 @@ if __name__ == '__main__':
         C_2 = cp.CosmoPie(cosmo_2,camb_params=camb_params)
         mps2 = MatterPower(C_2,camb_params=camb_params)
         
-        P_lin2 = mps2.linear_power(zs)
-        P_hf2 = mps2.nonlinear_power(zs,pmodel='halofit')
-        P_fpt2 = mps2.nonlinear_power(zs,pmodel='fastpt')
+        P_lin2 = mps2.get_matter_power(zs,pmodel='linear')
+        P_hf2 = mps2.get_matter_power(zs,pmodel='halofit')
+        P_fpt2 = mps2.get_matter_power(zs,pmodel='fastpt')
         P_hf2_alt = 2.*np.pi**2*((mps2.hf.D2_NL(mps2.k,zs).T)/mps2.k**3).T
         #should be 1 for wa=0.
         print "mean rat with hf alt ",np.average(P_hf2_alt/P_hf2)
@@ -278,9 +281,9 @@ if __name__ == '__main__':
         C_2 = cp.CosmoPie(cosmo_2,camb_params=camb_params)
         mps2 = MatterPower(C_2,camb_params=camb_params)
         
-        P_lin2 = mps2.linear_power(zs)
-        P_hf2 = mps2.nonlinear_power(zs,pmodel='halofit')
-        P_fpt2 = mps2.nonlinear_power(zs,pmodel='fastpt')
+        P_lin2 = mps2.get_matter_power(zs,pmodel='linear')
+        P_hf2 = mps2.get_matter_power(zs,pmodel='halofit')
+        P_fpt2 = mps2.get_matter_power(zs,pmodel='fastpt')
     do_cutoff_sensitivity_test = False
     if do_cutoff_sensitivity_test:
         camb_params_cut_1 = camb_params.copy()
@@ -301,14 +304,14 @@ if __name__ == '__main__':
 
         C_1 = cp.CosmoPie(cosmo_in,camb_params=camb_params_cut_1)
         mps_1 = MatterPower(C_1,camb_params=camb_params_cut_1)
-        P_hf_1 = mps_1.nonlinear_power(zs,pmodel='halofit')
-        P_fpt_1 = mps_1.nonlinear_power(zs,pmodel='fastpt')
+        P_hf_1 = mps_1.get_matter_power(zs,pmodel='halofit')
+        P_fpt_1 = mps_1.get_matter_power(zs,pmodel='fastpt')
         k_1 = mps_1.k
         
         C_2 = cp.CosmoPie(cosmo_in,camb_params=camb_params_cut_2)
         mps_2 = MatterPower(C_2,camb_params=camb_params_cut_2) 
-        P_hf_2 = mps_2.nonlinear_power(zs,pmodel='halofit')
-        P_fpt_2 = mps_2.nonlinear_power(zs,pmodel='fastpt')
+        P_hf_2 = mps_2.get_matter_power(zs,pmodel='halofit')
+        P_fpt_2 = mps_2.get_matter_power(zs,pmodel='fastpt')
         k_2 = mps_2.k
 
         k_use = k_2

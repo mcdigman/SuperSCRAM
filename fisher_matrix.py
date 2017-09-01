@@ -1,7 +1,7 @@
 import numpy as np
 import scipy as sp
 import scipy.linalg
-from algebra_utils import cholesky_inv_contract,get_inv_cholesky,invert_triangular,cholesky_inplace,get_cholesky_inv
+from algebra_utils import cholesky_inv_contract,get_inv_cholesky,invert_triangular,cholesky_inplace,get_cholesky_inv,cholesky_contract
 from warnings import warn
 REP_FISHER = 0
 REP_CHOL = 1
@@ -101,23 +101,30 @@ class fisher_matrix:
             return result
         
     #for getting variance/projecting to another basis
-    #TODO consider making sensitive to internal state
     def contract_covar(self,v1,v2,identical_inputs=False,return_fisher=False):
         if not self.silent:
             print "fisher_matrix "+str(id(self))+": contracting covariance"
-        result = cholesky_inv_contract(self.get_cov_cholesky().T,v1,v2,cholesky_given=True,identical_inputs=identical_inputs,lower=True)
+        #result = cholesky_inv_contract(self.get_cov_cholesky().T,v1,v2,cholesky_given=True,identical_inputs=identical_inputs,lower=True)
+        if not self.internal_state==REP_COVAR:
+            result = cholesky_contract(self.get_cov_cholesky(),v1,v2,cholesky_given=True,identical_inputs=identical_inputs,lower=True)
+        else:
+            result = np.dot(np.dot(v1.T,self.get_covar()),v2)
+
         if return_fisher:
             return fisher_matrix(result,input_type=REP_COVAR,initial_state=REP_COVAR,fix_input=False,silent=self.silent)
         else:
             return result
 
     #needed for projecting to another basis
-    #TODO consider making sensitive to internal state
     def contract_fisher(self,v1,v2,identical_inputs=False,return_fisher=False):
         if not self.silent:
             print "fisher_matrix "+str(id(self))+": contracting fisher"
 
-        result = np.dot(v1.T,np.dot(self.get_fisher(),v2))
+        if not self.internal_state==REP_FISHER:
+            result = cholesky_inv_contract(self.get_cov_cholesky_inv(),v1,v2,cholesky_given=True,identical_inputs=identical_inputs,lower=True)
+        else:
+            result = np.dot(v1.T,np.dot(self.get_fisher(),v2))
+
         if return_fisher:
             return fisher_matrix(result,input_type=REP_FISHER,initial_state=REP_FISHER,fix_input=False,silent=self.silent)
         else:
