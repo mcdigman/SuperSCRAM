@@ -287,14 +287,14 @@ if __name__=="__main__":
     cosmo_fid = defaults.cosmology_jdem.copy()
     cosmo_fid['w0'] = cosmo_fid['w']
     cosmo_fid['wa'] = 0.
-    cosmo_fid['de_model'] = 'w0wa'
+    cosmo_fid['de_model'] = 'jdem'
     if cosmo_fid['de_model'] == 'jdem':
         for i in xrange(0,36):
             cosmo_fid['ws36_'+str(i)] = -1.
     C=cp.CosmoPie(cosmology=cosmo_fid,p_space='jdem',camb_params=camb_params)
     #C=cp.CosmoPie(cosmology=defaults.cosmology,p_space='basic',needs_power=True)
     #k,P=C.get_P_lin()
-    P=mps.MatterPower(C,camb_params)
+    P=mps.MatterPower(C,camb_params=camb_params)
     k=P.k
     C.P_lin=P
     C.k=k

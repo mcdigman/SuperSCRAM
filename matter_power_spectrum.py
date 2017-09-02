@@ -10,7 +10,7 @@ import cosmopie as cp
 #TODO clean up
 #TODO treat w0 and w equivalently
 class MatterPower:
-    def __init__(self,C_in,P_lin=None,k_in=None,matter_power_params=defaults.matter_power_params,camb_params=defaults.camb_params,wmatcher_params=defaults.wmatcher_params,halofit_params=defaults.halofit_params,fpt_params=defaults.fpt_params,wm_in=None,wm_safe=False):
+    def __init__(self,C_in,P_lin=None,k_in=None,matter_power_params=defaults.matter_power_params,camb_params=defaults.camb_params,wmatcher_params=defaults.wmatcher_params,halofit_params=defaults.halofit_params,fpt_params=defaults.fpt_params,wm_in=None,wm_safe=False,P_fid=None,camb_safe=False,de_perturbative=False):
         #save all the input parameter sets
         self.params = matter_power_params
         self.camb_params = camb_params.copy()
@@ -19,6 +19,7 @@ class MatterPower:
         self.halofit_params = halofit_params
         self.fpt_params = fpt_params
         self.wm_safe=wm_safe
+        self.de_perturbative=de_perturbative
 
         self.C = C_in
         self.cosmology = self.C.cosmology
@@ -42,7 +43,7 @@ class MatterPower:
         self.n_a = self.a_grid.size
 
         self.de_model = self.cosmology['de_model']  
-        self.get_w_matcher = self.params['needs_wmatcher'] and not self.de_model=='constant_w'
+        self.get_w_matcher = self.params['needs_wmatcher'] and not self.de_model=='constant_w' and not self.de_perturbative
         if self.get_w_matcher:
             if wm_in is not None and self.wm_safe:
                 self.wm = wm_in
@@ -52,90 +53,76 @@ class MatterPower:
             #TODO is this grid acceptably fine?
             self.w_match_interp = InterpolatedUnivariateSpline(self.z_grid[::-1],self.w_match_grid[::-1],k=3,ext=2) 
             self.pow_mult_grid = self.wm.match_growth(self.C,self.z_grid,self.w_match_grid)
-            #self.pow_mult_interp = InterpolatedUnivariateSpline(self.z_grid,self.pow_mult_grid,k=3,ext=2) 
             self.use_match_grid = True
         else:
             self.wm = None
             self.w_match_grid = np.zeros(self.n_a)+self.cosmology['w']
             self.w_match_interp = InterpolatedUnivariateSpline(self.z_grid,self.w_match_grid,k=3,ext=2) 
             self.pow_mult_grid = np.zeros(self.n_a)+1.
-            #self.pow_mult_interp = InterpolatedUnivariateSpline(self.z_grid,self.pow_mult_grid,k=3,ext=2) 
             self.use_match_grid = False
         #figure out an error checking method here
-        #if np.any(w_match_grid>0.1):
         #Interpolated to capture possible k dependence in camb of w,#TODO see if sufficient
         #needed because field can cluster on very large scales, see arXiv:astro-ph/9906174
         if self.params['needs_camb_w_grid'] and self.use_match_grid:
-            #get a w grid that is no larger than it needs to be
-            w_min = np.min(self.w_match_grid)-self.params['w_edge']
-            w_max = np.max(self.w_match_grid)+self.params['w_edge']
-            self.camb_w_grid = np.arange(w_min,w_max,self.params['w_step'])
-            #make sure the grid has at least some minimum number of values
-            if self.camb_w_grid.size<self.params['min_n_w']:
-                self.camb_w_grid = np.linspace(w_min,w_max,self.params['min_n_w']) 
 
-            self.n_cw = self.camb_w_grid.size
-            self.camb_cosmos = np.zeros(self.n_cw,dtype=object)
-            self.camb_Cs = np.zeros(self.n_cw,dtype=object)
-            self.camb_w_pows = np.zeros((self.k.size,self.n_cw))
-            self.camb_sigma8s = np.zeros(self.n_cw)
-            print "camb grid",self.camb_w_grid
             #get grid of camb power spectra for various w values 
-            for i in xrange(0,self.n_cw):
-                self.camb_cosmos[i] = self.cosmology.copy()
-                self.camb_cosmos[i]['de_model'] = 'constant_w'
-                self.camb_cosmos[i]['w'] = self.camb_w_grid[i]
-                #TODO check the G input is correct
-                #print self.wm.growth_interp(self.camb_w_grid[i],C_in.a_grid)
-                print "camb with w=",self.camb_w_grid[i]
-                k_i,self.camb_w_pows[:,i],self.camb_sigma8s[i] = camb_pow(self.camb_cosmos[i],camb_params=self.camb_params)
-                if not np.all(k_i==self.k):
-                    self.camb_w_pows[:,i] = InterpolatedUnivariateSpline(k_i,self.camb_w_pows[:,i],k=2)(self.k)
-            self.camb_w_interp = RectBivariateSpline(self.k,self.camb_w_grid,self.camb_w_pows,kx=1,ky=1)
-            self.use_camb_grid = True
+            #TODO found bug with force_sigma8 consistency 
+            #borrow some parameters from an input power spectrum if camb need not be called repeatedly
+            #TODO check robustness ie do not need to also get alternate w_match_grid
+            if camb_safe and not  (P_fid is None):
+                self.camb_w_interp = P_fid.camb_w_interp
+                self.camb_sigma8_interp = P_fid.camb_sigma8_interp
+                self.camb_w_grid = P_fid.camb_w_grid
+                self.camb_w_pows = P_fid.camb_w_pows
+                self.camb_sigma8s = P_fid.camb_sigma8s
+                self.use_camb_grid = P_fid.use_camb_grid
+                #self.camb_w_interp = RectBivariateSpline(self.k,self.camb_w_grid,self.camb_w_pows,kx=1,ky=1)
+                #self.camb_sigma8_interp = InterpolatedUnivariateSpline(self.camb_w_grid,self.camb_sigma8s,k=2)
+            else:
+                #get a w grid that is no larger than it needs to be
+                w_min = np.min(self.w_match_grid)-self.params['w_edge']
+                w_max = np.max(self.w_match_grid)+self.params['w_edge']
+                self.camb_w_grid = np.arange(w_min,w_max,self.params['w_step'])
+                #make sure the grid has at least some minimum number of values
+                if self.camb_w_grid.size<self.params['min_n_w']:
+                    self.camb_w_grid = np.linspace(w_min,w_max,self.params['min_n_w']) 
+                print "camb grid",self.camb_w_grid
+                n_cw = self.camb_w_grid.size
+                self.camb_w_pows = np.zeros((self.k.size,n_cw))
+                self.camb_sigma8s = np.zeros(n_cw)
+                camb_cosmos = self.cosmology.copy()
+                camb_cosmos['de_model'] = 'constant_w'
+                for i in xrange(0,n_cw):
+                    camb_cosmos['w'] = self.camb_w_grid[i]
+                    #TODO check the G input is correct
+                    print "camb with w=",self.camb_w_grid[i]
+                    k_i,self.camb_w_pows[:,i],self.camb_sigma8s[i] = camb_pow(camb_cosmos,camb_params=self.camb_params)
+                    if not np.all(k_i==self.k):
+                        self.camb_w_pows[:,i] = InterpolatedUnivariateSpline(k_i,self.camb_w_pows[:,i],k=2)(self.k)
+                    self.camb_w_interp = RectBivariateSpline(self.k,self.camb_w_grid,self.camb_w_pows,kx=3,ky=3)
+                    self.camb_sigma8_interp = InterpolatedUnivariateSpline(self.camb_w_grid,self.camb_sigma8s,k=2)
+                self.use_camb_grid = True
         else:
             self.camb_w_grid = np.array([])
-            self.n_cw = 0
             self.camb_cosmos= np.array([])
             self.camb_w_pows = np.array([])
-            self.camb_Cs = np.array([])
+            self.camb_sigma8s = np.array([])
             self.camb_w_interp = None
+            self.camb_sigma8_interp=None
             self.use_camb_grid = False
-#        self.use_camb_grid = False
-        
-
-
-        if self.params['needs_halofit']:
-            self.hf=halofit.halofitPk(self.C,self.k,p_lin=self.P_lin,halofit_params=self.halofit_params) 
-            #if self.use_camb_grid:
-            #    self.hfs = np.zeros(self.n_cw,dtype=object)
-            #    self.camb_Cs = np.zeros(self.n_cw,dtype=object)
-            #    self.hf_w_pows = np.zeros((self.k.size,self.n_cw))
-            #    for i in xrange(0,self.n_cw):
-            #        self.camb_Cs[i] = cp.CosmoPie(cosmology=self.camb_cosmos[i],silent=True,G_safe=True,G_in=InterpolatedUnivariateSpline(C_in.z_grid[::-1],self.wm.growth_interp(self.camb_w_grid[i],C_in.a_grid)[::-1],ext=2,k=2))
-            #        self.hfs[i] = halofit.halofitPk(self.camb_Cs[i],self.k,self.camb_w_pows[:,i])
-             #       self.hf_w_pows[:,i] = hfs[i].D2_NL(self.k,w_overwride=True,fixed_w=self.camb_w_grid[i])
-           # else:
-            #    self.hf_w_pows = np.array([])
-          #      self.hfs = np.array([])
-        else:
-            self.hf = None
-            #self.camb_Cs = np.array([])
-           # self.hf_w_pows = np.array([])
-         #   self.hfs = np.array([])
+    
+#        if self.params['needs_halofit']:
+#            self.hf=halofit.halofitPk(self.C,self.k,p_lin=self.P_lin,halofit_params=self.halofit_params) 
+#        else:
+#            self.hf = None
 
         if self.params['needs_fpt']:
             self.fpt = FASTPT.FASTPT(self.k,self.fpt_params['nu'],low_extrap=self.fpt_params['low_extrap'],high_extrap=self.fpt_params['high_extrap'],n_pad=self.fpt_params['n_pad'])
             self.one_loop = self.fpt.one_loop(self.P_lin,C_window=self.fpt_params['C_window'])
-           # if self.use_camb_grid:
-           #     self.one_loops = np.zeros((self.k,self.n_cw))
-           #     for i in xrange(0,self.n_cw):
-           #         self.one_loops[:,i] = self.fpt.one_loop(self.camb_w_pows[:,i],C_window=fpt_params['C_window'])
-           # self.one_loops = np.array([])
         else:
             self.fpt = None
             self.one_loop=np.array([])
-           # self.one_loops = np.array([])
+
     #get an effective sigma8 if appropriate
     def get_sigma8_eff(self,zs):
         if self.use_match_grid:
@@ -143,34 +130,11 @@ class MatterPower:
             w_match_grid = self.w_match_interp(zs)
             pow_mult_grid = self.wm.match_growth(self.C,zs,w_match_grid)
             #pow_mult_grid = self.pow_mult_interp(zs)
-            return InterpolatedUnivariateSpline(self.camb_w_grid,self.camb_sigma8s,k=2)(w_match_grid)*np.sqrt(pow_mult_grid)
+            return self.camb_sigma8_interp(w_match_grid)*np.sqrt(pow_mult_grid)
         else:
             return self.sigma8_in+np.zeros(zs.size)
-    #TODO const_pow_mult unnecessary
-#    def linear_power(self,zs,const_pow_mult=1.):
-#        if self.use_match_grid:
-#            #w_match_grid = self.wm.match_w(self.C,zs)
-#            w_match_grid = self.w_match_interp(zs)
-#            pow_mult_grid = self.wm.match_growth(self.C,zs,w_match_grid)
-#        #TODO fix scalar input
-#        Gs = self.C.G_norm(zs)
-#        if isinstance(zs,np.ndarray):
-#            n_z = zs.size
-#        else:
-#            n_z = 1
-#        Ps = np.zeros((self.k.size,n_z))
-#        if self.use_match_grid:
-#            if self.use_camb_grid:
-#                for i in xrange(0,n_z):
-#                    Ps[:,i]=Gs[i]**2*pow_mult_grid[i]*self.camb_w_interp(self.k,w_match_grid[i]).flatten()
-#            else:
-#                Ps = np.outer(self.P_lin,Gs**2*pow_mult_grid)
-#        else:
-#            Ps = np.outer(self.P_lin,Gs**2)
-#
-#        return Ps*const_pow_mult
+
     #const_pow_mult allows adjusting sigma8 without creating a whole new power spectrum
-    #TODO change name to get_matter_power
     def get_matter_power(self,zs,pmodel=defaults.matter_power_params['nonlinear_model'],const_pow_mult=1.,get_one_loop=False):
         if self.use_match_grid:
             #w_match_grid = self.wm.match_w(self.C,zs)
@@ -196,21 +160,18 @@ class MatterPower:
         else:
             Pbases = np.outer(self.P_lin,np.full(n_z,1.))*const_pow_mult
 
-        #Plin = G_norms**2*Pbases 
         P_nonlin = np.zeros((self.k.size,n_z))
         if pmodel=='linear':
             P_nonlin = Pbases*G_norms**2
         elif pmodel=='halofit':
             if self.use_match_grid:
-                hf_C_calcs = np.zeros(n_z,dtype=object)
-                hf_calcs = np.zeros(n_z,dtype=object)
                 for i in xrange(0,n_z):
                     cosmo_hf_i = self.cosmology.copy()
                     cosmo_hf_i['de_model'] = 'constant_w'
                     cosmo_hf_i['w'] = w_match_grid[i]
-                    hf_C_calcs[i] = cp.CosmoPie(cosmology=cosmo_hf_i,silent=True,G_safe=True,G_in=InterpolatedUnivariateSpline(self.C.z_grid[::-1],self.wm.growth_interp(w_match_grid[i],self.C.a_grid)[::-1],ext=2,k=2))
-                    hf_calcs[i] = halofit.halofitPk(hf_C_calcs[i],self.k,p_lin=Pbases[:,i],halofit_params=self.halofit_params)
-                    P_nonlin[:,i] = 2.*np.pi**2*(hf_calcs[i].D2_NL(self.k,zs[i]).T/self.k**3)
+                    hf_C_calc = cp.CosmoPie(cosmology=cosmo_hf_i,silent=True,G_safe=True,G_in=InterpolatedUnivariateSpline(self.C.z_grid[::-1],self.wm.growth_interp(w_match_grid[i],self.C.a_grid)[::-1],ext=2,k=2),needs_power=False)
+                    hf_calc = halofit.halofitPk(hf_C_calc,self.k,p_lin=Pbases[:,i],halofit_params=self.halofit_params)
+                    P_nonlin[:,i] = 2.*np.pi**2*(hf_calc.D2_NL(self.k,zs[i]).T/self.k**3)
             else:
                 hf_calc = halofit.halofitPk(self.C,self.k,p_lin=self.P_lin*const_pow_mult,halofit_params=self.halofit_params)
                 P_nonlin = 2.*np.pi**2*(hf_calc.D2_NL(self.k,zs).T/self.k**3).T

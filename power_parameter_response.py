@@ -103,38 +103,23 @@ def get_perturbed_cosmopies(C_fid,pars,epsilons,log_param_derivs=np.array([])):
         cosmo_a = get_perturbed_cosmology(cosmo_fid,pars[i],epsilons[i],log_param_derivs[i])
         cosmo_b = get_perturbed_cosmology(cosmo_fid,pars[i],-epsilons[i],log_param_derivs[i])
 
-        #handle dark energy
-        #use wmatcher for all dark energy for now TODO consider actually calculating power in some way, because of possible ns degeneracy issue
-        
-        #if pars[i] in cp.DE_METHODS[de_model] and not de_model=='constant_w':
-        #    k_a=k_fid
-        #    k_b=k_fid
-        #    P_a=P_fid
-        #    P_b=P_fid
-        #else:
-          #  k_a,P_a,sigma8_a = cpow.camb_pow(cosmo_a,camb_params=camb_params) 
-          #  k_b,P_b,sigma8_b = cpow.camb_pow(cosmo_b,camb_params=camb_params) 
-        #attach a sigma8 to the resulting cosmology in case something needs it later
-
-        #TODO not sure if interpolation is needed/correct
-        #if not np.all(k_a==k_fid) or not(np.all(k_b==k_fid)):
-        #    print "adapting k grid"
-        #    P_a = InterpolatedUnivariateSpline(k_a,P_a,k=1)(k_fid)
-        #    P_b = InterpolatedUnivariateSpline(k_b,P_b,k=1)(k_fid)
-        #    k_a = k_fid
-        #    k_b = k_fid
-
         #set cosmopie power spectrum appropriately
+        #avoid unnecessarily recomputing growth factors if they won't change. If growth factors don't change neither will w matching
         if pars[i] in cp.GROW_SAFE:
             C_a = cp.CosmoPie(cosmo_a,p_space=cosmo_fid['p_space'],safe_sigma8=True,G_safe=True,G_in=C_fid.G_p)
             C_b = cp.CosmoPie(cosmo_b,p_space=cosmo_fid['p_space'],safe_sigma8=True,G_safe=True,G_in=C_fid.G_p)
-            P_a = mps.MatterPower(C_a,k_in=k_fid,camb_params=camb_params,wm_in=P_fid.wm,wm_safe=True)
-            P_b = mps.MatterPower(C_b,k_in=k_fid,camb_params=camb_params,wm_in=P_fid.wm,wm_safe=True)
+            P_a = mps.MatterPower(C_a,k_in=k_fid,camb_params=camb_params,wm_in=P_fid.wm,wm_safe=True,de_perturbative=True)
+            P_b = mps.MatterPower(C_b,k_in=k_fid,camb_params=camb_params,wm_in=P_fid.wm,wm_safe=True,de_perturbative=True)
         else:
             C_a = cp.CosmoPie(cosmo_a,p_space=cosmo_fid['p_space'],safe_sigma8=True)
             C_b = cp.CosmoPie(cosmo_b,p_space=cosmo_fid['p_space'],safe_sigma8=True)
-            P_a = mps.MatterPower(C_a,k_in=k_fid,camb_params=camb_params)
-            P_b = mps.MatterPower(C_b,k_in=k_fid,camb_params=camb_params)
+            #avoid unnecessarily recomputing WMatchers for dark energy related parameters, and unnecessarily calling camb
+            if pars[i] in cp.DE_SAFE:
+                P_a = mps.MatterPower(C_a,k_in=k_fid,camb_params=camb_params,wm_in=P_fid.wm,wm_safe=True,P_fid=P_fid,camb_safe=True)
+                P_b = mps.MatterPower(C_b,k_in=k_fid,camb_params=camb_params,wm_in=P_fid.wm,wm_safe=True,P_fid=P_fid,camb_safe=True)
+            else:
+                P_a = mps.MatterPower(C_a,k_in=k_fid,camb_params=camb_params,de_perturbative=True)
+                P_b = mps.MatterPower(C_b,k_in=k_fid,camb_params=camb_params,de_perturbative=True)
         k_a = P_a.k
         k_b = P_b.k
 

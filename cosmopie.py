@@ -17,13 +17,14 @@ import matter_power_spectrum as mps
 
 class CosmoPie :
         
-    def __init__(self,cosmology=defaults.cosmology, P_lin=None, k=None,p_space=defaults.cosmopie_params['p_space'],needs_power=False,camb_params=defaults.camb_params,safe_sigma8=False,a_step=0.0008,a_step_de = 0.0001,a_extra=10,a_extra_de=100,G_in=None,G_safe=False,silent=False,wmatch=None):
+    def __init__(self,cosmology=defaults.cosmology, P_lin=None, k=None,p_space=defaults.cosmopie_params['p_space'],needs_power=False,camb_params=defaults.camb_params,safe_sigma8=False,a_step=0.0008,a_step_de = 0.0001,a_extra=10,a_extra_de=100,G_in=None,G_safe=False,silent=False,wm_in=None,wm_safe=False,de_perturbative=False):
         # default to Planck 2015 values 
         self.silent=silent
         if not silent:
             print "cosmopie "+str(id(self))+": begin initialization"        
         #a wmatcher object is needed to match a variable dark energy equation of state
-        self.wmatch=wmatch
+        self.wm_in=wm_in
+        self.wm_safe=wm_safe
         #define parameterization
         self.p_space=p_space
         #fill out cosmology
@@ -41,7 +42,7 @@ class CosmoPie :
         self.h        = self.cosmology['h']
         self.Omegak   = self.cosmology['Omegak']
         self.Omegar   = self.cosmology['Omegar']
-        
+
         #get multipliers in H(z) for OmegaL with an equation of state w(z)
         self.de_model = self.cosmology.get('de_model')
         #default to assuming dark energy is constant
@@ -53,20 +54,17 @@ class CosmoPie :
         #z grid for dark energy interpolation
         a_de = np.arange(1.+a_step_de*a_extra_de*2,a_step_de,-a_step_de)
         self.z_de = 1./a_de-1.
-        #self.z_de = np.arange(0.,z_max,z_space)
         #TODO interpolation may introduce unnecessary error in exact cases
         if self.de_model=='constant_w':
             self.de_mult = InterpolatedUnivariateSpline(self.z_de,(self.z_de+1.)**(3.*(1.+self.cosmology['w'])),k=1,ext=2)
             self.ws = np.zeros(self.z_de.size)+self.cosmology['w']
             self.w_interp = InterpolatedUnivariateSpline(self.z_de,self.ws,k=1,ext=2) 
         elif self.de_model=='w0wa':
-            #self.ws = self.cosmology['w0']+(1.-1./(1.-z_grid_de))*self.cosmology['wa']
             #Chevallier-Polarski-Linder model, solution can be found in ie arXiv:1605.01475
             self.de_mult=InterpolatedUnivariateSpline(self.z_de,np.exp(-3.*self.cosmology['wa']*self.z_de/(1.+self.z_de))*(1.+self.z_de)**(3.*(1.+self.cosmology['w0']+self.cosmology['wa'])),k=1,ext=2)
             self.ws = self.cosmology['w0']+(1.-1./(1.+self.z_de))*self.cosmology['wa'] 
             self.w_interp = InterpolatedUnivariateSpline(self.z_de,self.ws,k=1,ext=2) 
         elif self.de_model=='grid_w':
-            #ws = InterpolatedUnivariateSpline(self.cosmology['zs_de'],self.cosmology['ws_de'])(self.z_de)
             #cf ie https://ned.ipac.caltech.edu/level5/March08/Frieman/Frieman2.html#note1, arXiv:1605.01475
             de_integrand = (1.+self.cosmology['ws'])/(1.+self.cosmology['zs_de'])
             de_mults_in = np.exp(3.*cumtrapz(de_integrand,self.cosmology['zs_de'],initial=0.)) #TODO check initial should actually be zero
@@ -74,8 +72,6 @@ class CosmoPie :
             self.w_interp = InterpolatedUnivariateSpline(self.cosmology['zs_de'],self.cosmology['ws'],k=2,ext=2)
         elif self.de_model=='jdem':
             #piecewise constant approximation over 36 values with z=0.025 spacing
-            #ws_in = self.cosmology['ws36']
-            #TODO fix edge case w0 
             ws_in = np.array([self.cosmology['ws36_'+str(i)] for i in range(0,36)])
             zs_in = 0.025*np.arange(1,37)/(1-0.025*np.arange(1,37))
             self.ws = np.zeros(self.z_de.size)
@@ -117,22 +113,6 @@ class CosmoPie :
         self.K = -self.Omegak*(self.H0/self.c)**2
 
     
-        #precompute some things for speedups if desired (initially use no precompute)
-#                self.precompute=False
-#                if precompute:
-#                    z_grid = np.arange(0.,z_max,z_space)
-#                    #there are massive savings from precomputing G because of the integral it contains
-#                    G_arr = np.zeros(z_grid.size)
-#                    #first compute the integral in G for the whole range \int_0^{1e4}(integrand)
-#                    integrand1 = lambda zp : (1+zp)*self.H0**3/self.H(zp)**3
-#                    G_base = quad(integrand1,0.,1e4)[0]
-#                    #subtract the cumulative result from G_base so final result is \int_z^{1e4}(integrand)
-#                    integrand2 = (1.+z_grid)*self.H0**3/self.H(z_grid)**3
-#                    self.G_p = interp1d(z_grid,2.5*self.Omegam/self.H0*self.H(z_grid)*(G_base-cumtrapz(integrand2,z_grid,initial=0.)))
-#               #     for i in xrange(0,z_grid.size):
-#               #         G_arr[i] = self.G(z_grid[i])
-#               #     self.G_p = interp1d(z_grid, G_arr)
-#                self.precompute=precompute
         #precompute the normalization factor from the differential equation
         self.a_step=a_step
         self.G_safe=G_safe
@@ -163,30 +143,8 @@ class CosmoPie :
         else:
             self.G_p=G_in
 
-        #self.wmatch_overwride=wmatch_overwride
-        #get matching factors for dark energy via the casarini arXiv:1601.07230v3 inspired method 
-#        if not self.wmatch_overwride:
-#            if self.de_model is 'constant_w':
-#                self.matched_ws = self.w_interp(self.z_grid)
-#                self.matched_growth = np.zeros(self.z_grid.size)+1.
-#            elif self.wmatch is None:
-#                warn('no wmatcher given to cosmopie but dark energy model is not constant_w '+str(self.de_model)+' will simply use linear growth factor')
-#                self.matched_ws = self.w_interp(self.z_grid)
-#                self.matched_growth = np.zeros(self.z_grid.size)+1.
-#            else:
-#                self.matched_ws = self.wmatch.match_w(self,self.z_grid)
-#                self.matched_growth = self.wmatch.match_growth(self,self.z_grid,matched_ws)
-#
-#            self.matched_ws_interp = InterpolatedUnivariateSpline(self.z_grid,self.matched_ws)
-#            self.matched_growth_interp = InterpolatedUnivariateSpline(self.z_grid,self.matched_growth)
-#        else:
-#            self.matched_ws = None
-#            self.matched_growth = None
-#            self.matched_ws_interp = None
-#            self.matched_growth_interp = None
         if (P_lin is None or k is None) and needs_power:
-            #self.k,self.P_lin=camb_power.camb_pow(self.cosmology,camb_params=camb_params)
-            self.P_lin = mps.MatterPower(self)
+            self.P_lin = mps.MatterPower(self,wm_in=self.wm_in,wm_safe=self.wm_safe,de_perturbative=de_perturbative)
             self.k=self.P_lin.k
         else:
             self.P_lin=P_lin
@@ -511,6 +469,8 @@ DE_METHODS = {'constant_w':['w'],
               'grid_w'    :['ws']}
 #parameters guaranteed not to affect linear growth factor (G_norm)
 GROW_SAFE = ['ns','LogAs','sigma8']
+#parameters guaranteed to not require generating a new WMatcher object
+DE_SAFE = np.unique(np.concatenate(DE_METHODS.values())).tolist()
 def strip_cosmology(cosmo_old,p_space,overwride=[]):
     cosmo_new = cosmo_old.copy()
     if p_space in P_SPACES:
