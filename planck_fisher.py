@@ -25,7 +25,7 @@ def fix_elements(fisher_mat,params=defaults.planck_fisher_params):
         fisher_new=np.delete(fisher_new,(rows[i]),axis=1)
     return fisher_new
 
-def project_w0wa(fisher_mat,params=defaults.planck_fisher_params):
+def project_w0wa(fisher_mat,params=defaults.planck_fisher_params,return_project=False):
     n_de = params['n_de']
     n_new= fisher_mat.shape[0]-(n_de-2) #will project 36 dark energy entries to just 2
     fisher_new=np.zeros((n_new,n_new))
@@ -40,7 +40,11 @@ def project_w0wa(fisher_mat,params=defaults.planck_fisher_params):
     dwzdwa =zs/(1.+zs)
     project_mat[n_new-1,n_new-2::] = dwzdwa
     fisher_new= np.dot(np.dot(project_mat,fisher_mat),project_mat.T)
-    return (fisher_new+fisher_new.T)/2.
+    fisher_new = (fisher_new+fisher_new.T)/2.
+    if return_project:
+        return fisher_new,project_mat
+    else:
+        return fisher_new
 
 
 def project_w0(fisher_mat,params=defaults.planck_fisher_params,return_project=False):

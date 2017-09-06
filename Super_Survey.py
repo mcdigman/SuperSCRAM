@@ -287,10 +287,11 @@ if __name__=="__main__":
     cosmo_fid = defaults.cosmology_jdem.copy()
     cosmo_fid['w0'] = cosmo_fid['w']
     cosmo_fid['wa'] = 0.
-    cosmo_fid['de_model'] = 'jdem'
+    cosmo_fid['de_model'] = 'w0wa'
     if cosmo_fid['de_model'] == 'jdem':
         for i in xrange(0,36):
             cosmo_fid['ws36_'+str(i)] = -1.
+
     C=cp.CosmoPie(cosmology=cosmo_fid,p_space='jdem',camb_params=camb_params)
     #C=cp.CosmoPie(cosmology=defaults.cosmology,p_space='basic',needs_power=True)
     #k,P=C.get_P_lin()
@@ -366,13 +367,16 @@ if __name__=="__main__":
     loc_lens_params = defaults.lensing_params.copy()
     loc_lens_params['z_min_dist'] = np.min(zs)
     loc_lens_params['z_max_dist'] = np.max(zs)
+    loc_lens_params['pmodel_O'] = 'halofit'
+    loc_lens_params['pmodel_dO_ddelta'] = 'halofit'
+    loc_lens_params['pmodel_dO_dpar'] = 'halofit'
     
     #TODO put in defaults
     lenless_defaults = defaults.sw_survey_params.copy()
     lenless_defaults['needs_lensing'] = False
     if cosmo_fid['de_model'] == 'w0wa':
         cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w','wa'])
-        cosmo_par_epsilons = np.array([0.002,0.0005,0.0001,0.0005,0.1,0.1,0.1])
+        cosmo_par_epsilons = np.array([0.002,0.0005,0.0001,0.0005,0.1,0.01,0.1])
     elif cosmo_fid['de_model'] == 'constant_w':
         cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w'])
         cosmo_par_epsilons = np.array([0.002,0.0005,0.0001,0.0005,0.1,0.1])
@@ -380,7 +384,8 @@ if __name__=="__main__":
         cosmo_par_list = ['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs']
         cosmo_par_list.extend(cp.JDEM_LIST)
         cosmo_par_list = np.array(cosmo_par_list,dtype=object)
-        cosmo_par_epsilons = np.full(41,0.2)
+        #TODO does not really seem to be converging in small epsilon, maybe interpolation or camb issue?
+        cosmo_par_epsilons = np.full(41,0.5)
         cosmo_par_epsilons[0:5] = np.array([0.002,0.0005,0.0001,0.0005,0.1])
 
     else:
@@ -468,9 +473,13 @@ if __name__=="__main__":
     #ax.loglog(l_sw,(np.diag(SS.cov_no_mit[0,0])/cov_ss))
     #ax.legend(['cov','mit','no mit'])
     #plt.show()
-    print 'r diffs',np.diff(geo1.rs)
-    print 'theta width',(geo1.rs[1]+geo1.rs[0])/2.*(Theta1[1]-Theta1[0])
-    print 'phi width',(geo1.rs[1]+geo1.rs[0])/2.*(Phi1[1]-Phi1[0])*np.sin((Theta1[1]+Theta1[0])/2)
+    no_prior_hold = SS.f_set[0][2].get_fisher()-SS.multi_f.fisher_priors.get_fisher()
+    if C.de_model == 'jdem':
+        no_prior_project = planck_fisher.project_w0wa(no_prior_hold)
+
+    print 'main: r diffs',np.diff(geo1.rs)
+    print 'main: theta width',(geo1.rs[1]+geo1.rs[0])/2.*(Theta1[1]-Theta1[0])
+    print 'main: phi width',(geo1.rs[1]+geo1.rs[0])/2.*(Phi1[1]-Phi1[0])*np.sin((Theta1[1]+Theta1[0])/2)
     ax_ls = np.hstack((l_sw,l_sw))
     
     #v= SS.surveys_sw[0].get_dO_I_dpar_array()

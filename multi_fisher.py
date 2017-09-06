@@ -10,6 +10,7 @@ from warnings import warn
 f_spec_mit={'lw_base':True,'lw_mit':True,'sw_g':True,'sw_ng':True,'par_prior':True}
 f_spec_no_mit={'lw_base':True,'lw_mit':False,'sw_g':True,'sw_ng':True,'par_prior':True}
 f_spec_g={'lw_base':False,'lw_mit':False,'sw_g':True,'sw_ng':False,'par_prior':True}
+f_spec_g_pure={'lw_base':False,'lw_mit':False,'sw_g':True,'sw_ng':False,'par_prior':False}
 f_spec_SSC_mit={'lw_base':True,'lw_mit':True,'sw_g':False,'sw_ng':False,'par_prior':False}
 f_spec_SSC_no_mit={'lw_base':True,'lw_mit':False,'sw_g':False,'sw_ng':False,'par_prior':False}
 f_return_par = {'lw':False,'sw':False,'par':True}

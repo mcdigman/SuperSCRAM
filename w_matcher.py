@@ -1,14 +1,16 @@
-import cosmopie as cp
-import defaults
-import numpy as np
+from warnings import warn
 from scipy.interpolate import InterpolatedUnivariateSpline,RectBivariateSpline,SmoothBivariateSpline
 from scipy.integrate import cumtrapz
-from warnings import warn
+
+import defaults
+
+import cosmopie as cp
+import numpy as np
 class WMatcher:
     def __init__(self,C_fid,wmatcher_params=defaults.wmatcher_params):
         self.C_fid = C_fid
         self.cosmo_fid = C_fid.cosmology.copy()
-        self.cosmo_fid['w']=-1
+        self.cosmo_fid['w']=-1.
         self.cosmo_fid['de_model']='constant_w'
 
         self.w_step = wmatcher_params['w_step'] 
@@ -105,20 +107,23 @@ if __name__=='__main__':
     cosmo_start = defaults.cosmology.copy()
     cosmo_start['w'] = -1
     cosmo_start['de_model']='constant_w'
-    cosmo_match_a = cosmo_start.copy()
-    cosmo_match_a['de_model']='w0wa'
+    params = {'w_step':0.01,'w_min':-3.50,'w_max':0.1,'a_step':0.001,'a_min':0.000916674,'a_max':1.005}
 
     do_w_int_test=True
     if do_w_int_test:
+        cosmo_match_a = cosmo_start.copy()
+        cosmo_match_a['de_model']='jdem'
         cosmo_match_a['w0'] = -1.
         cosmo_match_a['wa'] = 0.
         cosmo_match_a['w'] = -1.
+        for i in xrange(0,36):
+            cosmo_match_a['ws36_'+str(i)] = -1.
 
         wmatcher_params = defaults.wmatcher_params.copy()
         C_start = cp.CosmoPie(cosmology=cosmo_start)
         C_match_a = cp.CosmoPie(cosmology=cosmo_match_a)
 
-        wm = WMatcher(C_start)
+        wm = WMatcher(C_start,wmatcher_params=params)
         a_grid = np.arange(1.001,0.001,-0.01)
         zs = 1./a_grid-1.
 
@@ -129,16 +134,102 @@ if __name__=='__main__':
         #w2s = wm.match_w2(C_match_a,zs)
         #w3s = wm.match_w3(C_match_a,zs)
         #print "rms discrepancy methods 1 and 3="+str(np.linalg.norm(w3s-w1s)/w1s.size)
+        #expect perfect match to numerical precision, ~4.767*10^-13
         print "rms discrepancy method 1 and input="+str(np.linalg.norm(w1s-C_match_a.w_interp(a_grid))/w1s.size)
-        import matplotlib.pyplot as plt
-        a_s = 1./(1.+zs)
-        plt.plot(a_s,w1s)
+        #import matplotlib.pyplot as plt
+        #a_s = 1./(1.+zs)
+        #plt.plot(a_s,w1s)
         #plt.plot(a_s,w3s)
-        plt.show()
+        #plt.show()
+    
+    do_jdem_w0wa_match_test = True
+    if do_jdem_w0wa_match_test:
+        cosmo_match_w0wa = cosmo_start.copy()
+        cosmo_match_jdem = cosmo_start.copy()
+        cosmo_match_w0wa['de_model'] = 'w0wa'
+        cosmo_match_w0wa['w0'] = -1.0
+        cosmo_match_w0wa['wa'] = 0.5
+        cosmo_match_w0wa['w'] = -1.0+0.9*0.5
 
+        cosmo_match_jdem['de_model'] = 'jdem'
+        cosmo_match_jdem['w'] = -1.0+0.9*0.5
+        a_jdem = 1.-0.025*np.arange(0,36)
+        for i in xrange(0,36):
+            cosmo_match_jdem['ws36_'+str(i)] = -1.+(1.-(a_jdem[i]-0.025/2.))*0.5
+
+        C_match_w0wa = cp.CosmoPie(cosmology=cosmo_match_w0wa)
+        C_match_jdem = cp.CosmoPie(cosmology=cosmo_match_jdem)
+
+        a_grid = np.arange(1.001,0.001,-0.01)
+        zs = 1./a_grid-1.
+
+        w_w0wa = wm.match_w(C_match_w0wa,zs)
+        w_jdem = wm.match_w(C_match_jdem,zs)
+
+        print "rms discrepancy w0wa and jdem="+str(np.linalg.norm(w_w0wa-w_jdem))
+        #current agreement ~0.0627 is reasonable given imperfect approximation of w0wa
+        #depends on setting of default value for jdem at end
+
+    do_convergence_test_w0wa = False
+    if do_convergence_test_w0wa:
+        cosmo_match_w0wa = cosmo_start.copy()
+        cosmo_match_w0wa['de_model'] = 'w0wa'
+        cosmo_match_w0wa['w0'] = -1.0
+        cosmo_match_w0wa['wa'] = 0.5
+        cosmo_match_w0wa['w'] = -1.0+0.1*0.5
+        
+        params_1 = params.copy() 
+        params_1['w_step'] = 0.01
+        params_2 = params.copy() 
+        params_2['w_step'] = 0.001
+
+        C_match_w0wa = cp.CosmoPie(cosmology=cosmo_match_w0wa)
+
+        a_grid = np.arange(1.001,0.001,-0.01)
+        zs = 1./a_grid-1.
+
+        wm_1 = WMatcher(C_start,wmatcher_params=params_1)
+        wm_2 = WMatcher(C_start,wmatcher_params=params_2)
+
+        w_w0wa_1 = wm_1.match_w(C_match_w0wa,zs)
+        w_w0wa_2 = wm_2.match_w(C_match_w0wa,zs)
+        print "rms discrepancy w0wa_1 and w0wa_2="+str(np.linalg.norm(w_w0wa_1-w_w0wa_2))
+
+    do_convergence_test_jdem = True
+    if do_convergence_test_jdem:
+        cosmo_match_jdem = cosmo_start.copy()
+        cosmo_match_jdem['de_model'] = 'jdem'
+        cosmo_match_jdem['w0'] = -1.0
+        cosmo_match_jdem['wa'] = 0.5
+        cosmo_match_jdem['w'] = -1.0+0.1*0.5
+
+
+        for i in xrange(0,36):
+            cosmo_match_jdem['ws36_'+str(i)] = -1.
+        cosmo_match_jdem['ws36_'+str(1)] = -1.5
+
+        params_1 = params.copy() 
+        params_1['w_step'] = 0.01
+        params_2 = params.copy() 
+        params_2['w_step'] = 0.005
+
+        C_match_jdem = cp.CosmoPie(cosmology=cosmo_match_jdem)
+
+        a_grid = np.arange(1.001,0.001,-0.01)
+        zs = 1./a_grid-1.
+
+        wm_1 = WMatcher(C_start,wmatcher_params=params_1)
+        wm_2 = WMatcher(C_start,wmatcher_params=params_2)
+
+        w_jdem_1 = wm_1.match_w(C_match_jdem,zs)
+        w_jdem_2 = wm_2.match_w(C_match_jdem,zs)
+        print "rms discrepancy jdem_1 and jdem_2="+str(np.linalg.norm(w_jdem_1-w_jdem_2))
+        print "mean absolute % discrepancy jdem_1 jdem_2="+str(np.average(np.abs((w_jdem_1-w_jdem_2)/w_jdem_1)*100.))
 
     do_match_casarini=False
     if do_match_casarini:
+        cosmo_match_a = cosmo_start.copy()
+        cosmo_match_a['de_model'] = 'w0wa'
         cosmo_match_a['w0'] = -1.2
         cosmo_match_a['wa'] = 0.5
         cosmo_match_a['w'] = -1.2
@@ -164,7 +255,7 @@ if __name__=='__main__':
         pow_mults_a = wm.match_growth(C_match_a,zs,ws_a)
         pow_mults_b = wm.match_growth(C_match_b,zs,ws_b)
         #print wm.match_w(C_start,np.array([1.0]))
-#        import matplotlib.pyplot as plt
+        import matplotlib.pyplot as plt
         a_s = 1./(1.+zs)
         #plt.plot(a_s,ws)
         #should match arXiv:1601.07230v3 figure 2

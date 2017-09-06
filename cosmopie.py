@@ -15,8 +15,8 @@ from warnings import warn
 eps=np.finfo(float).eps
 import matter_power_spectrum as mps
 
-class CosmoPie :
-        
+class CosmoPie : 
+    #TODO convergence test a grid values
     def __init__(self,cosmology=defaults.cosmology, P_lin=None, k=None,p_space=defaults.cosmopie_params['p_space'],needs_power=False,camb_params=defaults.camb_params,safe_sigma8=False,a_step=0.0008,a_step_de = 0.0001,a_extra=10,a_extra_de=100,G_in=None,G_safe=False,silent=False,wm_in=None,wm_safe=False,de_perturbative=False):
         # default to Planck 2015 values 
         self.silent=silent
@@ -65,26 +65,47 @@ class CosmoPie :
             self.ws = self.cosmology['w0']+(1.-1./(1.+self.z_de))*self.cosmology['wa'] 
             self.w_interp = InterpolatedUnivariateSpline(self.z_de,self.ws,k=1,ext=2) 
         elif self.de_model=='grid_w':
+            #TODO storing grid in cosmology dangerous, make this work if anything actually uses it
             #cf ie https://ned.ipac.caltech.edu/level5/March08/Frieman/Frieman2.html#note1, arXiv:1605.01475
-            de_integrand = (1.+self.cosmology['ws'])/(1.+self.cosmology['zs_de'])
-            de_mults_in = np.exp(3.*cumtrapz(de_integrand,self.cosmology['zs_de'],initial=0.)) #TODO check initial should actually be zero
-            self.de_mult = InterpolatedUnivariateSpline(self.cosmology['zs_de'],de_mults_in,k=2,ext=2) #k=2 so smooths some, check if this is a good idea.
+            self.z_de = self.cosmology['zs_de']
+            de_integrand = (1.+self.cosmology['ws'])/(1.+self.z_de)
+            de_exponent = cumtrapz(de_integrand,self.z_de,initial=0.)
+            if self.z_de[0]<0:
+                itr_first = np.where(self.z_de>=0.)[0][0]
+                val_0 = self.z_de[itr_first-1]-self.z_de[itr_first-1]*(de_mults_in[itr_first]-de_mults_in[itr_first-1])/(self.z_de[itr_first-1]-self.z_de[itr_first])
+                de_exponent-=val_0
+            de_mults_in = np.exp(3.*de_exponent)
+            #self.de_mult = InterpolatedUnivariateSpline(self.cosmology['zs_de'],de_mults_in,k=2,ext=2) #k=2 so smooths some, check if this is a good idea.
             self.w_interp = InterpolatedUnivariateSpline(self.cosmology['zs_de'],self.cosmology['ws'],k=2,ext=2)
         elif self.de_model=='jdem':
             #piecewise constant approximation over 36 values with z=0.025 spacing
             ws_in = np.array([self.cosmology['ws36_'+str(i)] for i in range(0,36)])
-            zs_in = 0.025*np.arange(1,37)/(1-0.025*np.arange(1,37))
-            self.ws = np.zeros(self.z_de.size)
+            zs_max = 0.025*np.arange(1,37)/(1-0.025*np.arange(1,37))
+            zs_min = 0.025*np.arange(0,36)/(1-0.025*np.arange(0,36))
+            #default to value of w over edge
+            #TODO enforce consistent use of default w, ie defaulting so at higher z just use last z given
+            self.ws = np.full(self.z_de.size,self.cosmology['w'])
             itr = 0
             for i in xrange(0,self.z_de.size):
-                if self.z_de[i]>=zs_in[itr]:
+                if self.z_de[i]>=zs_max[itr]:
                     itr+=1
-                    if itr>=zs_in.size:
+                    if itr>=zs_max.size:
                         break
-                self.ws[i] = ws_in[itr] 
+                if self.z_de[i]>=zs_min[itr] and self.z_de[i]<zs_max[itr]:
+                    self.ws[i] = ws_in[itr] 
 
             de_integrand = (1.+self.ws)/(1.+self.z_de)
-            de_mults_in = np.exp(3.*cumtrapz(de_integrand,self.z_de,initial=0.))
+            self.de_integrand_interp = InterpolatedUnivariateSpline(self.z_de,de_integrand,k=3,ext=2)
+            #value of exponent should be 0 at z=0, correct for z_de values <0
+            de_exponent = cumtrapz(de_integrand,self.z_de,initial=0.)
+            de_exponent -= de_exponent[a_extra_de*2]
+            de_mults_in = np.exp(3.*de_exponent)
+            #de_mults_in+=1.-de_mults_in[a_extra_de*2]
+            #if self.z_de[0]<0:
+            #    itr_first = np.where(self.z_de>=0.)[0][0]
+            #    val_0 = self.z_de[itr_first-1]-self.z_de[itr_first-1]*(de_mults_in[itr_first]-de_mults_in[itr_first-1])/(self.z_de[itr_first-1]-self.z_de[itr_first])
+            #    de_mults_in =de_mults_in-val_0
+            #self.de_mult = integ_funct
             self.de_mult = InterpolatedUnivariateSpline(self.z_de,de_mults_in,k=2,ext=2) #smoothing may help differential equations
             self.w_interp = InterpolatedUnivariateSpline(self.z_de,self.ws,k=2,ext=2)
         else:
@@ -165,7 +186,6 @@ class CosmoPie :
         # the derivative of H with respect to a 
         #TODO check this if anything actually uses it
         return -(1+z)*self.H0/2.*(3.*self.Omegam_z(z)+4.*self.Omegar_z(z)+2.*self.Omegak_z(z)+3.*(1.+self.w_interp(z))*self.OmegaL_z(z))                
-#                return -(1+z)**2*self.H0/2./self.Ez(z)*(3*self.Omegam*zp1**2 +4*self.Omegar*zp1**3  +2*self.Omegak*zp1 )
     
     # distances, volumes, and time
     # -----------------------------------------------------------------------------
@@ -265,52 +285,13 @@ class CosmoPie :
 #                 #return 5/2.*self.Omegam_z(z)*a**2*self.H(z)**3*romberg(Integrand,eps,a)
 
     def G(self,z):
-        #if self.precompute:
         return self.G_p(z)
-        #else:
-        #    integrand = lambda zp : (1+zp)*self.H0**3/self.H(zp)**3
-            #return 2.5*self.Omegam/self.H0*self.H(z)*romberg(integrand,z,1e4)
-        #    return 2.5*self.Omegam/self.H0*self.H(z)*quad(integrand,z,1e4)[0]
-    #solve the linear diffential equation to get G
-#    def G_Direct(self,z):
-#        a_step=0.001
-#        a_min=0.001
-#        a_max=1.+a_step
-#        a_list = np.arange(a_min,a_max,a_step)
-#        z_list = 1./a_list-1.
-#        dp_multiplier = -1./a_list*(7./2.*self.Omegam_z(z_list)+3*self.Omegar_z(z_list)+(7./2.-3./2.*self.w_interp(z_list))*self.OmegaL_z(z_list)+4.*self.Omegak_z(z_list))
-#        d_multiplier = -1./a_list**2*(self.Omegar_z(z_list)+3./2.*(1.-self.w_interp(z_list))*self.OmegaL_z(z_list)+2*self.Omegak_z(z_list))
-#        dp_mult_interp = InterpolatedUnivariateSpline(a_list,dp_multiplier)
-#        d_mult_interp = InterpolatedUnivariateSpline(a_list,d_multiplier)
-#        d_ics = np.array([1.,0.])
-#        d_args = (np.array([d_mult_interp,dp_mult_interp]),)
-#        def _d_evolve_eqs(ys,a,g_args):
-#            yps = np.zeros(2)
-#            yps[0]=ys[1]
-#            yps[1]=g_args[0](a)*ys[0]+g_args[1](a)*ys[1]
-#            return yps
-#        integ_result = odeint(_d_evolve_eqs,d_ics,a_list,d_args)
-#        g_interp = InterpolatedUnivariateSpline(z_list[::-1],(a_list*integ_result[:,0])[::-1],k=2,ext=2)
-#        return g_interp(z),g_interp,d_mult_interp,dp_mult_interp,integ_result
-        
-         
-
-#         def G(self,z):
-#                 integrand = lambda zp : 1/(1 + zp)**2/self.H(z)**3 
-#                 return 2.5*self.Omegam_z(z)/(1+z)**2*self.H(z)**3*quad(integrand, z,1e5)[0]
     
     def G_norm(self,z):
         # the normalized linear growth factor
         # normalized so the G(0) =1 
         G_0=self.G(0.)
         return self.G(z)/G_0
-#        #G does not currently support vector inputs unless precomputed TODO could fix that
-#        if (not self.precompute) and isinstance(z,np.ndarray):
-#            result = np.zeros(z.size)
-#            for i in xrange(z.size):
-#                result[i] = self.G_norm(z[i])
-#        else:
-#            return self.G(z)/G_0 
             
             
     def log_growth(self,z):
@@ -318,19 +299,6 @@ class CosmoPie :
         a=1/(1+z)
         print 'what I think it is', a/self.H(z)*self.dH_da(z) + 5/2.*self.Omegam*self.G_norm(0)/self.H(z)**2/a**2/self.G_norm(z)
         return -3/2.*self.Omegam/a**3*self.H0**2/self.H(z)**2 + 1/self.H(z)**2/a**2/self.G_norm(z)
-    #TODO probably obsolete        
-#    def G_array(self,z):
-#        # the normalized linear growth factor 
-#        # for an array 
-#        if isinstance(z,float):
-#            return np.array([self.G_norm(z)])
-#        elif self.precompute and isinstance(z,np.ndarray):
-#            return G_norm(z)
-#        else:
-#            result=np.zeros(z.size)
-#            for i in xrange(z.size):
-#                result[i]=self.G_norm(z[i])
-#            return result 
                     
     # ----------------------------------------------------------------------------
      
@@ -356,8 +324,7 @@ class CosmoPie :
         return d_c
             
     def delta_v(self,z):
-        # over density for virialized halo
-        
+        # over density for virialized halo 
         A=178.0
         if ( (self.Omegam_z(z) ==1) & (self.OmegaL_z(z)==0)):
             d_v=A
@@ -435,31 +402,12 @@ class CosmoPie :
        
     # -----------------------------------------------------------------------------
     
-#get cosmology with the required value set without enforcing consistency. Use defaults if unknown.
-#def get_complete_cosmology(cosmo_old,required=defaults.cosmo_consistency_params['required'],cosmo_d = defaults.cosmology):
-#    cosmo_new = {}
-#
-#    for param in required:
-#        if param in cosmo_old:
-#            continue
-#        if param=='h':
-#            if 'H0' in cosmo_old: 
-#               cosmo_new['h']=cosmo_old['H0']/100.
-#            else: 
-#               cosmo_new['h']=cosmo_d['h']
-#        elif param=='H0':
-#            if 'h' in cosmo_old: 
-#               cosmo_new['H0']=cosmo_old['h']*100.
-#            else: 
-#               cosmo_new['H0']=cosmo_d['H0']
-#        elif param=='Omegac':
-            
 #remove all nonessential attributes for a cosmology unless they are in overwride list,
 #leaving only the necessary elements of the parameter space
 #possible parameter spaces (with required elements) are:
 # 'jdem':parameter space proposed in joint dark energy mission figure of merit working group paper, arxiv:0901.0721v1
 # 'lihu':parameter space used in Li, Hu & Takada 2013, arxiv:1408.1081v2
-JDEM_LIST = ['ws36_'+str(i) for i in xrange(0,36)]
+JDEM_LIST = ['ws36_'+str(itr_36) for itr_36 in xrange(0,36)]
 P_SPACES ={'jdem': ['ns','Omegamh2','Omegabh2','Omegakh2','OmegaLh2','dGamma','dM','LogG0','LogAs'],
             'lihu' : ['ns','Omegach2','Omegabh2','Omegakh2','h','LogAs'],
             'basic': ['ns','Omegamh2','Omegabh2','Omegakh2','h','sigma8']}
@@ -547,7 +495,7 @@ def add_derived_pars(cosmo_old,p_space=None,safe_sigma8=False):
             cosmo_new['Omegac'] = cosmo_new['Omegach2']/cosmo_new['h']**2
             cosmo_new['Omegam'] = cosmo_old['Omegamh2']/cosmo_new['h']**2
             cosmo_new['Omegak'] = cosmo_old['Omegakh2']/cosmo_new['h']**2
-            cosmo_new['Omegar'] = 0. #I think just set this to 0?
+            cosmo_new['Omegar'] = 0. #just set to 0 for now
 
             cosmo_new['OmegaL'] = 1.-cosmo_new['Omegam']-cosmo_new['Omegar']-cosmo_new['Omegak']
             cosmo_new['OmegaLh2'] = cosmo_new['OmegaL']*cosmo_new['h']**2

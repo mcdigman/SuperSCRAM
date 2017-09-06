@@ -36,7 +36,7 @@ cosmology_jdem={                'ns'       : 0.963,
                                 'dM'        :0.,#parameter we don't need
                                 'LogG0'     :0.,#parameter we don't need
                                 'LogAs'     :-19.9628,
-                                'w'         :-1,
+                                'w'         :-1.,
                                 'de_model'  :'constant_w',
                                 'mnu'       :0.
                                 }
@@ -182,14 +182,14 @@ wmatcher_params = {'w_step':0.01,
                     'w_max':0.1,
                     'a_step':0.001,
                     'a_min':0.000916674,
-                    'a_max':1.005,
-                    'integ_E_step':0.05}
+                    'a_max':1.005}
+
 matter_power_params = {'needs_halofit'  :True,
                         'needs_fpt'     :True,
                         'needs_wmatcher':True,
                         'needs_camb_w_grid':True,
-                        'w_edge' : 0.12,
-                        'w_step' : 0.01,
+                        'w_edge' : 0.08,
+                        'w_step' : 0.0005,
                         'min_n_w' : 3,
                         'a_min' : 0.05,
                         'a_max' : 1.01,

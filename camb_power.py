@@ -1,10 +1,10 @@
 from time import time
 import numpy as np
 import camb
-from camb import model, initialpower
 import defaults
+
 #TODO may want to investigate possible halofit discrepancy
-def camb_pow(cosmology,zbar=0.,camb_params=defaults.camb_params,nonlinear_model=model.NonLinear_none):
+def camb_pow(cosmology,zbar=0.,camb_params=defaults.camb_params,nonlinear_model=camb.model.NonLinear_none):
 #Now get matter power spectra and sigma8 at redshift 0 and 0.8
         pars = camb.CAMBparams()
         pars.set_cosmology(H0=cosmology['H0'], ombh2=cosmology['Omegabh2'], omch2=cosmology['Omegach2'],omk=cosmology['Omegak'],mnu=cosmology['mnu']) #ignores tau and YHe for now
@@ -24,7 +24,7 @@ def camb_pow(cosmology,zbar=0.,camb_params=defaults.camb_params,nonlinear_model=
         #TODO kmax here creates problems above this scale but it is very slow to increase it.
         pars.set_matter_power(redshifts=[zbar], kmax=camb_params['kmax'])
         #Linear spectra
-        if not nonlinear_model==model.NonLinear_none:
+        if not nonlinear_model==camb.model.NonLinear_none:
             camb.set_halofit_version('takahashi')
         #camb.set_halofit_version('original')
         pars.NonLinear = nonlinear_model
@@ -90,14 +90,14 @@ if __name__=='__main__':
             k_a,P_a,_,res_a=camb_pow(cosmo_a,camb_params=camb_params)
             k_b,P_b,_,res_b=camb_pow(cosmo_b,camb_params=camb_params)
 
-            inflation_params = initialpower.InitialPowerParams()
+            inflation_params = camb.initialpower.InitialPowerParams()
             inflation_params.set_params(ns=cosmo_b['ns'],As=cosmo_b['As'])
             res_b.power_spectra_from_transfer(inflation_params)
             k_b_alt, _, P_b_alt=res_b.get_matter_power_spectrum(minkh=camb_params['minkh'], maxkh=camb_params['maxkh'], npoints = camb_params['npoints'])
 
             k_c,P_c,_,res_c=camb_pow(cosmo_c,camb_params=camb_params)
 
-            inflation_params = initialpower.InitialPowerParams()
+            inflation_params = camb.initialpower.InitialPowerParams()
             inflation_params.set_params(ns=cosmo_c['ns'],As=cosmo_c['As'])
             res_b.power_spectra_from_transfer(inflation_params)
             k_c_alt, _, P_c_alt=res_c.get_matter_power_spectrum(minkh=camb_params['minkh'], maxkh=camb_params['maxkh'], npoints = camb_params['npoints'])
@@ -115,7 +115,7 @@ if __name__=='__main__':
         pars.omegav=cosmo_a['OmegaL']
         pars.set_dark_energy(cosmo_a['w']) #re-set defaults
         pars.set_matter_power(redshifts=z_grid, kmax=camb_params['kmax'])
-        pars.NonLinear = model.NonLinear_none
+        pars.NonLinear = camb.model.NonLinear_none
         results = camb.get_results(pars)
         kh_as, z_as, P_as = results.get_matter_power_spectrum(minkh=camb_params['minkh'], maxkh=camb_params['maxkh'], npoints = camb_params['npoints'])
         C_a = cp.CosmoPie(cosmology=cosmo_a,k=kh_as,P_lin=P_as[0],camb_params=camb_params,z_max=20.01,z_space=0.001)
@@ -126,7 +126,7 @@ if __name__=='__main__':
             pars.omegav=cosmo_d['OmegaL']
             pars.set_dark_energy(cosmo_d['w']) #re-set defaults
             pars.set_matter_power(redshifts=z_grid, kmax=camb_params['kmax'])
-            pars.NonLinear = model.NonLinear_none
+            pars.NonLinear = camb.model.NonLinear_none
             results = camb.get_results(pars)
             kh_ds, z_ds, P_ds = results.get_matter_power_spectrum(minkh=camb_params['minkh'], maxkh=camb_params['maxkh'], npoints = camb_params['npoints'])
             pars.set_dark_energy()
@@ -155,7 +155,6 @@ if __name__=='__main__':
 
     fit_test = False
     if fit_test:
-        from cosmopie import add_derived_pars,strip_cosmology
         cosmo_start = defaults.cosmology.copy()
         cosmo_start['h']=0.7;cosmo_start['ns']=0.96;cosmo_start['Omegamh2']=0.14014;cosmo_start['Omegabh2']=0.02303;cosmo_start['Omegakh2']=0.;cosmo_start['OmegaL']=0.67
         cosmo_start['sigma8']=0.82;cosmo_start['OmegaLh2']=0.32683
@@ -164,8 +163,8 @@ if __name__=='__main__':
         s8s = np.zeros(nA)
         epsilon = 0.04
         for itr in xrange(0,nA):
-            cosmo_strip = strip_cosmology(cosmo_start,p_space='jdem')
-            cosmo_fid = add_derived_pars(cosmo_strip)
+            cosmo_strip = cp.strip_cosmology(cosmo_start,p_space='jdem')
+            cosmo_fid = cp.add_derived_pars(cosmo_strip)
             As[itr] = cosmo_fid['As'] 
             s8s[itr] = camb_sigma8(cosmo_fid)
             cosmo_start['LogAs']+=epsilon
@@ -186,7 +185,6 @@ if __name__=='__main__':
         camb_params['return_sigma8'] = True
 
         cosmo_start = defaults.cosmology.copy()
-        import cosmopie as cp
         cosmo_start = cp.add_derived_pars(cosmo_start,p_space='jdem')
         cosmo_start['de_model']='constant_w'
         cosmo_start['w']=-1
@@ -222,7 +220,7 @@ if __name__=='__main__':
         fpt_params['n_pad']=3000
         fpt_params['high_extrap']=8
         fpt_params['low_extrap']=-8
-        k_0,P_0,sigma8_0 =camb_pow(cosmo_start,camb_params=camb_params,nonlinear_model=model.NonLinear_none) 
+        k_0,P_0,sigma8_0 =camb_pow(cosmo_start,camb_params=camb_params,nonlinear_model=camb.model.NonLinear_none) 
         C_0=cp.CosmoPie(cosmo_start,needs_power=False)
         G_0 = C_0.G(0.)
         halofit_params =defaults.halofit_params.copy()
@@ -245,10 +243,10 @@ if __name__=='__main__':
             Cs[itr]=cp.CosmoPie(cosmo_start,needs_power=False)
             Gs[itr] = Cs[itr].G(0.)
             Gnorms[itr] = Cs[itr].G_norm(0.)
-            kls[itr],Pls[itr],sigma8ls[itr] = camb_pow(cosmo_start,camb_params=camb_params,nonlinear_model=model.NonLinear_none)
+            kls[itr],Pls[itr],sigma8ls[itr] = camb_pow(cosmo_start,camb_params=camb_params,nonlinear_model=camb.model.NonLinear_none)
             if itr==0:
                 fpt = FASTPT.FASTPT(kls[0],fpt_params['nu'],low_extrap=fpt_params['low_extrap'],high_extrap=fpt_params['high_extrap'],n_pad=fpt_params['n_pad'])
-            knls[itr],Pnls[itr],sigma8nls[itr] = camb_pow(cosmo_start,zbar=1.,camb_params=camb_params,nonlinear_model=model.NonLinear_both)
+            knls[itr],Pnls[itr],sigma8nls[itr] = camb_pow(cosmo_start,zbar=1.,camb_params=camb_params,nonlinear_model=camb.model.NonLinear_both)
             hfs[itr] = hf.halofitPk(Cs[itr],kls[itr],Pls[itr],halofit_params=halofit_params)
             Phfs[itr] = 2*np.pi**2*(hfs[itr].D2_NL(kls[itr],1.0).T/kls[itr]**3).T
             #Pfpts[itr] =Pls[0]*((Gs[itr]/Gs[0])**2)*Gnorms[itr]**2+fpt.one_loop(Pls[0]*(Gs[itr]/Gs[0])**2,C_window=fpt_params['C_window'])*Gnorms[itr]**4
