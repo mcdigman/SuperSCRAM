@@ -9,14 +9,14 @@ import fisher_matrix as fm
 import sys
 #class CovMat:
 #    def __init__(self,gaussian_covar,nongaussian_covar,ssc_covar_set,dimension,param_prior=None):
-#        self.f_gaussian = fm.fisher_matrix(gaussian_covar,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
-#        self.f_nongaussian = fm.fisher_matrix(nongaussian_covar,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
+#        self.f_gaussian = fm.FisherMatrix(gaussian_covar,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
+#        self.f_nongaussian = fm.FisherMatrix(nongaussian_covar,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
 #        self.n_ssc = ssc_covar_set.shape[0]
 #        self.f_ssc_set = np.zeros(self.n_ssc,dtype=object)
 #        self.f_tot_set = np.zeros(self.n_ssc,dtype=object)
 #        for i in xrange(0,self.n_ssc):
-#            self.f_ssc_set[i] = fm.fisher_matrix(ssc_covar_set[i],input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
-#            self.f_tot_set[i] = fm.fisher_matrix(gaussian_covar+nongaussian_covar+ssc_covar_set[i],input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
+#            self.f_ssc_set[i] = fm.FisherMatrix(ssc_covar_set[i],input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
+#            self.f_tot_set[i] = fm.FisherMatrix(gaussian_covar+nongaussian_covar+ssc_covar_set[i],input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,fix_input=False,silent=True)
 #        self.param_prior = param_prior
 #        self.dimension = dimension
 #

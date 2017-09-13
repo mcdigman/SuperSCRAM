@@ -1,4 +1,5 @@
 import numpy as np
+from algebra_utils import trapz2
 
 class q_weight:
     def __init__(self,chis,qs,chi_min=0.,chi_max=np.inf):
@@ -17,18 +18,18 @@ class q_shear(q_weight):
         low_mask = (sp.chis>=chi_min)*1. #so only integrate from max(chi,chi_min)
         high_mask = (sp.chis<=chi_max)*1. #so only integrate from max(chi,chi_min)
         
-        ps_norm = sp.ps*high_mask*low_mask/np.trapz(sp.ps*low_mask*high_mask,sp.chis) #TODO check normalization
+        ps_norm = sp.ps*high_mask*low_mask/trapz2(sp.ps*low_mask*high_mask,sp.chis) #TODO check normalization
         for i in xrange(0,sp.n_z):
             if chi_max<sp.chis[i]:
                 break
             if sp.C.Omegak==0.0:
-                g_vals[i] =np.trapz(low_mask[i:sp.n_z]*ps_norm[i:sp.n_z]*(sp.chis[i:sp.n_z]-sp.chis[i])/sp.chis[i:sp.n_z],sp.chis[i:sp.n_z])
+                g_vals[i] =trapz2(low_mask[i:sp.n_z]*ps_norm[i:sp.n_z]*(sp.chis[i:sp.n_z]-sp.chis[i])/sp.chis[i:sp.n_z],sp.chis[i:sp.n_z])
             elif sp.C.Omegak>0.0: #TODO handle curvature
                 sqrtK = np.sqrt(sp.C.K)
-                g_vals[i] =np.trapz(low_mask[i:sp.n_z]*ps_norm[i:sp.n_z]*sp.chis[i]*1./sqrtK(1./np.tan(sqrtK*sp.chis[i])-1./np.tan(sqrtK*sp.chis[i:sp.n_z])),sp.chis[i:sp.n_z])
+                g_vals[i] =trapz2(low_mask[i:sp.n_z]*ps_norm[i:sp.n_z]*sp.chis[i]*1./sqrtK(1./np.tan(sqrtK*sp.chis[i])-1./np.tan(sqrtK*sp.chis[i:sp.n_z])),sp.chis[i:sp.n_z])
             else:
                 sqrtK = np.sqrt(abs(sp.C.K))
-                g_vals[i] =np.trapz(low_mask[i:sp.n_z]*ps_norm[i:sp.n_z]*sp.chis[i]*1./sqrtK(1./np.tanh(sqrtK*sp.chis[i])-1./np.tanh(sqrtK*sp.chis[i:sp.n_z])),sp.chis[i:sp.n_z])
+                g_vals[i] =trapz2(low_mask[i:sp.n_z]*ps_norm[i:sp.n_z]*sp.chis[i]*1./sqrtK(1./np.tanh(sqrtK*sp.chis[i])-1./np.tanh(sqrtK*sp.chis[i:sp.n_z])),sp.chis[i:sp.n_z])
         return g_vals
 
 class q_mag(q_shear):

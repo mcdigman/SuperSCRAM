@@ -1,5 +1,5 @@
 import copy 
-import planck_fisher
+import prior_fisher
 import defaults
 
 import fisher_matrix as fm
@@ -10,7 +10,11 @@ from warnings import warn
 f_spec_mit={'lw_base':True,'lw_mit':True,'sw_g':True,'sw_ng':True,'par_prior':True}
 f_spec_no_mit={'lw_base':True,'lw_mit':False,'sw_g':True,'sw_ng':True,'par_prior':True}
 f_spec_g={'lw_base':False,'lw_mit':False,'sw_g':True,'sw_ng':False,'par_prior':True}
-f_spec_g_pure={'lw_base':False,'lw_mit':False,'sw_g':True,'sw_ng':False,'par_prior':False}
+
+f_spec_mit_noprior={'lw_base':True,'lw_mit':True,'sw_g':True,'sw_ng':True,'par_prior':False}
+f_spec_no_mit_noprior={'lw_base':True,'lw_mit':False,'sw_g':True,'sw_ng':True,'par_prior':False}
+f_spec_g_noprior={'lw_base':False,'lw_mit':False,'sw_g':True,'sw_ng':False,'par_prior':False}
+
 f_spec_SSC_mit={'lw_base':True,'lw_mit':True,'sw_g':False,'sw_ng':False,'par_prior':False}
 f_spec_SSC_no_mit={'lw_base':True,'lw_mit':False,'sw_g':False,'sw_ng':False,'par_prior':False}
 f_return_par = {'lw':False,'sw':False,'par':True}
@@ -18,10 +22,10 @@ f_return_sw_par = {'lw':False,'sw':True,'par':True}
 f_return_sw = {'lw':False,'sw':True,'par':False}
 f_return_lw = {'lw':True,'sw':False,'par':False}
 #master class for managing fisher matrix manipulations
-class multi_fisher:
-    #input: basis, an sph_basis_k object or compatible standard
+class MultiFisher:
+    #input: basis, an SphBasisK object or compatible standard
     #input: sw_survey, ans sw_survey objects
-    def __init__(self,basis,sw_survey,lw_surveys, prior_params=defaults.planck_fisher_params):
+    def __init__(self,basis,sw_survey,lw_surveys, prior_params=defaults.prior_fisher_params):
         self.lw_F_no_mit=basis.get_fisher()
         self.basis=basis
         self.sw_survey=sw_survey
@@ -32,7 +36,8 @@ class multi_fisher:
         self.lw_F_mit = copy.deepcopy(self.lw_F_no_mit)
         for i in xrange(0,self.lw_surveys.size):
             self.lw_surveys[i].fisher_accumulate(self.lw_F_mit)
-
+        self.lw_F_mit.switch_rep(fm.REP_CHOL_INV)
+        self.lw_F_no_mit.switch_rep(fm.REP_CHOL_INV)
         #prepare to project lw basis to sw basis
         #self.dO_I_ddelta_bar_list = self.sw_survey.get_dO_I_ddelta_bar_list()
         self.n_o = self.sw_survey.get_N_O_I()
@@ -51,8 +56,11 @@ class multi_fisher:
         
         #sw covariances to add
         self.sw_non_SSC_covars = self.sw_survey.get_non_SSC_sw_covar_arrays()
-        self.sw_g_covar = fm.fisher_matrix(self.sw_non_SSC_covars[0],input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,silent=True)
-        self.sw_ng_covar = fm.fisher_matrix(self.sw_non_SSC_covars[1],input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,silent=True)
+        self.sw_g_covar = fm.FisherMatrix(self.sw_non_SSC_covars[0],input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,silent=True)
+        self.sw_ng_covar = fm.FisherMatrix(self.sw_non_SSC_covars[1],input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,silent=True)
+
+        self.sw_f_ssc_mit = self.lw_F_mit.project_covar(self.lw_to_sw_array)
+        self.sw_f_ssc_no_mit = self.lw_F_no_mit.project_covar(self.lw_to_sw_array)
 
 #        self.sw_SSC_no_mit_covar = self.lw_F_no_mit.project_covar(self.lw_to_sw_array)
 #        self.sw_SSC_mit_covar = self.lw_F_mit.project_covar(self.lw_to_sw_array)
@@ -73,14 +81,15 @@ class multi_fisher:
         #get prior fisher matrix
         #TODO make possible to choose
         if self.sw_survey.C.de_model=='w0wa':
-            self.fisher_priors = fm.fisher_matrix(planck_fisher.get_w0wa_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
+            self.fisher_priors = fm.FisherMatrix(prior_fisher.get_w0wa_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
         elif self.sw_survey.C.de_model=='constant_w':
-            self.fisher_priors = fm.fisher_matrix(planck_fisher.get_w0_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
+            self.fisher_priors = fm.FisherMatrix(prior_fisher.get_w0_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
         elif self.sw_survey.C.de_model=='jdem':
-            self.fisher_priors = fm.fisher_matrix(planck_fisher.get_jdem_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
+            self.fisher_priors = fm.FisherMatrix(prior_fisher.get_jdem_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
         else:
             warn('unknown prior parametrization: '+str(self.sw_survey.C.de_model)+' will not use priors for de')
-            self.fisher_priors = fm.fisher_matrix(planck_fisher.get_no_de_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
+            #TODO should just be matrix of zeros
+            self.fisher_priors = fm.FisherMatrix(prior_fisher.get_no_de_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
 
 
 
@@ -89,7 +98,6 @@ class multi_fisher:
 #        self.par_tot_no_mit.add_fisher(self.fisher_priors)
 #        self.par_tot_mit = copy.deepcopy(self.par_tot_mit_no_prior)
 #        self.par_tot_mit.add_fisher(self.fisher_priors)
-
     #get a fisher matrix as specificed by f_spec and f_return
     #for example the following combination would return the parameter fisher matrix including lw mitigation, sw gaussian and nonguassian covariance
     #f_spec={'lw_base':True,'lw_mit':True,'sw_g':True,'sw_ng':True,'par_prior':True}
@@ -98,10 +106,16 @@ class multi_fisher:
         if f_return['lw'] or f_return['sw'] or f_return['par']:
             lw_fisher = self.get_lw_fisher(f_spec)
             if f_return['sw'] or f_return['par']:
-                if lw_fisher is None:
-                    fisher_from_lw=None
+        #        if lw_fisher is None:
+        #            fisher_from_lw=None
+        #        else:
+        #            fisher_from_lw = lw_fisher.project_covar(self.lw_to_sw_array)
+                if f_spec['lw_mit'] and f_spec['lw_base']:
+                    fisher_from_lw = self.sw_f_ssc_mit 
+                elif f_spec['lw_base']:
+                    fisher_from_lw = self.sw_f_ssc_no_mit
                 else:
-                    fisher_from_lw = lw_fisher.project_covar(self.lw_to_sw_array)
+                    fisher_from_lw = None
                 sw_fisher = self.get_sw_fisher(f_spec,fisher_from_lw)
                 if f_return['par']:
                     if sw_fisher is None:
@@ -142,7 +156,7 @@ class multi_fisher:
         elif f_spec['lw_base'] and f_spec['lw_mit']:
             return self.lw_F_mit
         elif not f_spec['lw_base'] and f_spec['lw_mit']:
-            raise ValueError('multi_fisher does not support mitigation without ssc contamination')
+            raise ValueError('MultiFisher does not support mitigation without ssc contamination')
         else:
             return None
 
@@ -150,7 +164,7 @@ class multi_fisher:
     def get_sw_fisher(self,f_spec,fisher_from_lw):
         if fisher_from_lw is None:
             if f_spec['sw_g'] or f_spec['sw_ng']:
-                sw_result = fm.fisher_matrix(np.zeros((self.n_sw,self.n_sw)),input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,silent=True)
+                sw_result = fm.FisherMatrix(np.zeros((self.n_sw,self.n_sw)),input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,silent=True)
             else:
                 return None
         else:
@@ -161,11 +175,33 @@ class multi_fisher:
             sw_result.add_covar(self.sw_ng_covar)
         return sw_result
         
-    def get_fisher_set(self):
+    def get_fisher_set(self,include_priors=True):
         result = np.zeros(3,dtype=object)
-        result[0] = self.get_fisher(f_spec_g,f_return_sw_par)
-        result[1] = self.get_fisher(f_spec_no_mit,f_return_sw_par)
-        result[2] = self.get_fisher(f_spec_mit,f_return_sw_par)
+        if include_priors:
+            result[0] = self.get_fisher(f_spec_g,f_return_sw_par)
+            result[1] = self.get_fisher(f_spec_no_mit,f_return_sw_par)
+            result[2] = self.get_fisher(f_spec_mit,f_return_sw_par)
+        else:
+            result[0] = self.get_fisher(f_spec_g_noprior,f_return_sw_par)
+            result[1] = self.get_fisher(f_spec_no_mit_noprior,f_return_sw_par)
+            result[2] = self.get_fisher(f_spec_mit_noprior,f_return_sw_par)
+        return result
+
+    #TODO handle caching better to avoid this logic
+    def get_eig_set(self,fisher_set,ssc_metric=False):
+        result = np.zeros((2,2),dtype=object)
+        f_set_par = np.zeros(3,dtype=object)
+        for i in xrange(0,3):
+            f_set_par[i] = fisher_set[i][2]
+        if ssc_metric:
+            metrics = np.array([fisher_set[1][1],f_set_par[1]])
+        else:
+            metrics = np.array([fisher_set[0][1],f_set_par[0]])
+            
+        result[0,0]=fisher_set[1][1].get_cov_eig_metric(metrics[0])    
+        result[0,1]=fisher_set[2][1].get_cov_eig_metric(metrics[0])    
+        result[1,0]=f_set_par[1].get_cov_eig_metric(metrics[1])    
+        result[1,1]=f_set_par[2].get_cov_eig_metric(metrics[1])    
         return result
 
     def get_a_lw(self):

@@ -7,7 +7,7 @@ import defaults
 from lensing_weight import q_shear
 from camb_power import camb_pow
 import scipy.special as spp
-from sph_klim import sph_basis_k
+from sph_klim import SphBasisK
 from polygon_geo import polygon_geo
 from sw_survey import SWSurvey
 from lw_survey import LWSurvey
@@ -213,7 +213,7 @@ if __name__ == '__main__':
     k_cut = 0.009
     n_zeros=49
 
-    basis=sph_basis_k(r_max,C,k_cut,l_ceil=100)
+    basis=SphBasisK(r_max,C,k_cut,l_ceil=100)
 
     survey_3 = LWSurvey(geos,'lw_survey1',basis,C=C,ls = l_lw,params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params)
     surveys_lw=np.array([survey_3])

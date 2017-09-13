@@ -22,7 +22,8 @@ class WMatcher:
         self.a_step = wmatcher_params['a_step'] 
         self.a_min = wmatcher_params['a_min']
         self.a_max = wmatcher_params['a_max']
-        self.a_s = np.arange(self.a_min,self.a_max,self.a_step)
+        #self.a_s = np.arange(self.a_min,self.a_max,self.a_step)
+        self.a_s = np.arange(self.a_max,self.a_min-self.a_step/10.,-self.a_step)
         self.n_a = self.a_s.size 
 
         self.zs = 1./self.a_s-1.#np.arange(self.a_min,self.a_max,self.a_step)
@@ -37,10 +38,11 @@ class WMatcher:
            self.cosmos[i] = self.cosmo_fid.copy()
            self.cosmos[i]['w'] = self.ws[i]
            C_i = cp.CosmoPie(cosmology=self.cosmos[i],silent=True,needs_power=False)
-           E_as = C_i.Ez(1./self.a_s-1.)
-           self.integ_Es[i] = cumtrapz(1./(self.a_s**2*E_as),self.a_s,initial=0.)
+           E_as = C_i.Ez(self.zs)
+            #TODO check initial 0 on this integral is right
+           self.integ_Es[i] = cumtrapz(1./(self.a_s**2*E_as)[::-1],self.a_s[::-1],initial=0.)
            self.Gs[i] = C_i.G(self.zs)
-        self.G_interp = RectBivariateSpline(self.ws,self.a_s,self.Gs,kx=2,ky=2)
+        self.G_interp = RectBivariateSpline(self.ws,self.a_s[::-1],self.Gs[:,::-1],kx=2,ky=2)
 
         self.ind_switches = np.argmax(np.diff(self.integ_Es,axis=0)<0,axis=0)+1
         #there is a purely numerical issue that causes the integral to be non-monotonic, this loop eliminates the spurious behavior
@@ -51,15 +53,15 @@ class WMatcher:
                 else:
                     raise RuntimeError( "Nonmonotonic integral, solution is not unique at "+str(self.a_s[i]))
 
-        self.integ_E_interp = RectBivariateSpline(self.ws,self.a_s,self.integ_Es,kx=2,ky=2)
+        self.integ_E_interp = RectBivariateSpline(self.ws,self.a_s[::-1],self.integ_Es,kx=2,ky=2)
              
     #accurate to within numerical precision
     #match effective constant w as in casarini paper
     def match_w(self,C_in,z_match):
         a_match = 1./(1.+z_match)
-        E_in = C_in.Ez(1./self.a_s-1.)    
-        integ_E_in = cumtrapz(1./(self.a_s**2*E_in),self.a_s,initial=0.)
-        integ_E_in_interp = InterpolatedUnivariateSpline(self.a_s,integ_E_in,k=2,ext=2)
+        E_in = C_in.Ez(self.zs)    
+        integ_E_in = cumtrapz(1./(self.a_s**2*E_in)[::-1],self.a_s[::-1],initial=0.)
+        integ_E_in_interp = InterpolatedUnivariateSpline(self.a_s[::-1],integ_E_in,k=2,ext=2)
         integ_E_targets = integ_E_in_interp(a_match)
         w_grid1 = np.zeros(a_match.size)
         for itr in xrange(0,z_match.size):
@@ -89,7 +91,8 @@ class WMatcher:
 
     #get an interpolated growth factor for a given w, a_in is a vector 
     def growth_interp(self,w_in,a_in):
-        return self.G_interp(w_in,a_in).T
+        #TODO why grid=False?
+        return self.G_interp(w_in,a_in,grid=False).T
 
     #match scaling (ie sigma8) for the input model compared to the fiducial model, not used
     def match_scale(self,z_in,w_in):
@@ -107,35 +110,42 @@ if __name__=='__main__':
     cosmo_start = defaults.cosmology.copy()
     cosmo_start['w'] = -1
     cosmo_start['de_model']='constant_w'
-    params = {'w_step':0.01,'w_min':-3.50,'w_max':0.1,'a_step':0.001,'a_min':0.000916674,'a_max':1.005}
+    params = {'w_step':0.01,'w_min':-3.50,'w_max':0.1,'a_step':0.001,'a_min':0.000916674,'a_max':1.00}
 
     do_w_int_test=True
     if do_w_int_test:
+        w_use_int = -1.2
         cosmo_match_a = cosmo_start.copy()
         cosmo_match_a['de_model']='jdem'
-        cosmo_match_a['w0'] = -1.
+        cosmo_match_a['w0'] = w_use_int
         cosmo_match_a['wa'] = 0.
-        cosmo_match_a['w'] = -1.
+        cosmo_match_a['w'] = w_use_int
         for i in xrange(0,36):
-            cosmo_match_a['ws36_'+str(i)] = -1.
+            cosmo_match_a['ws36_'+str(i)] = w_use_int
+
+        cosmo_match_b = cosmo_match_a.copy()
+        cosmo_match_b['de_model'] = 'w0wa'
 
         wmatcher_params = defaults.wmatcher_params.copy()
         C_start = cp.CosmoPie(cosmology=cosmo_start)
         C_match_a = cp.CosmoPie(cosmology=cosmo_match_a)
+        C_match_b = cp.CosmoPie(cosmology=cosmo_match_b)
 
         wm = WMatcher(C_start,wmatcher_params=params)
-        a_grid = np.arange(1.001,0.001,-0.01)
+        a_grid = np.arange(1.00,0.001,-0.01)
         zs = 1./a_grid-1.
 
       #  zs = np.arange(0.,20.,0.5)
 
-        w1s = wm.match_w(C_match_a,zs)
+        w_a = wm.match_w(C_match_a,zs)
+        w_b = wm.match_w(C_match_b,zs)
 
         #w2s = wm.match_w2(C_match_a,zs)
         #w3s = wm.match_w3(C_match_a,zs)
         #print "rms discrepancy methods 1 and 3="+str(np.linalg.norm(w3s-w1s)/w1s.size)
         #expect perfect match to numerical precision, ~4.767*10^-13
-        print "rms discrepancy method 1 and input="+str(np.linalg.norm(w1s-C_match_a.w_interp(a_grid))/w1s.size)
+        print "rms discrepancy jdem and input="+str(np.linalg.norm(w_a-C_match_a.w_interp(a_grid))/w_a.size)
+        print "rms discrepancy w0wa and input="+str(np.linalg.norm(w_b-C_match_b.w_interp(a_grid))/w_b.size)
         #import matplotlib.pyplot as plt
         #a_s = 1./(1.+zs)
         #plt.plot(a_s,w1s)
@@ -160,7 +170,7 @@ if __name__=='__main__':
         C_match_w0wa = cp.CosmoPie(cosmology=cosmo_match_w0wa)
         C_match_jdem = cp.CosmoPie(cosmology=cosmo_match_jdem)
 
-        a_grid = np.arange(1.001,0.001,-0.01)
+        a_grid = np.arange(1.00,0.001,-0.01)
         zs = 1./a_grid-1.
 
         w_w0wa = wm.match_w(C_match_w0wa,zs)
@@ -170,7 +180,7 @@ if __name__=='__main__':
         #current agreement ~0.0627 is reasonable given imperfect approximation of w0wa
         #depends on setting of default value for jdem at end
 
-    do_convergence_test_w0wa = False
+    do_convergence_test_w0wa = True
     if do_convergence_test_w0wa:
         cosmo_match_w0wa = cosmo_start.copy()
         cosmo_match_w0wa['de_model'] = 'w0wa'
@@ -182,18 +192,25 @@ if __name__=='__main__':
         params_1['w_step'] = 0.01
         params_2 = params.copy() 
         params_2['w_step'] = 0.001
+        params_3 = params.copy() 
+        params_3['a_step'] = params['a_step']/10.
 
         C_match_w0wa = cp.CosmoPie(cosmology=cosmo_match_w0wa)
 
-        a_grid = np.arange(1.001,0.001,-0.01)
+        a_grid = np.arange(1.00,0.001,-0.01)
         zs = 1./a_grid-1.
 
         wm_1 = WMatcher(C_start,wmatcher_params=params_1)
         wm_2 = WMatcher(C_start,wmatcher_params=params_2)
+        wm_3 = WMatcher(C_start,wmatcher_params=params_3)
 
         w_w0wa_1 = wm_1.match_w(C_match_w0wa,zs)
         w_w0wa_2 = wm_2.match_w(C_match_w0wa,zs)
+        w_w0wa_3 = wm_3.match_w(C_match_w0wa,zs)
         print "rms discrepancy w0wa_1 and w0wa_2="+str(np.linalg.norm(w_w0wa_1-w_w0wa_2))
+        print "rms % discrepancy w0wa_1 and w0wa_2="+str(np.linalg.norm((w_w0wa_1-w_w0wa_2)/w_w0wa_2))
+        print "rms discrepancy w0wa_1 and w0wa_3="+str(np.linalg.norm(w_w0wa_1-w_w0wa_3))
+        print "rms % discrepancy w0wa_1 and w0wa_3="+str(np.linalg.norm((w_w0wa_1-w_w0wa_3)/w_w0wa_3))
 
     do_convergence_test_jdem = True
     if do_convergence_test_jdem:
@@ -212,19 +229,26 @@ if __name__=='__main__':
         params_1['w_step'] = 0.01
         params_2 = params.copy() 
         params_2['w_step'] = 0.005
+        params_3 = params.copy() 
+        params_3['a_step'] = params_1['a_step']/10.
+
 
         C_match_jdem = cp.CosmoPie(cosmology=cosmo_match_jdem)
 
-        a_grid = np.arange(1.001,0.001,-0.01)
+        a_grid = np.arange(1.00,0.001,-0.01)
         zs = 1./a_grid-1.
 
         wm_1 = WMatcher(C_start,wmatcher_params=params_1)
         wm_2 = WMatcher(C_start,wmatcher_params=params_2)
+        wm_3 = WMatcher(C_start,wmatcher_params=params_3)
 
         w_jdem_1 = wm_1.match_w(C_match_jdem,zs)
         w_jdem_2 = wm_2.match_w(C_match_jdem,zs)
+        w_jdem_3 = wm_3.match_w(C_match_jdem,zs)
         print "rms discrepancy jdem_1 and jdem_2="+str(np.linalg.norm(w_jdem_1-w_jdem_2))
         print "mean absolute % discrepancy jdem_1 jdem_2="+str(np.average(np.abs((w_jdem_1-w_jdem_2)/w_jdem_1)*100.))
+        print "rms discrepancy jdem_1 and jdem_3="+str(np.linalg.norm(w_jdem_1-w_jdem_3))
+        print "mean absolute % discrepancy jdem_1 jdem_3="+str(np.average(np.abs((w_jdem_1-w_jdem_3)/w_jdem_1)*100.))
 
     do_match_casarini=False
     if do_match_casarini:

@@ -122,7 +122,7 @@ def fisher_params(request,fisher_input):
         internal_mat = fisher_input.chol_cov.copy()
     elif request.param[0] == fm.REP_CHOL_INV:
         internal_mat = fisher_input.chol_cov_i.copy()
-    fisher =  fm.fisher_matrix(internal_mat,input_type=request.param[0],initial_state=request.param[1])
+    fisher =  fm.FisherMatrix(internal_mat,input_type=request.param[0],initial_state=request.param[1])
     return FisherWithManual(fisher_input,fisher)
 
 def test_basic_setup_succeeded(fisher_input):
@@ -518,7 +518,7 @@ def test_get_eig_metric_identity(fisher_params):
 
     metric_mat = np.identity(cov.shape[0])
     metric_mat_inv = np.linalg.pinv(metric_mat)
-    metric = fm.fisher_matrix(metric_mat,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR)
+    metric = fm.FisherMatrix(metric_mat,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR)
 
 def test_get_eig_metric_diag_range(fisher_params):
     cov = fisher_params.fisher_input.cov
@@ -526,7 +526,7 @@ def test_get_eig_metric_diag_range(fisher_params):
 
     metric_mat = np.diag(np.arange(1,cov.shape[0]+1))*1.
     metric_mat_inv = np.linalg.pinv(metric_mat)
-    metric = fm.fisher_matrix(metric_mat,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR)
+    metric = fm.FisherMatrix(metric_mat,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR)
 
     eigs_1 = fisher.get_cov_eig_metric(metric)
     atol_loc = np.max(np.abs(eigs_1[0]-2.))*atol_rel_use
@@ -576,7 +576,7 @@ def test_get_eig_metric_rand(fisher_params):
     #    metric_mat[i] = np.arange(1,cov.shape[0]+1)*1.
     metric_mat = np.dot(metric_mat.T,metric_mat)
     metric_mat_inv = np.linalg.pinv(metric_mat)
-    metric = fm.fisher_matrix(metric_mat,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR)
+    metric = fm.FisherMatrix(metric_mat,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR)
 
     eigs_1 = fisher.get_cov_eig_metric(metric)
     atol_loc = np.max(np.abs(eigs_1[0]-2.))*atol_rel_use

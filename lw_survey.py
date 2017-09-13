@@ -43,10 +43,10 @@ class LWSurvey:
         return dO_a_ddelta_bar_list
 
     def fisher_accumulate(self,fisher_0):
-        for i in xrange(0,self.get_N_O_a()):
-            
+        for i in xrange(0,self.get_N_O_a()): 
             #print "fisher", np.linalg.eigvals(self.observables[i].get_fisher())[0]
             fisher_0.add_fisher(self.observables[i].get_fisher())
+
     def get_total_rank(self):
         rank = 0
         for itr in xrange(0,self.observables.size):
@@ -91,7 +91,7 @@ if __name__=='__main__':
     k_cut = 0.005
     l_ceil = 100
     r_max = 4000.
-    basis = sph_klim.sph_basis_k(r_max,C,k_cut,l_ceil)
+    basis = sph_klim.SphBasisK(r_max,C,k_cut,l_ceil)
     geos = np.array([geo1,geo2])
     lw_survey = LWSurvey(geos,'survey1',basis,ls,C=C)
     dO_a_ddelta_bar_list = lw_survey.get_dO_a_ddelta_bar_list()

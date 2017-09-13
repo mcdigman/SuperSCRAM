@@ -2,7 +2,8 @@ import numpy as np
 from hmf import ST_hmf
 from nz_candel import NZCandel
 from lw_observable import LWObservable
-from fisher_matrix import fisher_matrix
+import fisher_matrix as fm
+from algebra_utils import trapz2
 from warnings import warn
 
 
@@ -87,12 +88,13 @@ class DNumberDensityObservable(LWObservable):
             self.d2=self.basis.D_O_I_D_delta_alpha(self.geo2,self.integrand2,use_r=True,range_spec=range2)/(self.geo2.r_fine[range2[-1]]**3-self.geo2.r_fine[range2[0]]**3)*3.
             self.DO_a = self.d2-self.d1
             
-            self.n_avg1 = np.trapz((self.geo1.r_fine**2*self.n_avgs1)[range1],self.geo1.r_fine[range1])/(self.geo1.r_fine[range1[-1]]**3-self.geo1.r_fine[range1[0]]**3)*3.
-            self.n_avg2 = np.trapz((self.geo2.r_fine**2*self.n_avgs2)[range2],self.geo2.r_fine[range2])/(self.geo1.r_fine[range1[-1]]**3-self.geo1.r_fine[range1[0]]**3)*3.
+            self.n_avg1 = trapz2((self.geo1.r_fine**2*self.n_avgs1)[range1],self.geo1.r_fine[range1])/(self.geo1.r_fine[range1[-1]]**3-self.geo1.r_fine[range1[0]]**3)*3.
+            self.n_avg2 = trapz2((self.geo2.r_fine**2*self.n_avgs2)[range2],self.geo2.r_fine[range2])/(self.geo1.r_fine[range1[-1]]**3-self.geo1.r_fine[range1[0]]**3)*3.
             
     
             #TODO handle overlapping geometries 
             self.Nab_i[itr,itr]=1./(self.n_avg1/V1+self.n_avg2/V2)
+            self.Nab_f = fm.FisherMatrix(self.Nab_i,input_type=fm.REP_FISHER)
                 
            
             self.vs[itr]=self.DO_a.flatten()
@@ -102,11 +104,12 @@ class DNumberDensityObservable(LWObservable):
 
     def get_dO_a_ddelta_bar(self):
         return self.DO_a
-        
+
     def get_fisher(self):
-        result= np.dot(np.dot(self.vs.T,self.Nab_i),self.vs)
+        #result= np.dot(np.dot(self.vs.T,self.Nab_i),self.vs)
+        return self.Nab_f.project_fisher(self.vs)
         #symmetrize to avoid accumulating numerical errors, should have very small effect
-        return (result+result.T)/2.
+        #return (result+result.T)/2.
                 
         
 
@@ -139,8 +142,8 @@ if __name__=="__main__":
     l_alpha=np.array([1,2,3,4,5])
     n_zeros=3
     
-    from sph_klim import sph_basis_k
-    geo=sph_basis_k(r_max,l_alpha,n_zeros,k,P)
+    from sph_klim import SphBasisK
+    geo=SphBasisK(r_max,l_alpha,n_zeros,k,P)
     #TODO write demo 
     #O=DO_n(n_obs_dict,1e15,cp,geo)
     

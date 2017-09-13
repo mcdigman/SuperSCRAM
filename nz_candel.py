@@ -3,6 +3,7 @@ import numpy as np
 import defaults
 import hmf
 from cosmopie import CosmoPie
+from algebra_utils import trapz2
 from polygon_pixel_geo import polygon_pixel_geo
 from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
 from scipy.integrate import cumtrapz
@@ -33,7 +34,8 @@ class NZCandel:
         #normalize to correct numerical errors/for galaxies beyond endpoints of grid
         #TODO maybe shouldn't do this
         #result is in galaxy density/steradian
-        self.dN_dz = self.zs_chosen.size*self.dN_dz/(np.trapz(self.dN_dz,self.z_grid)*self.params['area_sterad'])
+        #self.dN_dz = self.zs_chosen.size*self.dN_dz/(trapz2(self.dN_dz,dx=self.z_grid)*self.params['area_sterad'])
+        self.dN_dz = self.zs_chosen.size*self.dN_dz/(trapz2(self.dN_dz,dx=self.params['z_resolution'],given_dx=True)*self.params['area_sterad'])
         self.dN_dz_interp = interp1d(self.z_grid,self.dN_dz)
 
     def get_dN_dzdOmega(self,z_fine):

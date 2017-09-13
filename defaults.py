@@ -99,8 +99,8 @@ cosmology_cosmosis={'Omegabh2' :0.049,
                                 'ns'       : 0.9681,
                                 'LogAs'   : np.log(2.143*10**-9),
                                 'mnu'     :0.} #guess
-lensing_params = {  'z_resolution'    :0.005, #fine resolution
-                    'z_min_integral'  :0.005, #lowest z
+lensing_params = {  'z_resolution'    :0.002, #fine resolution
+                    'z_min_integral'  :0.0005, #lowest z
                     'z_max_integral'  :2,#highest z
                     'pmodel_O'        :'halofit', #default method for finding p grid
                     'pmodel_dO_ddelta':'halofit', #default method for finding dp/ddeltabar grid
@@ -126,7 +126,8 @@ basis_params = {    'allow_caching'         :True,
                     'n_bessel_oversample'   :100000,
                     'k_max'                 :10.,#TODO check
                     'k_min'                 :10**-4,
-                    'n_radial_sample':100000 }
+                    'n_radial_sample':100000,
+                    'r_precompute_step':0.0001}#convergence related
 polygon_params = {'res_healpix':6,'n_double':30}
 nz_params = {   'data_source'   :'./data/CANDELS-GOODSS2.dat',
                 'i_cut'         :24,
@@ -162,7 +163,7 @@ dp_params = {'use_k3p':False,
             'log_deriv_indirect':False}
 #amara refregier 2006 parameter forecast stuff
 cosmopie_params = {'p_space':'overwride'}
-planck_fisher_params ={ 'row_strip'     :np.array([3,5,6,7]),
+prior_fisher_params ={ 'row_strip'     :np.array([3,5,6,7]),
                         'fisher_source' :'data/F_Planck_tau0.01.dat',
                         'n_full'        :45,
                         'n_de'          :36,
@@ -181,8 +182,8 @@ wmatcher_params = {'w_step':0.01,
                     'w_min':-3.50,
                     'w_max':0.1,
                     'a_step':0.001,
-                    'a_min':0.000916674,
-                    'a_max':1.005}
+                    'a_min':0.001,
+                    'a_max':1.00}
 
 matter_power_params = {'needs_halofit'  :True,
                         'needs_fpt'     :True,
@@ -192,6 +193,6 @@ matter_power_params = {'needs_halofit'  :True,
                         'w_step' : 0.0005,
                         'min_n_w' : 3,
                         'a_min' : 0.05,
-                        'a_max' : 1.01,
+                        'a_max' : 1.0,
                         'a_step' : 0.05,
                         'nonlinear_model':'halofit'}

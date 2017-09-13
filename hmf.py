@@ -4,6 +4,7 @@
 
 from scipy.interpolate import interp1d,RectBivariateSpline,InterpolatedUnivariateSpline
 from scipy.integrate import trapz,cumtrapz 
+from algebra_utils import trapz2
 
 import numpy as np
 
@@ -83,7 +84,7 @@ class ST_hmf():
             nu=self.nu_array/G**2
             sigma_inv=1./self.sigma*1./G**2
         f=A*np.sqrt(2*a/np.pi)*(1 + (1/a/nu)**p)*np.sqrt(nu)*np.exp(-a*nu/2.)
-        norm=trapz(f,np.log(sigma_inv),axis=0)
+        norm=trapz2(f,np.log(sigma_inv))
         return norm
 
     #gets the normalization for bias b(r) for Sheth-Tormen mass function
@@ -96,7 +97,7 @@ class ST_hmf():
 
         bias = self.bias_nu(nu)
         f = self.f_nu(nu)
-        norm=trapz(f*bias,nu,axis=0)
+        norm=trapz2(f*bias,nu)
         return norm
 
     #return bias as a function of a numpy matrix nu
@@ -224,7 +225,7 @@ class ST_hmf():
             for i in xrange(mass.size):
                 b_array[i]=self.bias_G(mass[i],G,norm_in=norm)
 
-            return trapz(b_array*mf,mass)
+            return trapz2(b_array*mf,mass)
 
     #M is lower cutoff mass
     #min_mass can be a function of z or a constant
@@ -249,12 +250,12 @@ class ST_hmf():
                 for i in xrange(0,min_mass.size):
                     mass=self.mass_grid[ self.mass_grid >= min_mass[i]]
                     mf=self.dndM_G(mass,G)
-                    result[i] = trapz(mf,mass)
+                    result[i] = trapz2(mf,mass)
                 return result
             else:
                 mass=self.mass_grid[ self.mass_grid >= min_mass]
                 mf=self.dndM_G(mass,G)
-                return trapz(mf,mass)
+                return trapz2(mf,mass)
 
 if __name__=="__main__":
 

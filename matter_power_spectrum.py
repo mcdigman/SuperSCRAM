@@ -10,6 +10,7 @@ import cosmopie as cp
 #class for a matter power spectrum which can get both linear and nonlinear power spectra as needed
 #TODO clean up
 #TODO treat w0 and w equivalently
+#TODO current use of negative z is quite brittle
 class MatterPower:
     def __init__(self,C_in,P_lin=None,k_in=None,matter_power_params=defaults.matter_power_params,camb_params=defaults.camb_params,wmatcher_params=defaults.wmatcher_params,halofit_params=defaults.halofit_params,fpt_params=defaults.fpt_params,wm_in=None,wm_safe=False,P_fid=None,camb_safe=False,de_perturbative=False):
         #save all the input parameter sets
@@ -39,7 +40,7 @@ class MatterPower:
             self.k = k_in
             self.P_lin = P_lin
 
-        self.a_grid = np.arange(self.params['a_min'],self.params['a_max'],self.params['a_step'])
+        self.a_grid = np.arange(self.params['a_max'],self.params['a_min']-self.params['a_step']/10.,-self.params['a_step'])
         self.z_grid = 1./self.a_grid-1.
         self.n_a = self.a_grid.size
 
@@ -52,7 +53,7 @@ class MatterPower:
                 self.wm = w_matcher.WMatcher(self.C,wmatcher_params=self.wmatcher_params)
             self.w_match_grid = self.wm.match_w(self.C,self.z_grid)
             #TODO is this grid acceptably fine?
-            self.w_match_interp = InterpolatedUnivariateSpline(self.z_grid[::-1],self.w_match_grid[::-1],k=3,ext=2) 
+            self.w_match_interp = InterpolatedUnivariateSpline(self.z_grid,self.w_match_grid,k=3,ext=2) 
             self.pow_mult_grid = self.wm.match_growth(self.C,self.z_grid,self.w_match_grid)
             self.use_match_grid = True
         else:
@@ -190,7 +191,7 @@ class MatterPower:
                     cosmo_hf_i = self.cosmology.copy()
                     cosmo_hf_i['de_model'] = 'constant_w'
                     cosmo_hf_i['w'] = w_match_grid[i]
-                    hf_C_calc = cp.CosmoPie(cosmology=cosmo_hf_i,silent=True,G_safe=True,G_in=InterpolatedUnivariateSpline(self.C.z_grid[::-1],self.wm.growth_interp(w_match_grid[i],self.C.a_grid)[::-1],ext=2,k=2),needs_power=False)
+                    hf_C_calc = cp.CosmoPie(cosmology=cosmo_hf_i,silent=True,G_safe=True,G_in=InterpolatedUnivariateSpline(self.C.z_grid,self.wm.growth_interp(w_match_grid[i],self.C.a_grid),ext=2,k=2),needs_power=False)
                     hf_calc = halofit.halofitPk(hf_C_calc,self.k,p_lin=Pbases[:,i],halofit_params=self.halofit_params)
                     P_nonlin[:,i] = 2.*np.pi**2*(hf_calc.D2_NL(self.k,zs[i]).T/self.k**3)
             else:
@@ -226,14 +227,14 @@ if __name__ == '__main__':
     #C_in = cp.CosmoPie(cosmo_in,camb_params=camb_params)
     #mps = MatterPower(C_in)
     
-    do_constant_consistency_test = False
+    do_constant_consistency_test = True
     if do_constant_consistency_test:
         w_use = -1.1
         pmodel_use = 'halofit' 
 
         mp_params_const = defaults.matter_power_params.copy()
         mp_params_const['w_step'] = 0.01
-        mp_params_const['w_edge'] = 0.04
+        mp_params_const['w_edge'] = 0.02
 
         cosmo_const = cosmo_in.copy()
         cosmo_const['de_model'] = 'constant_w'
@@ -308,7 +309,7 @@ if __name__ == '__main__':
         #agreement ~5*10^-6
         print "rms error w0wa model fraction jdem w0wa ="+str(np.linalg.norm((P_jdem-P_w0wa)/P_w0wa))
 
-    do_jdem_convergence_test = True
+    do_jdem_convergence_test = False
     if do_jdem_convergence_test:
         w_use = -1.
         eps_use = 0.5
@@ -355,15 +356,15 @@ if __name__ == '__main__':
     do_w0wa_convergence_test = False
     if do_w0wa_convergence_test:
         w_use = -1.
-        eps_use = 0.1
+        eps_use = 0.07
         pmodel_use = 'halofit'
 
         mp_params_const1 = defaults.matter_power_params.copy()
-        mp_params_const1['w_step'] = 0.01
+        mp_params_const1['w_step'] = 0.005
         mp_params_const1['w_edge'] = 2.*mp_params_const1['w_step']
 
         mp_params_const2 = mp_params_const1.copy()
-        mp_params_const2['w_step'] = 0.001 
+        mp_params_const2['w_step'] = 0.0005 
         mp_params_const2['w_edge'] = 2.*mp_params_const2['w_step']
 
         cosmo_const = cosmo_in.copy()

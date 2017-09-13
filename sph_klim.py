@@ -6,12 +6,15 @@ from scipy.interpolate import InterpolatedUnivariateSpline,interp1d
 import numpy as np
 
 from sph_functions import j_n, jn_zeros_cut
+from lw_basis import LWBasis
+from algebra_utils import trapz2
 
 import fisher_matrix as fm
 import defaults
 
 # the smallest value
 eps=np.finfo(float).eps
+
 #I_alpha checked
 def I_alpha(k_alpha,k,r_max,l_alpha):
     # return the integral \int_0^r_{max} dr r^2 j_{\l_alpha}(k_\alpha r)j_{l_\alpha}(k r)
@@ -19,7 +22,8 @@ def I_alpha(k_alpha,k,r_max,l_alpha):
     l=l_alpha+.5
     return np.pi/2./np.sqrt(k_alpha*k)/(k_alpha**2 - k**2)*r_max*(-k_alpha*jv(l-1,a)*jv(l,b))
 
-class sph_basis_k(object):
+#TODO create abstract basis class
+class SphBasisK(LWBasis):
 
     def __init__(self,r_max,C,k_cut=2.0,l_ceil=100,params=defaults.basis_params):#,geometry,CosmoPie):
 
@@ -32,8 +36,10 @@ class sph_basis_k(object):
                 important! no little h in any of the calculations
         '''
         print "sph_klim: begin init basis id: ",id(self)
-        P_lin_in=C.P_lin.get_matter_power(np.array([0.]),pmodel='linear')[:,0]
-        k_in = C.k
+        LWBasis.__init__(self,r_max,C)
+        #TODO check correct power spectrum
+        P_lin_in=self.C.P_lin.get_matter_power(np.array([0.]),pmodel='linear')[:,0]
+        k_in = self.C.k
         #k = np.logspace(np.log10(np.min(k_in)),np.log10(np.max(k_in))-0.00001,6000000)
         #k = k_in
         self.params = params
@@ -43,10 +49,11 @@ class sph_basis_k(object):
         self.allow_caching = params['allow_caching']
         if self.allow_caching:
             self.ddelta_bar_cache = {}
+        #do not change from linspace for fast
         k = np.linspace(kmin,kmax,params['n_bessel_oversample'])
+        dk = k[1]-k[0]
         P_lin = interp1d(k_in,P_lin_in)(k)
 
-        self.r_max = r_max
         # define the super mode wave vector k alpha
         # and also make the map from l_alpha to k_alpha
         t1 = time()
@@ -111,29 +118,26 @@ class sph_basis_k(object):
                         for d in xrange(b,kk.size):
                             coeff = 8.*np.sqrt(kk[b]*kk[d])*kk[b]*kk[d]/(np.pi*self.r_max**2*jv(ll+1.5,kk[b]*self.r_max)*jv(ll+1.5,kk[d]*self.r_max))
                             #TODO convergence test
-                            C_alpha_beta[itr_k1+b,itr_k1+d]=coeff*trapz(integrand1/((k**2-kk[b]**2)*(k**2-kk[d]**2)),k); #check coefficient
+                            C_alpha_beta[itr_k1+b,itr_k1+d]=coeff*trapz2(integrand1/((k**2-kk[b]**2)*(k**2-kk[d]**2)),dx=dk,given_dx=True); #check coefficient
+                            #C_alpha_beta[itr_k1+b,itr_k1+d]=coeff*trapz(integrand1/((k**2-kk[b]**2)*(k**2-kk[d]**2)),k); #check coefficient
                             C_alpha_beta[itr_k1+d,itr_k1+b]=C_alpha_beta[itr_k1+b,itr_k1+d];
                 else:
                     for b in xrange(0,kk.size):
                         for d in xrange(b,kk.size):
                             C_alpha_beta[itr_k1+b,itr_k1+d] = C_alpha_beta[itr_m1+b,itr_m1+d]
                             C_alpha_beta[itr_k1+d,itr_k1+b] = C_alpha_beta[itr_m1+d,itr_m1+b]
-        self.fisher = fm.fisher_matrix(C_alpha_beta,input_type=fm.REP_COVAR,initial_state=fm.REP_CHOL,silent=True)
+        self.fisher = fm.FisherMatrix(C_alpha_beta,input_type=fm.REP_COVAR,initial_state=fm.REP_FISHER,silent=True)
         #TODO can make more efficient if necessary
         t2 = time()
         print "sph_klim: basis time: ",t2-t1
         print "sph_klim: finished init basis id: ",id(self)
+
     def get_size(self):
         return self.C_size
+
     #I_\alpha(k_\alpha,r_{max}) simplified
     def norm_factor(self,ka,la):
         return -np.pi*self.r_max**2/(4.*ka)*jv(la+1.5,ka*self.r_max)*jv(la-0.5,ka*self.r_max)
-
-    #def Cov_alpha_beta(self):
-    #        return self.fisher.get_covar()
-
-    #def get_F_alpha_beta(self):
-    #    return self.fisher.get_F_alpha_beta()
 
     def get_fisher(self):
         return self.fisher
@@ -144,6 +148,7 @@ class sph_basis_k(object):
 
     #get the partial derivatives of an sw observable wrt the basis given an integrand with elements at each r_fine i.e.  \frac{\partial O_i}{\partial \bar(\delta)(r_{fine})}
     #TODO this may not be very efficient
+    #TODO give better name
     def D_O_I_D_delta_alpha(self,geo,integrand,force_recompute = False,use_r=True,range_spec=None):
         print "sph_klim: calculating D_O_I_D_delta_alpha"
         d_delta_bar = self.D_delta_bar_D_delta_alpha(geo,force_recompute,tomography=False)
@@ -158,9 +163,14 @@ class sph_basis_k(object):
             x = x[range_spec]
             d_delta_bar = d_delta_bar[range_spec,:]
 
-        for alpha in xrange(0,d_delta_bar.shape[1]):
-            for ll in xrange(0, integrand.shape[1]):
-                result[alpha,ll] = trapz(d_delta_bar[:,alpha]*integrand[:,ll],x)
+    #    for alpha in xrange(0,d_delta_bar.shape[1]):
+        dxs = np.diff(x)
+        for ll in xrange(0, integrand.shape[1]):
+    #            result[alpha,ll] = trapz(d_delta_bar[:,alpha]*integrand[:,ll],x)
+            #result[:,ll] = trapz((d_delta_bar.T*integrand[:,ll]).T,x,axis=0)
+            #TODO can be sped up if dx is constant
+            result[:,ll] = trapz2((d_delta_bar.T*integrand[:,ll]).T,dx=dxs,given_dx=True)
+
         print "sph_klim: got D_O_I_D_delta_alpha"
         return result
 
@@ -238,6 +248,7 @@ def R_int(r_range,k,ll):
     #TODO change name to sph_j_n or something
     def integrand(r):
         return r**2*j_n(ll,r*k)
+    #TODO see if can be done with trapz
     I = quad(integrand,r_range[0],r_range[1])[0]
     #TODO check if eps logic needed
     return I
@@ -263,26 +274,10 @@ if __name__=="__main__":
 
     k_cut = 0.010
     l_ceil = 100
-    R=sph_basis_k(r_max,C,k_cut,l_ceil)
+    R=SphBasisK(r_max,C,k_cut,l_ceil)
     print R.C_size
 
     r_min=C.D_comov(.1)
     r_max=C.D_comov(.2)
 
     print 'this is r range', r_min, r_max
-    #X=R.D_delta_bar_D_delta_alpha(r_min,r_max,geometry)
-
-
-
-    
-    #for i in xrange(4):
-        #norm=3./(r_max**3 - r_min**3)/(a_00*2.*np.sqrt(np.pi))
-    #        print 'l',X[i,0]
-    #        print 'm',X[i,1]
-    #        print 'deriv',X[i,2]
-    
-    #a,b=R.Cov_alpha_beta()
-    #print b 
-    
-    
-            

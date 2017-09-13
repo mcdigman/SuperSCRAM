@@ -1,5 +1,6 @@
 import numpy as np
 import defaults
+from algebra_utils import trapz2
 
 #generic input source distribution class
 class SourceDistribution:
@@ -56,5 +57,5 @@ def dz_to_dchi(p_in,zs,chis,C,params):
         ps[i] = p_in[i]/(chis[i+1]-chis[i])
     ps[-1] = p_in[-1]/(C.D_comov(2*zs[-1]-zs[-2])-chis[-1]) #patch for last value
     ps = ps*(zs<=z_max_dist)*(zs>=z_min_dist) #cutoff outside dist limits
-    return ps/np.trapz(ps,chis) #normalize galaxy probability distribution 
+    return ps/trapz2(ps,chis) #normalize galaxy probability distribution 
     

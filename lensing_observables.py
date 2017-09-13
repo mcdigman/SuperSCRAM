@@ -51,11 +51,11 @@ class LensingObservable(SWObservable):
             self.q2_dpars[itr,0] = self.q2_handle(self.len_pow.dC_dpars[itr,0],self.r2[0],self.r2[1])
             self.q2_dpars[itr,1] = self.q2_handle(self.len_pow.dC_dpars[itr,1],self.r2[0],self.r2[1])
         SWObservable.__init__(self,len_pow.geo,params,len_pow.survey_id,len_pow.C,dim=self.len_pow.ls.size)
+
     def get_O_I(self):
         return sp.Cll_q_q(self.len_pow.C_pow,self.q1_pow,self.q2_pow).Cll()
-        #return self.len_handle(self.len_pow.C_pow,self.r1[1],self.r2[1],self.r1[0],self.r2[0]).Cll()
+
     def get_dO_I_ddelta_bar(self):
-        #return self.len_handle(self.len_pow.dC_ddelta,self.r1[1],self.r2[1],self.r1[0],self.r2[0]).Cll()
         return sp.Cll_q_q(self.len_pow.dC_ddelta,self.q1_dC,self.q2_dC).Cll_integrand()
 
     def get_dO_I_dpars(self):
@@ -69,7 +69,6 @@ class LensingObservable(SWObservable):
 #Shear shear lensing signal
 class ShearShearLensingObservable(LensingObservable):
     def __init__(self,len_pow,r1,r2,params=defaults.lensing_params):
-        #self.len_handle = sp.Cll_sh_sh
         self.q1_handle = len_w.q_shear
         self.q2_handle = len_w.q_shear
         LensingObservable.__init__(self,len_pow,r1,r2,params)
@@ -77,7 +76,6 @@ class ShearShearLensingObservable(LensingObservable):
 #galaxy galaxy lensing signal
 class GalaxyGalaxyLensingObservable(LensingObservable):
     def __init__(self,len_pow,r1,r2,params=defaults.lensing_params):
-        #self.len_handle = sp.Cll_g_g
         self.q1_handle = len_w.q_num
         self.q2_handle = len_w.q_num
         LensingObservable.__init__(self,len_pow,r1,r2,params)

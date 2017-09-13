@@ -14,6 +14,7 @@ from power_response import dp_ddelta
 from power_parameter_response import dp_dpar
 from lensing_weight import q_shear,q_mag,q_num,q_k
 from lensing_source_distribution import get_source_distribution
+from algebra_utils import trapz2
 import matter_power_spectrum as mps
 #TODO create derivative class than can change whole cosmology
 #TODO check integral boundaries ok
@@ -148,10 +149,10 @@ class shear_power:
             #delta_ls[-1] = np.exp(2.*np.log(self.ls[-1])-np.log(self.ls[-2]))-self.ls[-1]
         ns = np.zeros(ns_in.size)
         #TODO handle varying bin sizes better
-        ns[0] = ns_in[0]/np.trapz((1.*(self.chis>=qs[0].chi_min)*(self.chis<=qs[0].chi_max)*self.ps),self.chis)
-        ns[1] = ns_in[1]/np.trapz((1.*(self.chis>=qs[1].chi_min)*(self.chis<=qs[1].chi_max)*self.ps),self.chis)
-        ns[2] = ns_in[2]/np.trapz((1.*(self.chis>=qs[2].chi_min)*(self.chis<=qs[2].chi_max)*self.ps),self.chis)
-        ns[3] = ns_in[3]/np.trapz((1.*(self.chis>=qs[3].chi_min)*(self.chis<=qs[3].chi_max)*self.ps),self.chis)
+        ns[0] = ns_in[0]/trapz2((1.*(self.chis>=qs[0].chi_min)*(self.chis<=qs[0].chi_max)*self.ps),self.chis)
+        ns[1] = ns_in[1]/trapz2((1.*(self.chis>=qs[1].chi_min)*(self.chis<=qs[1].chi_max)*self.ps),self.chis)
+        ns[2] = ns_in[2]/trapz2((1.*(self.chis>=qs[2].chi_min)*(self.chis<=qs[2].chi_max)*self.ps),self.chis)
+        ns[3] = ns_in[3]/trapz2((1.*(self.chis>=qs[3].chi_min)*(self.chis<=qs[3].chi_max)*self.ps),self.chis)
         c_ac = Cll_q_q(self,qs[0],qs[2],r_ac).Cll()#*np.sqrt(4.*np.pi)
         c_bd = Cll_q_q(self,qs[1],qs[3],r_bd).Cll()#*np.sqrt(4.*np.pi) 
         c_ad = Cll_q_q(self,qs[0],qs[3],r_ad).Cll()#*np.sqrt(4.*np.pi) 
@@ -184,9 +185,9 @@ class shear_power:
         kg_pow = Cll_k_g(self).Cll()
         for i in xrange(0,n_t):
             if with_limber:
-                tans[i] = np.trapz((2.*self.ls+1.)/(4.*np.pi*self.ls*(self.ls+1.))*kg_pow*sp.lpmv(2,ls,np.cos(thetas[i])),ls)
+                tans[i] = trapz2((2.*self.ls+1.)/(4.*np.pi*self.ls*(self.ls+1.))*kg_pow*sp.lpmv(2,ls,np.cos(thetas[i])),ls)
             else:
-                tans[i] = np.trapz(self.ls/(2.*np.pi)*kg_pow*sp.jn(2,thetas[i]*ls),ls)
+                tans[i] = trapz2(self.ls/(2.*np.pi)*kg_pow*sp.jn(2,thetas[i]*ls),ls)
 
         return tans
 
@@ -254,7 +255,7 @@ class Cll_q_q:
     def Cll(self,chi_min=0,chi_max=np.inf):
         high_mask = (self.chis<=chi_max)*1.
         low_mask = (self.chis>=chi_min)*1.
-        return np.trapz((high_mask*low_mask*self.integrand.T).T,self.chis,axis=0)
+        return trapz2((high_mask*low_mask*self.integrand.T).T,self.chis)
 
     def Cll_integrand(self):
         return self.integrand

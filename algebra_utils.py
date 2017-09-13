@@ -10,19 +10,19 @@ from warnings import warn
 #some lower level (lapack?) calls, and I would prefer to wait until the code specification is more stable/good unit tests have been writen.
 #potentially use ztrmm for triangular dot products
 
-
+#TODO inplace not tested for get_inv_cholesky, get_cholesky_inv,invert_triangular
 #Get the inverse cholesky decomposition of a matrix A
-def get_inv_cholesky(A,lower=True):
-    return invert_triangular(cholesky_inplace(A,inplace=False,lower=lower),lower=lower)
+def get_inv_cholesky(A,lower=True,inplace=False):
+    return invert_triangular(cholesky_inplace(A,inplace=inplace,lower=lower),lower=lower,inplace=inplace)
 
 #Get the cholesky decomposition of the inverse of a matrix a
 #TODO add safety checks,tests
-def get_cholesky_inv(A,lower=True):
-    return np.rot90(spl.lapack.dtrtri(cholesky_inplace(np.rot90(A,2),lower=(not lower),inplace=False),lower=(not lower))[0],2)
+def get_cholesky_inv(A,lower=True,inplace=False):
+    return np.rot90(spl.lapack.dtrtri(cholesky_inplace(np.rot90(A,2),lower=(not lower),inplace=inplace),lower=(not lower))[0],2)
 
-#TODO: replace with spl.lapack.dtrtri
-def invert_triangular(A,lower=True):
-    return spl.solve_triangular(A,np.identity(A.shape[0]),lower=lower,overwrite_b=True)
+def invert_triangular(A,lower=True,inplace=False):
+    return spl.lapack.dtrtri(A,lower=lower,overwrite_c=inplace)[0]
+    #return spl.solve_triangular(A,np.identity(A.shape[0]),lower=lower,overwrite_b=True)
 
 def get_mat_from_inv_cholesky(A,lower=True):
     chol_mat = invert_triangular(A,lower)
@@ -55,16 +55,17 @@ def cholesky_inv_contract(A,vec1,vec2,cholesky_given=False,identical_inputs=Fals
     #TODO: check if memory profile worse
     if identical_inputs:
         if lower:
-            right_side = np.dot(chol_inv,vec1)
+            right_side = spl.blas.dtrmm(1.,chol_inv,vec1,lower=lower)
         else:
-
-            right_side = np.dot(chol_inv.T,vec1)
+            right_side = spl.blas.dtrmm(1.,chol_inv.T,vec1,lower=True)
         result = np.dot(right_side.T,right_side)
+        #result = spl.blas.dsyrk(1.,right_side,lower=True,trans=True)
+        #result = result+result.T-np.diagflat(np.diag(result))
     else:
         if lower:
-            result = np.dot(np.dot(vec1.T,chol_inv.T),np.dot(chol_inv,vec2))
+            result = np.dot(spl.blas.dtrmm(1.,chol_inv,vec1,lower=True).T,spl.blas.dtrmm(1.,chol_inv,vec2,lower=True))
         else:
-            result = np.dot(np.dot(vec1.T,chol_inv),np.dot(chol_inv.T,vec2))
+            result = np.dot(spl.blas.dtrmm(1.,chol_inv.T,vec1,lower=True).T,spl.blas.dtrmm(1.,chol_inv.T,vec2,lower=True))
 
     return result
 
@@ -78,16 +79,19 @@ def cholesky_contract(A,vec1,vec2,cholesky_given=False,identical_inputs=False,lo
     #TODO: check if memory profile worse
     if identical_inputs:
         if lower:
-            right_side = np.dot(chol.T,vec1)
+            #TODO these dots can be replaced with spl.blas.dtrmm
+            right_side = spl.blas.dtrmm(1.,chol.T,vec1,lower=False)
         else:
 
-            right_side = np.dot(chol,vec1)
+            right_side = spl.blas.dtrmm(1.,chol,vec1,lower=False)
         result = np.dot(right_side.T,right_side)
     else:
         if lower:
-            result = np.dot(np.dot(vec1.T,chol),np.dot(chol.T,vec2))
+            result = np.dot(spl.blas.dtrmm(1.,chol.T,vec1,lower=False).T,spl.blas.dtrmm(1.,chol.T,vec2,lower=False))
+            #result = np.dot(np.dot(vec1.T,chol),np.dot(chol.T,vec2))
         else:
-            result = np.dot(np.dot(vec1.T,chol.T),np.dot(chol,vec2))
+            result = np.dot(spl.blas.dtrmm(1.,chol,vec1,lower=False).T,spl.blas.dtrmm(1.,chol,vec2,lower=False))
+            #result = np.dot(np.dot(vec1.T,chol.T),np.dot(chol,vec2))
 
     return result
 
@@ -127,6 +131,44 @@ def cholesky_inplace(A,inplace=True,fatal_errors=False,lower=True):
     # check if L is the desired L cholesky factor
     #assert np.allclose(np.dot(L,L.T), A)
     return result
+
+#faster trapz than numpy built in for 2d matrices along 1st dimension
+#ie similar to np.trapz(A,xs,axis=0)
+#TODO test
+#TODO just take 1 input xs and dx
+def trapz2(A,xs=None,dx=None,given_dx=False):
+    if xs is None and dx is None:
+        dx_use = 1.
+        use_const = True
+    else:
+        if given_dx:
+            if dx is None:
+                warn('no dx given, using 1')
+                dx_use = 1.
+            else:
+                dx_use = dx
+                if np.asanyarray(dx).size==1:
+                    use_const=True
+                else:
+                    use_const=False
+        else:
+            if xs is None:
+                warn('no xs given, using dx=1')
+                dx_use = 1. 
+                use_const = True
+            elif not xs.shape[0]==A.shape[0]:
+                warn('invalid input shapes, using dx=1')
+                dx_use = 1. 
+                use_const = True
+            else:
+                dx_use = np.diff(xs)
+                use_const=False
+    if use_const:
+        result = dx_use*np.sum(A[1:-1:],axis=0)+0.5*dx_use*(A[0]+A[-1])
+    else:
+        result = np.dot(dx_use,A[:-1:]+A[1::])/2.
+    return result
+
 
 if __name__=='__main__':
     from time import time

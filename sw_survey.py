@@ -168,7 +168,7 @@ class SWSurvey:
 #    #get the covariance matrices, and a fisher matrix for the total covariance
 #    def get_covars(self,fisher_set,basis):
 #        cov_mats =  CovMat(self.get_gaussian_cov(),self.get_nongaussian_cov(),self.get_SSC_cov(fisher_set,basis),self.get_total_dimension(),self.param_priors)
-#        #fisher_c = fm.fisher_matrix(cov_mats.get_total_covar(),input_type=fm.REP_COVAR,fix_input=False)
+#        #fisher_c = fm.FisherMatrix(cov_mats.get_total_covar(),input_type=fm.REP_COVAR,fix_input=False)
 #        return cov_mats
    
 #    def get_cov_tot_pars(self,cov_mats,gaussian_only=False):

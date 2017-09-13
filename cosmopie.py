@@ -9,6 +9,7 @@
 import numpy as np
 from scipy.integrate import romberg, quad, trapz,cumtrapz,odeint
 from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
+from algebra_utils import trapz2
 import defaults
 import camb_power
 from warnings import warn
@@ -17,7 +18,7 @@ import matter_power_spectrum as mps
 
 class CosmoPie : 
     #TODO convergence test a grid values
-    def __init__(self,cosmology=defaults.cosmology, P_lin=None, k=None,p_space=defaults.cosmopie_params['p_space'],needs_power=False,camb_params=defaults.camb_params,safe_sigma8=False,a_step=0.0008,a_step_de = 0.0001,a_extra=10,a_extra_de=100,G_in=None,G_safe=False,silent=False,wm_in=None,wm_safe=False,de_perturbative=False):
+    def __init__(self,cosmology=defaults.cosmology, P_lin=None, k=None,p_space=defaults.cosmopie_params['p_space'],needs_power=False,camb_params=defaults.camb_params,safe_sigma8=False,a_step=0.001,a_step_de = 0.0001,a_extra=10,a_extra_de=100,G_in=None,G_safe=False,silent=False,wm_in=None,wm_safe=False,de_perturbative=False):
         # default to Planck 2015 values 
         self.silent=silent
         if not silent:
@@ -139,18 +140,17 @@ class CosmoPie :
         self.G_safe=G_safe
 
         a_min=a_step
-        a_max=1.+a_step*a_extra
-        a_list = np.arange(a_min,a_max,a_step)
-        z_list = 1./a_list-1.
+        a_max=1.
+        self.a_grid = np.arange(a_max,a_min-a_step/10.,-a_step)
+        #self.a_grid2 = np.arange(a_min,a_max,a_step)[::-1]
+        self.z_grid = 1./self.a_grid-1.
 
-        self.z_grid = z_list
-        self.a_grid = a_list
         if not G_safe:
-            dp_multiplier = -1./a_list*(7./2.*self.Omegam_z(z_list)+3*self.Omegar_z(z_list)+(7./2.-3./2.*self.w_interp(z_list))*self.OmegaL_z(z_list)+4.*self.Omegak_z(z_list))
-            d_multiplier = -1./a_list**2*(self.Omegar_z(z_list)+3./2.*(1.-self.w_interp(z_list))*self.OmegaL_z(z_list)+2*self.Omegak_z(z_list))
+            dp_multiplier = -1./self.a_grid*(7./2.*self.Omegam_z(self.z_grid)+3*self.Omegar_z(self.z_grid)+(7./2.-3./2.*self.w_interp(self.z_grid))*self.OmegaL_z(self.z_grid)+4.*self.Omegak_z(self.z_grid))
+            d_multiplier = -1./self.a_grid**2*(self.Omegar_z(self.z_grid)+3./2.*(1.-self.w_interp(self.z_grid))*self.OmegaL_z(self.z_grid)+2*self.Omegak_z(self.z_grid))
             #TODO check splines
-            dp_mult_interp = InterpolatedUnivariateSpline(a_list,dp_multiplier)
-            d_mult_interp = InterpolatedUnivariateSpline(a_list,d_multiplier)
+            dp_mult_interp = InterpolatedUnivariateSpline(self.a_grid[::-1],dp_multiplier[::-1])
+            d_mult_interp = InterpolatedUnivariateSpline(self.a_grid[::-1],d_multiplier[::-1])
             d_ics = np.array([1.,0.])
             d_args = (np.array([d_mult_interp,dp_mult_interp]),)
             def _d_evolve_eqs(ys,a,g_args):
@@ -159,8 +159,8 @@ class CosmoPie :
                 yps[1]=g_args[0](a)*ys[0]+g_args[1](a)*ys[1]
                 return yps
             #drop ghost cell
-            integ_result = odeint(_d_evolve_eqs,d_ics,a_list,d_args)
-            self.G_p = InterpolatedUnivariateSpline(z_list[::-1],(a_list*integ_result[:,0])[::-1],k=2,ext=2)
+            integ_result = odeint(_d_evolve_eqs,d_ics,self.a_grid[::-1],d_args)
+            self.G_p = InterpolatedUnivariateSpline(self.z_grid,(self.a_grid*integ_result[:,0][::-1]),k=2,ext=2)
         else:
             self.G_p=G_in
 
@@ -364,7 +364,7 @@ class CosmoPie :
         #P=self.G_norm(z)**2*self.P_lin
         #TODO should be z dependence?
         P=self.P_lin.get_matter_power(np.array([0.]),pmodel='linear')[:,0]
-        I=trapz((W*W).T*P*self.k**3,np.log(self.k))/2./np.pi**2
+        I=trapz2(((W*W).T*P*self.k**3).T,np.log(self.k)).T/2./np.pi**2
         
         return np.sqrt(I)
             

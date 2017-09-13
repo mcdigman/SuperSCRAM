@@ -105,7 +105,7 @@ For our analysis, we define three types of observables, which must be handled in
   \caption{Structure of the most important modules used by the code described in this paper to implement the workflow described in \ref{fig:workflow} }
 \label{fig:codeflow}
 \end{figure}
-
+%TODO be consistent with upper and lower indices
 To provide cosmological parameter forecasts, we calculate the total Fisher information matrix for the cosmological parameters by combining prior constraints and the Fisher matrices from any number of independent surveys of short wavelength observables:
 \begin{align}\label{fisher_param}
 F^{ij}_{\text{tot}}=F^{ij}_{\text{prior}}+\sum_{\text{surveys}}{F^{ij}_{\text{survey}}},
@@ -143,7 +143,13 @@ Inspecting the individual values of the elements of the covariance matrix of the
 &=\mathbb{1}+(C^{ij}_{\text{SSC}})(C^{ij}_{\text{g}})^{-1}
 \end{align}
 
-which has eigenvalues $\{\lambda\}$ and eigenvectors $\{v\}$ so $\mathcal{M}\cdot v=\lambda v$. All of the eigenvalues satisfy $\lambda\ge1$, and if we order the eigenvalues from largest to smallest, then the largest eigenvalue corresponds to the direction in parameter space most contaminated by the SSC term. An advantage of this formulation is that it cancels out any absolute scaling of the fiducial parameters. Note that in the special case where $C^{ij}_{\text{g}}=\mathbb{1}$, $\{\lambda\}$ reduce to the ordinary eigenvalues of  $C^{ij}_{\text{g+SSC}}$. When investigating the effectiveness of a mitigation strategy, there are three covariance matrices of interest:  $C^{ij}_{\text{g}}$,  $C^{ij}_{\text{g+SSC}}$, and $C^{ij}_{\text{g+SSC+mit}}$. Note that for this purpose all three matrices are taken to include any cosmological priors. Then we can find three useful sets of eigenvalues and eigenvectors: 
+which has eigenvalues $\{\lambda\}$ and eigenvectors $\{v\}$ so $\mathcal{M}\cdot v=\lambda v$. All of the eigenvalues satisfy $\lambda\ge2$, and the largest eigenvalue corresponds to the direction in parameter space most contaminated by the SSC term. An advantage of this formulation is that it cancels out the resulting eigenvalues are dimensionless and can therefore be compared between different parameterizations. Note that the matrix $\mathcal{M}$ need not be symmetric, which is inconvenient for computing eigenvalues numerically, so we instead find the eigenvalues of the matrix
+\begin{equation}\label{m_tot_alt}
+\widetilde{\mathcal{M}} = \mathbb{1}+L_g^{-1}C_{g+SSC}(L_g^{-1})^T
+\end{equation} 
+where $L_g$ is the lower triangular Cholesky decomposition of $C^{ij}_{\text{g}}=L_{g}L_g^T$. $\widetilde{\mathcal{M}}$ is a symmetric matrix with the same eigenvalues $\{\lambda\}$ as $\mathcal{M}$ and eigenvectors $\{u\}$ related to the eigenvectors $\{v\}$ of $\mathcal{M}$ using $u=L_g^{-1}v$.
+\\
+When investigating the effectiveness of a mitigation strategy, there are three covariance matrices of interest:  $C^{ij}_{\text{g}}$,  $C^{ij}_{\text{g+SSC}}$, and $C^{ij}_{\text{g+SSC+mit}}$.From these we can compute three useful sets of eigenvalues and eigenvectors: 
 \begin{align}\label{matrices}
 (C^{ij}_{\text{g+SSC}})(C^{ij}_{\text{g}})^{-1}\cdot v^g_{\text{SSC}}&=\lambda^g_{\text{SSC}} v^g_{\text{SSC}}, \\
 (C^{ij}_{\text{g+SSC+mit}})(C^{ij}_{\text{g}})^{-1}\cdot v^g_{\text{SSC+mit}}&=\lambda^g_{\text{SSC+mit}} v^g_{\text{SSC+mit}},\\
@@ -199,6 +205,8 @@ F_1^{\alpha\beta}=\frac{\partial \Delta n_{12}}{\partial \delta_\alpha}(N_{12})^
 \end{align}
 
 which can be added to $F_{\text{SSC}}^{\alpha\beta}$ in \eqref{F_tot} to mitigate the SSC contamination of short wavelength observables. 
+\\
+The long wavelength observable described above is implemented in the \texttt{DNumberDensityObservable} class in the \texttt{Dn} module, which extends the general specifications for a long wavelength observable, \texttt{LWObservable}, which requires that subclasses implement the method \texttt{get\_fisher}, which it obtains using \eqref{lw_ssc} by numerically integrating  \eqref{number_density_response} as described in \ref{sec:obs_response}.
 
 \subsection{Cosmological Parameterizations}
 \label{ssec:cosmo_param}
@@ -233,8 +241,32 @@ where $E(z)=H(z)/H_0$ and $z_{\text{lss}}=1089.90$. Currently, \texttt{w\_matche
 Note that this condition is equivalent to (2.3) in \cite{casarini_halofit_math}, but this form is clearer in parameterizations where $\sigma_8$ is not a parameter. The \texttt{w\_matcher} module matches this condition by precomputing a grid of possible $G(z,w)$ values and interpolating for a given $\mathcal{W}(z)$. Once $\mathcal{W}(z)$ is evaluated, the model is treated as having that constant $w$ value in all respects for calculations involving that $z$ value; for example, in the linear power spectrum, a new $z=0$ matter power spectrum is retrieved from CAMB with that $w$ value because the small $k$ transfer function depends on $w$ (the present implementation of the code actually precomputes $P_{\text{lin}}(k,z=0,w)$ for a grid of possible $w$ values and interpolates, because CAMB calls are slow for our purposes, and the dependence of the transfer function on $w$ is minimal in the $k$ range of interest). 
 \\
 This approach should work for a variety of methods of calculating the nonlinear power spectrum and a variety of dark energy models, as discussed in \cite{casarini_halofit_2}. The \texttt{matter\_power\_spectrum} module can currently apply this approach to the linear matter power spectrum, the one loop power spectrum from FAST-PT, and Halofit. Inserting further models of the matter power spectrum only requires extending the \texttt{matter\_power\_spectrum} module, as the rest of the code requires no knowledge of which model for the nonlinear matter power spectrum \texttt{matter\_power\_spectrum} is using. 
+
 \subsection{Fisher Matrix Manipulation}
-Fisher matrix manipulations are handled by the \texttt{fisher\_matrix} module. The \texttt{fisher\_matrix} module is optimized to efficiently perform common manipulations on Fisher matrices up to the memory limitations of the machine it runs on. For memory efficiency, it keeps its own internal representation of its matrices, so that it can perform many matrix operations in place, using SciPy's interface to the Fortran LAPACK library.  The specific internal operations of the \texttt{fisher\_matrix} module are intended to be largely opaque to the end user, with access through the interface provided, so that it can be optimized enough to efficiently handle Fisher matrices for large numbers of cosmological observables. 
+Fisher and covariance matrix manipulations are handled by the \texttt{fisher\_matrix} module. The \texttt{fisher\_matrix} module is optimized to efficiently perform the manipulations of Fisher matrices required by the code with sizes up to the memory limitations of the machine it runs on. For memory efficiency, it permits different internal representations of the matrix as either a fisher matrix, covariance matrix, or Cholesky decomposition. For example, if the numpy array \texttt{covar} is a nonsingular covariance matrix then the code
+\begin{verbatim}
+import numpy.linalg as npl
+import fisher_matrix as fm
+f1 = fm.FisherMatrix(covar,input_type=fm.REP_COVAR)
+f2 = fm.FisherMatrix(npl.inv(covar),input_type=fm.REP_FISHER)
+f3 = fm.FisherMatrix(npl.cholesky(covar),input_type=fm.REP_CHOL)
+f4 = fm.FisherMatrix(npl.inv(npl.cholesky(covar)),input_type=fm.REP_CHOL_INV)
+\end{verbatim}
+will produce four \texttt{FisherMatrix} objects \texttt{f1, f2, f3} and \texttt{f4} which all behave equivalently up to numerical precision when called through functions, although their internal states will be different. The internal state is intended to be opaque to other modules, and should not be referenced directly. In general the \texttt{FisherMatrix} object should be created from the input matrix in the form it is initially available and allowed to change states internally, as it has optimizations that allow it to perform some operations on fisher matrices faster and/or more accurately than simpler implementations, for example directly calling SciPy's interface to the Fortran LAPACK library for certain operations. 
+\\
+The logic for managing the collection of \texttt{FisherMatrix} objects for the long and short wavelength observables and cosmological parameters is handled by the \texttt{MultiFisher} class. A \texttt{MultiFisher} object takes an \texttt{SphBasisK} object, an \texttt{SWSurvey} object, and a list of \texttt{LWSurvey} objects. From these, it extracts the appropriate projection matrices for converting between the space of long wavelength and short wavelength observables, and the space of short wavelength observables and cosmological parameters, $\frac{\partial O_{I}}{\partial\delta_\alpha}$ and $\frac{\partial O_i}{\partial\Theta_i}$. It extracts the SSC covariance matrix $C^{IJ}_{\text{SSC}}$ from the given basis, the fisher matrices for mitigation strategies from the \texttt{LWSurvey} objects, the gaussian covariances for the short wavelength observables $C^{ij}_g$, and a fisher matrix for the cosmological priors from \texttt{prior\_fisher}. It then calculates the matrices for SSC terms in the spaces of short wavelength observables and cosmological parameters. \texttt{MultiFisher} has a \texttt{get\_fisher} method which accepts a specification of which terms to include as a dictionary, for example if we had a \texttt{MultiFisher} object name \texttt{multi\_f}, then the following code would store the short wavelength and cosmological parameter space \texttt{FisherMatrix} objects in \texttt{fisher\_array} including the short wavelength gaussian covariance, cosmological priors, and the long wavelength mitigation strategy being tested:
+\begin{verbatim}
+f_spec={'lw_base':True,'lw_mit':True,'sw_g':True,'sw_ng':True,'par_prior':True}
+f_return = {'lw':False,'sw':True,'par':True}
+fisher_array = fisher_multi_f.get_fisher(f_spec,f_return)
+\end{verbatim}
+The \texttt{FisherMatrix} class also handles retrieving the eigenvalues as described in \ref{ssec:eig} with the \texttt{get\_eig\_set} function, which gets a 2 by 2 array of the sets of eigenvalues and eigenvectors $\{\lambda\}$ and $\{u\}$ in both short wavelength and cosmological parameter space both without and with mitigation, for example:
+
+\begin{verbatim}
+f_set = multi_f.get_fisher_set(include_priors=False)
+eig_set = multi_f.get_eig_set(f_set,ssc_metric=False)
+\end{verbatim}
+gets eigensystems as described in \ref{ssec:eig} using the gaussian covariance as the metric. Setting \texttt{ssc\_metric=True} would get the eigensystem including the SSC term in the metric, as is needed to compare the mitigation strategies.
 
 
 \subsection{Separate Universe Response}

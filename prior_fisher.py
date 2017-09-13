@@ -1,8 +1,8 @@
 import numpy as np
 import defaults
-def read_planck_fisher(params = defaults.planck_fisher_params):
-    planck_fisher_loc = params['fisher_source']
-    fisher_d = np.loadtxt(planck_fisher_loc)
+def read_prior_fisher(params = defaults.prior_fisher_params):
+    prior_fisher_loc = params['fisher_source']
+    fisher_d = np.loadtxt(prior_fisher_loc)
     row_is = fisher_d[:,0].astype(int)
     col_is = fisher_d[:,1].astype(int)
     n_row = np.max(row_is)+1
@@ -13,7 +13,7 @@ def read_planck_fisher(params = defaults.planck_fisher_params):
     return fisher_mat
 
 #several of the parameters (\omega_k,\delta\gamma, \delta M,ln(G_0)) are not of interest to us at this time (all but \delta M could be incorporated straightforwardly)
-def fix_elements(fisher_mat,params=defaults.planck_fisher_params):
+def fix_elements(fisher_mat,params=defaults.prior_fisher_params):
     rows = params['row_strip']
     #fix element by stripping row and column
     #delete larges indices first so lower indices unaffected
@@ -25,7 +25,7 @@ def fix_elements(fisher_mat,params=defaults.planck_fisher_params):
         fisher_new=np.delete(fisher_new,(rows[i]),axis=1)
     return fisher_new
 
-def project_w0wa(fisher_mat,params=defaults.planck_fisher_params,return_project=False):
+def project_w0wa(fisher_mat,params=defaults.prior_fisher_params,return_project=False):
     n_de = params['n_de']
     n_new= fisher_mat.shape[0]-(n_de-2) #will project 36 dark energy entries to just 2
     fisher_new=np.zeros((n_new,n_new))
@@ -35,9 +35,12 @@ def project_w0wa(fisher_mat,params=defaults.planck_fisher_params,return_project=
     dwzdw0 = np.zeros(n_de)+1.
     project_mat[n_new-2,n_new-2::] = dwzdw0
     z_step = params['z_step']
-    zs = z_step*np.arange(0,n_de)/(1-z_step*np.arange(0,n_de))
+    #zs = z_step*np.arange(0,n_de)/(1-z_step*np.arange(0,n_de))
+    #TODO make sure doing this correctly
+    #a_s = 1.-np.arange(0,36)*0.025+0.0125
+    #zs = 1./(1.+a_s)
     #change in wa is z*a
-    dwzdwa =zs/(1.+zs)
+    dwzdwa =np.arange(0,36)*0.025+0.0125
     project_mat[n_new-1,n_new-2::] = dwzdwa
     fisher_new= np.dot(np.dot(project_mat,fisher_mat),project_mat.T)
     fisher_new = (fisher_new+fisher_new.T)/2.
@@ -47,7 +50,7 @@ def project_w0wa(fisher_mat,params=defaults.planck_fisher_params,return_project=
         return fisher_new
 
 
-def project_w0(fisher_mat,params=defaults.planck_fisher_params,return_project=False):
+def project_w0(fisher_mat,params=defaults.prior_fisher_params,return_project=False):
     n_de = params['n_de']
     n_new= fisher_mat.shape[0]-(n_de-1) #will project 36 dark energy entries to just 1
     fisher_new=np.zeros((n_new,n_new))
@@ -57,6 +60,7 @@ def project_w0(fisher_mat,params=defaults.planck_fisher_params,return_project=Fa
     project_mat[0:n_new-1,0:n_new-1] = np.identity(n_new-1)
     dwzdw0 = np.zeros(n_de)+1.
     project_mat[n_new-1,n_new-1::] = dwzdw0
+    #TODO are project_mats transposed?
     fisher_new= np.dot(np.dot(project_mat,fisher_mat),project_mat.T)
     fisher_new = fisher_new[0:n_new,0:n_new]
     fisher_new = (fisher_new+fisher_new.T)/2.
@@ -68,49 +72,50 @@ def project_w0(fisher_mat,params=defaults.planck_fisher_params,return_project=Fa
 #def get_ws36_to_w0wa_project(params):
     
 
-def project_no_de(fisher_mat,params=defaults.planck_fisher_params):
+def project_no_de(fisher_mat,params=defaults.prior_fisher_params):
     n_de = params['n_de']
     n_new= fisher_mat.shape[0]-(n_de) #will project 36 dark energy entries to 0
     fisher_new=np.zeros((n_new,n_new))
     #all the bins have constant change wrt w0
-    project_mat = np.zeros((n_new,fisher_mat.shape[0]))
-    project_mat[0:n_new,0:n_new] = np.identity(n_new)
+    #project_mat = np.zeros((n_new,fisher_mat.shape[0]))
+    fisher_new = fisher_mat[0:n_new,0:n_new]
+    #project_mat[0:n_new,0:n_new] = np.identity(n_new)
     return (fisher_new+fisher_new.T)/2.
 
-def get_jdem_projected(params=defaults.planck_fisher_params):
-    fisher_mat = read_planck_fisher(params=params)
+def get_jdem_projected(params=defaults.prior_fisher_params):
+    fisher_mat = read_prior_fisher(params=params)
     fisher_strip = fix_elements(fisher_mat,params=params)
     return fisher_strip
 
-def get_no_de_projected(params=defaults.planck_fisher_params):
-    fisher_mat = read_planck_fisher(params=params)
+def get_no_de_projected(params=defaults.prior_fisher_params):
+    fisher_mat = read_prior_fisher(params=params)
     fisher_strip = fix_elements(fisher_mat,params=params)
     fisher_project = project_no_de(fisher_strip,params=params)
     return fisher_project
 
-def get_w0wa_projected(params=defaults.planck_fisher_params):
-    fisher_mat = read_planck_fisher(params=params)
+def get_w0wa_projected(params=defaults.prior_fisher_params):
+    fisher_mat = read_prior_fisher(params=params)
     fisher_strip = fix_elements(fisher_mat,params=params)
     fisher_project = project_w0wa(fisher_strip,params=params)
     return fisher_project
 
-def get_w0_projected(params=defaults.planck_fisher_params):
-    fisher_mat = read_planck_fisher(params=params)
+def get_w0_projected(params=defaults.prior_fisher_params):
+    fisher_mat = read_prior_fisher(params=params)
     fisher_strip = fix_elements(fisher_mat,params=params)
     fisher_project = project_w0(fisher_strip,params=params)
     return fisher_project
 
 if __name__=='__main__':
-    param_1 = defaults.planck_fisher_params.copy()
+    param_1 = defaults.prior_fisher_params.copy()
     param_1['row_strip']=np.array([3,5,6,7])
-    fisher_mat=read_planck_fisher(params=param_1)
+    fisher_mat=read_prior_fisher(params=param_1)
     assert(fisher_mat.shape==(45,45))
     assert(np.all(fisher_mat==fisher_mat.T))
     fisher_strip = fix_elements(fisher_mat,param_1)
     assert(fisher_strip.shape==(41,41))
-    param_2 = defaults.planck_fisher_params.copy()
+    param_2 = defaults.prior_fisher_params.copy()
     param_2['row_strip']=np.array([5,6,7])
-    param_3 = defaults.planck_fisher_params.copy()
+    param_3 = defaults.prior_fisher_params.copy()
     param_3['row_strip']=np.array([3])
     fisher_strip_567 = fix_elements(fisher_mat,params=param_2)
     fisher_strip_3567 = fix_elements(fisher_strip_567,params=param_3)
