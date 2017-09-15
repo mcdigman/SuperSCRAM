@@ -1,4 +1,3 @@
-import cosmopie as cp
 #long wavelength observable abstract class
 #Methods must be implemented 
 class LWObservable:

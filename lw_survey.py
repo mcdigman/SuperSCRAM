@@ -1,3 +1,4 @@
+"""Class for handling a long wavelength survey, used for testing mitigation strategies"""
 import numpy as np
 import cosmopie as cp
 import defaults
@@ -6,54 +7,55 @@ from warnings import warn
 from Dn import DNumberDensityObservable
 
 class LWSurvey:
-    def __init__(self,geos,survey_id,basis,C,ls = np.array([]),params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params):
+    def __init__(self,geos,survey_id,basis,C,params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params):
+        """handle getting long wavelength observables and their fisher matrices for mitigation
+            inputs:
+                geos: an array of Geo objects, fo the survey windows of different long wavelength surveys
+                survey_id: an id for the survey
+                basis: an LWBasis object
+                C: a Cosmopie object
+                params: necessary parameters
+                observable_list: a list of observables required
+                dn_params: parameters needed by DNumberDensityObservable specifically
+        """ 
         print "lw_survey: began initializing long wavelength survey: "+str(survey_id)
         self.geos = geos
         self.params = params
         self.C = C
-        self.ls = ls
         self.survey_id = survey_id
         self.basis = basis
-        self.ddelta_bar_ddelta_alpha_list = np.zeros(self.geos.size,dtype = object)
-#        if prefetch_ddelta_bar:
-#            self.ddelta_bar_stored = True
-#            for i in xrange(0,self.geos.size):
-#                self.ddelta_bar_ddelta_alpha_list[i] = self.basis.D_delta_bar_D_delta_alpha(self.geos[i],tomography=True)
-#        else:
-#            self.ddelta_bar_stored = False
         self.dn_params = dn_params
         self.observable_names = generate_observable_names(observable_list)
         self.observables = self.names_to_observables(self.observable_names)
         print "lw_survey: finished initializing long wavelength survey: "+str(survey_id)
 
-#    def get_ddelta_bar_ddelta_alpha_list(self,force_recompute=False):
-#        if not self.ddelta_bar_stored or force_recompute:
-#            self.ddelta_bar_stored = True
-#            for i in xrange(0,self.geos.size):
-#                self.ddelta_bar_ddelta_alpha_list[i] = self.basis.D_delta_bar_D_delta_alpha(self.geos[i],tomography=True)
-#        return self.ddelta_bar_ddelta_alpha_list
-
     def get_N_O_a(self):
+        """get number of long wavelength observables"""
         return self.observables.size
 
     def get_dO_a_ddelta_bar_list(self):
+        """get list of arrays of long wavelength observables"""
         dO_a_ddelta_bar_list = np.zeros(self.observables.size,dtype=object)
         for i in xrange(self.observables.size):
             dO_a_ddelta_bar_list[i] = self.observables[i].get_dO_a_ddelta_bar()
         return dO_a_ddelta_bar_list
 
     def fisher_accumulate(self,fisher_0):
+        """add the fisher matrices for all available lw observables to the FisherMatrix object fisher_0"""
         for i in xrange(0,self.get_N_O_a()): 
-            #print "fisher", np.linalg.eigvals(self.observables[i].get_fisher())[0]
             fisher_0.add_fisher(self.observables[i].get_fisher())
 
     def get_total_rank(self):
+        """get the total rank of perturbations that will be added to the SSC contribution, for testing interlace theorems"""
         rank = 0
         for itr in xrange(0,self.observables.size):
             if not self.observables[itr] is None:
                 rank+=self.observables[itr].get_rank()
         return rank
+
     def names_to_observables(self,names):
+        """get the list of long wavelength observables corresponding to a given dictionary of names
+            only currently recognized name is d_number_density"""
         observables = np.zeros(len(names.keys()),dtype=object)
         itr = 0 
         for key in names:
@@ -66,6 +68,8 @@ class LWSurvey:
         return observables
      
 def generate_observable_names(observable_list):
+    """get a dictionary of names from the given list of names
+        can include parameters but names_to_observables does not currently need that functionality"""
     names = {}
     for name in observable_list:
         if re.match('^d_number_density',name):

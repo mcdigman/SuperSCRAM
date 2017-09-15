@@ -1,3 +1,6 @@
+"""
+MatterPower class handles and wrap all matter power spectra related functionality
+"""
 import numpy as np
 import defaults
 import FASTPTcode.FASTPT as FASTPT
@@ -9,10 +12,22 @@ from warnings import warn
 import cosmopie as cp
 #class for a matter power spectrum which can get both linear and nonlinear power spectra as needed
 #TODO clean up
-#TODO treat w0 and w equivalently
-#TODO current use of negative z is quite brittle
+#TODO treat w0 and w consistently
 class MatterPower:
     def __init__(self,C_in,P_lin=None,k_in=None,matter_power_params=defaults.matter_power_params,camb_params=defaults.camb_params,wmatcher_params=defaults.wmatcher_params,halofit_params=defaults.halofit_params,fpt_params=defaults.fpt_params,wm_in=None,wm_safe=False,P_fid=None,camb_safe=False,de_perturbative=False):
+        """Generate matter power spectrum for input cosmology
+        linear power spectrum use camb, nonlinear can use halofit or FAST-PT
+        Inputs:
+        C_in: input CosmoPie
+        P_lin: Input matter power spectrum. Optional.
+        matter_power_params,camb_params,wmatcher_params,halofit_params,fpt_params: dictionaries of parameters
+        wm_in: input WMatcher object. Optional.
+        wm_safe: if True and wm_in is not None, use wm_in
+        P_fid: Fiducial  power spectrum. Optional.
+        camb_safe: If True and P_fid is not None, will borrow camb_grid from P_fid if possible. Useful if only linear growth factor different from P_fid.
+        de_perturbative: If True, get power spectra for constant w even if w(z) in C_in is not constant
+        """
+
         #save all the input parameter sets
         self.params = matter_power_params
         self.camb_params = camb_params.copy()
@@ -32,13 +47,14 @@ class MatterPower:
             if k_in is None:
                 self.k = k_camb
             else:
-                if not np.all(k_camb==k_in):    
-                    #TODO extrapolate properly
+                if not np.allclose(k_camb,k_in):    
+                    #TODO extrapolate properly, not safe on edges now. Issue is k_camb is off by factor of self.cosmology['H0']/71.902712048990196
                     self.P_lin = InterpolatedUnivariateSpline(k_camb,self.P_lin,k=2)(k_in)
                 self.k=k_in
         else:
             self.k = k_in
             self.P_lin = P_lin
+            self.sigma8_in = C_in.get_sigma8()
 
         self.a_grid = np.arange(self.params['a_max'],self.params['a_min']-self.params['a_step']/10.,-self.params['a_step'])
         self.z_grid = 1./self.a_grid-1.
@@ -83,6 +99,7 @@ class MatterPower:
                 self.w_max = P_fid.w_max
                 if self.use_match_grid and np.any(self.w_match_grid>self.w_max) or np.any(self.w_match_grid<self.w_min):
                     #TODO extending would be better than regenerating
+                    #TODO bug is causing this to expand itself somehow
                     warn('Insufficient range in given camb w grid, needed min '+str(np.min(self.w_match_grid))+' max '+str(np.max(self.w_match_grid)))
                 else:
                     cache_usable=True
@@ -114,10 +131,11 @@ class MatterPower:
                     #TODO check the G input is correct
                     print "camb with w=",self.camb_w_grid[i]
                     k_i,self.camb_w_pows[:,i],self.camb_sigma8s[i] = camb_pow(camb_cosmos,camb_params=self.camb_params)
+                    #This interpolation shift shouldn't really be needed because self.k is generated with the same value of H0
                     if not np.all(k_i==self.k):
-                        self.camb_w_pows[:,i] = InterpolatedUnivariateSpline(k_i,self.camb_w_pows[:,i],k=2)(self.k)
+                        self.camb_w_pows[:,i] = InterpolatedUnivariateSpline(k_i,self.camb_w_pows[:,i],k=2,ext=2)(self.k)
                     self.camb_w_interp = RectBivariateSpline(self.k,self.camb_w_grid,self.camb_w_pows,kx=3,ky=3)
-                    self.camb_sigma8_interp = InterpolatedUnivariateSpline(self.camb_w_grid,self.camb_sigma8s,k=2)
+                    self.camb_sigma8_interp = InterpolatedUnivariateSpline(self.camb_w_grid,self.camb_sigma8s,k=2,ext=2)
                 self.use_camb_grid = True
         else:
             self.w_min = None
@@ -142,8 +160,8 @@ class MatterPower:
             self.fpt = None
             self.one_loop=np.array([])
 
-    #get an effective sigma8 if appropriate
     def get_sigma8_eff(self,zs):
+        """get effective sigma8(z) for matching power spectrum amplitude in w(z) models from WMatcher"""
         if self.use_match_grid:
             #w_match_grid = self.wm.match_w(self.C,zs)
             w_match_grid = self.w_match_interp(zs)
@@ -155,6 +173,12 @@ class MatterPower:
 
     #const_pow_mult allows adjusting sigma8 without creating a whole new power spectrum
     def get_matter_power(self,zs_in,pmodel=defaults.matter_power_params['nonlinear_model'],const_pow_mult=1.,get_one_loop=False):
+        """get a matter power spectrum P(z)
+        Inputs:
+        pmodel: nonlinear power spectrum model to use, options are 'linear','halofit', and 'fastpt'
+        const_pow_mult: multiplier to adjust sigma8 without creating a whole new power spectrum
+        get_one_loop: If True and pmodel=='fastpt', return the one loop contribution in addition to the nonlinear power spectrum
+        """
         if  isinstance(zs_in,np.ndarray):
             zs = zs_in
         else:

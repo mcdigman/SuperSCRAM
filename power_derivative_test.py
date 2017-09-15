@@ -1,5 +1,5 @@
 import numpy as np
-from shear_power import shear_power,Cll_q_q
+from shear_power import ShearPower,Cll_q_q
 from cosmopie import CosmoPie
 import defaults
 from scipy.interpolate import SmoothBivariateSpline,interp2d
@@ -17,6 +17,8 @@ if __name__=='__main__':
 
 
     C = CosmoPie(defaults.cosmology)
+    C.k = k_in
+    C.P_lin = P_in
     len_params = defaults.lensing_params.copy()
     len_params['z_bar']=1.0
     len_params['sigma']=0.4
@@ -26,11 +28,11 @@ if __name__=='__main__':
     zs_test1 = np.arange(len_params['z_min_integral'],len_params['z_max_integral'],z_test_res1)
     #zs_test2 = np.arange(len_params['z_min_integral'],len_params['z_max_integral'],z_test_res2)
 
-    dC_ddelta1 = shear_power(k_in,C,zs_test1,ls,omega_s=omega_s,pmodel=len_params['pmodel_dO_ddelta'],mode='dc_ddelta',P_in=P_in)
-    #dC_ddelta2 = shear_power(k_in,C,zs_test2,ls,omega_s=omega_s,pmodel=len_params['pmodel_dO_ddelta'],P_in=P_in)
+    dC_ddelta1 = ShearPower(C,zs_test1,ls,omega_s=omega_s,pmodel=len_params['pmodel_dO_ddelta'],mode='dc_ddelta')
+    #dC_ddelta2 = ShearPower(k_in,C,zs_test2,ls,omega_s=omega_s,pmodel=len_params['pmodel_dO_ddelta'])
     
-    sp1 = shear_power(k_in,C,zs_test1,ls,omega_s=omega_s,pmodel=len_params['pmodel_O'],mode='power',P_in=P_in)
-   # sp2 = shear_power(k_in,C,zs_test2,ls,omega_s=omega_s,pmodel=len_params['pmodel_O'],P_in=P_in)
+    sp1 = ShearPower(C,zs_test1,ls,omega_s=omega_s,pmodel=len_params['pmodel_O'],mode='power')
+   # sp2 = ShearPower(k_in,C,zs_test2,ls,omega_s=omega_s,pmodel=len_params['pmodel_O'])
 
     
     z_min1 = 0.8

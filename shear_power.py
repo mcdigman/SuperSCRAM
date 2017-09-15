@@ -1,26 +1,37 @@
-import numpy as np
-import cosmopie as cp
-import halofit as hf
-from scipy.interpolate import interp1d,interp2d
-from scipy.interpolate import InterpolatedUnivariateSpline,SmoothBivariateSpline,RectBivariateSpline
-import scipy.special as sp
+"""
+Handles lensing observable power spectrum
+"""
 from time import time
-import FASTPTcode.FASTPT as FASTPT
-import defaults
-import camb_power as cpow
-import FASTPTcode.matter_power_spt as mps
 from warnings import warn 
+from scipy.interpolate import interp1d,InterpolatedUnivariateSpline,RectBivariateSpline
+
 from power_response import dp_ddelta
-from power_parameter_response import dp_dpar
 from lensing_weight import q_shear,q_mag,q_num,q_k
 from lensing_source_distribution import get_source_distribution
 from algebra_utils import trapz2
+
+import numpy as np
+import cosmopie as cp
+import scipy.special as spp
+import defaults
 import matter_power_spectrum as mps
 #TODO create derivative class than can change whole cosmology
 #TODO check integral boundaries ok
-class shear_power:
-    def __init__(self,k_in,C,zs,ls,omega_s,pmodel='halofit',P_in=None,ps=np.array([]),params=defaults.lensing_params,param_vary=None,mode=None):
-        self.k_in = k_in
+#TODO remove explicit cosmosis pmodel
+class ShearPower:
+    def __init__(self,C,zs,ls,omega_s,pmodel='halofit',ps=np.array([]),params=defaults.lensing_params,mode='power'):
+        """
+            Handles lensing power spectra
+            inputs:
+                C: CosmoPie object
+                zs: z grid
+                ls: l bins to use
+                omega_s: angular area of window in radians 
+                pmodel: nonlinear power spectrum model to use, options 'linear','halofit','fastpt','cosmosis'
+                ps: lensing source distribution. Optional.
+                mode: whether to get power spectrum 'power' or dC/d\bar{\delta} 'dc_ddelta'
+        """
+        self.k_in = C.k
         self.C = C
         self.zs = zs
         self.ls = ls
@@ -42,17 +53,14 @@ class shear_power:
         self.n_l = self.ls.size
         self.n_z = self.zs.size
         
-        self.omegas = np.zeros(self.n_z)
-
         self.p_dd_use=np.zeros((self.n_l,self.n_z))
         self.ps = np.zeros(self.n_z)
 
         self.params = params
+        self.mode=mode
                     
-        self.Gs = self.C.G_norm(zs)
-
         #some methods require special handling    
-        if mode == 'power':
+        if self.mode == 'power':
             if pmodel == 'cosmosis':
                 z_bar = np.loadtxt('test_inputs/proj_2/z.txt')
                 k_bar = np.loadtxt('test_inputs/proj_2/k_h.txt')*C.h
@@ -60,36 +68,26 @@ class shear_power:
                 self.chis = interp1d(z_bar,np.loadtxt('test_inputs/proj_2/d_m.txt')[::-1])(zs)
                 self.chi_As = self.chis
             elif pmodel=='halofit':
-                #self.halo = hf.halofitPk(self.C,k_in,P_in)
-                #self.pow_interp = RectBivariateSpline(self.k_in,self.zs,2*np.pi**2*(self.halo.D2_NL(self.k_in,self.zs).T/self.k_in**3).T)
-                self.pow_interp = RectBivariateSpline(self.k_in,self.zs,P_in.get_matter_power(self.zs,pmodel='halofit'),kx=2,ky=2)
+                self.pow_interp = RectBivariateSpline(self.k_in,self.zs,self.C.P_lin.get_matter_power(self.zs,pmodel='halofit'),kx=2,ky=2)
             elif pmodel=='fastpt':
-                #TODO use defaults
-                #fpt = FASTPT.FASTPT(k_in,fpt_params['nu'],low_extrap=-5,high_extrap=5,n_pad=800)
-                #one_loop = fpt.one_loop(P_in,C_window=fpt_params['C_window']) 
-                #one_loop is proportional to amplitude of input power spectrum squared, so multiply by G^4 to rescale correctly
-                #self.pow_interp = RectBivariateSpline(self.k_in,self.zs,np.outer(P_in,self.Gs**2)+np.outer(one_loop,self.Gs**4))
-                self.pow_interp = RectBivariateSpline(self.k_in,self.zs,P_in.get_matter_power(self.zs,pmodel='fastpt'),kx=2,ky=2)
+                self.pow_interp = RectBivariateSpline(self.k_in,self.zs,self.C.P_lin.get_matter_power(self.zs,pmodel='fastpt'),kx=2,ky=2)
             elif pmodel=='linear':
-                self.pow_interp = RectBivariateSpline(self.k_in,self.zs,P_in.get_matter_power(self.zs,pmodel='linear'),kx=2,ky=2)
-                #self.pow_interp = RectBivariateSpline(self.k_in,self.zs,np.outer(P_in,self.Gs**2),kx=1,ky=1)
+                self.pow_interp = RectBivariateSpline(self.k_in,self.zs,self.C.P_lin.get_matter_power(self.zs,pmodel='linear'),kx=2,ky=2)
             else:
-                raise ValueError('unrecognized pmodel\''+str(pmodel)+'\' for mode \''+str(mode)+'\'')
-        elif mode == 'dc_ddelta':
-            self.pow_interp = RectBivariateSpline(k_in,zs,dp_ddelta(k_in,P_in,zs,C=self.C,pmodel=pmodel,epsilon=self.epsilon)[0],kx=2,ky=2) 
-        elif mode=='dc_dpar':
-            #TODO find analytic formula and fix this
-            self.param_vary = param_vary
-            self.pow_interp = RectBivariateSpline(self.k_in,self.zs,dp_dpar(self.k_in,self.zs,C=self.C,parameter=self.param_vary,pmodel=pmodel,epsilon=self.epsilon)[0],kx=1,ky=1)
+                raise ValueError('unrecognized pmodel\''+str(pmodel)+'\' for mode \''+str(self.mode)+'\'')
+        elif self.mode == 'dc_ddelta':
+            self.pow_interp = RectBivariateSpline(self.k_in,zs,dp_ddelta(self.k_in,self.C.P_lin,zs,C=self.C,pmodel=pmodel,epsilon=self.epsilon)[0],kx=2,ky=2) 
         else:
-            raise ValueError('unrecognized mode \''+str(mode)+'\'')
+            raise ValueError('unrecognized mode \''+str(self.mode)+'\'')
 
         if pmodel!='cosmosis':
-            self.chis = self.C.D_c_array(zs)
-            self.chi_As = self.C.D_c_A_array(zs)
-
-        #TODO eliminate self.omegas, it is constant.
-        self.omegas = self.C.Omegam
+            self.chis = self.C.D_comov(zs)
+            #TODO if using Omegak not 0, make sure chis and chi_As used consistently
+            if C.Omegak==0:
+                self.chi_As = self.chis
+            else:
+                warn('ShearPower may not support nonzero curvature consistently')
+                self.chi_As = self.C.D_comov_A(zs)
 
         self.k_use = np.outer((self.ls+0.5),1./self.chi_As)
         
@@ -97,200 +95,144 @@ class shear_power:
         for i in xrange(0,self.n_z):
             self.p_dd_use[:,i] = self.pow_interp(self.k_use[:,i],zs[i])[:,0]
 
-        self.dchis=self.C.D_comov_dz(zs)
-
         self.sc_as = 1/(1+self.zs)
 
-        self.p_gg_use = self.p_dd_use #temporary for testing purposes
-        self.p_gd_use = self.p_dd_use #temporary for testing purposes
+        #galaxy galaxy and galaxy dm power spectra. Set to matter power spectra for now, could input bias model
+        self.p_gg_use = self.p_dd_use 
+        self.p_gd_use = self.p_dd_use 
 
         self.source_dist = get_source_distribution(self.params['smodel'],self.zs,self.chis,self.C,self.params,ps=ps) 
         self.ps = self.source_dist.ps
         self.z_min_dist = params['z_min_dist']
         self.z_max_dist = params['z_max_dist']
 
+        #used in getting Cll_q_q for a given ShearPower
+        self.Cll_kernel = 1./self.chi_As**2*self.p_dd_use
+
     def r_corr(self):
+        """get correlation r between galaxy and dm power spectra, will be 1 unless input model for bias"""
         return self.p_gd_use/np.sqrt(self.p_dd_use*self.p_gg_use)
     
     def get_n_shape(self,class_1,class_2):
-        #try:
+        """get shape noise associated with 2 types of observables"""
+        try:
             return self.n_map[class_1][class_2]
-        #except KeyError:
-        #    return 0 
+        except KeyError:
+            warn("unrecognized key for shape noise "+str(class_1)+" or "+str(class_2)+" using 0")
+            return 0 
 
-    
-#    def cov_g_diag(self,c_ac,c_ad,c_bd,c_bc,n_ac=0,n_ad=0,n_bd=0,n_bc=0): #only return diagonal because all else are zero by kronecker delta
-#        cov_diag = np.zeros(self.n_l) #assume same size for now
-#        for i in xrange(0,self.n_l):
-#            cov_diag[i] = 4.*np.pi/(self.omega_s*(2.*self.ls[i]+1.)*self.delta_l)*((c_ac[i]+n_ac)*(c_bd[i]+n_bd)+(c_ad[i]+n_ad)*(c_bc[i]+n_bc))
-#        return cov_diag
-    #method to match cosmolike ssc term
-    #def cov_ssc(self,qs):
-    #    qs[0].chi_min
-    
     #take as an array of qs, ns, and rs instead of the matrices themselves
     #ns is [n_ac,n_ad,n_bd,n_bc]
-    def cov_g_diag(self,qs,ns_in=[0,0,0,0],r_ac=np.array([]),r_ad=np.array([]),r_bd=np.array([]),r_bc=np.array([]),delta_ls=None,ls=None):
+    def cov_g_diag(self,qs,ns_in=[0.,0.,0.,0.],rs=np.full(4,1.),delta_ls=None,ls=None):
+        """Get diagonal elements of gaussian covariance between observables
+            inputs:
+                qs: a list of 4 q_weight objects [q1,q2,q3,q4]
+                ns_in: an input list of shape noise [n13,n24,n14,n23]
+                rs: correlation parameters, [r13,r24,r14,r23]. Optional.
+                ls: array of ls to use if not default. Optional.
+                delta_ls: array of differences of ls. Optional
+        """
         cov_diag = np.zeros(self.n_l)
         if ls is None:
             ls = self.ls
         if delta_ls is None:
-            #lmin = np.min(ls)
-            #lmax = np.min(ls)
-
-            #log_dl = (np.log(lmax)-np.log(lmin))/ls.size
-            #delta_ls = np.zeros(self.ls.size)
-            #get delta_las form midpoints of delta_l cells
-            #for i in xrange(l_mids.size):
-            #    delta_ls[i] = (np.exp(np.log(lmin)+(i+1.)*log_dl)- np.exp(np.log(lmin)+i*log_dl))
-            #numerically differentiate without worrying about ghost cells
-            delta_ls = InterpolatedUnivariateSpline(np.arange(0,ls.size),ls).derivative(1)(np.arange(0,ls.size))
-            #delta_ls[0:(self.ls.size-1)] = np.diff(self.ls) #todo check extrapolation
-            #delta_ls[-1] = np.exp(2.*np.log(self.ls[-1])-np.log(self.ls[-2]))-self.ls[-1]
+            #calculate diff with a ghost cell
+            delta_ls = InterpolatedUnivariateSpline(np.arange(0,ls.size),ls,ext=2).derivative(1)(np.arange(0,ls.size))
         ns = np.zeros(ns_in.size)
         #TODO handle varying bin sizes better
         ns[0] = ns_in[0]/trapz2((1.*(self.chis>=qs[0].chi_min)*(self.chis<=qs[0].chi_max)*self.ps),self.chis)
         ns[1] = ns_in[1]/trapz2((1.*(self.chis>=qs[1].chi_min)*(self.chis<=qs[1].chi_max)*self.ps),self.chis)
         ns[2] = ns_in[2]/trapz2((1.*(self.chis>=qs[2].chi_min)*(self.chis<=qs[2].chi_max)*self.ps),self.chis)
         ns[3] = ns_in[3]/trapz2((1.*(self.chis>=qs[3].chi_min)*(self.chis<=qs[3].chi_max)*self.ps),self.chis)
-        c_ac = Cll_q_q(self,qs[0],qs[2],r_ac).Cll()#*np.sqrt(4.*np.pi)
-        c_bd = Cll_q_q(self,qs[1],qs[3],r_bd).Cll()#*np.sqrt(4.*np.pi) 
-        c_ad = Cll_q_q(self,qs[0],qs[3],r_ad).Cll()#*np.sqrt(4.*np.pi) 
-        c_bc = Cll_q_q(self,qs[1],qs[2],r_bc).Cll()#*np.sqrt(4.*np.pi) 
-        #for i in xrange(0,self.n_l): 
-        #    cov_diag[i] = 1./(self.omega_s*(2.*self.ls[i]+1.)*delta_ls[i])*((c_ac[i]+ns[0])*(c_bd[i]+ns[2])+(c_ad[i]+ns[1])*(c_bc[i]+ns[3]))
+        c_ac = Cll_q_q(self,qs[0],qs[2],rs[0]).Cll()#*np.sqrt(4.*np.pi)
+        c_bd = Cll_q_q(self,qs[1],qs[3],rs[1]).Cll()#*np.sqrt(4.*np.pi) 
+        c_ad = Cll_q_q(self,qs[0],qs[3],rs[2]).Cll()#*np.sqrt(4.*np.pi) 
+        c_bc = Cll_q_q(self,qs[1],qs[2],rs[3]).Cll()#*np.sqrt(4.*np.pi) 
         cov_diag = 1./(self.omega_s*(2.*self.ls+1.)*delta_ls)*((c_ac+ns[0])*(c_bd+ns[2])+(c_ad+ns[1])*(c_bc+ns[3]))
-            #(C13*C24+ C13*N24+N13*C24 + C14*C23+C14*N23+N14*C23+N13*N24+N14*N23)
-            #cov_diag[i] = 1./(self.omega_s*(2.*ls[i]+1.)*delta_ls[i])*(c_ac[i]*c_bd[i]+c_ac[i]*ns[2]+ns[0]*c_bd[i]+c_ad[i]*c_bc[i]+ns[3]*c_ad[i]+ns[1]*c_bc[i]+ns[0]*ns[2]+ns[1]*ns[3])
+        #(C13*C24+ C13*N24+N13*C24 + C14*C23+C14*N23+N14*C23+N13*N24+N14*N23)
         return cov_diag
 
-#    def bin_cov_by_l(self,cov_diag,l_starts): 
-#        binned_c = np.zeros(l_starts.size) #add fisher matrices then take 1/F_bin
-#        for i in xrange(0,l_starts.size):
-#            if i == l_starts.size-1:
-#                l_end = l_starts.size
-#            else:
-#                l_end = l_starts[i+1]
-#            fisher_mat=(np.sum(1./cov_diag[l_starts[i]:l_end]))/float(l_end-l_starts[i])
-#            #fisher matrix sum of covariance eigenvalues divided by delta l, not sure if this is correct
-#            binned_c[i] = 1./fisher_mat
-#        return binned_c
-    
-    #stacked tangential shear, note ls must be successive integers to work correctly
-    #note that exact result is necessary if result must be self-consistent (ie tan_shear(theta)=tan_shear(theta+2*pi)) for theta not <<1
-    #see Putter & Takada 2010 arxiv:1007.4809
     def tan_shear(self,thetas,with_limber=False):
+        """stacked tangential shear, note ls must be successive integers to work correctly
+        note that exact result is necessary if result must be self-consistent (ie tan_shear(theta)=tan_shear(theta+2*pi)) for theta not <<1
+        see Putter & Takada 2010 arxiv:1007.4809
+        not used by anything or tested"""
         n_t = thetas.size
         tans = np.zeros(n_t)
         kg_pow = Cll_k_g(self).Cll()
         for i in xrange(0,n_t):
             if with_limber:
-                tans[i] = trapz2((2.*self.ls+1.)/(4.*np.pi*self.ls*(self.ls+1.))*kg_pow*sp.lpmv(2,ls,np.cos(thetas[i])),ls)
+                tans[i] = trapz2((2.*self.ls+1.)/(4.*np.pi*self.ls*(self.ls+1.))*kg_pow*spp.lpmv(2,ls,np.cos(thetas[i])),ls)
             else:
-                tans[i] = trapz2(self.ls/(2.*np.pi)*kg_pow*sp.jn(2,thetas[i]*ls),ls)
+                tans[i] = trapz2(self.ls/(2.*np.pi)*kg_pow*spp.jn(2,thetas[i]*ls),ls)
 
         return tans
 
-#    def cov_mats(self,z_bins,cname1='shear',cname2='shear'):
-#        covs = np.zeros((z_bins.size-1,z_bins.size-1,self.n_l,self.n_l))
-#        q1s = np.empty(z_bins.size-1,dtype=object)
-#        q2s = np.empty(z_bins.size-1,dtype=object)
-#        for i in xrange(0,z_bins.size-1):
-#            chi_min = self.C.D_comov(z_bins[i])
-#            chi_max = self.C.D_comov(z_bins[i+1])
-#            if cname1 == 'shear':
-#                q1s[i] = q_shear(self,chi_min,chi_max)
-#            elif cname1 == 'num':
-#                q1s[i] = q_num(self,chi_min,chi_max)
-#            else:
-#                warn('invalid value \''+cname1+'\' for cname1 using shear instead')
-#                q1s[i] = q_shear(self,chi_min,chi_max)
-#
-#            if cname2 == 'shear':
-#                q2s[i] = q_shear(self,chi_min,chi_max)
-#            elif cname2 == 'num':
-#                q2s[i] = q_num(self,chi_min,chi_max)
-#            else:
-#                warn('invalid value \''+cname2+'\' for cname2 using shear instead')
-#                q2s[i] = q_shear(self,chi_min,chi_max)
-#        n_ss = self.sigma2_e/(2.*self.n_gal)
-#        for i in xrange(0,z_bins.size-1):
-#            for j in xrange(0,z_bins.size-1):
-#                covs[i,j] = np.diagflat(self.cov_g_diag([q1s[i],q2s[i],q1s[j],q2s[j]],[n_ss,n_ss,n_ss,n_ss]))
-#        return covs
-    
-    #def dc_ddelta_alpha(self,basis,z_bins,theta,phi,cname1='shear',cname2='shear'):
-    #    if not re.match('^dc',self.pmodel):
-    #        warn('pmodel: '+self.pmodel+' not recognized for derivative, dc_ddelta_alpha may give unexpected results')
-    #    dcs = np.zeros(self.n_l)
-    #    for i in xrange(0,z_bins.size-1):
-    #        chi_min = self.C.D_comov(z_bins[i])
-    #        chi_max = self.C.D_comov(z_bins[i+1])
-    #        dcs[i] = basis.D_delta_bar_D_delta_alpha(chi_min,chi_max,theta,phi)
-    #        if cname1 == 'shear' and cname2 == 'shear':
-    #            dcs[i] *= self.Cll_sh_sh(chi_max,chi_max,chi_min,chi_min).Cll()
-    #        elif cname1 == 'shear' and cname2 == 'num':
-    #            dcs[i] *= self.Cll_sh_g(chi_max,chi_max,chi_min,chi_min).Cll()
-    #        else:
-    #            warn('invalid cname1 \''+cname1+'\' or cname2 \''+cname2+'\' using shear shear')
-    #            cname1 = 'shear'
-    #            cname2 = 'shear'
-    #            dcs[i] *= self.Cll_sh_sh(chi_max,chi_max,chi_min,chi_min).Cll()
-    #    return dcs
-
-
 class Cll_q_q:
-    def __init__(self,sp,q1s,q2s,corr_param=np.array([])):
+    def __init__(self,sp,q1s,q2s,corr_param=1.):
+        """
+        class for a generic lensing power spectrum
+            inputs:
+                sp: a ShearPower object
+                q1s: a q_weight object
+                q2s: a q_weight object
+                corr_param: correlation parameter, could be an array
+        """
         self.integrand = np.zeros((sp.n_z,sp.n_l))
         self.chis = sp.chis
-        if corr_param.size !=0: 
-#           for i in xrange(0,sp.n_z):
-#                self.integrand[i] = q1s.qs[i]*q2s.qs[i]/sp.chi_As[i]**2*sp.p_dd_use[:,i]*corr_param[:,i]
-            #q1s and q2s may need to be transposed if using galaxy lensing because of bias, has no effect on shear shear lensing
-            self.integrand = (q1s.qs.T*q2s.qs.T/sp.chi_As**2*sp.p_dd_use*corr_param).T
-        else:
-#            for i in xrange(0,sp.n_z):
-#                self.integrand[i] = q1s.qs[i]*q2s.qs[i]/sp.chi_As[i]**2*sp.p_dd_use[:,i]
-            self.integrand = (q1s.qs.T*q2s.qs.T/sp.chi_As**2*sp.p_dd_use).T
+        self.integrand = (corr_param*q1s.qs.T*q2s.qs.T*sp.Cll_kernel).T
+
     def Cll(self,chi_min=0,chi_max=np.inf):
+        """get lensing power spectrum integrated in a specified range"""
         high_mask = (self.chis<=chi_max)*1.
         low_mask = (self.chis>=chi_min)*1.
         return trapz2((high_mask*low_mask*self.integrand.T).T,self.chis)
 
     def Cll_integrand(self):
+        """get the integrand of the lensing power spectrum, if want to multiply by something else before integrating"""
         return self.integrand
 
 class Cll_sh_sh(Cll_q_q):
     def __init__(self,sp,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
+        """Shear shear lensing power spectrum"""
         Cll_q_q.__init__(self,sp,q_shear(sp,chi_max=chi_max1,chi_min=chi_min1),q_shear(sp,chi_max=chi_max2,chi_min=chi_min2))
 
 class Cll_g_g(Cll_q_q):
     def __init__(self,sp,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
+        """Galaxy Galaxy lensing power spectrum"""
         Cll_q_q.__init__(self,sp,q_num(sp,chi_max=chi_max1,chi_min=chi_min1),q_num(sp,chi_max=chi_max2,chi_min=chi_min2))
 
 class Cll_mag_mag(Cll_q_q):
     def __init__(self,sp,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
+        """Magnification magnification lensing power spectrum"""
         Cll_q_q.__init__(self,sp,q_mag(sp,chi_max=chi_max1,chi_min=chi_min1),q_mag(sp,chi_max=chi_max2,chi_min=chi_min2))
 
 class Cll_k_k(Cll_q_q):
     def __init__(self,sp,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
+        """Convergence convergence lensing power spectrum"""
         Cll_q_q.__init__(self,sp,q_k(sp,chi_max=chi_max1,chi_min=chi_min1),q_k(sp,chi_max=chi_max2,chi_min=chi_min2))
 
 class Cll_k_g(Cll_q_q):
     def __init__(self,sp,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
+        """Convergence galaxy lensing power spectrum"""
         Cll_q_q.__init__(self,sp,q_k(sp,chi_max=chi_max1,chi_min=chi_min1),q_num(sp,chi_max=chi_max2,chi_min=chi_min2))
 
 class Cll_sh_mag(Cll_q_q):
     def __init__(self,sp,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
+        """Shear magnification lensing power spectrum"""
         Cll_q_q.__init__(self,sp,q_shear(sp,chi_max=chi_max1,chi_min=chi_min1),q_mag(sp,chi_max=chi_max2,chi_min=chi_min2))
 
 class Cll_mag_g(Cll_q_q):
     def __init__(self,sp,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
+        """Magnification galaxy lensing power spectrum"""
         Cll_q_q.__init__(self,sp,q_mag(sp,chi_max=chi_max1,chi_min=chi_min1),q_num(sp,chi_max=chi_max2,chi_min=chi_min2))
 
 class Cll_sh_g(Cll_q_q):
     def __init__(self,sp,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
+        """Shear galaxy lensing power spectrum"""
         Cll_q_q.__init__(self,sp,q_shear(sp,chi_max=chi_max1,chi_min=chi_min1),q_num(sp,chi_max=chi_max2,chi_min=chi_min2),corr_param=sp.r_corr())
+
+
 #class Cll_q_q_nolimber(Cll_q_q):
 #    def __init__(self,sp,q1s,q2s,corr_param=np.array([])):
 #        integrand1 = np.zeros((sp.n_z,sp.n_l))
@@ -300,8 +242,8 @@ class Cll_sh_g(Cll_q_q):
 #            window_int1 = np.zeros((sp.n_z,sp.n_l))
 #        #    window_int2 = np.zeros((sp.n_z,sp.n_l))
 #            for j in xrange(0,sp.n_z):
-#                window_int1[j] = q1s.qs[j]/np.sqrt(sp.chis[j])*sp.jv(sp.ls+0.5,(sp.ls+0.5)/sp.chis[i]*sp.chis[j])
-#         #       window_int2[j] = q2s.qs[j]/np.sqrt(sp.chis[j])*sp.jv(sp.ls+0.5,(sp.ls+0.5)/sp.chis[i]*sp.chis[j])
+#                window_int1[j] = q1s.qs[j]/np.sqrt(sp.chis[j])*spp.jv(sp.ls+0.5,(sp.ls+0.5)/sp.chis[i]*sp.chis[j])
+#         #       window_int2[j] = q2s.qs[j]/np.sqrt(sp.chis[j])*spp.jv(sp.ls+0.5,(sp.ls+0.5)/sp.chis[i]*sp.chis[j])
 #            integrand1[i] = np.trapz(window_int1,sp.chis,axis=0)
 #         #   integrand2[i] = np.trapz(window_int2,sp.chis,axis=0)
 #            integrand_total[i] = integrand1[i]*integrand1[i]*sp.p_dd_use[:,i]*(sp.ls+0.5)**2/sp.chis[i]**3
@@ -354,7 +296,9 @@ if __name__=='__main__':
         #P_a = d[:,1]
         #k_a,P_a = cpow.camb_pow(C.cosmology)
         P_a = mps.MatterPower(C)
+        C.P_lin=P_a
         k_a = P_a.k
+        C.k = k_a
        # P_a = hf.halofitPk(k_a,C=C).D2_L(k_a,0)
         omega_s=np.pi/(3.*np.sqrt(2.))
       
@@ -382,34 +326,33 @@ if __name__=='__main__':
             ax.legend(['Linear','Halofit','1 loop fpt'],loc=3)
             plt.grid()
             plt.show()
-        
         if do_power_response2:
             ax = plt.subplot(111)
-            sp_dch2 = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit',P_in=P_a,param_vary='Omegamh2',mode='dc_dpar') 
-            sp1 = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit',P_in=P_a,param_vary='Omegamh2',mode='power') 
+            #sp_dch2 = ShearPower(C,zs,ls,omega_s,pmodel='halofit',param_vary='Omegamh2',mode='dc_dpar') 
+            #sp1 = ShearPower(C,zs,ls,omega_s,pmodel='halofit',param_vary='Omegamh2',mode='power') 
             chi_min = C.D_comov(0.)
             chi_max = C.D_comov(0.9)
-            dc_ss_dch2 = Cll_sh_sh(sp_dch2,chi_max,chi_max,chi_min,chi_min).Cll()
-            q1 = q_shear(sp1,chi_min,chi_max)
-            ax.loglog(ls,np.abs(dc_ss_dch2))
+            #dc_ss_dch2 = Cll_sh_sh(sp_dch2,chi_max,chi_max,chi_min,chi_min).Cll()
+            #q1 = q_shear(sp1,chi_min,chi_max)
+            #ax.loglog(ls,np.abs(dc_ss_dch2))
             plt.show()
         if do_power_response3:
             ax = plt.subplot(111)
-            #sp_dmh2 = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit',P_in=P_a,param_vary='Omegamh2',mode='dc_dpar') 
-            #sp_dbh2 = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit',P_in=P_a,param_vary='Omegabh2',mode='dc_dpar') 
-            sp_dlh2 = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit',P_in=P_a,param_vary='OmegaLh2',mode='dc_dpar') 
-            #sp_dns = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit',P_in=P_a,param_vary='ns',mode='dc_dpar') 
-            sp_dLogAs = shear_power(k_a,C,zs,ls,omega_s,pmodel='halofit',P_in=P_a,param_vary='LogAs',mode='dc_dpar') 
+            #sp_dmh2 = ShearPower(C,zs,ls,omega_s,pmodel='halofit',param_vary='Omegamh2',mode='dc_dpar') 
+            #sp_dbh2 = ShearPower(C,zs,ls,omega_s,pmodel='halofit',param_vary='Omegabh2',mode='dc_dpar') 
+            #sp_dlh2 = ShearPower(C,zs,ls,omega_s,pmodel='halofit',param_vary='OmegaLh2',mode='dc_dpar') 
+            #sp_dns = ShearPower(C,zs,ls,omega_s,pmodel='halofit',param_vary='ns',mode='dc_dpar') 
+            #sp_dLogAs = ShearPower(C,zs,ls,omega_s,pmodel='halofit',param_vary='LogAs',mode='dc_dpar') 
             #dc_ss_dmh2 = Cll_sh_sh(sp_dmh2).Cll()  
             #dc_ss_dbh2 = Cll_sh_sh(sp_dbh2).Cll()  
-            dc_ss_dlh2 = Cll_sh_sh(sp_dlh2).Cll()  
+            #dc_ss_dlh2 = Cll_sh_sh(sp_dlh2).Cll()  
             #dc_ss_dns = Cll_sh_sh(sp_dns).Cll()  
-            dc_ss_dLogAs = Cll_sh_sh(sp_dLogAs).Cll()  
+            #dc_ss_dLogAs = Cll_sh_sh(sp_dLogAs).Cll()  
             #ax.loglog(ls,np.abs(dc_ss_dmh2))
             #ax.loglog(ls,np.abs(dc_ss_dbh2))
-            ax.loglog(ls,np.abs(dc_ss_dlh2))
+            #ax.loglog(ls,np.abs(dc_ss_dlh2))
             #ax.loglog(ls,np.abs(dc_ss_dns))
-            ax.loglog(ls,np.abs(dc_ss_dLogAs))
+            #ax.loglog(ls,np.abs(dc_ss_dLogAs))
             #dc_ss_dLogAs is nearly identical to dc_ss_dlh2, chris says it is not surprising unless possibly if they are exactly identical
             #they do look to be approximately numericaly identical
             plt.show()

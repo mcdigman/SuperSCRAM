@@ -13,6 +13,8 @@ if __name__=='__main__':
     C=CosmoPie(cosmology=defaults.cosmology)
     P = mps.MatterPower(C)
     k = P.k
+    C.k=k
+    C.P_lin = P
     
 
     Theta1=[np.pi/4.,5.*np.pi/16.]
@@ -29,7 +31,7 @@ if __name__=='__main__':
     z_fine = np.arange(0.1,2.0,0.01)
     len_params = defaults.lensing_params
     len_params['sigma'] = 0.1
-    sp1 = sp.shear_power(k,C,z_fine,ls,omega_s=omega_s,pmodel='halofit',P_in=P,params=len_params,mode='dc_ddelta')
+    sp1 = sp.ShearPower(C,z_fine,ls,omega_s=omega_s,pmodel='halofit',params=len_params,mode='dc_ddelta')
     import matplotlib.pyplot as plt
     ax = plt.subplot(111)
     plt.grid()

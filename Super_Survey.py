@@ -24,15 +24,15 @@ class super_survey:
     ''' This class holds and returns information for all surveys
     ''' 
     def __init__(self, surveys_sw, surveys_lw, basis,C,get_a=False,do_mitigated=True,do_unmitigated=True):
-    
-      
-        '''
-        1) surveys is an array containing the informaiton for all the surveys.
-        2) r_max is the maximum radial super mode 
-        3) l angular super modes
-        4) cosmology is the comological pars etc. 
-        ''' 
-                         
+        """master class for mitigation analysis
+            inputs:
+                surveys_sw: an array of SWSurveys
+                surveys_lw: an array of LWSurveys (different mitigations)
+                basis: an LWBasis object
+                C: a CosmoPie object
+                get_a: get (v.T).C_lw.v where v=\frac{\partial\bar{\delta}}{\delta_\alpha}
+                do_mitigated: if False don't get mitigated covariances
+                do_unmitigate: if False don't get unmitigated covariances"""    
         t1=time()
 
         self.get_a = get_a
@@ -43,9 +43,6 @@ class super_survey:
         self.surveys_sw = surveys_sw
         self.N_surveys_sw=surveys_sw.size
         self.N_surveys_lw=surveys_lw.size
-        #self.geo1_lw=surveys_lw[0]['geo1']     
-        #self.geo2_lw=surveys_lw[0]['geo2']     
-        #self.zs_lw=surveys_lw[0]['zs']
         print'Super_Survey: this is the number of surveys', self.N_surveys_sw, self.N_surveys_lw
            
         self.C=C
@@ -54,7 +51,6 @@ class super_survey:
         self.basis = basis 
         self.N_O_I=0
         self.N_O_a=0   
-        #self.O_I=np.array([], dtype=object)
 
         #self.O_a=np.array([], dtype=object)
         for i in xrange(self.N_surveys_sw): 
@@ -64,25 +60,13 @@ class super_survey:
             self.N_O_a=self.N_O_a + surveys_lw[i].get_N_O_a()
               
         print('Super_Survey: there are '+str(self.N_O_I)+' short wavelength and '+str(self.N_O_a)+' long wavelength observables')
-        #self.O_a_data=self.get_O_a()
-        #self.O_I_data=self.get_O_I(k,P_lin)
-        #self.O_I_data = self.get_O_I_all()
-        #self.F_0 = self.basis.get_fisher()
 
         #TODO support multiple sw surveys with MultiFisher
         de_prior_params = defaults.prior_fisher_params
         self.multi_f = mf.MultiFisher(basis,surveys_sw[0],surveys_lw,prior_params=de_prior_params)
 
-#        if self.do_mitigated:
-#            #self.cov_mit,self.a_mit=self.get_SSC_covar(mitigation=True)     
-#            #self.covs_sw,self.a_vals=self.get_SSC_covar(mitigation=True)     
-#            self.covs_mit = self.multi_f.get_fisher(mf.f_spec_mit,mf.f_return_sw_par)
-#            self.covs_no_mit = self.multi_f.get_fisher(mf.f_spec_no_mit,mf.f_return_sw_par)
-#            self.a_vals = self.multi_f.get_a_lw()
-#            self.covs_sw = np.array([self.covs_no_mit[1],self.covs_mit[1]])
-#            #self.cov_no_mit,self.a_no_mit=self.get_SSC_covar(mitigation=False)     
         self.f_set_nopriors = self.multi_f.get_fisher_set(include_priors=False)
-        #self.f_set = self.multi_f.get_fisher_set(include_priors=True)
+        self.f_set = self.multi_f.get_fisher_set(include_priors=True)
         self.eig_set = self.multi_f.get_eig_set(self.f_set_nopriors)
         self.eig_set_ssc = self.multi_f.get_eig_set(self.f_set_nopriors,ssc_metric=True)
         #TODO get this before changing shape in multi_fisher
@@ -91,93 +75,14 @@ class super_survey:
             print "Super_Survey: mitigated run gave a="+str(self.a_vals)
         else:
             self.a_vals = np.zeros(2)
-#        elif self.do_unmitigated:
-#            #self.covs_sw,self.a_vals=self.get_SSC_covar(mitigation=False)     
-#            print "Super_Survey: unmitigated run gave a="+str(self.a_vals)
-#        else:
-#            self.covs_sw=np.array([],dtype=object)
-#            self.a_vals = np.array([],dtype=object)
-
-        #self.covs_params = self.surveys_sw[0].get_cov_tot_pars(self.covs_sw[0])
-        #self.covs_params = np.array([self.covs_no_mit[2],self.covs_mit[2]])
-        #if self.do_mitigated:
-         #   self.c_mit_params = self.surveys_sw[0].get_cov_tot_pars(self.cov_mit[0])
-            #self.c_no_mit_params = self.surveys_sw[0].get_cov_tot_pars(self.cov_no_mit[0])
-        #elif self.do_unmitigated:
-            #self.c_no_mit_params = self.surveys_sw[0].get_cov_tot_pars(self.cov_no_mit[0])
-            #self.f_no_mit = fm.FisherMatrix(self.cov_no_mit[0].get_total_covar(),input_type=fm.REP_COVAR,fix_input=False)
-            #self.f_no_mit_params = self.surveys_sw[0].get_fisher_pars(self.f_no_mit) 
-            #self.f_mit = fm.FisherMatrix(self.cov_mit[0].get_total_covar(),input_type=fm.REP_COVAR,fix_input=False)
-            #self.f_mit_params = self.surveys_sw[0].get_fisher_pars(self.f_mit) 
-        #self.covs_g_pars = self.surveys_sw[0].get_cov_tot_pars(self.covs_sw[0],gaussian_only=True)
-        #self.covs_g = self.multi_f.get_fisher(mf.f_spec_g,mf.f_return_par)
-        #self.covs_g_pars = self.covs_g[2] 
-        #self.f_gaussian = fm.FisherMatrix(self.cov_no_mit[0].get_gaussian_covar(),input_type=fm.REP_COVAR,fix_input=True)
-        #self.f_gaussian_params = self.surveys_sw[0].get_fisher_pars(self.f_gaussian)
 
         t2=time()
         print 'Super_Survey: all done'
         print 'Super_Survey: run time', t2-t1
      
      
-#    def get_SSC_covar(self,mitigation=True):
-#         
-#        if mitigation:
-#            print "Super_Survey: getting SSC covar with mitigation"
-#            F_loc = copy.deepcopy(self.multi_f.get_fisher(mf.f_spec_no_mit,mf.f_return_lw))
-#            #F_loc = self.basis.get_fisher(allow_caching=True)
-#            for i in xrange(0,self.N_surveys_lw):
-#                self.surveys_lw[i].fisher_accumulate(F_loc)
-#            F_loc.switch_rep(fm.REP_CHOL)
-#        else:
-#            F_loc = self.multi_f.get_fisher(mf.f_spec_no_mit,mf.f_return_lw)
-#            print "Super_Survey: getting SSC covar without mitigation"
-#
-#        Cov_SSC = np.zeros(self.N_surveys_sw,dtype=object) 
-#        a_SSC = np.zeros((self.N_surveys_sw,2),dtype=object) 
-#
-#        for i in xrange(0,self.N_surveys_sw):
-#            survey=self.surveys_sw[i]
-#            if mitigation:
-#                Cov_SSC[i] = survey.get_covars(np.array([self.multi_f.get_fisher(mf.f_spec_no_mit,f_return_lw),SS.multi_f.get_fisher(mf.f_spec_mit,f_return_lw)]),self.basis)
-#            else:
-#                Cov_SSC[i] = survey.get_covars(np.array([self.multi_f.get_fisher(mf.f_spec_no_mit,mf.f_return_lw),None]),self.basis)
-#            
-#            if self.get_a:
-#                T=self.basis.D_delta_bar_D_delta_alpha(survey.geo,tomography=True)[0]
-#                a_SSC[i,0]=self.multi_f.get_fisher(mf.f_spec_no_mit,mf.f_return_lw),None]).contract_covar(T,T,identical_inputs=True)
-#                a_SSC[i,1]=F_loc.contract_covar(T,T,identical_inputs=True)
-#                print "Super_Survey: a is "+str(a_SSC[i])+" for survey #"+str(i)
-#        self.F_fin = F_loc
-#        return Cov_SSC,a_SSC
-    
-#    def get_O_a(self):
-#        D_O_a=np.zeros(self.N_O_a,dtype=object)
-##        print 'Super_Survey: I have this many long wavelength observables', self.N_O_a 
-#        for i in xrange(self.N_O_a):
-#            O_a=self.O_a[i]
-#            for key in O_a:
-#                  
-#                if key=='number density':
-#                    data=O_a['number density']
-#                    n_obs=np.array([data[0],data[1]])
-#                    mass=data[2]
-#                    print n_obs, mass
-#                    X=DNumberDensityObservable(self.surveys_lw[0],defaults.dn_params,'lw1',self.C,self.basis,defaults.nz_params)
-#                    D_O_a[i] = X.Fisher_alpha_beta()
-#                    print "Super_Survey: min D_O_a element for lw observable #"+str(i)+": "+str(np.min(D_O_a[i][0]))
-#                    print "Super_Survey: D_O_a for lw observable #"+str(i)+": ",D_O_a[i][0]
-#        return D_O_a  
-
-#    def get_O_I_all(self):
-#        O_I_list = np.zeros(self.N_O_I,dtype=object)
-#        N_O_I = 0
-#        for i in xrange(0,self.N_surveys_sw):
-#            survey = self.surveys_sw[i]
-#            N_O_I_survey = survey.get_N_O_I()
-#            O_I_list[N_O_I:N_O_I+N_O_I_survey] = survey.get_O_I_list()
-#        return O_I_list
 def get_ellipse_specs(covs,dchi2=2.3):
+    """Get the widths and angles for plotting covariance ellipses from a covariance matrix covs, with width dchi2"""
     a_s = np.zeros_like(covs)
     b_s = np.zeros_like(covs)
     #dchi2 = 2.3
@@ -275,7 +180,7 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
 
     plt.subplots_adjust(wspace=0.,hspace=0.)
     plt.show()
-      
+     #TODO add correlation matrix functionality 
 if __name__=="__main__":
     t1 = time()
     #TODO make sure input z cannot exceed z_max in geo
@@ -290,13 +195,14 @@ if __name__=="__main__":
     camb_params['kmax'] = 10.
     camb_params['npoints'] = 1000
     cosmo_fid = defaults.cosmology_jdem.copy()
+    cosmo_fid['w']=-1.
     cosmo_fid['w0'] = cosmo_fid['w']
     cosmo_fid['wa'] = 0.
-    cosmo_fid['de_model'] = 'constant_w'
+    cosmo_fid['de_model'] = 'w0wa'
     if cosmo_fid['de_model'] == 'jdem':
         for i in xrange(0,36):
-            cosmo_fid['ws36_'+str(i)] = -1.
-
+            cosmo_fid['ws36_'+str(i)] = cosmo_fid['w']
+    
     C=cp.CosmoPie(cosmology=cosmo_fid,p_space='jdem',camb_params=camb_params)
     #C=cp.CosmoPie(cosmology=defaults.cosmology,p_space='basic',needs_power=True)
     #k,P=C.get_P_lin()
@@ -425,18 +331,18 @@ if __name__=="__main__":
     #geos = np.array([geo1])
     l_lw=np.arange(0,30)
     n_zeros=49
-    k_cut = 0.005
-    #k_cut = 0.016
+    #k_cut = 0.005
+    k_cut = 0.016
     #k_cut = 0.022
             
     basis=SphBasisK(r_max,C,k_cut,l_ceil=100)
 
-    survey_3 = LWSurvey(geos,'lw_survey1',basis,C=C,ls = l_lw,params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params)
+    survey_3 = LWSurvey(geos,'lw_survey1',basis,C=C,params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params)
     surveys_lw=np.array([survey_3])
      
      
     print 'main: this is r_max: '+str(r_max)
-     
+    #TODO do not need basis as an argument 
     SS=super_survey(surveys_sw, surveys_lw,basis,C=C,get_a=False,do_unmitigated=True,do_mitigated=True)
 
     t2 = time()
@@ -521,7 +427,7 @@ if __name__=="__main__":
     #v= SS.surveys_sw[0].get_dO_I_dpar_array()
     #eig_nm = SS.cov_no_mit[0].get_SS_eig_param(v)
     #eig_m = SS.cov_mit[0].get_SS_eig_param(v)
-    ellipse_plot_setup = False
+    ellipse_plot_setup = True
     if ellipse_plot_setup:
         no_mit_color = np.array([1.,0.,0.])
         mit_color = np.array([0.,1.,0.])

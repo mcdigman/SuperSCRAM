@@ -1,7 +1,7 @@
 import numpy as np
 from cosmopie import CosmoPie
 from scipy.integrate import cumtrapz,trapz
-from shear_power import shear_power
+from shear_power import ShearPower
 from shear_power import Cll_q_q
 import defaults
 from lensing_weight import q_shear
@@ -147,6 +147,8 @@ if __name__ == '__main__':
     #k_in,P_in=camb_pow(defaults.cosmology_cosmolike,camb_params=camb_params)
     P_in = mps.MatterPower(C)
     k_in =P_in.k
+    C.k = k_in
+    C.P_lin = P_in
 
     import matplotlib.pyplot as plt
     len_params = defaults.lensing_params.copy()
@@ -154,7 +156,7 @@ if __name__ == '__main__':
     len_params['n_gal'] = n_gal_cosmo
     len_params['sigma2_e'] = sigma_e_cosmo**2
     
-    sp = shear_power(k_in,C,z_fine,l_mids,fsky_cosmo,pmodel='halofit',mode='power',P_in=P_in,ps=n_z,params=len_params)
+    sp = ShearPower(C,z_fine,l_mids,fsky_cosmo,pmodel='halofit',mode='power',ps=n_z,params=len_params)
     qs = np.zeros(tomo_bins_cosmo,dtype=object)
     for i in xrange(qs.size):
         qs[i] = q_shear(sp,chi_bins[i,0],chi_bins[i,1])

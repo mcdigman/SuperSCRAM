@@ -23,15 +23,15 @@ def dp_ddelta(k_a,P_a,zbar,C,pmodel='linear',epsilon=0.0001):
     elif pmodel=='halofit':
         if isinstance(zbar,np.ndarray) and zbar.size>1:
             pza = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=1.)
-            pzb = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=(1.+epsilon/C.sigma8)**2)
+            pzb = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=(1.+epsilon/C.get_sigma8())**2)
             dpdk = RectBivariateSpline(k_a,zbar,pza,kx=2,ky=1)(k_a,zbar,dx=1) 
-            dp = 13./21.*C.sigma8*(pzb-pza)/epsilon+pza-1./3.*(k_a*dpdk.T).T
+            dp = 13./21.*C.get_sigma8()*(pzb-pza)/epsilon+pza-1./3.*(k_a*dpdk.T).T
         else:
             #TODO should really be central
             pza = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=1.)[:,0]
-            pzb = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=(1.+epsilon/C.sigma8)**2)[:,0]
+            pzb = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=(1.+epsilon/C.get_sigma8())**2)[:,0]
             dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2,k=1).derivative(1))(k_a) 
-            dp = 13./21.*C.sigma8*(pzb-pza)/epsilon+pza-1./3.*k_a*dpdk
+            dp = 13./21.*C.get_sigma8()*(pzb-pza)/epsilon+pza-1./3.*k_a*dpdk
     elif pmodel=='fastpt':
         if isinstance(zbar,np.ndarray) and zbar.size>1:
             pza,one_loop = P_a.get_matter_power(zbar,pmodel='fastpt',get_one_loop=True)

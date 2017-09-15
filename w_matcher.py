@@ -58,6 +58,7 @@ class WMatcher:
     #accurate to within numerical precision
     #match effective constant w as in casarini paper
     def match_w(self,C_in,z_match):
+        z_match=np.asanyarray(z_match)
         a_match = 1./(1.+z_match)
         E_in = C_in.Ez(self.zs)    
         integ_E_in = cumtrapz(1./(self.a_s**2*E_in)[::-1],self.a_s[::-1],initial=0.)
@@ -176,11 +177,11 @@ if __name__=='__main__':
         w_w0wa = wm.match_w(C_match_w0wa,zs)
         w_jdem = wm.match_w(C_match_jdem,zs)
 
-        print "rms discrepancy w0wa and jdem="+str(np.linalg.norm(w_w0wa-w_jdem))
+        print "rms discrepancy w0wa and jdem="+str(np.linalg.norm(w_w0wa-w_jdem)/w_jdem.size)
         #current agreement ~0.0627 is reasonable given imperfect approximation of w0wa
         #depends on setting of default value for jdem at end
 
-    do_convergence_test_w0wa = True
+    do_convergence_test_w0wa = False
     if do_convergence_test_w0wa:
         cosmo_match_w0wa = cosmo_start.copy()
         cosmo_match_w0wa['de_model'] = 'w0wa'
@@ -207,12 +208,12 @@ if __name__=='__main__':
         w_w0wa_1 = wm_1.match_w(C_match_w0wa,zs)
         w_w0wa_2 = wm_2.match_w(C_match_w0wa,zs)
         w_w0wa_3 = wm_3.match_w(C_match_w0wa,zs)
-        print "rms discrepancy w0wa_1 and w0wa_2="+str(np.linalg.norm(w_w0wa_1-w_w0wa_2))
-        print "rms % discrepancy w0wa_1 and w0wa_2="+str(np.linalg.norm((w_w0wa_1-w_w0wa_2)/w_w0wa_2))
-        print "rms discrepancy w0wa_1 and w0wa_3="+str(np.linalg.norm(w_w0wa_1-w_w0wa_3))
-        print "rms % discrepancy w0wa_1 and w0wa_3="+str(np.linalg.norm((w_w0wa_1-w_w0wa_3)/w_w0wa_3))
+        print "rms discrepancy w0wa_1 and w0wa_2="+str(np.linalg.norm(w_w0wa_1-w_w0wa_2)/w_w0wa_1.size)
+        print "rms % discrepancy w0wa_1 and w0wa_2="+str(np.linalg.norm((w_w0wa_1-w_w0wa_2)/w_w0wa_2)/w_w0wa_1.size)
+        print "rms discrepancy w0wa_1 and w0wa_3="+str(np.linalg.norm(w_w0wa_1-w_w0wa_3)/w_w0wa_1.size)
+        print "rms % discrepancy w0wa_1 and w0wa_3="+str(np.linalg.norm((w_w0wa_1-w_w0wa_3)/w_w0wa_3)/w_w0wa_1.size)
 
-    do_convergence_test_jdem = True
+    do_convergence_test_jdem = False
     if do_convergence_test_jdem:
         cosmo_match_jdem = cosmo_start.copy()
         cosmo_match_jdem['de_model'] = 'jdem'
@@ -245,10 +246,10 @@ if __name__=='__main__':
         w_jdem_1 = wm_1.match_w(C_match_jdem,zs)
         w_jdem_2 = wm_2.match_w(C_match_jdem,zs)
         w_jdem_3 = wm_3.match_w(C_match_jdem,zs)
-        print "rms discrepancy jdem_1 and jdem_2="+str(np.linalg.norm(w_jdem_1-w_jdem_2))
-        print "mean absolute % discrepancy jdem_1 jdem_2="+str(np.average(np.abs((w_jdem_1-w_jdem_2)/w_jdem_1)*100.))
-        print "rms discrepancy jdem_1 and jdem_3="+str(np.linalg.norm(w_jdem_1-w_jdem_3))
-        print "mean absolute % discrepancy jdem_1 jdem_3="+str(np.average(np.abs((w_jdem_1-w_jdem_3)/w_jdem_1)*100.))
+        print "rms discrepancy jdem_1 and jdem_2="+str(np.linalg.norm(w_jdem_1-w_jdem_2)/w_jdem_1.size)
+        print "mean absolute % discrepancy jdem_1 jdem_2="+str(np.average(np.abs((w_jdem_1-w_jdem_2)/w_jdem_1)/w_jdem_1.size*100.))
+        print "rms discrepancy jdem_1 and jdem_3="+str(np.linalg.norm(w_jdem_1-w_jdem_3)/w_jdem_1.size)
+        print "mean absolute % discrepancy jdem_1 jdem_3="+str(np.average(np.abs((w_jdem_1-w_jdem_3)/w_jdem_1)/w_jdem_1.size*100.))
 
     do_match_casarini=False
     if do_match_casarini:

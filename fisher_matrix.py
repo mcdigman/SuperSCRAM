@@ -1,20 +1,32 @@
+"""
+General class for Fisher matrix and covariance matrix manipulations
+"""
 import numpy as np
-import scipy as sp
 import scipy.linalg as spl
 from algebra_utils import cholesky_inv_contract,get_inv_cholesky,invert_triangular,cholesky_inplace,get_cholesky_inv,cholesky_contract
 from warnings import warn
-import traceback
-import sys
+
+#codes for different possible internal states of fisher matrix
+#Fisher matrix
 REP_FISHER = 0
+#cholesky decomposition of covariance matrix
 REP_CHOL = 1
+#inverse of cholesky decomposition of covariance matrix
 REP_CHOL_INV = 2 
+#covariance matrix
 REP_COVAR = 3
 
 #things to watch out for: the output matrix may mutate if it was the internal matrix
 
 class FisherMatrix:
     def __init__(self,input_matrix,input_type,initial_state = None,fix_input=False,silent=True):
-        
+        """create a fisher matrix object
+            input_matrix: an input matrix
+            input_type: a code for matrix type of input_matrix, options REP_FISHER, REP_CHOL, REP_CHOL_INV, or REP_COVAR 
+            initial_state: code for starting state, defaults to input_type
+            fix_input: do not mutate input_matrix (ie make a copy)
+            silent: if True, less print statements
+        """
         self.silent=silent
         self.fix_input=fix_input
         #default initial state is not to change
@@ -35,8 +47,9 @@ class FisherMatrix:
         if not self.silent:
             print("FisherMatrix "+str(id(self))+" created fisher matrix")
     
-    #Switches the internal representation of the fisher matrix
     def switch_rep(self,new_state):
+        """Switches the internal representation of the fisher matrix to new_state
+            may mutate internal_mat to save memory"""
         old_state = self.internal_state
         if not self.silent:
             print "FisherMatrix "+str(id(self))+": changing internal state from "+str(self.internal_state)+" to "+str(new_state)
@@ -57,19 +70,19 @@ class FisherMatrix:
         if not self.silent:
             print "FisherMatrix "+str(id(self))+": internal state changed from "+str(self.internal_state)+" to "+str(new_state)
 
-    #Add a fisher matrix (ie a perturbation) to the internal fisher matrix
     def add_fisher(self,F_n):
+        """Add a fisher matrix (ie a perturbation) to the internal fisher matrix"""
         if not self.silent:
             print "FisherMatrix ",id(self)," added fisher matrix"
-        #internal state must be fisher to add right now: could possibly be changed
+        #internal state must be fisher to add right now: could possibly be changed back
         self.switch_rep(REP_FISHER)
         if F_n.__class__ is FisherMatrix:
             self.internal_mat += F_n.get_fisher(copy_output=False)
         else:
             self.internal_mat += F_n
 
-    #add a covariance matrix, C_n is numpy array  or FisherMatrix object
     def add_covar(self,C_n):
+        """add a covariance matrix, C_n is numpy array  or FisherMatrix object"""
         if not self.silent:
             print "FisherMatrix ",id(self)," added covariance matrix"
         #internal state must be covar to add right now: could possibly be changed
@@ -83,6 +96,10 @@ class FisherMatrix:
     #copy_output=True should guarantee the output will never be mutated by FisherMatrix (ie copy the output matrix if necessary)
     #copy_output=False will not copy the output matrix in general, which will be more memory efficient but might cause problems if the user is not careful
     def get_covar(self,inplace=False,copy_output=False):
+        """get covariance matrix
+                inputs:
+                    inplace: if True, will mutate internal_mat to be the covariance matrix    
+                    copy_output: whether to copy the output matrix, to be safe from mutating internal_mat later"""
         copy_safe = False
         if not self.silent:
             print("FisherMatrix "+str(id(self))+": getting covariance")
@@ -99,8 +116,11 @@ class FisherMatrix:
             result = np.rot90(spl.lapack.dlauum(np.rot90(chol_cov,2),lower=False,overwrite_c=inplace)[0],2)
             #dlauum only gives 1 triangle of the result because symmetric, so mirror it
             result += result.T-np.diagflat(np.diag(result))
-            #result = np.dot(chol_cov,chol_cov.T)
-            #result = (result+result.T)/2.
+
+        #make sure guaranteed to change internal_mat if inplace was true
+        if inplace:
+            self.internal_mat = result
+            self.internal_state = REP_COVAR
 
         #TODO protect internal_mat/allow override
         if copy_output and not copy_safe:
@@ -108,20 +128,22 @@ class FisherMatrix:
         else: 
             return result
         
-    #for getting variance/projecting to another basis
-    def contract_covar(self,v1,v2,identical_inputs=False,return_fisher=False):
+    def contract_covar(self,v1,v2,identical_inputs=False,return_fisher=False):    
+        """calculates (v1.T).covariance.v2 for getting variance/projecting to another basis
+            inputs:
+                v1,v2: vectors with one dimension aligned with internal_mat
+                identical_inputs: if True, assume v2=v1 and ignore v2 completely
+                return_fisher: if True, return a FisherMatrix object
+        """
+
         if not self.silent:
             print "FisherMatrix "+str(id(self))+": contracting covariance"
         #result = cholesky_inv_contract(self.get_cov_cholesky().T,v1,v2,cholesky_given=True,identical_inputs=identical_inputs,lower=True)
         if  self.internal_state==REP_COVAR:
             #result = np.dot(np.dot(v1.T,self.get_covar()),v2)
             result = np.dot(spl.blas.dsymm(1.,self.get_covar(copy_output=False),v1.T,side=True,lower=True),v2)
-            
-            #TODO commented out logic does work and may be faster/better but may have trouble when matrix nearly singular
-            #althouth may just be ignoring that problem
         elif self.internal_state==REP_FISHER or self.internal_state==REP_CHOL_INV:
         #    result = np.dot(spl.solve(self.internal_mat,v1,sym_pos=True).T,v2)
-        #elif self.internal_state==REP_CHOL_INV:
             chol_inv = self.get_cov_cholesky_inv(copy_output=False)
             res1 = spl.solve_triangular(chol_inv.T,v1,lower=False)
             if identical_inputs:
@@ -141,6 +163,12 @@ class FisherMatrix:
 
     #needed for projecting to another basis
     def contract_fisher(self,v1,v2,identical_inputs=False,return_fisher=False):
+        """calculates (v1.T).Fisher matrix.v2 for getting variance/projecting to another basis
+            inputs:
+                v1,v2: vectors with one dimension aligned with internal_mat
+                identical_inputs: if True, assume v2=v1 and ignore v2 completely
+                return_fisher: if True, return a FisherMatrix object
+        """
         if not self.silent:
             print "FisherMatrix "+str(id(self))+": contracting fisher"
 
@@ -165,36 +193,42 @@ class FisherMatrix:
         else:
             return result
 
-    #project using fisher
     def project_fisher(self,v1):
+        """project using (v1.T).Fisher.v1"""
         result = self.contract_fisher(v1,v1,identical_inputs=True,return_fisher=False)
         #assert(np.all(result==result.T))
         #symmetrize to avoid accumulating numerical discrepancies
+        #TODO add option to not symmetrize, or don't do it for known safe internal states
         result = (result+result.T)/2.
         return FisherMatrix(result,input_type=REP_FISHER,initial_state=REP_FISHER,fix_input=False,silent=self.silent)
 
     #project using covar
     def project_covar(self,v1):
+        """project using (v1.T).Covariance.v1"""
         result = self.contract_covar(v1,v1,identical_inputs=True,return_fisher=False)
         #symmetrize to avoid accumulating numerical discrepancies
         result = (result+result.T)/2.
         return FisherMatrix(result,input_type=REP_COVAR,initial_state=REP_COVAR,fix_input=False,silent=self.silent)
-    #for use in sw_survey
-    #contract v with the cholesky decomposition of the covariance, L^T.v
-    #TODO maybe eliminate
+
+    #TODO unused, maybe eliminate
     def contract_chol_right(self,v):
+        """contract v with the cholesky decomposition of the covariance, L^T.v"""
         if not self.silent:
             print "FisherMatrix "+str(id(self))+": getting right chol contraction"
         return np.dot(self.get_cov_cholesky(copy_output=False).T,v)
    
-    #contract v with the inverse cholesky decomposition of the covariance, L^{-1}.v
     def contract_chol_inv_right(self,v):
+        """contract v with the inverse cholesky decomposition of the covariance, L^{-1}.v"""
         if not self.silent:
             print "FisherMatrix "+str(id(self))+": getting right chol inv contraction"
         return np.dot(self.get_cov_cholesky_inv(copy_output=False),v)
 
     #this is not actually fisher cholesky, but the cholesky decomposition of the inverse of the covariance, which is not exactly the same ie LL^T vs L^TL decompositions
     def get_cov_cholesky_inv(self,inplace=False,copy_output=False):
+        """get inverse of lower triangular cholesky decomposition of covariance
+                inputs:
+                    inplace: if True, will mutate internal_mat to be the inverse cholesky decompostion of the covariance matrix    
+                    copy_output: whether to copy the output matrix, to be safe from mutating internal_mat later"""
         copy_safe = False
         if self.internal_state==REP_CHOL_INV: 
             if not self.silent:
@@ -213,6 +247,9 @@ class FisherMatrix:
             else:
                 raise ValueError("FisherMatrix "+str(id(self))+": unrecognized internal state "+str(self.internal_state))
 
+        if inplace:
+            self.internal_mat = result
+            self.internal_state = REP_CHOL_INV
 
         if  copy_output and not copy_safe:
             return result.copy()
@@ -220,6 +257,10 @@ class FisherMatrix:
             return result
 
     def get_cov_cholesky(self,inplace=False,copy_output=False):
+        """get lower triangular cholesky decomposition of covariance
+                inputs:
+                    inplace: if True, will mutate internal_mat to be the cholesky decompostion of the covariance matrix    
+                    copy_output: whether to copy the output matrix, to be safe from mutating internal_mat later"""
         copy_safe = False
         if self.internal_state==REP_CHOL:
             if not self.silent:
@@ -248,6 +289,10 @@ class FisherMatrix:
             if not self.silent:
                 print "FisherMatrix "+str(id(self)),": found cholesky decomposition of covariance matrix, size: "+str(result.nbytes/10**6)+" megabytes"
 
+        if inplace:
+            self.internal_mat = result
+            self.internal_state = REP_CHOL
+
         #TODO default correctly on copy_output
         if copy_output and not copy_safe:
             return result.copy()
@@ -255,6 +300,10 @@ class FisherMatrix:
             return result
 
     def get_fisher(self,copy_output=False,inplace=False):
+        """get fisher matrix
+                inputs:
+                    inplace: if True, will mutate internal_mat to be the fisher matrix    
+                    copy_output: whether to copy the output matrix, to be safe from mutating internal_mat later"""
         copy_safe = False 
         if self.internal_state == REP_FISHER:
             if not self.silent:
@@ -272,14 +321,19 @@ class FisherMatrix:
             result = spl.lapack.dlauum(chol_res,lower=True,overwrite_c=inplace)[0]
             result += result.T-np.diagflat(np.diag(result))
             #result = np.dot(chol_res,chol_res.T)
+
+        if inplace:
+            self.internal_mat = result
+            self.internal_state = REP_FISHER
+
         if copy_output and not copy_safe:
             return result.copy()
         else:
             return result
-
-    #get the eigenvalues solving C^{ij}metric^{-1 ij}v=lambda v
-    #metric is itself a FisherMatrix object
+    #TODO actually gets eigensystem with u
     def get_cov_eig_metric(self,metric):
+        """get the eigensystem solving C^{ij}metric^{-1 ij}v=lambda v
+            metric is itself a FisherMatrix object"""
         metric_chol_inv = metric.get_cov_cholesky_inv(copy_output=False)
         #covar_use = self.get_covar()
         #use algebra trick with cholesky decompositions to get symmetric matrix with desired eigenvalues

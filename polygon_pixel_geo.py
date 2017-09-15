@@ -2,7 +2,6 @@ import numpy as np
 from astropy.io import fits
 import spherical_geometry.vector as sgv
 from spherical_geometry.polygon import SphericalPolygon
-import spherical_geometry.great_circle_arc as great_circle_arc
 from sph_functions import Y_r
 from numpy.core.umath_tests import inner1d
 from geo import pixel_geo,rect_geo
@@ -13,7 +12,6 @@ from cosmopie import CosmoPie
 from scipy.interpolate import SmoothBivariateSpline
 from warnings import warn
 from math import isnan
-import sys
 
 #get a healpix pixelated spherical polygon geo
 #TODO consider using sp_poly area for angular_area()
@@ -197,7 +195,7 @@ class polygon_pixel_geo(pixel_geo):
             return reconstructed
 
 
-#alternate way of computing Y_r from the way in sph_functions
+#alternate way of computing Y_r from the way in sph_functions 
 def Y_r_2(ll,mm,theta,phi,known_legendre):
     prefactor = np.sqrt((2.*ll+1.)/(4.*np.pi)*sp.misc.factorial(ll-np.abs(mm))/sp.misc.factorial(ll+np.abs(mm)))
     base = (prefactor*(-1)**mm)*known_legendre[(ll,np.abs(mm))]
@@ -207,6 +205,7 @@ def Y_r_2(ll,mm,theta,phi,known_legendre):
         return base*np.sqrt(2.)*np.cos(mm*phi)
     else:
         return base*np.sqrt(2.)*np.sin(np.abs(mm)*phi)
+
 def get_Y_r_dict(l_max,thetas,phis):
     ytable,ls,ms = get_Y_r_table(l_max,thetas,phis)
     ydict = {}
@@ -425,22 +424,21 @@ if __name__=='__main__':
     t6=time()
     print "reconstruct time: "+str(t6-t5)+"s"
     #plot the polygon if basemap is installed, do nothing if it isn't
+    import matplotlib.pyplot as plt
     if try_plot2:
         from astropy import wcs
         from astropy.io.fits import ImageHDU
-        import matplotlib.pyplot as plt
         im = ImageHDU(totals_recurse)
         w = wcs.WCS(im,naxis=1)
         w.wcs.ctype = ["HPX"]
         fig=plt.figure()
-        fig.add_subplot(111, projection=w)
+        ax = fig.add_subplot(111, projection=w)
         ax.imshow(im, origin='lower', cmap='cubehelix')
         plt.show()
      
     if try_plot and do_reconstruct:
         #try:
             from mpl_toolkits.basemap import Basemap
-            import matplotlib.pyplot as plt
             m = Basemap(projection='moll',lon_0=0)
             #m.drawparallels(np.arange(-90.,120.,30.))
             #m.drawmeridians(np.arange(0.,420.,60.))

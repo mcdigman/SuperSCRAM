@@ -1,3 +1,5 @@
+"""class for combining the different fisher and covariance matrices in the code 
+and getting results in cosmological parameter space"""
 import copy 
 import prior_fisher
 import defaults
@@ -21,11 +23,16 @@ f_return_par = {'lw':False,'sw':False,'par':True}
 f_return_sw_par = {'lw':False,'sw':True,'par':True}
 f_return_sw = {'lw':False,'sw':True,'par':False}
 f_return_lw = {'lw':True,'sw':False,'par':False}
-#master class for managing fisher matrix manipulations
 class MultiFisher:
-    #input: basis, an SphBasisK object or compatible standard
-    #input: sw_survey, ans sw_survey objects
     def __init__(self,basis,sw_survey,lw_surveys, prior_params=defaults.prior_fisher_params):
+        """
+        master class for managing fisher matrix manipulations between bases
+        inputs: 
+            basis: an LWBasis object
+            sw_survey: an SWSurvey object
+            lw_surveys: a list of LWSurvey objects to be combined into mitigation strategy
+            prior_params: params for the prior fisher matrix to use in cosmological parameter space
+        """
         self.lw_F_no_mit=basis.get_fisher()
         self.basis=basis
         self.sw_survey=sw_survey
@@ -38,16 +45,9 @@ class MultiFisher:
             self.lw_surveys[i].fisher_accumulate(self.lw_F_mit)
         self.lw_F_mit.switch_rep(fm.REP_CHOL_INV)
         self.lw_F_no_mit.switch_rep(fm.REP_CHOL_INV)
-        #prepare to project lw basis to sw basis
-        #self.dO_I_ddelta_bar_list = self.sw_survey.get_dO_I_ddelta_bar_list()
-        self.n_o = self.sw_survey.get_N_O_I()
-        #self.lw_to_sw_array =np.zeros((self.basis.get_size(),self.sw_survey.get_total_dimension()))
-        #self.d_sizes=self.sw_survey.get_dimension_list()
-        #itr=0
-        #for i in xrange(0,self.n_o):
-        #    self.lw_to_sw_array[:,itr:itr+self.d_sizes[i]] = self.basis.D_O_I_D_delta_alpha(self.sw_survey.geo,self.dO_I_ddelta_bar_list[i])
-        #    itr+=self.d_sizes[i]
 
+        #prepare to project lw basis to sw basis
+        self.n_o = self.sw_survey.get_N_O_I()
         self.lw_to_sw_array = self.basis.D_O_I_D_delta_alpha(self.sw_survey.geo,self.sw_survey.get_dO_I_ddelta_bar_array())
 
         self.n_sw = self.sw_survey.get_total_dimension()
@@ -79,7 +79,6 @@ class MultiFisher:
 #        self.par_tot_mit_no_prior = self.sw_tot_mit.project_fisher(self.sw_to_par_array) 
         
         #get prior fisher matrix
-        #TODO make possible to choose
         if self.sw_survey.C.de_model=='w0wa':
             self.fisher_priors = fm.FisherMatrix(prior_fisher.get_w0wa_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
         elif self.sw_survey.C.de_model=='constant_w':
@@ -98,18 +97,18 @@ class MultiFisher:
 #        self.par_tot_no_mit.add_fisher(self.fisher_priors)
 #        self.par_tot_mit = copy.deepcopy(self.par_tot_mit_no_prior)
 #        self.par_tot_mit.add_fisher(self.fisher_priors)
-    #get a fisher matrix as specificed by f_spec and f_return
-    #for example the following combination would return the parameter fisher matrix including lw mitigation, sw gaussian and nonguassian covariance
-    #f_spec={'lw_base':True,'lw_mit':True,'sw_g':True,'sw_ng':True,'par_prior':True}
-    #f_return = {'lw':False,'sw':False,'par':True}
     def get_fisher(self,f_spec,f_return):
+        """get a list of 3 FisherMatrix objects, [long wavelength, short wavelength, cosmological parameters]
+        inputs: 
+            f_spec: a dictionary with keys lw, sw, and par. If value at a key is False, return None instead of a FisherMatrix (to save memory)
+            f_return: specification of which long wavelength fisher, short wavelength covariance, and cosmological prior fisher matrices to include
+                for example the following combination would return the parameter fisher matrix including lw mitigation, sw gaussian and nonguassian covariance
+                f_spec={'lw_base':True,'lw_mit':True,'sw_g':True,'sw_ng':True,'par_prior':True}
+                f_return = {'lw':False,'sw':False,'par':True}
+        """
         if f_return['lw'] or f_return['sw'] or f_return['par']:
             lw_fisher = self.get_lw_fisher(f_spec)
             if f_return['sw'] or f_return['par']:
-        #        if lw_fisher is None:
-        #            fisher_from_lw=None
-        #        else:
-        #            fisher_from_lw = lw_fisher.project_covar(self.lw_to_sw_array)
                 if f_spec['lw_mit'] and f_spec['lw_base']:
                     fisher_from_lw = self.sw_f_ssc_mit 
                 elif f_spec['lw_base']:
@@ -134,8 +133,8 @@ class MultiFisher:
             results[2] = par_fisher
         return results
 
-    #get a parameter fisher matrix with a given projected sw matrix with or without priors 
     def get_par_fisher(self,f_spec,fisher_from_sw):
+        """helper for get_fisher, get a parameter fisher matrix with a given projected sw matrix with or without priors"""
         if fisher_from_sw is None:
             if f_spec['par_prior']:
                 return copy.deepcopy(self.fisher_priors)
@@ -149,8 +148,8 @@ class MultiFisher:
 
         return result
         
-    #get a lw fisher with or without mitigation
     def get_lw_fisher(self,f_spec):
+        """helper for get_fisher, get a lw fisher with or without mitigation"""
         if f_spec['lw_base'] and not f_spec['lw_mit']:
             return self.lw_F_no_mit 
         elif f_spec['lw_base'] and f_spec['lw_mit']:
@@ -160,11 +159,11 @@ class MultiFisher:
         else:
             return None
 
-    #get a sw fisher with given projected lw matrix and with or without gaussian and nongaussian components
     def get_sw_fisher(self,f_spec,fisher_from_lw):
+        """helper for get_fisher, get a sw fisher with given projected lw matrix and with or without gaussian and nongaussian components"""
         if fisher_from_lw is None:
             if f_spec['sw_g'] or f_spec['sw_ng']:
-                sw_result = fm.FisherMatrix(np.zeros((self.n_sw,self.n_sw)),input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,silent=True)
+                sw_result = fm.FisherMatrix(np.zeros((self.n_sw,self.n_sw)),input_type=fm.REP_COVAR,silent=True)
             else:
                 return None
         else:
@@ -176,6 +175,8 @@ class MultiFisher:
         return sw_result
         
     def get_fisher_set(self,include_priors=True):
+        """get a 2d array of FisherMatrix objects, 1st dimension is [gaussian, no mitigation, with mitigation], 2nd dimension is [lw,sw,par]
+            inputs: include_priors: if True, include cosmological priors in the cosmological parameter FisherMatrix objects"""
         result = np.zeros(3,dtype=object)
         if include_priors:
             result[0] = self.get_fisher(f_spec_g,f_return_sw_par)
@@ -189,6 +190,10 @@ class MultiFisher:
 
     #TODO handle caching better to avoid this logic
     def get_eig_set(self,fisher_set,ssc_metric=False):
+        """Get 2d array of eigensystems for C^{ij}metric^{-1 ij}v=lambda v with 1st dimension [no mitigation, with mitigation] 2nd dimension [sw,par]
+            inputs:
+                fisher_set: an output from get_fisher_set
+                ssc_metric: if True, use the no mitigation SSC covariance as the metric instead of the gaussian covariance"""
         result = np.zeros((2,2),dtype=object)
         f_set_par = np.zeros(3,dtype=object)
         for i in xrange(0,3):
@@ -205,6 +210,7 @@ class MultiFisher:
         return result
 
     def get_a_lw(self):
+        """get (v.T).C_lw.v where v=\frac{\partial\bar{\delta}}{\delta_\alpha} for [no mitigation, with mitigation] lw covariance matrices"""
         project_lw_a = self.basis.D_delta_bar_D_delta_alpha(self.sw_survey.geo,tomography=True)[0]
         return np.array([self.lw_F_no_mit.project_covar(project_lw_a).get_covar(),self.lw_F_mit.project_covar(project_lw_a).get_covar()])
 

@@ -14,13 +14,10 @@ class geo:
     def __init__(self,z_coarse,C,z_fine):
         self.zs = z_coarse #index of the starts of the tomography bins
         self.C = C #cosmopie
-        self.rs = np.zeros(self.zs.size) #comoving distances associated with the zs 
-        for i in xrange(0,self.zs.size):
-            self.rs[i] = self.C.D_comov(self.zs[i])
+        #comoving distances associated with the zs 
+        self.rs = self.C.D_comov(self.zs)
         self.z_fine = z_fine
-        self.r_fine = np.zeros(self.z_fine.size)
-        for i in xrange(0,self.r_fine.size):
-            self.r_fine[i] = self.C.D_comov(self.z_fine[i])
+        self.r_fine = self.C.D_comov(self.z_fine)
 
         tot_area = self.angular_area() 
         self.volumes = np.zeros(self.zs.size-1) #volume of each tomography bin
@@ -52,7 +49,7 @@ class geo:
             self.fine_indices[i,0] = self.fine_indices[i-1,1]
         self.fine_indices[-1,1] = self.z_fine.size
 
-        self.dzdr = InterpolatedUnivariateSpline(self.r_fine,self.z_fine).derivative()(self.r_fine)
+        self.dzdr = InterpolatedUnivariateSpline(self.r_fine,self.z_fine,ext=2).derivative()(self.r_fine)
         #smalles possible difference for a sum
         self.eps=np.finfo(float).eps
         

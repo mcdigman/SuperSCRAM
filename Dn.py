@@ -1,3 +1,6 @@
+"""Sample implementation of a long wavelength mitigation strategy, for the difference in galaxy number densities
+between two survey geometries, as described in the paper"""
+
 import numpy as np
 from hmf import ST_hmf
 from nz_candel import NZCandel
@@ -8,14 +11,13 @@ from warnings import warn
 
 
 class DNumberDensityObservable(LWObservable):
-    def __init__(self,geos,params,survey_id, C,basis,nz_params): 
-        
-        '''
+    def __init__(self,geos,params,survey_id, C,basis,nz_params):  
+        """
             data should hold: 
             the redshift and spatial regions 
             and the minimum masss
         
-        '''
+        """
         print("Dn: initializing") 
         min_mass = params['M_cut']
         self.variable_cut = params['variable_cut']

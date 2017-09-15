@@ -20,6 +20,7 @@ class TestCosmosisAgreement1(unittest.TestCase):
 
             C=cp.CosmoPie(cosmology=defaults.cosmology_cosmosis,p_space='overwride')
             k_in = np.loadtxt('test_inputs/proj_2/k_h.txt')*C.h
+            C.k=k_in
             zs = np.loadtxt('test_inputs/proj_2/z.txt')
             zs[0] = 10**-3
 
@@ -30,7 +31,7 @@ class TestCosmosisAgreement1(unittest.TestCase):
             params['zbar']=1.0
             params['sigma']=0.4
             params['smodel']='gaussian'
-            sp1 = sp.shear_power(k_in,C,zs,ls,omega_s=omega_s,pmodel='cosmosis',mode='power',params=params)
+            sp1 = sp.ShearPower(C,zs,ls,omega_s=omega_s, pmodel='cosmosis',mode='power',params=params)
 
             sh_pow1 = sp.Cll_sh_sh(sp1).Cll()
             sh_pow1_gg = sp.Cll_g_g(sp1).Cll()
@@ -114,6 +115,8 @@ class TestCosmosisHalofitAgreement1(unittest.TestCase):
             #k_in,P_in = camb_pow(defaults.cosmology_cosmosis)
             P_in = mps.MatterPower(C,camb_params=camb_params)
             k_in = P_in.k
+            C.k=k_in
+            C.P_lin = P_in
             zs = np.loadtxt('test_inputs/proj_2/z.txt')
             zs[0] = 10**-3
 
@@ -123,13 +126,13 @@ class TestCosmosisHalofitAgreement1(unittest.TestCase):
             params['zbar']=1.0
             params['sigma']=0.40
             params['smodel']='gaussian'
-            sp1 = sp.shear_power(k_in,C,zs,ls,omega_s=omega_s,pmodel='cosmosis',mode='power',params=params)
+            sp1 = sp.ShearPower(C,zs,ls,omega_s=omega_s,pmodel='cosmosis',mode='power',params=params)
             sh_pow1 = sp.Cll_sh_sh(sp1).Cll()
             sh_pow1_gg = sp.Cll_g_g(sp1).Cll()
             sh_pow1_sg = sp.Cll_sh_g(sp1).Cll()
             sh_pow1_mm = sp.Cll_mag_mag(sp1).Cll()
    
-            sp2 = sp.shear_power(k_in,C,zs,ls,omega_s=omega_s,P_in=P_in,pmodel='halofit',mode='power',params=params)
+            sp2 = sp.ShearPower(C,zs,ls,omega_s=omega_s,pmodel='halofit',mode='power',params=params)
             sh_pow2 = sp.Cll_sh_sh(sp2).Cll()
             sh_pow2_gg = sp.Cll_g_g(sp2).Cll()
             sh_pow2_sg = sp.Cll_sh_g(sp2).Cll()

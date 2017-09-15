@@ -9,72 +9,15 @@ import camb_power as cpow
 from warnings import warn
 import matter_power_spectrum as mps
 
-#P_a is fiducial power spectrum 
-#parameter can be H0,Omegabh2,Omegach2,Omegak,ns,sigma8,h
-#include others such as omegam, w
-#TODO need to change G_norm or does not work properly
-def dp_dpar(k_fid,zs,C,parameter,pmodel='linear',epsilon=0.0001,log_param_deriv=False,fpt=None,fpt_params=defaults.fpt_params,camb_params=defaults.camb_params,dp_params=defaults.dp_params):
-    cosmo_fid = C.cosmology.copy()
-    #print cosmo_fid
-    #skip getting sigma8 if possible because it is slow
-    if not parameter=='sigma8' and ('sigma8' not in cp.P_SPACES[cosmo_fid['p_space']]):
-        cosmo_fid['skip_sigma8'] = True
-        camb_params_use = camb_params.copy()
-        camb_params_use['force_sigma8'] = False
-    cosmo_a = get_perturbed_cosmology(cosmo_fid,parameter,epsilon,log_param_deriv=log_param_deriv)
-    #print "cosmo_a",cosmo_a
-    cosmo_b = get_perturbed_cosmology(cosmo_fid,parameter,-epsilon,log_param_deriv=log_param_deriv)
-    #print "cosmo_b",cosmo_b
-    #get perturbed linear power spectra from camb
-    k_a,P_a = cpow.camb_pow(cosmo_a,camb_params=camb_params_use) 
-    k_b,P_b = cpow.camb_pow(cosmo_b,camb_params=camb_params_use) 
-    if not np.all(k_a==k_fid) or not(np.all(k_b==k_fid)):
-        print "adapting k grid"
-        P_a = InterpolatedUnivariateSpline(k_a,P_a,k=1)(k_fid)
-        P_b = InterpolatedUnivariateSpline(k_b,P_b,k=1)(k_fid)
-    if pmodel=='linear':
-        pza = np.outer(P_a,C.G_norm(zs)**2) 
-        pzb = np.outer(P_b,C.G_norm(zs)**2) 
-    elif pmodel=='halofit':
-        halo_a = hf.halofitPk(C,k_fid,P_a)
-        halo_b = hf.halofitPk(C,k_fid,P_b)
-        #TODO make D2_NL support vector z syntax
-        pza = (2.*np.pi**2/k_fid**3*halo_a.D2_NL(k_fid,zs).T).T
-        pzb = (2.*np.pi**2/k_fid**3*halo_b.D2_NL(k_fid,zs).T).T
-    elif pmodel=='fastpt':
-        if fpt is None:
-            fpt = FASTPT.FASTPT(k_fid,fpt_params['nu'],low_extrap=fpt_params['low_extrap'],high_extrap=fpt_params['high_extrap'],n_pad=fpt_params['n_pad'])
-        #TODO maybe make fastpt support vector z if it doesn't already
-        p_lin_a = np.outer(P_a,C.G_norm(zs)**2) #TODO C needs to change properly
-        p_lin_b = np.outer(P_b,C.G_norm(zs)**2) 
-        one_loop_a = fpt.one_loop(P_a,C_window=fpt_params['C_window'])
-        one_loop_b = fpt.one_loop(P_b,C_window=fpt_params['C_window'])
-        pza = p_lin_a+np.outer(one_loop_a,C.G_norm(zs)**4)
-        pzb = p_lin_b+np.outer(one_loop_b,C.G_norm(zs)**4)
-        #pza = np.zeros_like(p_lin_a)
-        #pzb = np.zeros_like(p_lin_b)
-        #for itr in xrange(0,zs.size):
-        #    pza[:,itr] = p_lin_a[:,itr] + fpt.one_loop(p_lin_a[:,itr],C_window=fpt_params['C_window'])
-        #    pzb[:,itr] = p_lin_b[:,itr] + fpt.one_loop(p_lin_b[:,itr],C_window=fpt_params['C_window'])            
-    else:
-        raise ValueError('invalid pmodel option \''+str(pmodel)+'\'')
-
-    if dp_params['use_k3p']:
-        pza = k_a**3*pza/(2.*np.pi**2)
-        pzb = k_b**3*pzb/(2.*np.pi**2)
-
-    #TODO I'm not sure if interpolation like this is correct here. 
-    if dp_params['log_deriv_direct']:
-        dp = (np.log(pza)-np.log(pzb))/(2.*epsilon)
-#    elif dp_params['log_deriv_indirect']:
-#        dp = (pza-pzb)/(2.*epsilon*P_fid)
-    else:
-        dp = (pza-pzb)/(2.*epsilon)
-    return dp,pza,pzb 
-    
-#get set of perturbed cosmopies (including camb linear power spectrum) for getting derivatives, assuming using central finite difference method
-#TODO sigma8 handling is a mess
-def get_perturbed_cosmopies(C_fid,pars,epsilons,log_param_derivs=np.array([])):
+def get_perturbed_cosmopies(C_fid,pars,epsilons,log_param_derivs=np.array([],dtype=bool)):
+    """get set of 2 perturbed cosmopies, above and below (including camb linear power spectrum) for getting partial derivatives
+        using central finite difference method 
+        inputs:
+            C_fid: the fiducial CosmoPie
+            pars: an array of the names of parameters to change
+            epsilons: an array of step sizes correspondings to pars
+            log_param_derivs: if True for a given element of pars will do log derivative in the parameter
+    """
     cosmo_fid = C_fid.cosmology.copy()
     P_fid = C_fid.P_lin
     k_fid = C_fid.k
@@ -84,35 +27,23 @@ def get_perturbed_cosmopies(C_fid,pars,epsilons,log_param_derivs=np.array([])):
     #if log_param_derivs[i] == True, will do log deriv
     if not log_param_derivs.size==pars.size:
         log_param_derivs = np.zeros(pars.size,dtype=bool)
-    if epsilons is None:
-        epsilons = np.zeros(pars.size)+0.0001
     
     Cs_pert = np.zeros((pars.size,2),dtype=object) 
 
-    #de_model = cosmo_fid.get('de_model')
-    #wmatch = C_fid.wmatch
-
     for i in xrange(0,pars.size):
-
-        #skip evaulating sigma8 unless now unless it is necessary (it is slow), will get it later 
-        if (not pars[i]=='sigma8') and ('sigma8' not in cp.P_SPACES[cosmo_fid['p_space']]):
-            cosmo_fid['skip_sigma8'] = True
-            camb_params['force_sigma8'] = False
-            camb_params['return_sigma8'] = True
-
         cosmo_a = get_perturbed_cosmology(cosmo_fid,pars[i],epsilons[i],log_param_derivs[i])
         cosmo_b = get_perturbed_cosmology(cosmo_fid,pars[i],-epsilons[i],log_param_derivs[i])
 
         #set cosmopie power spectrum appropriately
         #avoid unnecessarily recomputing growth factors if they won't change. If growth factors don't change neither will w matching
         if pars[i] in cp.GROW_SAFE:
-            C_a = cp.CosmoPie(cosmo_a,p_space=cosmo_fid['p_space'],safe_sigma8=True,G_safe=True,G_in=C_fid.G_p)
-            C_b = cp.CosmoPie(cosmo_b,p_space=cosmo_fid['p_space'],safe_sigma8=True,G_safe=True,G_in=C_fid.G_p)
+            C_a = cp.CosmoPie(cosmo_a,p_space=cosmo_fid['p_space'],G_safe=True,G_in=C_fid.G_p)
+            C_b = cp.CosmoPie(cosmo_b,p_space=cosmo_fid['p_space'],G_safe=True,G_in=C_fid.G_p)
             P_a = mps.MatterPower(C_a,k_in=k_fid,camb_params=camb_params,wm_in=P_fid.wm,wm_safe=True,de_perturbative=True)
             P_b = mps.MatterPower(C_b,k_in=k_fid,camb_params=camb_params,wm_in=P_fid.wm,wm_safe=True,de_perturbative=True)
         else:
-            C_a = cp.CosmoPie(cosmo_a,p_space=cosmo_fid['p_space'],safe_sigma8=True)
-            C_b = cp.CosmoPie(cosmo_b,p_space=cosmo_fid['p_space'],safe_sigma8=True)
+            C_a = cp.CosmoPie(cosmo_a,p_space=cosmo_fid['p_space'])
+            C_b = cp.CosmoPie(cosmo_b,p_space=cosmo_fid['p_space'])
             #avoid unnecessarily recomputing WMatchers for dark energy related parameters, and unnecessarily calling camb
             if pars[i] in cp.DE_SAFE:
                 P_a = mps.MatterPower(C_a,k_in=k_fid,camb_params=camb_params,wm_in=P_fid.wm,wm_safe=True,P_fid=P_fid,camb_safe=True)
@@ -128,20 +59,19 @@ def get_perturbed_cosmopies(C_fid,pars,epsilons,log_param_derivs=np.array([])):
         C_b.P_lin = P_b
         C_b.k = k_b
 
-        if not pars[i]=='sigma8' and ('sigma8' not in cp.P_SPACES[cosmo_fid['p_space']]):
-            cosmo_a['sigma8'] = P_a.get_sigma8_eff(zs=np.array([0.]))[0]
-            cosmo_b['sigma8'] = P_b.get_sigma8_eff(zs=np.array([0.]))[0]
-            cosmo_a.pop('skip_sigma8',None)
-            cosmo_b.pop('skip_sigma8',None)
-        C_a.sigma8=cosmo_a['sigma8']
-        C_b.sigma8=cosmo_b['sigma8']
         Cs_pert[i,0] = C_a 
         Cs_pert[i,1] = C_b
     return Cs_pert
         
 
 #get new cosmology with 1 parameter self consistently (ie enforce exact relations) perturbed
-def get_perturbed_cosmology(cosmo_old,parameter,epsilon=0.0001,log_param_deriv=False):
+def get_perturbed_cosmology(cosmo_old,parameter,epsilon,log_param_deriv=False):
+    """get a perturbed cosmology dictionary needed for get_perturbed_cosmopie
+        inputs: 
+            cosmo_old: fiducial cosmology
+            paramter: name of parameter to change
+            epsilon: amount to change parameter by
+            log_param_deriv: if True, do log change in parameter"""
     cosmo_new = cosmo_old.copy()
     if cosmo_new.get(parameter) is not None:
 
@@ -149,10 +79,10 @@ def get_perturbed_cosmology(cosmo_old,parameter,epsilon=0.0001,log_param_deriv=F
             cosmo_new[parameter] = np.exp(np.log(cosmo_old[parameter])+epsilon)   
         else:
             cosmo_new[parameter]+=epsilon   
-        #TODO reconcile
+
         if cosmo_old['de_model'] == 'w0wa' and parameter=='w':
+            warn('given parameter should not be used in w0wa parameterization, use w0 instead')
             cosmo_new['w0'] = cosmo_new['w']
-        
 
         if parameter not in cp.P_SPACES.get(cosmo_new.get('p_space')) and parameter not in cp.DE_METHODS[cosmo_new.get('de_model')]:
             warn('parameter \''+str(parameter)+'\' may not support derivatives with the parameter set \''+str(cosmo_new.get('p_space'))+'\'')

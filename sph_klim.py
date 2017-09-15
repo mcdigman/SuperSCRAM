@@ -15,29 +15,23 @@ import defaults
 # the smallest value
 eps=np.finfo(float).eps
 
-#I_alpha checked
-def I_alpha(k_alpha,k,r_max,l_alpha):
-    # return the integral \int_0^r_{max} dr r^2 j_{\l_alpha}(k_\alpha r)j_{l_\alpha}(k r)
-    a=k_alpha*r_max; b=k*r_max
-    l=l_alpha+.5
-    return np.pi/2./np.sqrt(k_alpha*k)/(k_alpha**2 - k**2)*r_max*(-k_alpha*jv(l-1,a)*jv(l,b))
 
-#TODO create abstract basis class
 class SphBasisK(LWBasis):
-
     def __init__(self,r_max,C,k_cut=2.0,l_ceil=100,params=defaults.basis_params):#,geometry,CosmoPie):
 
-        ''' inputs:
-                r_max = the maximum radius of the sector
-                l_alpha = the l in j_l(k_alpha r)
-                n_zeros = the number of zeros
-                k = the wave vector k of P(k)
-                P = the linear power specturm
+        """ get the long wavelength basis with spherical bessel functions described in the paper
+            basis modes are selected by the k value of the bessel function zero, which approximates order of importance
+            inputs:
+                r_max: the maximum radius of the sector
+                C: CosmoPie object
+                k_cut: cutoff k value for mode selection
+                l_ceil: maximum l value allowed independent of k_cut, mainly because limited table of bessel function zeros available
                 important! no little h in any of the calculations
-        '''
+        """
         print "sph_klim: begin init basis id: ",id(self)
-        LWBasis.__init__(self,r_max,C)
+        LWBasis.__init__(self,C)
         #TODO check correct power spectrum
+        self.r_max = r_max
         P_lin_in=self.C.P_lin.get_matter_power(np.array([0.]),pmodel='linear')[:,0]
         k_in = self.C.k
         #k = np.logspace(np.log10(np.min(k_in)),np.log10(np.max(k_in))-0.00001,6000000)
@@ -101,7 +95,7 @@ class SphBasisK(LWBasis):
 
             self.norms = np.zeros(k.size)
             for b in xrange(kk.size):
-                self.norms[b] = self.norm_factor(kk[b],ll)
+                self.norms[b] = norm_factor(kk[b],ll,self.r_max)
             print "sph_klim: calculating covar for l=",ll
             for c in xrange(mm.size):
                 itr_k1 = itr
@@ -133,23 +127,27 @@ class SphBasisK(LWBasis):
         print "sph_klim: finished init basis id: ",id(self)
 
     def get_size(self):
+        """Get number of basis elements"""
         return self.C_size
 
-    #I_\alpha(k_\alpha,r_{max}) simplified
-    def norm_factor(self,ka,la):
-        return -np.pi*self.r_max**2/(4.*ka)*jv(la+1.5,ka*self.r_max)*jv(la-0.5,ka*self.r_max)
-
+    #TODO storing packed representation of C_alpha_beta and generating the FisherMatrix object here would be more memory efficient, safer so does not mutate C_alpha_beta
     def get_fisher(self):
+        """Get FisherMatrix object for the covariance matrix computed by the basis."""
         return self.fisher
 
     def k_LW(self):
-        # return the long-wavelength wave vector k
+        """return the long-wavelength wave vector k"""
         return self.C_id[:,1]
 
     #get the partial derivatives of an sw observable wrt the basis given an integrand with elements at each r_fine i.e.  \frac{\partial O_i}{\partial \bar(\delta)(r_{fine})}
-    #TODO this may not be very efficient
-    #TODO give better name
     def D_O_I_D_delta_alpha(self,geo,integrand,force_recompute = False,use_r=True,range_spec=None):
+        """Get \frac{\partial O^I}{\partial \delta_\alpha} for an observable. 
+            inputs:
+                geo: a Geo object for the geometry
+                integrand: the observable as a function of geo.r_fine, which must be integrated over
+                use_r: if False, use geo.z_fine instead of geo.r_fine for integration
+                range_spec: array slice specification for geo.r_fine to limit range of integration for tomographic bins
+        """
         print "sph_klim: calculating D_O_I_D_delta_alpha"
         d_delta_bar = self.D_delta_bar_D_delta_alpha(geo,force_recompute,tomography=False)
         result = np.zeros((d_delta_bar.shape[1],integrand.shape[1]))
@@ -163,25 +161,24 @@ class SphBasisK(LWBasis):
             x = x[range_spec]
             d_delta_bar = d_delta_bar[range_spec,:]
 
-    #    for alpha in xrange(0,d_delta_bar.shape[1]):
         dxs = np.diff(x)
         for ll in xrange(0, integrand.shape[1]):
-    #            result[alpha,ll] = trapz(d_delta_bar[:,alpha]*integrand[:,ll],x)
-            #result[:,ll] = trapz((d_delta_bar.T*integrand[:,ll]).T,x,axis=0)
             #TODO can be sped up if dx is constant
             result[:,ll] = trapz2((d_delta_bar.T*integrand[:,ll]).T,dx=dxs,given_dx=True)
 
         print "sph_klim: got D_O_I_D_delta_alpha"
         return result
 
-    #Calculate D_delta_bar_D_delta_alpha.
-    #tomography: if true use tomographic (coarse) bins, otherwise use resolution (fine) bins for r integrals
-    #force_recompute: clears the cache: use this if geo has changed.
     #Note: the basis has an allow_caching setting for whether to allow cacheing between function calls for the same geo
-    #Caching is potentially dangerous if the geo changes, so it should not be allowed to. #TODO add cache_good flag to geo
-    #cache_alm permits caching alm for future function calls.
+    #Cacheing is potentially dangerous if the geo changes, so it should not be allowed to. #TODO add cache_good flag to geo
     #Note that this function will cache alm and R_int internally as needed regardless of cache_alm or allow_caching, but it won't save the results for future function calls if caching is prohibited
     def D_delta_bar_D_delta_alpha(self,geo,force_recompute = False,tomography=True):
+        """Calculate \frac{\partial\bar{\delta}}{\partial\delta_\alpha}
+            inputs:
+                geo: an input Geo object for the geometry
+                tomography: if True use tomographic (coarse) bins, otherwise use resolution (fine) bins for r integrals
+                force_recompute: clears the cache: use this if geo has changed.
+        """
         #r=np.array([r_min,r_max])
         #TODO Check this
         print "sph_klim: begin D_delta_bar_D_delta_alpha with geo id: ",id(geo)
@@ -208,7 +205,6 @@ class SphBasisK(LWBasis):
        # Omega=a_00*np.sqrt(4*np.pi)
         r_cache = {}
 
-        #TODO move r binning to geo
         if tomography:
             rbins = geo.rbins
             result=np.zeros((rbins.shape[0],self.C_id.shape[0]))
@@ -223,7 +219,6 @@ class SphBasisK(LWBasis):
             ll=int(self.C_id[itr,0])
             kk=self.C_id[itr,1]
             mm=int(self.C_id[itr,2])
-            #TODO clean up these conditionals
             #TODO just precompute the r_parts
             if (kk,ll) in r_cache:
                 r_part = r_cache[(kk,ll)]
@@ -243,15 +238,31 @@ class SphBasisK(LWBasis):
         return result
 
 def R_int(r_range,k,ll):
-    # returns \int R_n(rk_alpha) r2 dr
+    """ returns \int R_n(rk_alpha) r2 dr
+        inputs:
+            r_range: [min r, max r] r range to integrate over
+            k: k_alpha, zero of bessel function
+            ll: index of bessel function to use"""
     # I am using the spherical Bessel function for R_n, but that might change
-    #TODO change name to sph_j_n or something
+    #TODO change name of j_n to sph_j_n or something
     def integrand(r):
         return r**2*j_n(ll,r*k)
-    #TODO see if can be done with trapz
+    #TODO can be done with trapz
     I = quad(integrand,r_range[0],r_range[1])[0]
     #TODO check if eps logic needed
     return I
+
+#I_alpha checked
+def I_alpha(k_alpha,k,r_max,l_alpha):
+    """return the integral \int_0^r_{max} dr r^2 j_{\l_alpha}(k_\alpha r)j_{l_\alpha}(k r)
+    needed to calculate long wavelength covariance matrix."""
+    a=k_alpha*r_max; b=k*r_max
+    l=l_alpha+.5
+    return np.pi/2./np.sqrt(k_alpha*k)/(k_alpha**2 - k**2)*r_max*(-k_alpha*jv(l-1,a)*jv(l,b))
+
+def norm_factor(ka,la,r_max):
+    """Get normalization factor, which is I_\alpha(k_\alpha,r_{max}) simplified"""
+    return -np.pi*r_max**2/(4.*ka)*jv(la+1.5,ka*r_max)*jv(la-0.5,ka*r_max)
 
 if __name__=="__main__":
     import geo

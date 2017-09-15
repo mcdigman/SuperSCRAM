@@ -189,8 +189,8 @@ matter_power_params = {'needs_halofit'  :True,
                         'needs_fpt'     :True,
                         'needs_wmatcher':True,
                         'needs_camb_w_grid':True,
-                        'w_edge' : 0.08,
-                        'w_step' : 0.0005,
+                        'w_edge' : 0.08, #0.08
+                        'w_step' : 0.002, #0.0005
                         'min_n_w' : 3,
                         'a_min' : 0.05,
                         'a_max' : 1.0,
