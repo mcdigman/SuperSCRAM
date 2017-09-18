@@ -4,7 +4,7 @@ from scipy.integrate import cumtrapz,trapz
 from shear_power import ShearPower
 from shear_power import Cll_q_q
 import defaults
-from lensing_weight import q_shear
+from lensing_weight import QShear
 from camb_power import camb_pow
 import scipy.special as spp
 import matter_power_spectrum as mps
@@ -159,7 +159,7 @@ if __name__ == '__main__':
     sp = ShearPower(C,z_fine,l_mids,fsky_cosmo,pmodel='halofit',mode='power',ps=n_z,params=len_params)
     qs = np.zeros(tomo_bins_cosmo,dtype=object)
     for i in xrange(qs.size):
-        qs[i] = q_shear(sp,chi_bins[i,0],chi_bins[i,1])
+        qs[i] = QShear(sp,chi_bins[i,0],chi_bins[i,1])
     Cll_shear_shear = np.zeros((tomo_bins_cosmo,tomo_bins_cosmo),dtype=object)
     ratio_means = np.zeros((tomo_bins_cosmo,tomo_bins_cosmo))
     for i in xrange(qs.size):

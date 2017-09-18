@@ -2,7 +2,7 @@
 Abstract class for a short wavelength observable
 """
 
-class SWObservable:
+class SWObservable(object):
     def __init__(self,survey_id,dim=0):
         """
             short wavelength observable abstract class

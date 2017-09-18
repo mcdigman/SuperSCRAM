@@ -10,7 +10,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 #3) Be able to compute some kind of surface integral
 #Most of the behavior should be defined in subclasses
 
-class geo:
+class Geo(object):
     def __init__(self,z_coarse,C,z_fine):
         self.zs = z_coarse #index of the starts of the tomography bins
         self.C = C #cosmopie
@@ -95,7 +95,7 @@ class geo:
     #volume ddeltabar_dalpha
 
 #class implementing a geometry of rectangles (on the surface of a sphere, defined by theta,phi coordinates of vertices)
-class rect_geo(geo): 
+class RectGeo(Geo): 
     def __init__(self,zs,Theta,Phi,C,z_fine):
             self.Theta = Theta
             self.Phi = Phi
@@ -111,7 +111,7 @@ class rect_geo(geo):
             #v_total=(phi2-phi1)*(np.cos(theta1)- np.cos(theta2))*(rs[-1]**3-rs[0]**3)/3.
 
 
-            geo.__init__(self,zs,C,z_fine)
+            Geo.__init__(self,zs,C,z_fine)
 
     #function(phi,theta)
     def surface_integral(self,function):
@@ -124,13 +124,13 @@ class rect_geo(geo):
         return I
 
 #same pixels at every redshift.
-class pixel_geo(geo):
+class PixelGeo(Geo):
     def __init__(self,zs,pixels,C,z_fine):
         #pixel format np.array([(theta,phi,area)])
         #area should be in steradians for now
         self.pixels = pixels
     
-        geo.__init__(self,zs,C,z_fine)
+        Geo.__init__(self,zs,C,z_fine)
         
     #TODO consider vectorizing sum
     def surface_integral(self,function):
@@ -146,6 +146,3 @@ class pixel_geo(geo):
             alm = np.sum(Y_r(l,m,self.pixels[:,0],self.pixels[:,1])*self.pixels[:,2])
             self.alm_table[(l,m)] = alm
         return alm
-            
-        
-        #TODO: Implement polygon_geo, allowing arbitrary polygons, using stokes theorem method

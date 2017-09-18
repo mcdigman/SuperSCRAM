@@ -3,7 +3,7 @@ from shear_power import ShearPower,Cll_q_q
 from cosmopie import CosmoPie
 import defaults
 from scipy.interpolate import SmoothBivariateSpline,interp2d
-from lensing_weight import q_shear
+from lensing_weight import QShear
 import sys
 
 if __name__=='__main__':
@@ -45,30 +45,30 @@ if __name__=='__main__':
     chi_min2 = C.D_comov(z_min2)
     chi_max2 = C.D_comov(z_max2)
 
-    q_shear1_1 = q_shear(dC_ddelta1,chi_min1,chi_max1)
-    q_shear1_2 = q_shear(dC_ddelta1,chi_min2,chi_max2)
+    QShear1_1 = QShear(dC_ddelta1,chi_min1,chi_max1)
+    QShear1_2 = QShear(dC_ddelta1,chi_min2,chi_max2)
 
-    #q_shear2_1 = q_shear(dC_ddelta2,chi_min1,chi_max1)
-    #q_shear2_2 = q_shear(dC_ddelta2,chi_min2,chi_max2)
+    #QShear2_1 = QShear(dC_ddelta2,chi_min1,chi_max1)
+    #QShear2_2 = QShear(dC_ddelta2,chi_min2,chi_max2)
 
-    ss_1 = Cll_q_q(sp1,q_shear1_1,q_shear1_2).Cll()
+    ss_1 = Cll_q_q(sp1,QShear1_1,QShear1_2).Cll()
     #check that \partial C^{ij}/\partial \bar{\delta}(zs) \propto 1/(width of zs bin)*z^i*C^{ij}, where z^i ~ average z of closer z bin
+    import matplotlib.pyplot as plt
     for z_ind in xrange(5,100,10):
         ind_min = 200
         ind_max = ind_min+z_ind
-        dC_ss_integrand_1 = Cll_q_q(dC_ddelta1,q_shear1_1,q_shear1_2).Cll(chi_min=dC_ddelta1.chis[ind_min],chi_max=dC_ddelta1.chis[ind_max])
-        import matplotlib.pyplot as plt
+        dC_ss_integrand_1 = Cll_q_q(dC_ddelta1,QShear1_1,QShear1_2).Cll(chi_min=dC_ddelta1.chis[ind_min],chi_max=dC_ddelta1.chis[ind_max])
         ax = plt.subplot(111)
         ax.loglog(ls,dC_ss_integrand_1/ss_1/(dC_ddelta1.zs[ind_max]-dC_ddelta1.zs[ind_min]))
         print np.average(dC_ss_integrand_1/ss_1/(dC_ddelta1.zs[ind_max]-dC_ddelta1.zs[ind_min])*(z_min1+z_max1)/2.)
-        #dC_ss_1 = Cll_q_q(dC_ddelta1,q_shear1_1,q_shear1_2).Cll()
+        #dC_ss_1 = Cll_q_q(dC_ddelta1,QShear1_1,QShear1_2).Cll()
 
-    #dC_ss_integrand_2 = Cll_q_q(dC_ddelta2,q_shear2_1,q_shear2_2).Cll_integrand()
+    #dC_ss_integrand_2 = Cll_q_q(dC_ddelta2,QShear2_1,QShear2_2).Cll_integrand()
 
     #dz_1s = np.hstack((dC_ddelta1.zs[0],np.diff(dC_ddelta1.zs)))/np.hstack((dC_ddelta1.chis[0],np.diff(dC_ddelta1.chis)))
     #dz_2s = np.hstack((dC_ddelta2.zs[0],np.diff(dC_ddelta2.zs)))/np.hstack((dC_ddelta2.chis[0],np.diff(dC_ddelta2.chis)))
 
-    #ss_2 = Cll_q_q(sp2,q_shear2_1,q_shear2_2).Cll()
+    #ss_2 = Cll_q_q(sp2,QShear2_1,QShear2_2).Cll()
  
     plt.show()
 
@@ -83,7 +83,6 @@ if __name__=='__main__':
        # test_rat2 = dC_ss_integrand_2[z_ind2]/ss_2
         print z_ind1
         print dC_ss_integrand_1[z_ind1]
-        import matplotlib.pyplot as plt
         ax = plt.subplot(111)
         ax.loglog(ls,test_rat1)
       #  ax.loglog(ls,test_rat2)

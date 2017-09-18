@@ -1,7 +1,4 @@
-import re
 import numpy as np
-import FASTPTcode.FASTPT as FASTPT
-import halofit as hf
 import cosmopie as cp
 from scipy.interpolate import InterpolatedUnivariateSpline,interp1d
 import defaults

@@ -120,7 +120,7 @@ class SphBasisK(LWBasis):
                         for d in xrange(b,kk.size):
                             C_alpha_beta[itr_k1+b,itr_k1+d] = C_alpha_beta[itr_m1+b,itr_m1+d]
                             C_alpha_beta[itr_k1+d,itr_k1+b] = C_alpha_beta[itr_m1+d,itr_m1+b]
-        self.fisher = fm.FisherMatrix(C_alpha_beta,input_type=fm.REP_COVAR,initial_state=fm.REP_FISHER,silent=True)
+        self.fisher = fm.FisherMatrix(C_alpha_beta,input_type=fm.REP_COVAR,initial_state=fm.REP_CHOL,silent=True)
         #TODO can make more efficient if necessary
         t2 = time()
         print "sph_klim: basis time: ",t2-t1
@@ -279,7 +279,7 @@ if __name__=="__main__":
     from cosmopie import CosmoPie
     C=CosmoPie(k=k,P_lin=P)
 
-    geometry=geo.rect_geo(zs,Theta,Phi,C,z_fine)
+    geometry=geo.RectGeo(zs,Theta,Phi,C,z_fine)
 
     r_max=C.D_comov(0.5)
 

@@ -2,7 +2,7 @@ import numpy as np
 
 import defaults
 
-#utility functions for manipulating real spherical harmonic alm, used by polygon_geo
+#utility functions for manipulating real spherical harmonic alm, used by PolygonGeo
 
 #rotate alms around z axis by angle gamma_alpha
 def rot_alm_z(d_alm_table_in,angles,ls):

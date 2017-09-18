@@ -104,7 +104,7 @@ def cholesky_contract(A,vec1,vec2,cholesky_given=False,identical_inputs=False,lo
 def cholesky_inplace(A,inplace=True,fatal_errors=False,lower=True):
 
     try_inplace = inplace
-
+    assert(np.all(A==A.T))
     #dpotrf will still work on C contiguous arrays but will silently fail to do them in place regardless of overwrite_a, so raise a warning or error here 
     #using order='F' when creating the array or A.copy('F') when copying ensures fortran contiguous arrays.
     if (not A.flags['F_CONTIGUOUS']) and try_inplace:
@@ -125,8 +125,11 @@ def cholesky_inplace(A,inplace=True,fatal_errors=False,lower=True):
     result,info = spl.lapack.dpotrf(A,lower=lower,clean=1, overwrite_a=try_inplace)
     
     #Something went wrong. (spl.cholesky and np.linalg.cholesky should fail too)
-    #if not info==0:
-    #    raise RuntimeError('algebra_utils: dpotrf failed with nonzero exit status')
+    if not info==0:
+        #eigvals =  np.linalg.eigh(A)[0]
+        #print eigvals
+        #print eigvals[0]/np.max(eigvals)
+        raise RuntimeError('algebra_utils: dpotrf failed with nonzero exit status '+str(info))
 
     # check if L is the desired L cholesky factor
     #assert np.allclose(np.dot(L,L.T), A)

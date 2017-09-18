@@ -4,7 +4,7 @@ import spherical_geometry.vector as sgv
 from spherical_geometry.polygon import SphericalPolygon
 from sph_functions import Y_r
 from numpy.core.umath_tests import inner1d
-from geo import pixel_geo,rect_geo
+from geo import PixelGeo,RectGeo
 from time import time
 import defaults
 import scipy as sp
@@ -16,25 +16,25 @@ from math import isnan
 #get a healpix pixelated spherical polygon geo
 #TODO consider using sp_poly area for angular_area()
 #TODO consider smoothing to get area precisely correct
-class polygon_pixel_geo(pixel_geo):
+class PolygonPixelGeo(PixelGeo):
         def __init__(self,zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max,res_healpix=defaults.polygon_params['res_healpix'],overwride_precompute=False):
             all_pixels = get_healpix_pixelation(res_choose=res_healpix)
             self.sp_poly = get_poly(thetas,phis,theta_in,phi_in)
             if isnan(self.sp_poly.area()):
-                raise ValueError("polygon_pixel_geo: Calculated area of polygon is nan, polygon likely invalid")
+                raise ValueError("PolygonPixelGeo: Calculated area of polygon is nan, polygon likely invalid")
             #self.contained =  is_contained(all_pixels,self.sp_poly)
             self.contained =  contains_points(all_pixels,self.sp_poly)
             contained_pixels = all_pixels[self.contained,:]
             self.n_pix = contained_pixels.shape[0]
             self.all_pixels = all_pixels
-            print "polygon_pixel_geo: total contained pixels in polygon: "+str(np.sum(self.contained*1.))
-            print "polygon_pixel_geo: total contained area of polygon: "+str(np.sum(contained_pixels[:,2]))
-            print "polygon_pixel_geo: area calculated by SphericalPolygon: "+str(self.sp_poly.area())
+            print "PolygonPixelGeo: total contained pixels in polygon: "+str(np.sum(self.contained*1.))
+            print "PolygonPixelGeo: total contained area of polygon: "+str(np.sum(contained_pixels[:,2]))
+            print "PolygonPixelGeo: area calculated by SphericalPolygon: "+str(self.sp_poly.area())
             #check that the true area from angular defect formula and calculated area approximately match
             calc_area = np.sum(contained_pixels[:,2])
             if not np.isclose(calc_area,self.sp_poly.area(),atol=10**-2,rtol=10**-3):
-                warn("polygon_pixel_geo: significant discrepancy between true area "+str(self.sp_poly.area())+" and calculated area"+str(np.sum(contained_pixels[:,2]))+" results may be poorly converged")
-            pixel_geo.__init__(self,zs,contained_pixels,C,z_fine)
+                warn("PolygonPixelGeo: significant discrepancy between true area "+str(self.sp_poly.area())+" and calculated area"+str(np.sum(contained_pixels[:,2]))+" results may be poorly converged")
+            PixelGeo.__init__(self,zs,contained_pixels,C,z_fine)
             
             #set a00 to value from pixels for consistency, not angle defect even though angle defect is more accurate
             self.alm_table[(0,0)] = calc_area/np.sqrt(4.*np.pi)
@@ -51,12 +51,12 @@ class polygon_pixel_geo(pixel_geo):
         def a_lm(self,l,m):
             #if not precomputed, regenerate table up to specified l, otherwise read it out of the table
             if l>self._l_max:
-                print "polygon_pixel_geo: l value "+str(l)+" exceeds maximum precomputed l "+str(self._l_max)+",expanding table"
+                print "PolygonPixelGeo: l value "+str(l)+" exceeds maximum precomputed l "+str(self._l_max)+",expanding table"
                 self.alm_table,ls,ms,self.alm_dict = self.get_a_lm_table(l)
                 self._l_max = l
             alm = self.alm_table.get((l,m))
             if alm is None:
-                raise RuntimeError("polygon_pixel_geo: alm evaluated to None at l="+str(l)+",m="+str(m)+". l,m may exceed highest available Ylm")
+                raise RuntimeError("PolygonPixelGeo: alm evaluated to None at l="+str(l)+",m="+str(m)+". l,m may exceed highest available Ylm")
             return alm
 
         
@@ -374,32 +374,32 @@ if __name__=='__main__':
     do_reconstruct = False
     
     t0 = time()
-    pp_geo = polygon_pixel_geo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,res_healpix=res_choose)
+    pp_geo = PolygonPixelGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,res_healpix=res_choose)
     t1 = time()
     print "instantiation finished in time: "+str(t1-t0)+"s"
     #TODO write explicit test case to compare
     if do_old:
-        print "polygon_pixel_geo: initialization time: "+str(t1-t0)+"s"
+        print "PolygonPixelGeo: initialization time: "+str(t1-t0)+"s"
         alm_pps,ls,ms = pp_geo.get_a_lm_below_l_max(l_max)
     t2 = time()
     if do_old:
-        print "polygon_pixel_geo: a_lm up to l="+str(l_max)+" time: "+str(t2-t1)+"s" 
+        print "PolygonPixelGeo: a_lm up to l="+str(l_max)+" time: "+str(t2-t1)+"s" 
     for i in xrange(0,n_run):
         alm_recurse,ls,ms,_= pp_geo.get_a_lm_table(l_max)
     t3 = time()
-    print "polygon_pixel_geo: a_lm_recurse in avg time: "+str((t3-t2)/n_run)+"s"
+    print "PolygonPixelGeo: a_lm_recurse in avg time: "+str((t3-t2)/n_run)+"s"
     if do_old:
         print "methods match: "+str(np.allclose(alm_pps,alm_recurse))
     
     if do_rect:
-        r_geo = rect_geo(zs,np.array([theta0,theta1]),np.array([phi0,phi1]),C,z_fine)
+        r_geo = RectGeo(zs,np.array([theta0,theta1]),np.array([phi0,phi1]),C,z_fine)
         if do_reconstruct:
             alm_rect = {}
             for itr in xrange(0,ls.size):
                 alm_rect[(ls[itr],ms[itr])] = r_geo.a_lm(ls[itr],ms[itr])
     t4 =time()
     if do_rect:
-        print "rect_geo: rect geo alms in time"+str(t4-t3)
+        print "RectGeo: rect geo alms in time"+str(t4-t3)
     
     #totals_recurse = np.zeros(pp_geo.all_pixels.shape[0])
     if do_reconstruct:

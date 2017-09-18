@@ -1,5 +1,5 @@
 import numpy as np 
-from geo import rect_geo
+from geo import RectGeo
 import unittest
 import sph_klim as sph
 import mpmath
@@ -25,7 +25,7 @@ class TestAlmMathematicaAgree1(unittest.TestCase):
     
         from cosmopie import CosmoPie
         C=CosmoPie()
-        geo1 = rect_geo(zs,Theta,Phi,C,z_fine)
+        geo1 = RectGeo(zs,Theta,Phi,C,z_fine)
     
         alm_py = np.zeros_like(alm_math)
         for i in xrange(0,lm_table.shape[0]):

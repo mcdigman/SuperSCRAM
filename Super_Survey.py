@@ -5,11 +5,11 @@ from warnings import warn
 import numpy as np
 import copy
 
-from polygon_pixel_geo import polygon_pixel_geo
-from polygon_geo import polygon_geo
+from polygon_pixel_geo import PolygonPixelGeo
+from polygon_geo import PolygonGeo
 from sph_klim import SphBasisK
 from Dn import DNumberDensityObservable
-from geo import rect_geo
+from geo import RectGeo
 from sw_survey import SWSurvey
 from lw_survey import LWSurvey
 
@@ -198,7 +198,7 @@ if __name__=="__main__":
     cosmo_fid['w']=-1.
     cosmo_fid['w0'] = cosmo_fid['w']
     cosmo_fid['wa'] = 0.
-    cosmo_fid['de_model'] = 'w0wa'
+    cosmo_fid['de_model'] = 'constant_w'
     if cosmo_fid['de_model'] == 'jdem':
         for i in xrange(0,36):
             cosmo_fid['ws36_'+str(i)] = cosmo_fid['w']
@@ -257,9 +257,10 @@ if __name__=="__main__":
 
     #zs=np.array([.4,0.8,1.2])
     #zs=np.array([.6,0.8,1.01])
-    #TODO CRITICAL something failing catastrophically numerically when top z is too small: find out what
-    zs=np.array([0.2,0.43,.63,0.9,1.25])
+    #zs=np.array([0.2,0.43,.63,0.9,1.178125])
+    zs=np.array([0.2,0.43,.63,0.9, 1.3])
     z_fine = np.arange(defaults.lensing_params['z_min_integral'],np.max(zs),defaults.lensing_params['z_resolution'])
+    #z_fine = np.linspace(defaults.lensing_params['z_min_integral'],np.max(zs),590)
     #zbins=np.array([.2,.6,1.0])
     #l=np.logspace(np.log10(2),np.log10(3000),1000)
     l_sw = np.logspace(np.log(30),np.log(5000),base=np.exp(1.),num=40)
@@ -268,14 +269,14 @@ if __name__=="__main__":
     use_poly2=True
     if use_poly:
         if use_poly2:
-            geo1 = polygon_geo(zs,theta1s,phi1s,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
-            geo2 = polygon_geo(zs,theta2s,phi2s,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
+            geo1 = PolygonGeo(zs,theta1s,phi1s,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
+            geo2 = PolygonGeo(zs,theta2s,phi2s,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
         else:
-            geo1 = polygon_pixel_geo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max=l_max,res_healpix=res_choose)  
-            geo2 = polygon_pixel_geo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max=l_max,res_healpix=res_choose)  
+            geo1 = PolygonPixelGeo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max=l_max,res_healpix=res_choose)  
+            geo2 = PolygonPixelGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max=l_max,res_healpix=res_choose)  
     else:
-        geo1=rect_geo(zs,Theta1,Phi1,C,z_fine)
-        geo2=rect_geo(zs,Theta2,Phi2,C,z_fine)
+        geo1=RectGeo(zs,Theta1,Phi1,C,z_fine)
+        geo2=RectGeo(zs,Theta2,Phi2,C,z_fine)
     
     loc_lens_params = defaults.lensing_params.copy()
     loc_lens_params['z_min_dist'] = np.min(zs)
@@ -288,7 +289,7 @@ if __name__=="__main__":
     lenless_defaults = defaults.sw_survey_params.copy()
     lenless_defaults['needs_lensing'] = False
     if cosmo_fid['de_model'] == 'w0wa':
-        cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w','wa'])
+        cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w0','wa'])
         cosmo_par_epsilons = np.array([0.002,0.0005,0.0001,0.0005,0.1,0.01,0.07])
     elif cosmo_fid['de_model'] == 'constant_w':
         cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w'])
@@ -331,8 +332,8 @@ if __name__=="__main__":
     #geos = np.array([geo1])
     l_lw=np.arange(0,30)
     n_zeros=49
-    #k_cut = 0.005
-    k_cut = 0.016
+    k_cut = 0.005
+    #k_cut = 0.016
     #k_cut = 0.022
             
     basis=SphBasisK(r_max,C,k_cut,l_ceil=100)

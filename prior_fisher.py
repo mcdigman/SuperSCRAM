@@ -34,7 +34,7 @@ def project_w0wa(fisher_mat,params=defaults.prior_fisher_params,return_project=F
     project_mat[0:n_new-2,0:n_new-2] = np.identity(n_new-2)
     dwzdw0 = np.zeros(n_de)+1.
     project_mat[n_new-2,n_new-2::] = dwzdw0
-    z_step = params['z_step']
+    #z_step = params['z_step']
     #zs = z_step*np.arange(0,n_de)/(1-z_step*np.arange(0,n_de))
     #TODO make sure doing this correctly
     #a_s = 1.-np.arange(0,36)*0.025+0.0125

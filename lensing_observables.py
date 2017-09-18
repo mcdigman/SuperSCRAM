@@ -40,14 +40,14 @@ class LensingPowerBase(object):
             self.dC_dpars[i,0] = sp.ShearPower(self.Cs_pert[i,0],self.geo.z_fine,ls,omega_s=omega_s,pmodel=params['pmodel_O'],mode='power',params=params)
             self.dC_dpars[i,1] = sp.ShearPower(self.Cs_pert[i,1],self.geo.z_fine,ls,omega_s=omega_s,pmodel=params['pmodel_O'],mode='power',params=params)
         
-
+#TODO observables should know their name
 class LensingObservable(SWObservable):
     def __init__(self,len_pow,r1,r2,q1_handle,q2_handle):
         """Generic lensing observable, subclass only need to define a function handle self.len_handle for which obserable to use
             inputs: 
                 len_pow: a LensingPowerBase object
                 r1,r2: [min r, max r] for the lensing weights to integrate over
-                q1_handle,q2_handle: function handles for q_weight objects, ie len_w.q_shear
+                q1_handle,q2_handle: function handles for QWeight objects, ie len_w.QShear
         """
         self.len_pow = len_pow
         self.r1 = r1
@@ -87,9 +87,9 @@ class LensingObservable(SWObservable):
 class ShearShearLensingObservable(LensingObservable):
     def __init__(self,len_pow,r1,r2):
         """Shear shear lensing signal LensingObservable"""
-        LensingObservable.__init__(self,len_pow,r1,r2,len_w.q_shear,len_w.q_shear)
+        LensingObservable.__init__(self,len_pow,r1,r2,len_w.QShear,len_w.QShear)
 
 class GalaxyGalaxyLensingObservable(LensingObservable):
     def __init__(self,len_pow,r1,r2):
         """Galaxy galaxy lensing signal LensingObservable"""
-        LensingObservable.__init__(self,len_pow,r1,r2,len_w.q_num,len_w.q_num)
+        LensingObservable.__init__(self,len_pow,r1,r2,len_w.QNum,len_w.QNum)

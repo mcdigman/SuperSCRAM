@@ -4,7 +4,7 @@ contains various weight functions used by lensing observables
 import numpy as np
 from algebra_utils import trapz2
 
-class q_weight:
+class QWeight(object):
     def __init__(self,chis,qs,chi_min=0.,chi_max=np.inf):
         """abstract class for weight function
             inputs:
@@ -18,7 +18,7 @@ class q_weight:
         self.chis = chis
         self.qs = qs
 
-class q_shear(q_weight):
+class QShear(QWeight):
     def __init__(self,sp,chi_min=0.,chi_max=np.inf,mult=1.):
         """weight function for a shear observable as in ie arXiv:1302.2401v2
             inputs:
@@ -26,10 +26,10 @@ class q_shear(q_weight):
                 mult: a constant multiplier for the weight function
         """
         qs = 3./2.*(sp.C.H0/sp.C.c)**2*sp.C.Omegam*sp.chi_As/sp.sc_as*self.gs(sp,chi_max=chi_max,chi_min=chi_min)*mult
-        q_weight.__init__(self,sp.chis,qs,chi_min=chi_min,chi_max=chi_max) 
+        QWeight.__init__(self,sp.chis,qs,chi_min=chi_min,chi_max=chi_max) 
 
     def gs(self,sp,chi_max=np.inf,chi_min=0):
-        """helper function for q_shear"""
+        """helper function for QShear"""
         g_vals = np.zeros(sp.n_z)
         low_mask = (sp.chis>=chi_min)*1. #so only integrate from max(chi,chi_min)
         high_mask = (sp.chis<=chi_max)*1. #so only integrate from max(chi,chi_min)
@@ -48,18 +48,18 @@ class q_shear(q_weight):
                 g_vals[i] =trapz2(low_mask[i:sp.n_z]*ps_norm[i:sp.n_z]*sp.chis[i]*1./sqrtK(1./np.tanh(sqrtK*sp.chis[i])-1./np.tanh(sqrtK*sp.chis[i:sp.n_z])),sp.chis[i:sp.n_z])
         return g_vals
 
-class q_mag(q_shear):
+class QMag(QShear):
     def __init__(self,sp,chi_max=np.inf,chi_min=0.):
         """weight function for magnification, just shear weight function*2 now"""
-        q_shear.__init__(self,sp,chi_max=chi_max,chi_min=chi_min,mult=2.)
+        QShear.__init__(self,sp,chi_max=chi_max,chi_min=chi_min,mult=2.)
 
 
-class q_k(q_shear):
+class QK(QShear):
     def __init__(self,sp,chi_max=np.inf,chi_min=0.):
         """weight function for convergence, just shear weight function now"""
-        q_shear.__init__(self,sp,chi_max=chi_max,chi_min=chi_min,mult=1.)
+        QShear.__init__(self,sp,chi_max=chi_max,chi_min=chi_min,mult=1.)
 
-class q_num(q_weight):
+class QNum(QWeight):
     """weight function for galaxy lensing, as in ie arXiv:1302.2401v2"""
     def __init__(self,sp,chi_max=np.inf,chi_min=0.):
         q = np.zeros((sp.n_z,sp.n_l))
@@ -71,7 +71,7 @@ class q_num(q_weight):
                 continue
             else:
                 q[i] = sp.ps[i]*self.b[:,i]
-        q_weight.__init__(self,sp.chis,q,chi_min=chi_min,chi_max=chi_max)
+        QWeight.__init__(self,sp.chis,q,chi_min=chi_min,chi_max=chi_max)
 
     def bias(self,sp):
         """bias as a function of k and r, used in galaxy lensing"""

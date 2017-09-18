@@ -10,7 +10,7 @@ from scipy.integrate import trapz, quad
 import sys
 
 
-class HOD():
+class HOD(object):
     def __init__(self,mass_func,CosmoPie,HOD_data=None):
         if HOD_data == None: 
             # default to Zehavi parameters 

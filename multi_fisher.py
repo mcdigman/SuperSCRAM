@@ -23,7 +23,7 @@ f_return_par = {'lw':False,'sw':False,'par':True}
 f_return_sw_par = {'lw':False,'sw':True,'par':True}
 f_return_sw = {'lw':False,'sw':True,'par':False}
 f_return_lw = {'lw':True,'sw':False,'par':False}
-class MultiFisher:
+class MultiFisher(object):
     def __init__(self,basis,sw_survey,lw_surveys, prior_params=defaults.prior_fisher_params):
         """
         master class for managing fisher matrix manipulations between bases
@@ -33,34 +33,38 @@ class MultiFisher:
             lw_surveys: a list of LWSurvey objects to be combined into mitigation strategy
             prior_params: params for the prior fisher matrix to use in cosmological parameter space
         """
-        self.lw_F_no_mit=basis.get_fisher()
         self.basis=basis
         self.sw_survey=sw_survey
         self.lw_surveys = lw_surveys
         self.prior_params = prior_params
 
+        #prepare to project lw basis to sw basis
+        self.n_o = self.sw_survey.get_N_O_I()
+        self.n_sw = self.sw_survey.get_total_dimension()
+        self.lw_to_sw_array = self.basis.D_O_I_D_delta_alpha(self.sw_survey.geo,self.sw_survey.get_dO_I_ddelta_bar_array())
+
+        self.sw_to_par_array=sw_survey.get_dO_I_dpar_array()
+
+        self.lw_F_no_mit=basis.get_fisher()
+
+        self.sw_f_ssc_no_mit = self.lw_F_no_mit.project_covar(self.lw_to_sw_array)
+        #TODO could discard lw_F_mit now/mutate it for memory efficiency
         #accumulate lw covariances onto fisher_tot
         self.lw_F_mit = copy.deepcopy(self.lw_F_no_mit)
         for i in xrange(0,self.lw_surveys.size):
             self.lw_surveys[i].fisher_accumulate(self.lw_F_mit)
         self.lw_F_mit.switch_rep(fm.REP_CHOL_INV)
-        self.lw_F_no_mit.switch_rep(fm.REP_CHOL_INV)
+        #self.lw_F_no_mit.switch_rep(fm.REP_CHOL_INV)
 
-        #prepare to project lw basis to sw basis
-        self.n_o = self.sw_survey.get_N_O_I()
-        self.lw_to_sw_array = self.basis.D_O_I_D_delta_alpha(self.sw_survey.geo,self.sw_survey.get_dO_I_ddelta_bar_array())
+        self.sw_f_ssc_mit = self.lw_F_mit.project_covar(self.lw_to_sw_array)
 
-        self.n_sw = self.sw_survey.get_total_dimension()
 
-        self.sw_to_par_array=sw_survey.get_dO_I_dpar_array()
         
         #sw covariances to add
         self.sw_non_SSC_covars = self.sw_survey.get_non_SSC_sw_covar_arrays()
         self.sw_g_covar = fm.FisherMatrix(self.sw_non_SSC_covars[0],input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,silent=True)
         self.sw_ng_covar = fm.FisherMatrix(self.sw_non_SSC_covars[1],input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,silent=True)
 
-        self.sw_f_ssc_mit = self.lw_F_mit.project_covar(self.lw_to_sw_array)
-        self.sw_f_ssc_no_mit = self.lw_F_no_mit.project_covar(self.lw_to_sw_array)
 
 #        self.sw_SSC_no_mit_covar = self.lw_F_no_mit.project_covar(self.lw_to_sw_array)
 #        self.sw_SSC_mit_covar = self.lw_F_mit.project_covar(self.lw_to_sw_array)

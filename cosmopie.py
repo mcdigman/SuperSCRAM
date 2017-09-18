@@ -16,7 +16,7 @@ from warnings import warn
 eps=np.finfo(float).eps
 import matter_power_spectrum as mps
 
-class CosmoPie : 
+class CosmoPie(object): 
     #TODO convergence test a grid values
     #TODO reduce possibility of circular reference to MatterPower
     def __init__(self,cosmology=defaults.cosmology, P_lin=None, k=None,p_space=defaults.cosmopie_params['p_space'],needs_power=False,camb_params=defaults.camb_params,a_step=0.001,G_in=None,G_safe=False,silent=False):
@@ -512,7 +512,8 @@ class CosmoPie :
 JDEM_LIST = ['ws36_'+str(itr_36) for itr_36 in xrange(0,36)]
 P_SPACES ={'jdem': ['ns','Omegamh2','Omegabh2','Omegakh2','OmegaLh2','dGamma','dM','LogG0','LogAs'],
             'lihu' : ['ns','Omegach2','Omegabh2','Omegakh2','h','LogAs'],
-            'basic': ['ns','Omegamh2','Omegabh2','Omegakh2','h','sigma8']}
+            'basic': ['ns','Omegamh2','Omegabh2','Omegakh2','h','sigma8'],
+            'overwride':[]}
 DE_METHODS = {'constant_w':['w'],
               'w0wa'      :['w','w0','wa'],
               'jdem'      :JDEM_LIST,

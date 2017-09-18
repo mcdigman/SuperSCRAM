@@ -241,7 +241,7 @@ if __name__=='__main__':
         G_0 = C_0.G(0.)
         halofit_params =defaults.halofit_params.copy()
         halofit_params['cutoff']=False
-        hf_0 = hf.halofitPk(C_0,k_0,P_0,halofit_params=halofit_params)
+        hf_0 = hf.HalofitPk(C_0,k_0,P_0,halofit_params=halofit_params)
 
         n_w = ws.size
         wm = w_matcher.WMatcher(C_0)
@@ -263,7 +263,7 @@ if __name__=='__main__':
             if itr==0:
                 fpt = FASTPT.FASTPT(kls[0],fpt_params['nu'],low_extrap=fpt_params['low_extrap'],high_extrap=fpt_params['high_extrap'],n_pad=fpt_params['n_pad'])
             knls[itr],Pnls[itr],sigma8nls[itr] = camb_pow(cosmo_start,zbar=1.,camb_params=camb_params,nonlinear_model=camb.model.NonLinear_both)
-            hfs[itr] = hf.halofitPk(Cs[itr],kls[itr],Pls[itr],halofit_params=halofit_params)
+            hfs[itr] = hf.HalofitPk(Cs[itr],kls[itr],Pls[itr],halofit_params=halofit_params)
             Phfs[itr] = 2*np.pi**2*(hfs[itr].D2_NL(kls[itr],1.0).T/kls[itr]**3).T
             #Pfpts[itr] =Pls[0]*((Gs[itr]/Gs[0])**2)*Gnorms[itr]**2+fpt.one_loop(Pls[0]*(Gs[itr]/Gs[0])**2,C_window=fpt_params['C_window'])*Gnorms[itr]**4
             Pfpts[itr] =P_0*(Gs[itr]/G_0)**2+fpt.one_loop(P_0,C_window=fpt_params['C_window'])*(Gs[itr]/G_0)**4
@@ -284,14 +284,14 @@ if __name__=='__main__':
             Peffs[itr] = P_0*mult4s[itr,0]*scales[itr]*transfer_mods[itr]**2#*sigma8ls[itr]**2/sigma8_0**2 #(sigma8ls[itr]**2/sigma8_0**2) should be interchangeable with scales[itr]
             Pfpt3s[itr] =Peffs[itr]+fpt.one_loop(Peffs[itr],C_window=fpt_params['C_window'])
             #if itr>0:
-            hf2s[itr] = hf.halofitPk(C4s[itr],kls[itr],Peffs[itr],halofit_params=halofit_params)
-            hf4s[itr] = hf.halofitPk(C4s[itr],kls[itr],P_0*mult4s[itr,0],halofit_params=halofit_params)
+            hf2s[itr] = hf.HalofitPk(C4s[itr],kls[itr],Peffs[itr],halofit_params=halofit_params)
+            hf4s[itr] = hf.HalofitPk(C4s[itr],kls[itr],P_0*mult4s[itr,0],halofit_params=halofit_params)
             Phf2s[itr] = 2*np.pi**2*(hf2s[itr].D2_NL(kls[itr],1.0,w_overwride=True,fixed_w=w4s[itr],grow_overwride=False,fixed_growth=mult4s[itr]*C_0.G_norm(0.)**2).T/kls[itr]**3).T
             Phf3s[itr] = 2*np.pi**2*(hfs[itr].D2_NL(kls[itr],0.,w_overwride=True,fixed_w=w4s[itr]).T/kls[itr]**3).T
             Phf4s[itr] = 2*np.pi**2*(hf4s[itr].D2_NL(kls[itr],0.,w_overwride=False).T/kls[itr]**3).T
             #else:
-            #    hf2s[itr] = hf.halofitPk(Cs[itr],kls[itr],P_0*mul)
-            #    hf4s[itr] = hf.halofitPk(C4s[itr],kls[itr],P_0*mult4s[itr,0])
+            #    hf2s[itr] = hf.HalofitPk(Cs[itr],kls[itr],P_0*mul)
+            #    hf4s[itr] = hf.HalofitPk(C4s[itr],kls[itr],P_0*mult4s[itr,0])
             #    Phf2s[itr] = 2*np.pi**2*(hf2s[itr].D2_NL(kls[itr],0.,w_overwride=False,fixed_w=w4s[itr],grow_overwride=True,fixed_growth=C_0.G_norm(0.)**2).T/kls[itr]**3).T
             #    Phf3s[itr] = 2*np.pi**2*(hfs[itr].D2_NL(kls[itr],0.,w_overwride=True,fixed_w=w4s[itr]).T/kls[itr]**3).T
             #    Phf4s[itr] = 2*np.pi**2*(hf4s[itr].D2_NL(kls[itr],0.,w_overwride=False).T/kls[itr]**3).T

@@ -1,6 +1,6 @@
 import numpy as np
 import shear_power as sp
-from geo import rect_geo
+from geo import RectGeo
 import defaults
 from cosmopie import CosmoPie
 import matter_power_spectrum as mps
@@ -24,7 +24,7 @@ if __name__=='__main__':
 
     ls = np.arange(2,3000)
 
-    geo1=rect_geo(zs,Theta1,Phi1,C,z_fine)
+    geo1=RectGeo(zs,Theta1,Phi1,C,z_fine)
     
     omega_s = geo1.angular_area()
     
@@ -37,7 +37,7 @@ if __name__=='__main__':
     plt.grid()
     for i in xrange(0,geo1.rbins.shape[0]):
         rbin = geo1.rbins[i]
-        q1_dC = sp.q_shear(sp1,rbin[0],rbin[1])
+        q1_dC = sp.QShear(sp1,rbin[0],rbin[1])
         dc_ddelta = sp.Cll_q_q(sp1,q1_dC,q1_dC).Cll() 
         print dc_ddelta
         ax.loglog(ls,dc_ddelta)

@@ -6,7 +6,7 @@ import re
 from warnings import warn
 from Dn import DNumberDensityObservable
 
-class LWSurvey:
+class LWSurvey(object):
     def __init__(self,geos,survey_id,basis,C,params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params):
         """handle getting long wavelength observables and their fisher matrices for mitigation
             inputs:
@@ -79,7 +79,7 @@ def generate_observable_names(observable_list):
     return names
 
 if __name__=='__main__':
-    from geo import rect_geo
+    from geo import RectGeo
     import sph_klim
     Theta1 = [np.pi/4.,np.pi/2.]
     Phi1 = [0,np.pi/3.]
@@ -90,8 +90,8 @@ if __name__=='__main__':
     C=cp.CosmoPie(k=k,P_lin=P)
     zs = np.array([0.1,0.8])
     ls = np.arange(2,500)
-    geo1 = rect_geo(zs,Theta1,Phi1,C)
-    geo2 = rect_geo(zs,Theta2,Phi2,C)
+    geo1 = RectGeo(zs,Theta1,Phi1,C)
+    geo2 = RectGeo(zs,Theta2,Phi2,C)
     k_cut = 0.005
     l_ceil = 100
     r_max = 4000.

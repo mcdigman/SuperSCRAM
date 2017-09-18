@@ -4,11 +4,11 @@ import defaults
 import hmf
 from cosmopie import CosmoPie
 from algebra_utils import trapz2
-from polygon_pixel_geo import polygon_pixel_geo
+from polygon_pixel_geo import PolygonPixelGeo
 from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
 from scipy.integrate import cumtrapz
 #get dN/(dz dOmega)
-class NZCandel:
+class NZCandel(object):
     def __init__(self,params):
         self.params = params
 
@@ -102,7 +102,7 @@ def main():
     z_fine = np.arange(0.01,4.0,0.01)
 
     l_max = 25
-    geo1 = polygon_pixel_geo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max,res_healpix = res_choose)
+    geo1 = PolygonPixelGeo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max,res_healpix = res_choose)
     n_run = 30
     ts = np.zeros(n_run+1)
     ts[0] = time()

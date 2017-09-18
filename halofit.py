@@ -1,6 +1,4 @@
 import numpy as np
-from numpy import pi 
-import sys
 from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
 import cosmopie as cp
 import defaults
@@ -9,7 +7,7 @@ from numpy.core.umath_tests import inner1d
 #p_h = np.loadtxt('camb_m_pow_l.dat')#
 #p_interp = interp1d(p_h[:,0],p_h[:,1]*p_h[:,0]**3/(2*np.pi**2))
 
-class halofitPk(object):
+class HalofitPk(object):
     ''' python version of Halofit, orginally presented in Smith 2003. Bibtex entry for Smith 2003
                     et al. is below. 
                     
@@ -74,7 +72,7 @@ class halofitPk(object):
         
         sigs,sig_d1s,sig_d2s=self.wint(rs)
         #can safely cutoff if 1/sig is greater than 1, because that corresponds to a normalized growth factor>1 and 1/sig monotonically increases with higher r
-        n_r_max = n_r
+#        n_r_max = n_r
 #        for i in xrange(0,n_r):
 #            sig,d1,d2 = self.wint(rs[i])
 #            sigs[i] = sig
@@ -106,42 +104,42 @@ class halofitPk(object):
         self.sig_d1 = interp1d(rs,sig_d1s)
         self.sig_d2 = interp1d(rs,sig_d2s)
     #way of getting parameters without doing the interpolation, old
-    def spectral_parameters(self,z):
-
-        growth=self.C.G_norm(self.z)
-        self.amp=growth
-        xlogr1=-2.0
-        xlogr2=3.5 
-        
-        ''' iterate to determine the wavenumber where
-                        nonlinear effects become important (rknl), 
-                        the effectice spectral index (rneff),
-                        the second derivative of the power spectrum at rknl (rncur) 
-        '''
-
-        diff_last = np.inf
-        while True:
-                rmid = 10**( 0.5*(xlogr2+xlogr1) )
-
-                sig,d1,d2 = self.wint(rmid)
-                sig = sig*growth
-                diff = sig-1.0
-                diff_frac = abs((diff_last-diff)/diff)
-                diff_last = diff    
-                if diff > 0.0001 and diff_frac>self.c_threshold:
-                    xlogr1 = np.log10(rmid)
-                    continue
-                elif diff < -0.0001 and diff_frac>self.c_threshold:
-                    xlogr2 = np.log10(rmid)
-                    continue
-                else:
-                    self.rknl = 1./rmid
-                    self.rneff = -3-d1
-                    self.rncur = -d2
-                    if abs(diff) > 0.0001:
-                        warn('halofit may not have converged sufficiently')
-                    break
-#                       self.amp = growth
+#    def spectral_parameters(self,z):
+#
+#        growth=self.C.G_norm(self.z)
+#        self.amp=growth
+#        xlogr1=-2.0
+#        xlogr2=3.5 
+#        
+#        ''' iterate to determine the wavenumber where
+#                        nonlinear effects become important (rknl), 
+#                        the effectice spectral index (rneff),
+#                        the second derivative of the power spectrum at rknl (rncur) 
+#        '''
+#
+#        diff_last = np.inf
+#        while True:
+#                rmid = 10**( 0.5*(xlogr2+xlogr1) )
+#
+#                sig,d1,d2 = self.wint(rmid)
+#                sig = sig*growth
+#                diff = sig-1.0
+#                diff_frac = abs((diff_last-diff)/diff)
+#                diff_last = diff    
+#                if diff > 0.0001 and diff_frac>self.c_threshold:
+#                    xlogr1 = np.log10(rmid)
+#                    continue
+#                elif diff < -0.0001 and diff_frac>self.c_threshold:
+#                    xlogr2 = np.log10(rmid)
+#                    continue
+#                else:
+#                    self.rknl = 1./rmid
+#                    self.rneff = -3-d1
+#                    self.rncur = -d2
+#                    if abs(diff) > 0.0001:
+#                        warn('halofit may not have converged sufficiently')
+#                    break
+##                       self.amp = growth
 
     def wint(self,r):
         '''
@@ -356,12 +354,13 @@ class halofitPk(object):
             return pnl,pq,ph,plin
         else:
             return pnl
+    #TODO use or eliminate as obsolete
     def P_NL(self,k,z,return_components = False):
         if(return_components):
             pnl,pq,ph,plin=self.D2_NL(k,z,return_components)
-            return pnl/k**3*(2*pi**2), pq, ph, plin/k**3*(2*pi**2)
+            return pnl/k**3*(2*np.pi**2), pq, ph, plin/k**3*(2*np.pi**2)
         else:
-            return D2_NL(k,return_components)/k**3*(2*pi**2)
+            return self.D2_NL(k,return_components)/k**3*(2*np.pi**2)
 
                     
 
@@ -399,9 +398,9 @@ if __name__=="__main__":
                     params2=params1.copy()
                     params2['k_fix']=500. #results look good at least to 500, probably can get away with lower k_fix
 
-                    hf1=halofitPk(CP,k_lin,P_lin,halofit_params=params1)
+                    hf1=HalofitPk(CP,k_lin,P_lin,halofit_params=params1)
                     P_nl_1=hf1.D2_NL(k_lin,0.)*np.pi**2*2/k_lin**3
-                    hf2=halofitPk(CP,k_lin,P_lin,halofit_params=params2)
+                    hf2=HalofitPk(CP,k_lin,P_lin,halofit_params=params2)
                     P_nl_2=hf2.D2_NL(k_lin,0.)*np.pi**2*2/k_lin**3
                     
                     print "avg deviation:",np.average(np.abs((P_nl_2)/(P_nl_1)-1.))
@@ -412,11 +411,11 @@ if __name__=="__main__":
                 do_time_test=False
                 if do_time_test:
                     for itr in xrange(0,5000):
-                        HF2=halofitPk(CP,k2,P2)
+                        HF2=HalofitPk(CP,k2,P2)
 
                 do_plot_test=False 
                 if do_plot_test:
-                    HF=halofitPk(CP,k,P1)
+                    HF=HalofitPk(CP,k,P1)
                     Plin=HF.D2_L(k,0.)*np.pi**2*2/k**3
                     P=HF.D2_NL(k,0.)*np.pi**2*2/k**3
                     

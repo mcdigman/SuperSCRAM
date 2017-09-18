@@ -18,7 +18,7 @@ REP_COVAR = 3
 
 #things to watch out for: the output matrix may mutate if it was the internal matrix
 
-class FisherMatrix:
+class FisherMatrix(object):
     def __init__(self,input_matrix,input_type,initial_state = None,fix_input=False,silent=True):
         """create a fisher matrix object
             input_matrix: an input matrix

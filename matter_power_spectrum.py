@@ -13,7 +13,7 @@ import cosmopie as cp
 #class for a matter power spectrum which can get both linear and nonlinear power spectra as needed
 #TODO clean up
 #TODO treat w0 and w consistently
-class MatterPower:
+class MatterPower(object):
     def __init__(self,C_in,P_lin=None,k_in=None,matter_power_params=defaults.matter_power_params,camb_params=defaults.camb_params,wmatcher_params=defaults.wmatcher_params,halofit_params=defaults.halofit_params,fpt_params=defaults.fpt_params,wm_in=None,wm_safe=False,P_fid=None,camb_safe=False,de_perturbative=False):
         """Generate matter power spectrum for input cosmology
         linear power spectrum use camb, nonlinear can use halofit or FAST-PT
@@ -149,7 +149,7 @@ class MatterPower:
             self.use_camb_grid = False
     
 #        if self.params['needs_halofit']:
-#            self.hf=halofit.halofitPk(self.C,self.k,p_lin=self.P_lin,halofit_params=self.halofit_params) 
+#            self.hf=halofit.HalofitPk(self.C,self.k,p_lin=self.P_lin,halofit_params=self.halofit_params) 
 #        else:
 #            self.hf = None
 
@@ -216,10 +216,10 @@ class MatterPower:
                     cosmo_hf_i['de_model'] = 'constant_w'
                     cosmo_hf_i['w'] = w_match_grid[i]
                     hf_C_calc = cp.CosmoPie(cosmology=cosmo_hf_i,silent=True,G_safe=True,G_in=InterpolatedUnivariateSpline(self.C.z_grid,self.wm.growth_interp(w_match_grid[i],self.C.a_grid),ext=2,k=2),needs_power=False)
-                    hf_calc = halofit.halofitPk(hf_C_calc,self.k,p_lin=Pbases[:,i],halofit_params=self.halofit_params)
+                    hf_calc = halofit.HalofitPk(hf_C_calc,self.k,p_lin=Pbases[:,i],halofit_params=self.halofit_params)
                     P_nonlin[:,i] = 2.*np.pi**2*(hf_calc.D2_NL(self.k,zs[i]).T/self.k**3)
             else:
-                hf_calc = halofit.halofitPk(self.C,self.k,p_lin=self.P_lin*const_pow_mult,halofit_params=self.halofit_params)
+                hf_calc = halofit.HalofitPk(self.C,self.k,p_lin=self.P_lin*const_pow_mult,halofit_params=self.halofit_params)
                 P_nonlin = 2.*np.pi**2*(hf_calc.D2_NL(self.k,zs).T/self.k**3).T
                 
         elif pmodel=='fastpt':

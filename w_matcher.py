@@ -6,7 +6,7 @@ import defaults
 
 import cosmopie as cp
 import numpy as np
-class WMatcher:
+class WMatcher(object):
     def __init__(self,C_fid,wmatcher_params=defaults.wmatcher_params):
         self.C_fid = C_fid
         self.cosmo_fid = C_fid.cosmology.copy()

@@ -4,11 +4,11 @@ from scipy.integrate import cumtrapz,trapz
 from shear_power import ShearPower
 from shear_power import Cll_q_q
 import defaults
-from lensing_weight import q_shear
+from lensing_weight import QShear
 from camb_power import camb_pow
 import scipy.special as spp
 from sph_klim import SphBasisK
-from polygon_geo import polygon_geo
+from polygon_geo import PolygonGeo
 from sw_survey import SWSurvey
 from lw_survey import LWSurvey
 from Super_Survey import super_survey
@@ -191,8 +191,8 @@ if __name__ == '__main__':
     #d=np.loadtxt('camb_m_pow_l.dat')
     #k_in=d[:,0]; P_in=d[:,1]
     l_max = 50
-    geo1 = polygon_geo(zs,theta1s,phi1s,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
-    geo2 = polygon_geo(zs,theta2s,phi2s,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
+    geo1 = PolygonGeo(zs,theta1s,phi1s,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
+    geo2 = PolygonGeo(zs,theta2s,phi2s,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
 
     lenless_defaults = defaults.sw_survey_params.copy()
     lenless_defaults['needs_lensing'] = False

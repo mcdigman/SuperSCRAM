@@ -4,7 +4,7 @@ import numpy as np
 import defaults
 from algebra_utils import trapz2
 
-class SourceDistribution:
+class SourceDistribution(object):
     def __init__(self,ps,zs,chis,C,params=defaults.lensing_params):
         """generic input source distribution class"""
         self.ps = ps

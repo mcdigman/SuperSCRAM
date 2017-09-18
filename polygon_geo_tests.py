@@ -1,7 +1,7 @@
 import numpy as np
-from polygon_pixel_geo import polygon_pixel_geo,get_Y_r_dict
+from polygon_pixel_geo import PolygonPixelGeo,get_Y_r_dict
 from sph_functions import Y_r
-from geo import pixel_geo,rect_geo,geo
+from geo import PixelGeo,RectGeo,Geo
 from time import time
 import defaults
 import scipy as sp
@@ -38,21 +38,21 @@ class GeoTestSet:
         self.z_fine = np.arange(defaults.lensing_params['z_min_integral'],np.max(self.zs),defaults.lensing_params['z_resolution'])
 
         self.poly_params = defaults.polygon_params.copy()
-        self.poly_geo = pg.polygon_geo(self.zs,params['thetas'],params['phis'],self.C,self.z_fine,l_max=params['l_max_poly'],poly_params=self.poly_params)
+        self.poly_geo = pg.PolygonGeo(self.zs,params['thetas'],params['phis'],self.C,self.z_fine,l_max=params['l_max_poly'],poly_params=self.poly_params)
         if params['do_pp_geo1']:
-            self.pp_geo1 = polygon_pixel_geo(self.zs,params['thetas'],params['phis'],params['theta_in'],params['phi_in'],self.C,self.z_fine,l_max=params['l_max_poly'],res_healpix=params['res_choose1'])
+            self.pp_geo1 = PolygonPixelGeo(self.zs,params['thetas'],params['phis'],params['theta_in'],params['phi_in'],self.C,self.z_fine,l_max=params['l_max_poly'],res_healpix=params['res_choose1'])
         if params['do_pp_geo2']:
-            self.pp_geo2 = polygon_pixel_geo(self.zs,params['thetas'],params['phis'],params['theta_in'],params['phi_in'],self.C,self.z_fine,l_max=params['l_max_poly'],res_healpix=params['res_choose2'])
-        if params['do_rect_geo']:
-            self.r_geo = rect_geo(self.zs,params['r_thetas'],params['r_phis'],self.C,self.z_fine)
+            self.pp_geo2 = PolygonPixelGeo(self.zs,params['thetas'],params['phis'],params['theta_in'],params['phi_in'],self.C,self.z_fine,l_max=params['l_max_poly'],res_healpix=params['res_choose2'])
+        if params['do_RectGeo']:
+            self.r_geo = RectGeo(self.zs,params['r_thetas'],params['r_phis'],self.C,self.z_fine)
         self.params = params
         
 def get_param_set(indices):
     test_type = indices[0]
     param_index = indices[1]
     if test_type == 0:
-        #compare to rect_geo result
-        params = {'do_rect_geo':True,'do_pp_geo1':True,'do_pp_geo2':True,'res_choose1':6,'res_choose2':7,'l_max_rect':10,'l_max_poly':50}
+        #compare to RectGeo result
+        params = {'do_RectGeo':True,'do_pp_geo1':True,'do_pp_geo2':True,'res_choose1':6,'res_choose2':7,'l_max_rect':10,'l_max_poly':50}
         if 0<=param_index and param_index<12:
             poffset = np.pi/3.*np.mod(param_index,6)
             if param_index<6:
@@ -71,8 +71,8 @@ def get_param_set(indices):
         params['r_thetas'] = np.array([theta0,theta1])
         params['r_phis'] = np.array([phi0,phi1])
     elif test_type == 1:
-        #some rectangular geometries that cannot be directly compared to rect_geo
-        params = {'do_rect_geo':False,'do_pp_geo1':True,'do_pp_geo2':True,'res_choose1':6,'res_choose2':7,'l_max_rect':10,'l_max_poly':50}
+        #some rectangular geometries that cannot be directly compared to RectGeo
+        params = {'do_RectGeo':False,'do_pp_geo1':True,'do_pp_geo2':True,'res_choose1':6,'res_choose2':7,'l_max_rect':10,'l_max_poly':50}
         if param_index==0 or param_index==1:
             if param_index==0:
                 poffset=0.
@@ -122,7 +122,7 @@ def get_param_set(indices):
             params['phis'] = params['phis'][::-1]
     elif test_type==2:
         #other geometries
-        params = {'do_rect_geo':False,'do_pp_geo1':True,'do_pp_geo2':True,'res_choose1':6,'res_choose2':7,'l_max_rect':10,'l_max_poly':50}
+        params = {'do_RectGeo':False,'do_pp_geo1':True,'do_pp_geo2':True,'res_choose1':6,'res_choose2':7,'l_max_rect':10,'l_max_poly':50}
         if param_index==0:
             toffset = np.pi/2.
             theta0=np.pi/6+toffset
@@ -148,16 +148,16 @@ def get_param_set(indices):
     return params
 
 index_sets = [[2,0],[1,0],[1,1],[1,2],[1,3],[1,4]]
-for itr in xrange(0,6):
-    index_sets.append(np.array([0,itr]))
-    index_sets.append(np.array([0,itr+6]))
+for itr_ind in xrange(0,6):
+    index_sets.append(np.array([0,itr_ind]))
+    index_sets.append(np.array([0,itr_ind+6]))
 
 @pytest.fixture(params=index_sets,scope="module")
 def geo_input(request):
     return GeoTestSet(get_param_set(request.param))
 
 def test_alm_rect_agreement(geo_input):
-    if geo_input.params['do_rect_geo']:
+    if geo_input.params['do_RectGeo']:
         #relatively low tolerance for differences because both should be nearly exact
         #main source of error is angle doubling formula, increasing number of doublings would decrease error
         ABS_TOL = 10**-7
@@ -168,7 +168,7 @@ def test_alm_rect_agreement(geo_input):
 
 def test_alm_pp_agreement1(geo_input):
     if geo_input.params['do_pp_geo1']:
-        #relatively high tolerance for differences because polygon_geo is intended to be more accurate than polygon_pixel_geo
+        #relatively high tolerance for differences because PolygonGeo is intended to be more accurate than PolygonPixelGeo
         ABS_TOL = 10**-2
         REL_TOL = 10**-2
         alm_array_poly = geo_input.poly_geo.get_alm_array(geo_input.params['l_max_poly'])[0]
@@ -177,7 +177,7 @@ def test_alm_pp_agreement1(geo_input):
 
 def test_alm_pp_agreement2(geo_input):
     if geo_input.params['do_pp_geo2']:
-        #relatively high tolerance for differences because polygon_geo is intended to be more accurate than polygon_pixel_geo
+        #relatively high tolerance for differences because PolygonGeo is intended to be more accurate than PolygonPixelGeo
         ABS_TOL = 10**-2
         REL_TOL = 10**-2
         alm_array_poly = geo_input.poly_geo.get_alm_array(geo_input.params['l_max_poly'])[0]
@@ -195,8 +195,8 @@ def test_absolute_reconstruction1(geo_input):
         mse = np.sqrt(np.average(abs_error**2))
         assert(MSE_TOL>mse)
 
-#test fine reconstruction improves on polygon_pixel_geo  
-#also test polygon_pixel_geo error while we're at it
+#test fine reconstruction improves on PolygonPixelGeo  
+#also test PolygonPixelGeo error while we're at it
 def test_absolute_improvement2(geo_input):
     MSE_TOL = 10**-1
     if geo_input.params['do_pp_geo2']:
@@ -365,7 +365,7 @@ if __name__=='__main__':
     
     params = get_param_set(np.array([0,0]))
     gts = GeoTestSet(params)
-    l_max = params['l_max']
+    l_max = params['l_max_poly']
     res_choose = params['res_choose1']
     poly_geo = gts.poly_geo
     pp_geo = gts.pp_geo1
@@ -375,7 +375,7 @@ if __name__=='__main__':
     nt = poly_geo.n_v
    
     my_table = poly_geo.alm_table.copy()
-    #get rect_geo to cache the values in the table
+    #get RectGeo to cache the values in the table
     for ll in xrange(0,l_max+1):
         for mm in xrange(0,ll+1):
             gts.r_geo.a_lm(ll,mm)
@@ -419,7 +419,7 @@ if __name__=='__main__':
             X1, Y1 = np.meshgrid(xedges1, yedges1)
             pc1 = ax.pcolormesh(X1,Y1,-H1,cmap='gray')
             ax.set_aspect('equal')
-            ax.set_title("polygon_pixel_geo reconstruction")
+            ax.set_title("PolygonPixelGeo reconstruction")
             #fig.colorbar(pc1,ax=ax)
             #m.plot(x,y,'bo',markersize=1)
             pp_geo2.sp_poly.draw(m,color='red')
@@ -430,7 +430,7 @@ if __name__=='__main__':
                 ax.pcolormesh(X2,Y2,-H2,cmap='gray')
                 ax.set_aspect('equal')
                 #m.plot(x,y,'bo',markersize=1)
-                ax.set_title("polygon_geo reconstruction")
+                ax.set_title("PolygonGeo reconstruction")
                 pp_geo2.sp_poly.draw(m,color='red')
             plt.show()
 

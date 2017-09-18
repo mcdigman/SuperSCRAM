@@ -10,7 +10,7 @@ from warnings import warn
 import lensing_observables as lo
 from sw_cov_mat import SWCovMat
 
-class SWSurvey:
+class SWSurvey(object):
     def __init__(self,geo,survey_id,C,ls = np.array([]),cosmo_par_list=np.array([],dtype=object),cosmo_par_epsilons=np.array([]),params=defaults.sw_survey_params,observable_list=defaults.sw_observable_list,len_params=defaults.lensing_params,ps=np.array([])):
         """Short wavelength survey: manage short wavelength observables and get their non SSC covariances and derivatives
                 inputs:
@@ -106,6 +106,7 @@ class SWSurvey:
             n2 = 0
             for j in xrange(0,self.get_N_O_I()):
                 cov = SWCovMat(self.observables[i],self.observables[j])
+                #could exploit/enforce all symmetries of gaussian covariance matrix, ie C^{ABCD}=C^{BACD}=C^{BADC}=C^{ABDC} if time consumption of this function is ever important
                 cov_mats[0,n1:n1+ds[i],n2:n2+ds[j]] = cov.get_gaussian_covar_array()
                 cov_mats[0,n2:n2+ds[j],n1:n1+ds[i]] = cov_mats[0,n1:n1+ds[i],n2:n2+ds[j]]
                 cov_mats[1,n1:n1+ds[i],n2:n2+ds[j]] = cov.get_nongaussian_covar_array()
@@ -172,7 +173,7 @@ def generate_observable_names(geo,observable_list,cross_bins=defaults.sw_survey_
     return names
 
 if __name__=='__main__':
-    from geo import rect_geo
+    from geo import RectGeo
     import matter_power_spectrum as mps
     Theta = [np.pi/4.,np.pi/2.]
     Phi = [0,np.pi/3.]
@@ -185,7 +186,7 @@ if __name__=='__main__':
     zs = np.array([0.1,0.8])
     z_fine = np.arange(0.01,np.max(zs),0.01)
     ls = np.arange(2,500)
-    geo = rect_geo(zs,Theta,Phi,C,z_fine)
+    geo = RectGeo(zs,Theta,Phi,C,z_fine)
     sw_survey = SWSurvey(geo,'survey1',C,ls)
     O_I_array = sw_survey.get_O_I_array()
     dO_I_ddelta_bar_list = sw_survey.get_dO_I_ddelta_bar_list()

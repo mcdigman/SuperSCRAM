@@ -1,6 +1,6 @@
 #long wavelength observable abstract class
 #Methods must be implemented 
-class LWObservable:
+class LWObservable(object):
     #Takes a numpy array of geos, dictionary of params, and a cosmopie
     def __init__(self,geos,params,survey_id,C):
         self.geos = geos

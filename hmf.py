@@ -11,7 +11,7 @@ import numpy as np
 import defaults
 
 #TODO determine if useful to add    arXiv:astro-ph/9907024 functionality
-class ST_hmf():
+class ST_hmf(object):
     def __init__(self,C, delta_bar=None,params=defaults.hmf_params):
         self.params = params
         # log 10 of the minimum and maximum halo mass
