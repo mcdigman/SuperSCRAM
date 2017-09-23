@@ -43,7 +43,12 @@ class LWSurvey(object):
     def fisher_accumulate(self,fisher_0):
         """add the fisher matrices for all available lw observables to the FisherMatrix object fisher_0"""
         for i in xrange(0,self.get_N_O_a()): 
-            fisher_0.add_fisher(self.observables[i].get_fisher())
+            if self.observables[i].fisher_type:
+                fisher_0.add_fisher(self.observables[i].get_fisher())
+            else:
+                fisher_0.perturb_fisher(self.observables[i].get_perturbing_vector())
+
+            #fisher_0.internal_mat = self.observables[i].add_fisher(fisher_0.internal_mat)
 
     def get_total_rank(self):
         """get the total rank of perturbations that will be added to the SSC contribution, for testing interlace theorems"""
@@ -60,7 +65,7 @@ class LWSurvey(object):
         itr = 0 
         for key in names:
             if re.match('^d_number_density',key):
-                observables[itr] = DNumberDensityObservable(self.geos,self.dn_params,self.survey_id,self.C,self.basis,defaults.nz_params)
+                observables[itr] = DNumberDensityObservable(self.geos,self.dn_params,self.survey_id,self.C,self.basis,defaults.nz_params_wfirst,defaults.nz_params_lsst)
             else:
                 warn('unrecognized or unprocessable observable: \'',key,'\', skipping')
                 observables[itr] = None

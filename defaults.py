@@ -105,7 +105,7 @@ lensing_params = {  'z_resolution'    :0.002, #fine resolution
                     'pmodel_O'        :'halofit', #default method for finding p grid
                     'pmodel_dO_ddelta':'halofit', #default method for finding dp/ddeltabar grid
                     'pmodel_dO_dpar':'halofit',#default method for finding dp/dpar grid
-                    'n_gal'           :118000000*4.,#118000000 galaxies/rad^2=10 galaxies/arcmin^2
+                    'n_gal'           :118000000*6.,#118000000 galaxies/rad^2=10 galaxies/arcmin^2
                     'delta_l'         :1., #binning window
                     'sigma2_e'        :0.27**2*2, #other noise term
                     'sigma2_mu'       :1.2, #noise term for magnification
@@ -127,12 +127,26 @@ basis_params = {    'allow_caching'         :True,
                     'k_max'                 :10.,#TODO check
                     'k_min'                 :10**-4,
                     'n_radial_sample':100000,
-                    'r_precompute_step':0.0001}#convergence related
+                    'x_grid_size':100000}#convergence related
 polygon_params = {'res_healpix':6,'n_double':30}
 nz_params = {   'data_source'   :'./data/CANDELS-GOODSS2.dat',
                 'i_cut'         :24,
                 'area_sterad'   :0.0409650328530259/3282.80635,
                 'smooth_sigma'  :0.04,
+                'n_right_extend':4,
+                'z_resolution'  :0.0001,
+                'mirror_boundary':True}
+nz_params_wfirst = {   'data_source'   :'./data/CANDELS-GOODSS2.dat',
+                'i_cut'         :26,
+                'area_sterad'   :0.0409650328530259/3282.80635,
+                'smooth_sigma'  :0.04,
+                'n_right_extend':4,
+                'z_resolution'  :0.001,
+                'mirror_boundary':True}
+nz_params_lsst = {   'data_source'   :'./data/CANDELS-GOODSS2.dat',
+                'i_cut'         :25.3,#lsst assumes they will get 10 billion galaxies with i<26 in 20000 deg^2, 4 billion lensing quality with i<25.3
+                'area_sterad'   :0.0409650328530259/3282.80635,
+                'smooth_sigma'  :0.05,
                 'n_right_extend':4,
                 'z_resolution'  :0.0001,
                 'mirror_boundary':True}

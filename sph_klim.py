@@ -1,13 +1,14 @@
 from time import time
 from scipy.special import jv
-from scipy.integrate import trapz, quad
+from scipy.integrate import trapz, quad,odeint,cumtrapz
 from scipy.interpolate import InterpolatedUnivariateSpline,interp1d
+import scipy.linalg as spl
 
 import numpy as np
 
 from sph_functions import j_n, jn_zeros_cut
 from lw_basis import LWBasis
-from algebra_utils import trapz2
+from algebra_utils import trapz2,cholesky_inplace
 
 import fisher_matrix as fm
 import defaults
@@ -53,7 +54,7 @@ class SphBasisK(LWBasis):
         t1 = time()
         self.k_num = np.zeros(l_ceil+1,dtype=np.int)
         self.k_zeros = np.zeros(l_ceil+1,dtype=object)
-        n_l = 0
+        self.n_l = 0
         for ll in xrange(0,self.k_num.size):
             k_alpha = jn_zeros_cut(ll,k_cut*r_max)/r_max
             #once there are no zeros above the cut, skip higher l
@@ -63,8 +64,8 @@ class SphBasisK(LWBasis):
             else:
                 self.k_num[ll] = k_alpha.size
                 self.k_zeros[ll] = k_alpha
-                n_l += 1
-        l_alpha = np.arange(0,n_l)
+                self.n_l += 1
+        l_alpha = np.arange(0,self.n_l)
 
         self.l=l_alpha #TODO unnecessary
         self.lm_map=np.zeros((l_alpha.size,3),dtype=object)
@@ -81,21 +82,17 @@ class SphBasisK(LWBasis):
         self.C_size = C_size
         print "sph_klim: basis size: ",self.C_size
         self.C_id=np.zeros((C_size,3))
-        C_alpha_beta=np.zeros((self.C_id.shape[0],self.C_id.shape[0]),order='F')
+        #self.C_alpha_beta=np.zeros((self.C_id.shape[0],self.C_id.shape[0]),order='F')
 
-
+        self.C_compact = np.zeros(self.n_l,dtype=object)
         print "sph_klim: begin constructing covariance matrix. basis id: ",id(self)
         itr=0
-        for a in xrange(self.lm_map.shape[0]):
+        for a in xrange(self.n_l):
             ll=self.lm_map[a,0]
             kk=self.lm_map[a,1]
             mm=self.lm_map[a,2]
 
             itr_m1 = itr
-
-            self.norms = np.zeros(k.size)
-            for b in xrange(kk.size):
-                self.norms[b] = norm_factor(kk[b],ll,self.r_max)
             print "sph_klim: calculating covar for l=",ll
             for c in xrange(mm.size):
                 itr_k1 = itr
@@ -104,24 +101,27 @@ class SphBasisK(LWBasis):
                     self.C_id[itr,1]=kk[b]
                     self.C_id[itr,2]=mm[c]
                     itr=itr+1
-                #calculate I integrals and make table
-                if c==0:
-                    integrand1 = k*P_lin*jv(ll+0.5,k*self.r_max)**2
-                    for b in xrange(0,kk.size):
-                        #print b
-                        for d in xrange(b,kk.size):
-                            coeff = 8.*np.sqrt(kk[b]*kk[d])*kk[b]*kk[d]/(np.pi*self.r_max**2*jv(ll+1.5,kk[b]*self.r_max)*jv(ll+1.5,kk[d]*self.r_max))
-                            #TODO convergence test
-                            C_alpha_beta[itr_k1+b,itr_k1+d]=coeff*trapz2(integrand1/((k**2-kk[b]**2)*(k**2-kk[d]**2)),dx=dk,given_dx=True); #check coefficient
-                            #C_alpha_beta[itr_k1+b,itr_k1+d]=coeff*trapz(integrand1/((k**2-kk[b]**2)*(k**2-kk[d]**2)),k); #check coefficient
-                            C_alpha_beta[itr_k1+d,itr_k1+b]=C_alpha_beta[itr_k1+b,itr_k1+d];
-                else:
-                    for b in xrange(0,kk.size):
-                        for d in xrange(b,kk.size):
-                            C_alpha_beta[itr_k1+b,itr_k1+d] = C_alpha_beta[itr_m1+b,itr_m1+d]
-                            C_alpha_beta[itr_k1+d,itr_k1+b] = C_alpha_beta[itr_m1+d,itr_m1+b]
-        self.fisher = fm.FisherMatrix(C_alpha_beta,input_type=fm.REP_COVAR,initial_state=fm.REP_CHOL,silent=True)
-        #TODO can make more efficient if necessary
+
+            #calculate I integrals and make table
+            self.C_compact[ll] = np.zeros((kk.size,kk.size))
+            integrand1 = k*P_lin*jv(ll+0.5,k*self.r_max)**2
+            #TODO can make somewhat more efficient if necessary
+            for b in xrange(0,kk.size):
+                for d in xrange(b,kk.size):
+                    coeff = 8.*np.sqrt(kk[b]*kk[d])*kk[b]*kk[d]/(np.pi*self.r_max**2*jv(ll+1.5,kk[b]*self.r_max)*jv(ll+1.5,kk[d]*self.r_max))
+                    #TODO convergence test
+                    self.C_compact[ll][b,d]=coeff*trapz2(integrand1/((k**2-kk[b]**2)*(k**2-kk[d]**2)),dx=dk,given_dx=True); #check coefficient
+                    self.C_compact[ll][d,b]=self.C_compact[ll][b,d];
+
+        print "sph_klim: finished calculating covars"
+        x_grid = np.linspace(0.,np.max(self.C_id[:,1])*self.r_max,self.params['x_grid_size'])
+        self.rints = np.zeros(self.n_l,dtype=object)
+
+        for ll in xrange(0,self.n_l):
+            r_I = lambda y,x: x**2*j_n(ll,x)
+            result_ll = odeint(r_I,0.,x_grid,atol=10e-20,rtol=10e-10)[:,0]
+            self.rints[ll] = InterpolatedUnivariateSpline(x_grid,result_ll,ext=2,k=3)
+
         t2 = time()
         print "sph_klim: basis time: ",t2-t1
         print "sph_klim: finished init basis id: ",id(self)
@@ -129,11 +129,51 @@ class SphBasisK(LWBasis):
     def get_size(self):
         """Get number of basis elements"""
         return self.C_size
+    
+    def get_covar_array(self):
+        result = np.zeros((self.C_id.shape[0],self.C_id.shape[0]),order='F')
+        itr_ll = 0
+        for ll in xrange(0,self.n_l):
+            n_k = self.C_compact[ll].shape[0]
+            for m_itr in xrange(0,2*ll+1):
+                result[itr_ll:itr_ll+n_k,itr_ll:itr_ll+n_k]=self.C_compact[ll]
+                itr_ll+=n_k
+        return result
 
-    #TODO storing packed representation of C_alpha_beta and generating the FisherMatrix object here would be more memory efficient, safer so does not mutate C_alpha_beta
-    def get_fisher(self):
+    def get_fisher_array(self):
+        result = np.zeros((self.C_id.shape[0],self.C_id.shape[0]),order='F')
+        itr_ll = 0
+        for ll in xrange(0,self.n_l):
+            n_k = self.C_compact[ll].shape[0]
+            res = spl.solve(self.C_compact[ll],np.identity(n_k),sym_pos=True,lower=True,check_finite=False,overwrite_b=True)
+            res = (res+res.T)/2.
+            for m_itr in xrange(0,2*ll+1):
+                result[itr_ll:itr_ll+n_k,itr_ll:itr_ll+n_k] = res
+                itr_ll+=n_k
+        return result
+
+    def get_cov_cholesky_array(self):
+        result = np.zeros((self.C_id.shape[0],self.C_id.shape[0]),order='F')
+        itr_ll = 0
+        for ll in xrange(0,self.n_l):
+            n_k = self.C_compact[ll].shape[0]
+            res = cholesky_inplace(self.C_compact[ll],inplace=False,lower=True)
+            for m_itr in xrange(0,2*ll+1):
+                result[itr_ll:itr_ll+n_k,itr_ll:itr_ll+n_k]=res
+                itr_ll+=n_k
+        return result
+
+    #TODO storing packed representation of self.C_alpha_beta and generating the FisherMatrix object here would be more memory efficient, safer so does not mutate self.C_alpha_beta
+    def get_fisher(self,initial_state=fm.REP_COVAR):
         """Get FisherMatrix object for the covariance matrix computed by the basis."""
-        return self.fisher
+        if initial_state==fm.REP_FISHER:
+            return fm.FisherMatrix(self.get_fisher_array(),input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
+        elif initial_state==fm.REP_COVAR:
+            return fm.FisherMatrix(self.get_covar_array(),input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR,silent=True)
+        elif initial_state==fm.REP_CHOL:
+            return fm.FisherMatrix(self.get_cov_cholesky_array(),input_type=fm.REP_CHOL,initial_state=fm.REP_CHOL,silent=True)
+        else:
+            return fm.FisherMatrix(self.get_covar_array(),input_type=fm.REP_COVAR,initial_state=initial_state,silent=True)
 
     def k_LW(self):
         """return the long-wavelength wave vector k"""
@@ -160,12 +200,14 @@ class SphBasisK(LWBasis):
         if range_spec is not None:
             x = x[range_spec]
             d_delta_bar = d_delta_bar[range_spec,:]
-
-        dxs = np.diff(x)
+       # dxs = np.diff(x,axis=0)
+        dx1s = (np.diff(x)*d_delta_bar[1::].T)/2.
+        dx2s = (np.diff(x)*d_delta_bar[:-1:].T)/2.
         for ll in xrange(0, integrand.shape[1]):
             #TODO can be sped up if dx is constant
-            result[:,ll] = trapz2((d_delta_bar.T*integrand[:,ll]).T,dx=dxs,given_dx=True)
-
+            #note this is just the trapezoidal rule with d_delta_bar absorbed into dx for a minor speedup
+            result[:,ll] = (np.dot(dx2s,integrand[:-1:,ll])+np.dot(dx1s,integrand[1::,ll]))
+            #result[:,ll] = trapz2((d_delta_bar.T*integrand[:,ll]).T,dx=dxs,given_dx=True)
         print "sph_klim: got D_O_I_D_delta_alpha"
         return result
 
@@ -214,7 +256,8 @@ class SphBasisK(LWBasis):
             result=np.zeros((rbins.shape[0],self.C_id.shape[0]))
             print "sph_klim: calculating with resolution (fine) slices"
 
-        norm=3./(rbins[:,1]**3 - rbins[:,0]**3)/(a_00*2.*np.sqrt(np.pi))
+        norm=3./(rbins[:,1]**3 - rbins[:,0]**3)/(a_00*2.*np.sqrt(np.pi)) 
+
         for itr in xrange(self.C_id.shape[0]):
             ll=int(self.C_id[itr,0])
             kk=self.C_id[itr,1]
@@ -223,9 +266,23 @@ class SphBasisK(LWBasis):
             if (kk,ll) in r_cache:
                 r_part = r_cache[(kk,ll)]
             else:
-                r_part = np.zeros(rbins.shape[0])
-                for i in xrange(0,rbins.shape[0]):
-                    r_part[i] = R_int(rbins[i],kk,ll)*norm[i]
+                #r_part = np.zeros(rbins.shape[0])
+#                r_part2 = np.zeros(rbins.shape[0])
+#                for i in xrange(0,rbins.shape[0]):
+#                    r_part2[i] = R_int(rbins[i],kk,ll)*norm[i]
+                r_part = (self.rints[ll](rbins[:,1]*kk)-self.rints[ll](rbins[:,0]*kk))/kk**3*norm
+#                atol_loc = np.max(r_part)*1e-5
+#                assert(np.allclose(r_part,r_part2,atol=atol_loc,rtol=1e-5))
+#                if not np.allclose(r_part,r_part2,atol=atol_loc,rtol=1e-3):
+#                    print r_part/r_part2
+#                    r_grid3 = np.linspace(0.,self.r_max,self.params['x_grid_size'])
+#                    integrand3= r_grid3**2*j_n(ll,r_grid3*kk)
+#                    integrated3 = InterpolatedUnivariateSpline(r_grid3,cumtrapz(integrand3,r_grid3,initial=0.),k=3,ext=2)
+#                    r_part3 = (integrated3(rbins[:,1])-integrated3(rbins[:,0]))*norm
+#                    print r_part/r_part3
+#                    print r_part2/r_part3
+#                    print ll,kk
+#                    raise RuntimeError('values do not match')
                 r_cache[(kk,ll)] = r_part
             result[:,itr] = r_part*geo.a_lm(ll,mm)
 
@@ -248,7 +305,7 @@ def R_int(r_range,k,ll):
     def integrand(r):
         return r**2*j_n(ll,r*k)
     #TODO can be done with trapz
-    I = quad(integrand,r_range[0],r_range[1])[0]
+    I = quad(integrand,r_range[0],r_range[1],epsabs=10e-20,epsrel=10-7)[0]
     #TODO check if eps logic needed
     return I
 

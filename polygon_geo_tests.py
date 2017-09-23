@@ -38,7 +38,7 @@ class GeoTestSet:
         self.z_fine = np.arange(defaults.lensing_params['z_min_integral'],np.max(self.zs),defaults.lensing_params['z_resolution'])
 
         self.poly_params = defaults.polygon_params.copy()
-        self.poly_geo = pg.PolygonGeo(self.zs,params['thetas'],params['phis'],self.C,self.z_fine,l_max=params['l_max_poly'],poly_params=self.poly_params)
+        self.poly_geo = pg.PolygonGeo(self.zs,params['thetas'],params['phis'],params['theta_in'],params['phi_in'],self.C,self.z_fine,l_max=params['l_max_poly'],poly_params=self.poly_params)
         if params['do_pp_geo1']:
             self.pp_geo1 = PolygonPixelGeo(self.zs,params['thetas'],params['phis'],params['theta_in'],params['phi_in'],self.C,self.z_fine,l_max=params['l_max_poly'],res_healpix=params['res_choose1'])
         if params['do_pp_geo2']:

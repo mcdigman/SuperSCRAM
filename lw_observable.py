@@ -7,6 +7,7 @@ class LWObservable(object):
         self.C = C
         self.params = params
         self.survey_id = survey_id
+        self.fisher_type=True
     #get_dO_a_ddelta_bar must be implemented by subclass, should return a numpy array with the first axis being z bins of geo
     #return array of vectors representing derivative of observable wrt \bar{delta}
     #TODO assess if actually needs to be mandatory for an LWObservable

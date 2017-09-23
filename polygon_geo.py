@@ -2,6 +2,7 @@ import numpy as np
 from math import isnan
 from astropy.io import fits
 import spherical_geometry.vector as sgv
+import spherical_geometry.graph
 from spherical_geometry.polygon import SphericalPolygon
 import spherical_geometry.great_circle_arc as gca
 from polygon_pixel_geo import PolygonPixelGeo,get_Y_r_dict
@@ -19,8 +20,8 @@ from assoc_legendre import assoc_legendre_p
 class PolygonGeo(Geo):
     #TODO check order of thetas,phis
     #vertices should be specified such that the clockwise oriented contour contains the area
-    def __init__(self,zs,thetas,phis,C,z_fine,l_max,poly_params=defaults.polygon_params):
-        #self.sp_poly = get_poly(thetas,phis,theta_in,phi_in)
+    #theta_in and phi_in do not actually determine the inside, but are necessary for now if generating intersects with SphericalPolygon
+    def __init__(self,zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max,poly_params=defaults.polygon_params):
         #if isnan(self.sp_poly.area()):
         #    raise ValueError("PolygonGeo: Calculated area of polygon is nan, likely invalid polygon")
 
@@ -38,6 +39,10 @@ class PolygonGeo(Geo):
         self.internal_angles = 2.*np.pi-np.hstack([gca.angle(self.bounding_xyz[:-2], self.bounding_xyz[1:-1], self.bounding_xyz[2:], degrees=False),gca.angle(self.bounding_xyz[-2], self.bounding_xyz[0], self.bounding_xyz[1], degrees=False)])
     
         Geo.__init__(self,zs,C,z_fine)
+
+        self.sp_poly = get_poly(thetas,phis,theta_in,phi_in)
+        print "PolygonGeo: area calculated by SphericalPolygon: "+str(self.sp_poly.area())
+        print "PolygonGeo: area calculated by PolygonGeo: "+str(self.angular_area())+" sr or "+str(self.angular_area()*(180./np.pi)**2)+" deg^2"
 
         self.alm_table = {(0,0):self.angular_area()/np.sqrt(4.*np.pi)}
          
@@ -198,9 +203,24 @@ class PolygonGeo(Geo):
         if alm is None:
             raise RuntimeError('PolygonGeo: a_lm generation failed for unknown reason at l='+str(l)+',m='+str(m))
         return alm
+    
+    #TODO make robust for type of poly2
+    #TODO avoid relying on SphericalPolygon
+    def get_overlap_fraction(self,geo2):
+        #there is a bug in spherical_geometry that causes overlap to fail if geometries are nested and 1 side is identical, handle this case unless they fix it
+        try:
+            result = self.sp_poly.overlap(geo2.sp_poly)
+        except:
+            warn('spherical_geometry overlap failed, assuming total overlap')
+            if self.geo1.angular_area()<=self.geo2.angular_area():
+                result = 1.
+            else:
+                result = geo2.angular_area()/self.angular_area()
+        return result
 
     def surface_integral(self,function):
         raise  NotImplementedError, "Implement this if anything actually needs it"
+
 #Note these are spherical polygons so all the sides are great circles (not lines of constant theta!)
 #So area will differ from integral if assuming constant theta
 #vertices must have same first and last coordinate so polygon is closed
@@ -285,7 +305,7 @@ if __name__=='__main__':
     
     t0 = time()
     poly_params = defaults.polygon_params.copy()
-    poly_geo = PolygonGeo(zs,thetas,phis,C,z_fine,l_max=l_max,poly_params=poly_params)
+    poly_geo = PolygonGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,poly_params=poly_params)
     t1 = time()
     print "PolygonGeo initialized in time: "+str(t1-t0) 
     pp_geo = PolygonPixelGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,res_healpix=res_choose)

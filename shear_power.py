@@ -41,6 +41,7 @@ class ShearPower(object):
         #self.n_gal = 286401.
         #118000000 galaxies/rad^2 if 10/arcmin^2 and omega_s is area in radians of field
         self.omega_s = omega_s
+        #TODO maybe get n_gal from an NZMAtcher directly 
         self.n_gal = params['n_gal']
         self.pmodel = pmodel
         self.sigma2_e = params['sigma2_e']

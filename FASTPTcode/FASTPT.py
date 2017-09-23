@@ -155,7 +155,7 @@ class FASTPT:
 			else:
 				self.g_n[i,:]=g_m_vals(sigma,Q_n)
 				# pre factor 
-				self.pf[i]=(-1)**l_Bessel[i]/pi**2*2**(2+2*nu+alpha[i]+beta[i])
+				self.pf[i]=(-1)**l_Bessel[i]/pi**2.*2.**(2.+2.*nu+alpha[i]+beta[i])
 			
 				self.two_part_l[i,:]=exp(1j*self.tau_l*log2)
 			

@@ -4,14 +4,15 @@ between two survey geometries, as described in the paper"""
 import numpy as np
 from hmf import ST_hmf
 from nz_candel import NZCandel
+from nz_lsst import NZLSST
 from lw_observable import LWObservable
 import fisher_matrix as fm
 from algebra_utils import trapz2
 from warnings import warn
-
+import scipy.linalg as spl
 
 class DNumberDensityObservable(LWObservable):
-    def __init__(self,geos,params,survey_id, C,basis,nz_params):  
+    def __init__(self,geos,params,survey_id, C,basis,nz_params1,nz_params2):  
         """
             data should hold: 
             the redshift and spatial regions 
@@ -22,12 +23,26 @@ class DNumberDensityObservable(LWObservable):
         min_mass = params['M_cut']
         self.variable_cut = params['variable_cut']
         LWObservable.__init__(self,geos,params,survey_id,C)
+        self.fisher_type=False
         
         self.geo1 = geos[0]
         self.geo2 = geos[1]
+        self.nz_params1=nz_params1
+        self.nz_params2=nz_params2
+        
+        #there is a bug in spherical_geometry that causes overlap to fail if geometries are nested and 1 side is identical, handle this case unless they fix it
+        try:
+            self.overlap_fraction = self.geo1.get_overlap_fraction(self.geo2)
+        except:
+            warn('spherical_geometry overlap failed, assuming total overlap')
+            if self.geo1.angular_area()<=self.geo2.angular_area():
+                self.overlap_fraction = 1.
+            else:
+                self.overlap_fraction = self.geo2.angular_area()/self.geo1.angular_area()
 
         self.mf=ST_hmf(self.C)
-        self.nzc = NZCandel(nz_params)
+        self.nzc_1 = NZCandel(self.nz_params1)
+        self.nzc_2 = NZLSST(self.nzc_1.z_grid,self.nz_params2)
         self.n_bins = self.geo1.fine_indices.shape[0]
         if not self.n_bins==self.geo2.fine_indices.shape[0]:
             warn("size of geo1 "+str(self.n_bins)+" incompatible with size of geo2 "+str(self.geo2.fine_indices.shape[0]))
@@ -37,8 +52,8 @@ class DNumberDensityObservable(LWObservable):
 
         #TODO check if interpolation needed
         if self.variable_cut: 
-            self.n_avgs1 = self.nzc.get_nz(self.geo1)
-            self.n_avgs2 = self.nzc.get_nz(self.geo2)
+            self.n_avgs1 = self.nzc_1.get_nz(self.geo1)
+            self.n_avgs2 = self.nzc_2.get_nz(self.geo2)
         else:
             self.n_avgs1 = np.zeros(self.geo1.z_fine.size)
             self.n_avgs2 = np.zeros(self.geo2.z_fine.size)
@@ -48,8 +63,8 @@ class DNumberDensityObservable(LWObservable):
                 self.n_avgs2[i] = self.mf.n_avg(min_mass,self.geo2.z_fine[i])
 
         if self.variable_cut:
-            self.M_cuts1 = self.nzc.get_M_cut(self.mf,self.geo1)
-            self.M_cuts2 = self.nzc.get_M_cut(self.mf,self.geo2)
+            self.M_cuts1 = self.nzc_1.get_M_cut(self.mf,self.geo1)
+            self.M_cuts2 = self.nzc_2.get_M_cut(self.mf,self.geo2)
      
         for itr in xrange(0,self.n_bins):
             self.basis = basis 
@@ -61,6 +76,7 @@ class DNumberDensityObservable(LWObservable):
     
             V1 = self.geo1.volumes[itr]
             V2 = self.geo2.volumes[itr]
+            VInt = self.geo1.volumes[itr]*self.overlap_fraction
     
             #TODO pull out of loop     
             self.dn_ddelta_bar1 = np.zeros((range1.size))
@@ -91,16 +107,24 @@ class DNumberDensityObservable(LWObservable):
             self.DO_a = self.d2-self.d1
             
             self.n_avg1 = trapz2((self.geo1.r_fine**2*self.n_avgs1)[range1],self.geo1.r_fine[range1])/(self.geo1.r_fine[range1[-1]]**3-self.geo1.r_fine[range1[0]]**3)*3.
-            self.n_avg2 = trapz2((self.geo2.r_fine**2*self.n_avgs2)[range2],self.geo2.r_fine[range2])/(self.geo1.r_fine[range1[-1]]**3-self.geo1.r_fine[range1[0]]**3)*3.
+            self.n_avg2 = trapz2((self.geo2.r_fine**2*self.n_avgs2)[range2],self.geo2.r_fine[range2])/(self.geo2.r_fine[range2[-1]]**3-self.geo2.r_fine[range2[0]]**3)*3.
             
     
-            #TODO handle overlapping geometries 
-            self.Nab_i[itr,itr]=1./(self.n_avg1/V1+self.n_avg2/V2)
-            self.Nab_f = fm.FisherMatrix(self.Nab_i,input_type=fm.REP_FISHER)
-                
+            #use min because assume all galaxies detected in the deeper survey, so np.min([self.n_avg1,self.n_avg2]) should be n_both
+            #TODO ensure well behaved if overlap is total
+            #TODO enable different type of cutoff for LSST like and WFIRST like surveys
+            Nab_itr = self.n_avg1/V1+self.n_avg2/V2-2.*np.min([self.n_avg1,self.n_avg2])*VInt/(V1*V2)
+            if Nab_itr == 0.:
+                warn('Dn: variance had a value which was exactly 0; mitigation disabled for axis '+str(itr))
+                self.Nab_i[itr,itr] = 0.
+                self.vs[itr]=np.zeros(self.DO_a.flatten().shape)
+            else:
+                self.Nab_i[itr,itr]=1./Nab_itr
+                self.vs[itr]=self.DO_a.flatten()
+             
            
-            self.vs[itr]=self.DO_a.flatten()
-        
+        self.Nab_f = fm.FisherMatrix(np.sqrt(self.Nab_i),input_type=fm.REP_CHOL_INV)
+
     def get_rank(self):
         return self.n_bins
 
@@ -112,8 +136,14 @@ class DNumberDensityObservable(LWObservable):
         return self.Nab_f.project_fisher(self.vs)
         #symmetrize to avoid accumulating numerical errors, should have very small effect
         #return (result+result.T)/2.
-                
-        
+    #get decomposition of fisher matrix as F=v^Tv 
+    def get_perturbing_vector(self):
+        return np.dot( np.sqrt(self.Nab_i),self.vs)
+#    def add_fisher(self,fisher):
+#        v_use =np.dot( np.sqrt(self.Nab_i),self.vs)
+#        result = spl.blas.dsyrk(1.,v_use,1.,fisher,overwrite_c=True,trans=True,lower=True)
+#        result = np.tril(result)+np.tril(result).T-np.diagflat(np.diag(result))
+#        return result 
 
         
 if __name__=="__main__":

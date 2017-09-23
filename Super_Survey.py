@@ -184,7 +184,7 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
 if __name__=="__main__":
     t1 = time()
     #TODO make sure input z cannot exceed z_max in geo
-    z_max=1.3; l_max=50 
+    z_max=1.35; l_max=50 
 
     #d=np.loadtxt('Pk_Planck15.dat')
     #d=np.loadtxt('camb_m_pow_l.dat')
@@ -210,6 +210,7 @@ if __name__=="__main__":
     k=P.k
     C.P_lin=P
     C.k=k
+    #TODO check comoving distance is working
     r_max=C.D_comov(z_max)
     print 'this is r max and l_max', r_max , l_max
 
@@ -219,18 +220,26 @@ if __name__=="__main__":
     theta1=np.pi/2.
     phi0=0.
     #phi1=5.*np.pi**2/162. #gives exactly a 1000 square degree field of view
-    phi1 = 5*np.pi**2/(np.sqrt(2)*81.)
+    phi1 = 5*np.pi**2./(np.sqrt(2.)*81.)*2.3033
     phi2=np.pi/3.
     phi3=phi2+(phi1-phi0)
     theta1s = np.array([theta0,theta1,theta1,theta0,theta0])
-    phi1s = np.array([phi0,phi0,phi1,phi1,phi0])
+    phi1s = np.array([phi0,phi0,phi1,phi1,phi0])-phi1/2.
     theta_in1 = 3.*np.pi/8.
     #phi_in1 = 4.*np.pi**2/162.
     phi_in1 = 5*np.pi**2/(2.*np.sqrt(2)*162.)
-    theta2s = np.array([theta0,theta1,theta1,theta0,theta0])
-    phi2s = np.array([phi2,phi2,phi3,phi3,phi2])
-    theta_in2 = 3.*np.pi/8.
-    phi_in2 = phi2+(phi_in1-phi0)
+
+    #theta2s = np.array([theta0,theta1,theta1,theta0,theta0])
+    #phi2s = np.array([phi2,phi2,phi3,phi3,phi2])
+    #theta_in2 = 3.*np.pi/8.
+    #phi_in2 = phi2+(phi_in1-phi0)
+
+    theta2s = np.array([theta0,3./2.*theta1,3./2.*theta1,theta0,theta0])
+    phi2s = phi1s.copy()
+    phi2s*=4.*0.7745282
+    theta_in2=theta_in1
+    phi_in2 = phi_in1
+
     #theta0=np.pi/16.
     #theta1=np.pi/2.
     #phi0=0.
@@ -269,8 +278,8 @@ if __name__=="__main__":
     use_poly2=True
     if use_poly:
         if use_poly2:
-            geo1 = PolygonGeo(zs,theta1s,phi1s,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
-            geo2 = PolygonGeo(zs,theta2s,phi2s,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
+            geo1 = PolygonGeo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
+            geo2 = PolygonGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
         else:
             geo1 = PolygonPixelGeo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max=l_max,res_healpix=res_choose)  
             geo2 = PolygonPixelGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max=l_max,res_healpix=res_choose)  
@@ -334,10 +343,13 @@ if __name__=="__main__":
     n_zeros=49
     k_cut = 0.005
     #k_cut = 0.016
-    #k_cut = 0.022
+    #k_cut = 0.019
+    #about biggest possible, take 414 sec
+    #k_cut = 0.0214
             
     basis=SphBasisK(r_max,C,k_cut,l_ceil=100)
-
+    #import sys
+    #sys.exit()
     survey_3 = LWSurvey(geos,'lw_survey1',basis,C=C,params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params)
     surveys_lw=np.array([survey_3])
      

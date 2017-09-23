@@ -115,13 +115,13 @@ input_initial = [[0,0],[0,1],[0,2],[0,3],[1,0],[1,1],[1,2],[1,3],[2,0],[2,1],[2,
 @pytest.fixture(params=input_initial,scope="function")
 def fisher_params(request,fisher_input):
     if request.param[0] == fm.REP_FISHER:
-        internal_mat = fisher_input.fab.copy()
+        internal_mat = fisher_input.fab.copy('F')
     elif request.param[0] == fm.REP_COVAR:
-        internal_mat = fisher_input.cov.copy()
+        internal_mat = fisher_input.cov.copy('F')
     elif request.param[0] == fm.REP_CHOL:
-        internal_mat = fisher_input.chol_cov.copy()
+        internal_mat = fisher_input.chol_cov.copy('F')
     elif request.param[0] == fm.REP_CHOL_INV:
-        internal_mat = fisher_input.chol_cov_i.copy()
+        internal_mat = fisher_input.chol_cov_i.copy('F')
     fisher =  fm.FisherMatrix(internal_mat,input_type=request.param[0],initial_state=request.param[1])
     return FisherWithManual(fisher_input,fisher)
 
@@ -147,7 +147,7 @@ def test_basic_setup_succeeded(fisher_input):
     assert(np.allclose(np.tril(chol_cov_i),chol_cov_i,atol=atol_loc4,rtol=rtol_use))
     assert(check_is_cholesky_inv(chol_cov_i,cov,atol_rel=atol_rel_use,rtol=rtol_use))
 
-def test_fab_any_input_any_inital(fisher_params):
+def test_fab_any_input_any_initial(fisher_params):
     fab = fisher_params.fisher_input.fab
     cov = fisher_params.fisher_input.cov
     chol_cov = fisher_params.fisher_input.chol_cov
@@ -166,7 +166,7 @@ def test_fab_any_input_any_inital(fisher_params):
     assert(np.allclose(ch_inv(cov,lower=True),fab_res1,atol=atol_loc2,rtol=rtol_use))
 
 
-def test_chol_cov_any_input_any_inital(fisher_params):
+def test_chol_cov_any_input_any_initial(fisher_params):
     cov = fisher_params.fisher_input.cov
     chol_cov = fisher_params.fisher_input.chol_cov
 
@@ -178,7 +178,7 @@ def test_chol_cov_any_input_any_inital(fisher_params):
     assert(np.allclose(chol_cov,chol_cov_res1,atol=atol_loc3,rtol=rtol_use))
     assert(check_is_cholesky(chol_cov_res1,cov,atol_rel=atol_rel_use,rtol=rtol_use))
 
-def test_chol_cov_i_any_input_any_inital(fisher_params):
+def test_chol_cov_i_any_input_any_initial(fisher_params):
     fab = fisher_params.fisher_input.fab
     cov = fisher_params.fisher_input.cov
     chol_cov_i = fisher_params.fisher_input.chol_cov_i
@@ -191,7 +191,7 @@ def test_chol_cov_i_any_input_any_inital(fisher_params):
     assert(np.allclose(chol_cov_i,chol_cov_i_res1,atol=atol_loc4,rtol=rtol_use))
     assert(check_is_cholesky_inv(chol_cov_i_res1,cov,atol_rel=atol_rel_use,rtol=rtol_use))
 
-def test_cov_any_input_any_inital(fisher_params):
+def test_cov_any_input_any_initial(fisher_params):
     fab = fisher_params.fisher_input.fab
     cov = fisher_params.fisher_input.cov
 

@@ -68,25 +68,17 @@ class CosmoPie(object):
 
         if self.de_model=='constant_w':
             #self.de_mult = InterpolatedUnivariateSpline(z_de,(z_de+1.)**(3.*(1.+self.cosmology['w'])),k=1,ext=2)
-            def de_mult_const(z):
-                return (z+1.)**(3.*(1.+self.cosmology['w']))
-            def de_w_const(z):
-                return np.full_like(z,self.cosmology['w'])
-            self.de_mult = de_mult_const
+            self.de_mult = self.de_mult_const
             #ws = np.zeros(z_de.size)+self.cosmology['w']
             #self.w_interp = InterpolatedUnivariateSpline(z_de,ws,k=1,ext=2) 
-            self.w_interp = de_w_const
+            self.w_interp = self.de_w_const
         elif self.de_model=='w0wa':
             #Chevallier-Polarski-Linder model, solution can be found in ie arXiv:1605.01475
-            def de_mult_w0wa(z):
-                return np.exp(-3.*self.cosmology['wa']*z/(1.+z))*(1.+z)**(3.*(1.+self.cosmology['w0']+self.cosmology['wa']))
-            def de_w_w0wa(z):
-                return self.cosmology['w0']+(1.-1./(1.+z))*self.cosmology['wa']
             #self.de_mult=InterpolatedUnivariateSpline(z_de,np.exp(-3.*self.cosmology['wa']*z_de/(1.+z_de))*(1.+z_de)**(3.*(1.+self.cosmology['w0']+self.cosmology['wa'])),k=1,ext=2)
-            self.de_mult = de_mult_w0wa
+            self.de_mult = self.de_mult_w0wa
             #ws = self.cosmology['w0']+(1.-1./(1.+z_de))*self.cosmology['wa'] 
             #self.w_interp = InterpolatedUnivariateSpline(z_de,ws,k=1,ext=2) 
-            self.w_interp = de_w_w0wa
+            self.w_interp = self.de_w_w0wa
 #        elif self.de_model=='grid_w':
 #            #TODO storing grid in cosmology dangerous, make this work if anything actually uses it
 #            #cf ie https://ned.ipac.caltech.edu/level5/March08/Frieman/Frieman2.html#note1, arXiv:1605.01475
@@ -268,6 +260,16 @@ class CosmoPie(object):
         if not silent: 
             print "cosmopie "+str(id(self))+": finished initialization"        
                 
+
+    def de_mult_const(self,z):
+        return (z+1.)**(3.*(1.+self.cosmology['w']))
+    def de_w_const(self,z):
+        return np.full_like(z,self.cosmology['w'])
+    def de_mult_w0wa(self,z):
+        return np.exp(-3.*self.cosmology['wa']*z/(1.+z))*(1.+z)**(3.*(1.+self.cosmology['w0']+self.cosmology['wa']))
+    def de_w_w0wa(self,z):
+        return self.cosmology['w0']+(1.-1./(1.+z))*self.cosmology['wa']
+
     def Ez(self,z):
         """
         Get E(z)=H(z)/H0
@@ -298,7 +300,7 @@ class CosmoPie(object):
         I = lambda y,zp : 1/self.Ez(zp)
         #make sure value at 0 is 0 to fix initial conditions
         z_use = np.hstack([0.,z])
-        d = self.DH*odeint(I,0.,z_use)[1::,0] 
+        d = self.DH*odeint(I,0.,z_use,atol=10e-20,rtol=10e-10)[1::,0] 
         if np.isscalar(z):
             return d[0] 
         else:

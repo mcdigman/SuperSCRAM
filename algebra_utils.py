@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.linalg as spl
+from numpy.core.umath_tests import inner1d
 
 from warnings import warn
 
@@ -12,14 +13,15 @@ from warnings import warn
 
 #TODO inplace not tested for get_inv_cholesky, get_cholesky_inv,invert_triangular
 #Get the inverse cholesky decomposition of a matrix A
-def get_inv_cholesky(A,lower=True,inplace=False):
-    return invert_triangular(cholesky_inplace(A,inplace=inplace,lower=lower),lower=lower,inplace=inplace)
+def get_inv_cholesky(A,lower=True,inplace=False,clean=True):
+    return invert_triangular(cholesky_inplace(A,inplace=inplace,lower=lower,clean=clean),lower=lower,inplace=inplace)
 
 #Get the cholesky decomposition of the inverse of a matrix a
 #TODO add safety checks,tests
-def get_cholesky_inv(A,lower=True,inplace=False):
-    return np.rot90(spl.lapack.dtrtri(cholesky_inplace(np.rot90(A,2),lower=(not lower),inplace=inplace),lower=(not lower))[0],2)
+def get_cholesky_inv(A,lower=True,inplace=False,clean=True):
+    return np.asfortranarray(np.rot90(spl.lapack.dtrtri(cholesky_inplace(np.asfortranarray(np.rot90(A,2)),lower=(not lower),inplace=inplace,clean=clean),lower=(not lower),overwrite_c=inplace)[0],2))
 
+#TODO add safety checks
 def invert_triangular(A,lower=True,inplace=False):
     return spl.lapack.dtrtri(A,lower=lower,overwrite_c=inplace)[0]
     #return spl.solve_triangular(A,np.identity(A.shape[0]),lower=lower,overwrite_b=True)
@@ -55,9 +57,9 @@ def cholesky_inv_contract(A,vec1,vec2,cholesky_given=False,identical_inputs=Fals
     #TODO: check if memory profile worse
     if identical_inputs:
         if lower:
-            right_side = spl.blas.dtrmm(1.,chol_inv,vec1,lower=lower)
+            right_side = spl.blas.dtrmm(1.,chol_inv,vec1,lower=True)
         else:
-            right_side = spl.blas.dtrmm(1.,chol_inv.T,vec1,lower=True)
+            right_side = spl.blas.dtrmm(1.,chol_inv,vec1,lower=False,trans_a=True)
         result = np.dot(right_side.T,right_side)
         #result = spl.blas.dsyrk(1.,right_side,lower=True,trans=True)
         #result = result+result.T-np.diagflat(np.diag(result))
@@ -65,7 +67,7 @@ def cholesky_inv_contract(A,vec1,vec2,cholesky_given=False,identical_inputs=Fals
         if lower:
             result = np.dot(spl.blas.dtrmm(1.,chol_inv,vec1,lower=True).T,spl.blas.dtrmm(1.,chol_inv,vec2,lower=True))
         else:
-            result = np.dot(spl.blas.dtrmm(1.,chol_inv.T,vec1,lower=True).T,spl.blas.dtrmm(1.,chol_inv.T,vec2,lower=True))
+            result = np.dot(spl.blas.dtrmm(1.,chol_inv,vec1,lower=False,trans_a=True).T,spl.blas.dtrmm(1.,chol_inv,vec2,lower=False,trans_a=True))
 
     return result
 
@@ -73,21 +75,23 @@ def cholesky_contract(A,vec1,vec2,cholesky_given=False,identical_inputs=False,lo
     if cholesky_given:
         chol = A
     else:
-        chol = cholesky_inplace(A,lower=lower,inplace=False)
+        chol = cholesky_inplace(A,lower=lower,inplace=False,clean=False)
 
     #potentially Save some time if inputs are identical
     #TODO: check if memory profile worse
     if identical_inputs:
         if lower:
             #TODO these dots can be replaced with spl.blas.dtrmm
-            right_side = spl.blas.dtrmm(1.,chol.T,vec1,lower=False)
+            right_side = spl.blas.dtrmm(1.,chol,vec1,lower=True,trans_a=True)
         else:
 
             right_side = spl.blas.dtrmm(1.,chol,vec1,lower=False)
-        result = np.dot(right_side.T,right_side)
+        #result = np.dot(right_side.T,right_side)
+        result = spl.blas.dsyrk(1.,right_side,lower=True,trans=True)
+        result = result+result.T-np.diagflat(np.diag(result))
     else:
         if lower:
-            result = np.dot(spl.blas.dtrmm(1.,chol.T,vec1,lower=False).T,spl.blas.dtrmm(1.,chol.T,vec2,lower=False))
+            result = np.dot(spl.blas.dtrmm(1.,chol,vec1,lower=True,trans_a=True).T,spl.blas.dtrmm(1.,chol,vec2,lower=True,trans_a=True))
             #result = np.dot(np.dot(vec1.T,chol),np.dot(chol.T,vec2))
         else:
             result = np.dot(spl.blas.dtrmm(1.,chol,vec1,lower=False).T,spl.blas.dtrmm(1.,chol,vec2,lower=False))
@@ -101,17 +105,17 @@ def cholesky_contract(A,vec1,vec2,cholesky_given=False,identical_inputs=False,lo
 #If absolutely must be done in place, set fatal_errors=True.
 #if lower=True return lower triangular decomposition, otherwise upper triangular (note lower=True is numpy default,lower=False is scipy default).
 #TODO: add more sanity check assertions, such as if lapack is actually installed
-def cholesky_inplace(A,inplace=True,fatal_errors=False,lower=True):
+def cholesky_inplace(A,inplace=True,fatal_errors=False,lower=True,clean=True):
 
     try_inplace = inplace
-    assert(np.all(A==A.T))
+    #assert(np.all(A==A.T))
     #dpotrf will still work on C contiguous arrays but will silently fail to do them in place regardless of overwrite_a, so raise a warning or error here 
     #using order='F' when creating the array or A.copy('F') when copying ensures fortran contiguous arrays.
     if (not A.flags['F_CONTIGUOUS']) and try_inplace:
         if fatal_errors:
             raise RuntimeError('algebra_utils: Cannot do cholesky decomposition in place on C continguous numpy array.') 
         else:
-            warn('algebra_utils: Cannot do cholesky decomposition in place on C continguous numpy array. will output to return value',RuntimeWarning)
+            warn('algebra_utils: Cannot do cholesky decomposition in place on C contiguous numpy array. will output to return value',RuntimeWarning)
             try_inplace = False
     
     #spl.cholesky won't do them in place TODO actually handle it
@@ -122,7 +126,7 @@ def cholesky_inplace(A,inplace=True,fatal_errors=False,lower=True):
     if A.shape[0] > 46253:
         warn('algebra_utils: dpotrf may segfault for matrices this large, due to a bug in certain lapack/blas implementations')
     #result = spl.cholesky(A,lower=lower,overwrite_a=try_inplace)
-    result,info = spl.lapack.dpotrf(A,lower=lower,clean=1, overwrite_a=try_inplace)
+    result,info = spl.lapack.dpotrf(A,lower=lower,clean=clean, overwrite_a=try_inplace)
     
     #Something went wrong. (spl.cholesky and np.linalg.cholesky should fail too)
     if not info==0:
@@ -164,12 +168,14 @@ def trapz2(A,xs=None,dx=None,given_dx=False):
                 dx_use = 1. 
                 use_const = True
             else:
-                dx_use = np.diff(xs)
+                dx_use = np.diff(xs,axis=0)
                 use_const=False
     if use_const:
-        result = dx_use*np.sum(A[1:-1:],axis=0)+0.5*dx_use*(A[0]+A[-1])
+        result = dx_use*np.sum(A,axis=0)-0.5*dx_use*(A[0]+A[-1])
     else:
-        result = np.dot(dx_use,A[:-1:]+A[1::])/2.
+        #result = np.dot(dx_use,A[:-1:]+A[1::])/2.
+        result = (np.dot(dx_use.T,A[:-1:])+np.dot(dx_use.T,A[1::]))/2.
+
     return result
 
 

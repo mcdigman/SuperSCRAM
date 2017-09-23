@@ -102,8 +102,24 @@ def sph_Bessel(n,z):
 #TODO make sure array size logic is consistent
 #TODO support vector n
 def j_n(n,z):
-    z=np.asarray(z)
-    return np.sqrt(np.pi/(2*z))*jv(n+0.5,z)
+    z = np.asarray(z)
+    #j_n is well defined if z is zero, must avoid dividing by zero
+    if np.any(z==0.):
+        if np.isscalar(z):
+            z_use=np.array([z])
+        else:
+            z_use = z
+        result = np.zeros_like(z_use)
+        result[z_use!=0.] = np.sqrt(np.pi/(2*z_use[z_use!=0.]))*jv(n+0.5,z_use[z_use!=0])
+        if n==0:
+            result[z_use==0.] = 1.
+        if np.isscalar(z):
+            return result[0]
+        else:
+            return result
+    else:
+        return np.sqrt(np.pi/(2*z))*jv(n+0.5,z)
+
     #if(z.size==1):
     #    return np.sqrt(np.pi/(2*z))*jv(n+0.5,z)
     #else:
