@@ -59,9 +59,9 @@ def get_test_mat(key):
     elif key==7:
         return np.array([[4.]],order='F',dtype=np.float_)
     elif key==8:
-        nside = 10
+        nside = 100
         result = np.random.rand(nside,nside)
-        result = np.dot(result.T,result).copy('F')
+        result = np.dot(result.T,result).copy('F')+np.diagflat(np.random.rand(nside,1))
         return result
     elif key==9:
         nside = 1000

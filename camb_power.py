@@ -4,13 +4,14 @@ import camb
 import defaults
 
 #TODO may want to investigate possible halofit discrepancy
+#TODO maybe don't let camb_params default
 def camb_pow(cosmology,zbar=0.,camb_params=defaults.camb_params,nonlinear_model=camb.model.NonLinear_none):
     """get camb linear power spectrum 
         inputs:    
             cosmology: can vary H0, Omegabh2,Omegach2,Omegak,mnu,As,ns,OmegaL and w
             zbar: zs at which to get the power spectrum
             camb_params: some parameters controling k
-            nonlinear_model: overwride and do somethin other than linear if set
+            nonlinear_model: overwride and do something other than linear if set
     """
         
     pars = camb.CAMBparams()

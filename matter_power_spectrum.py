@@ -155,10 +155,10 @@ class MatterPower(object):
 
         if self.params['needs_fpt']:
             self.fpt = FASTPT.FASTPT(self.k,self.fpt_params['nu'],low_extrap=self.fpt_params['low_extrap'],high_extrap=self.fpt_params['high_extrap'],n_pad=self.fpt_params['n_pad'])
-            self.one_loop = self.fpt.one_loop(self.P_lin,C_window=self.fpt_params['C_window'])
+            #self.one_loop = self.fpt.one_loop(self.P_lin,C_window=self.fpt_params['C_window'])
         else:
             self.fpt = None
-            self.one_loop=np.array([])
+            #self.one_loop=np.array([])
 
     def get_sigma8_eff(self,zs):
         """get effective sigma8(z) for matching power spectrum amplitude in w(z) models from WMatcher"""
@@ -230,7 +230,7 @@ class MatterPower(object):
                     one_loops[:,i] = self.fpt.one_loop(Pbases[:,i],C_window=self.fpt_params['C_window'])*G_i**4
                     P_nonlin[:,i] =  Pbases[:,i]*G_i**2+one_loops[:,i]
             else:
-                one_loops = np.outer(self.one_loop,G_norms**4)
+                one_loops = np.outer(self.fpt.one_loop(self.P_lin,C_window=self.fpt_params['C_window']),G_norms**4)
                 P_nonlin = np.outer(self.P_lin,G_norms**2)+one_loops
         if pmodel=='fastpt' and get_one_loop:
             return P_nonlin,one_loops

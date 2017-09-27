@@ -13,25 +13,29 @@ def dp_ddelta(k_a,P_a,zbar,C,pmodel='linear',epsilon=0.0001):
         if isinstance(zbar,np.ndarray) and zbar.size>1:
             pza = P_a.get_matter_power(zbar,pmodel='linear')
             #degree must be at least 2 for derivative, apparently
+            #TODO no particular reason to use rectbivariate spline instead of a bunch of univariate splines here, maybe just make a method for getting the derivative without splines
             dpdk = RectBivariateSpline(k_a,zbar,pza,kx=2,ky=1)(k_a,zbar,dx=1) 
             dp = 47./21.*pza-1./3.*(k_a*dpdk.T).T
         #TODO support scalar zbar everywhere
         else:
             pza = P_a.get_matter_power(zbar,pmodel='linear')[:,0]
-            dpdk = (InterpolatedUnivariateSpline(k_a,pza,ext=2,k=1).derivative(1))(k_a)
+            dpdk = (InterpolatedUnivariateSpline(k_a,pza,ext=2,k=2).derivative(1))(k_a)
             dp = 47./21.*pza-1./3.*(k_a*dpdk)
     elif pmodel=='halofit':
         if isinstance(zbar,np.ndarray) and zbar.size>1:
             pza = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=1.)
             pzb = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=(1.+epsilon/C.get_sigma8())**2)
+            pzc = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=(1.-epsilon/C.get_sigma8())**2)
             dpdk = RectBivariateSpline(k_a,zbar,pza,kx=2,ky=1)(k_a,zbar,dx=1) 
-            dp = 13./21.*C.get_sigma8()*(pzb-pza)/epsilon+pza-1./3.*(k_a*dpdk.T).T
+            dp = 13./21.*C.get_sigma8()*(pzb-pzc)/(2.*epsilon)+pza-1./3.*(k_a*dpdk.T).T
+            #dp = 13./21.*C.get_sigma8()*(pzb-pza)/(epsilon)+pza-1./3.*(k_a*dpdk.T).T
         else:
-            #TODO should really be central
             pza = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=1.)[:,0]
             pzb = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=(1.+epsilon/C.get_sigma8())**2)[:,0]
-            dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2,k=1).derivative(1))(k_a) 
-            dp = 13./21.*C.get_sigma8()*(pzb-pza)/epsilon+pza-1./3.*k_a*dpdk
+            pzc = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=(1.-epsilon/C.get_sigma8())**2)[:,0]
+            dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2,k=2).derivative(1))(k_a) 
+            dp = 13./21.*C.get_sigma8()*(pzb-pzc)/(2.*epsilon)+pza-1./3.*k_a*dpdk
+            #dp = 13./21.*C.get_sigma8()*(pzb-pza)/(epsilon)+pza-1./3.*k_a*dpdk
     elif pmodel=='fastpt':
         if isinstance(zbar,np.ndarray) and zbar.size>1:
             pza,one_loop = P_a.get_matter_power(zbar,pmodel='fastpt',get_one_loop=True)
@@ -41,7 +45,7 @@ def dp_ddelta(k_a,P_a,zbar,C,pmodel='linear',epsilon=0.0001):
             pza,one_loop = P_a.get_matter_power(zbar,pmodel='fastpt',get_one_loop=True)
             pza=pza[:,0]
             one_loop=one_loop[:,0]
-            dpdk = (InterpolatedUnivariateSpline(k_a,pza,ext=2,k=1).derivative(1))(k_a) 
+            dpdk = (InterpolatedUnivariateSpline(k_a,pza,ext=2,k=2).derivative(1))(k_a) 
             dp = 47./21.*pza-1./3.*k_a*dpdk+26./21.*one_loop
     else:
         raise ValueError('invalid pmodel option \''+str(pmodel)+'\'')

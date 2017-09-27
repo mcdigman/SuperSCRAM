@@ -346,10 +346,9 @@ if __name__=="__main__":
     #k_cut = 0.019
     #about biggest possible, take 414 sec
     #k_cut = 0.0214
+    #k_cut = 0.03
             
     basis=SphBasisK(r_max,C,k_cut,l_ceil=100)
-    #import sys
-    #sys.exit()
     survey_3 = LWSurvey(geos,'lw_survey1',basis,C=C,params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params)
     surveys_lw=np.array([survey_3])
      
@@ -476,7 +475,7 @@ if __name__=="__main__":
         ax.legend(['1','2','3','4','5'])
         plt.show()
     #TODO make testing module for this
-    test_perturbation=False
+    test_perturbation = False
     pert_test_fails = 0
     if test_perturbation:
         #TOLERANCE below which an eigenvalue less than TOLERANCE*max eigenvalue is considered 0

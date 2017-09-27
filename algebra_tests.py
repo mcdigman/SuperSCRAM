@@ -58,7 +58,7 @@ def get_test_mat(key):
     elif key==8:
         nside = 10
         result = np.random.rand(nside,nside) 
-        result = np.dot(result.T,result).copy('F')
+        result = np.dot(result.T,result).copy('F')+np.diag(np.random.rand(nside,1))
         return result
     elif key==9:
         nside = 1000

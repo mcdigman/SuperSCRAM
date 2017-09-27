@@ -31,15 +31,21 @@ if __name__=='__main__':
     z_fine = np.arange(0.1,2.0,0.01)
     len_params = defaults.lensing_params
     len_params['sigma'] = 0.1
-    sp1 = sp.ShearPower(C,z_fine,ls,omega_s=omega_s,pmodel='halofit',params=len_params,mode='dc_ddelta')
+    sp_delta = sp.ShearPower(C,z_fine,ls,omega_s=omega_s,pmodel='halofit',params=len_params,mode='dc_ddelta')
+    sp_pow = sp.ShearPower(C,z_fine,ls,omega_s=omega_s,pmodel='halofit',params=len_params,mode='power')
     import matplotlib.pyplot as plt
     ax = plt.subplot(111)
+    #test \frac{\partia
     plt.grid()
     for i in xrange(0,geo1.rbins.shape[0]):
         rbin = geo1.rbins[i]
-        q1_dC = sp.QShear(sp1,rbin[0],rbin[1])
-        dc_ddelta = sp.Cll_q_q(sp1,q1_dC,q1_dC).Cll() 
+        q1_dC = sp.QShear(sp_delta,rbin[0],rbin[1])
+        q1_pow = sp.QShear(sp_pow,rbin[0],rbin[1])
+        dc_ddelta = sp.Cll_q_q(sp_delta,q1_dC,q1_dC).Cll() 
+        c_pow = sp.Cll_q_q(sp_pow,q1_pow,q1_pow).Cll() 
+
         print dc_ddelta
-        ax.loglog(ls,dc_ddelta)
+        ax.loglog(ls,dc_ddelta/c_pow/np.diff(geo1.zbins[i]))
+        #ax.loglog(ls,dc_ddelta/c_pow)
     ax.legend(['1','2','3','4','5'])
     plt.show()

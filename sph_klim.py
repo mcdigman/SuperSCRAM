@@ -12,11 +12,13 @@ from algebra_utils import trapz2,cholesky_inplace
 
 import fisher_matrix as fm
 import defaults
+from camb_power import camb_pow
 
 # the smallest value
 eps=np.finfo(float).eps
 
 
+#TODO test analytic result for power law power spectrum
 class SphBasisK(LWBasis):
     def __init__(self,r_max,C,k_cut=2.0,l_ceil=100,params=defaults.basis_params):#,geometry,CosmoPie):
 
@@ -34,20 +36,28 @@ class SphBasisK(LWBasis):
         #TODO check correct power spectrum
         self.r_max = r_max
         P_lin_in=self.C.P_lin.get_matter_power(np.array([0.]),pmodel='linear')[:,0]
+        camb_params2 = self.C.camb_params.copy()
+        camb_params2['npoints'] = params['n_bessel_oversample']
+        #P_lin_in,k_in = camb_pow(self.C.cosmology,camb_params=camb_params2)
         k_in = self.C.k
         #k = np.logspace(np.log10(np.min(k_in)),np.log10(np.max(k_in))-0.00001,6000000)
         #k = k_in
         self.params = params
-        kmin = np.min(k_in)#params['k_min']
-        kmax = np.max(k_in)#params['k_max']
+        self.k_cut = k_cut
+        self.kmin = np.min(k_in)
+        self.kmax = np.max(k_in)
 
         self.allow_caching = params['allow_caching']
         if self.allow_caching:
             self.ddelta_bar_cache = {}
         #do not change from linspace for fast
-        k = np.linspace(kmin,kmax,params['n_bessel_oversample'])
-        dk = k[1]-k[0]
-        P_lin = interp1d(k_in,P_lin_in)(k)
+        k = np.linspace(self.kmin,self.kmax,params['n_bessel_oversample'])
+        self.dk = k[1]-k[0]
+        #InterpolatedUnivariateSpline is better than interp1d here, because it better approximates increasing npoints for camb
+        #The lw covariance has 2 convergence concerns: increasing n_bessel_oversample converges to P_lin better, increasing npoints gives better P_lin
+        P_lin = InterpolatedUnivariateSpline(k_in,P_lin_in,k=3,ext=2)(k)
+
+        #P_lin = interp1d(k_in,k_in)(k)
 
         # define the super mode wave vector k alpha
         # and also make the map from l_alpha to k_alpha
@@ -56,7 +66,7 @@ class SphBasisK(LWBasis):
         self.k_zeros = np.zeros(l_ceil+1,dtype=object)
         self.n_l = 0
         for ll in xrange(0,self.k_num.size):
-            k_alpha = jn_zeros_cut(ll,k_cut*r_max)/r_max
+            k_alpha = jn_zeros_cut(ll,self.k_cut*self.r_max)/self.r_max
             #once there are no zeros above the cut, skip higher l
             if k_alpha.size == 0:
                 print "sph_klim: cutting off all l>=",ll
@@ -101,7 +111,6 @@ class SphBasisK(LWBasis):
                     self.C_id[itr,1]=kk[b]
                     self.C_id[itr,2]=mm[c]
                     itr=itr+1
-
             #calculate I integrals and make table
             self.C_compact[ll] = np.zeros((kk.size,kk.size))
             integrand1 = k*P_lin*jv(ll+0.5,k*self.r_max)**2
@@ -110,7 +119,9 @@ class SphBasisK(LWBasis):
                 for d in xrange(b,kk.size):
                     coeff = 8.*np.sqrt(kk[b]*kk[d])*kk[b]*kk[d]/(np.pi*self.r_max**2*jv(ll+1.5,kk[b]*self.r_max)*jv(ll+1.5,kk[d]*self.r_max))
                     #TODO convergence test
-                    self.C_compact[ll][b,d]=coeff*trapz2(integrand1/((k**2-kk[b]**2)*(k**2-kk[d]**2)),dx=dk,given_dx=True); #check coefficient
+                    #note: this integrand is highly oscillatory, and some integration methods may produce inaccurate results, 
+                    #especially for off diagonal elements. Tightly sampled trapezoidal rule is at least stable, be careful switching to anything else
+                    self.C_compact[ll][b,d]=coeff*trapz2(integrand1/((k**2-kk[b]**2)*(k**2-kk[d]**2)),dx=self.dk,given_dx=True); #check coefficient
                     self.C_compact[ll][d,b]=self.C_compact[ll][b,d];
 
         print "sph_klim: finished calculating covars"
