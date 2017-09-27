@@ -4,7 +4,7 @@ from geo import RectGeo
 import defaults
 from cosmopie import CosmoPie
 import matter_power_spectrum as mps
-
+#Appears obsolete
 if __name__=='__main__':
 
     #d=np.loadtxt('camb_m_pow_l.dat')
