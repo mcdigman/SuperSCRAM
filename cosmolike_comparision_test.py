@@ -201,6 +201,7 @@ if __name__ == '__main__':
             itr_out+=nbins_cosmo
     assert(np.all(cov_g_mat_flat==cov_g_mat_flat.T))
     assert(np.allclose(cov_g_mat_flat,cov_g_mat_cosmo_flat,atol=ATOL,rtol=RTOL))
+    assert(np.abs(1.-np.average(ratio_means))<0.01)
     #assert(np.all(cov_ssc_mat_flat==cov_ssc_mat_flat.T))
    
 #    cov_g_mat = np.zeros((tomo_bins_cosmo,tomo_bins_cosmo,tomo_bins_cosmo,tomo_bins_cosmo),dtype=object)
@@ -240,18 +241,21 @@ if __name__ == '__main__':
 #                    #cov_g_mat[z1,z2,z4,z3] = cov_g_mat[z1,z2,z3,z4]
 #                    #cov_g_mat[z2,z1,z3,z4] = cov_g_mat[z1,z2,z3,z4]
 #                    #cov_g_mat[z2,z1,z4,z3] = cov_g_mat[z1,z2,z3,z4]
-    import matplotlib.pyplot as plt
-    ax = plt.subplot(111)
-    bin1 = 0
-    bin2 = 0
-    bin3 = 1
-    bin4 = 0
-    ax.loglog(l_mids,np.diag(cov_g_mat_flat[0:nbins_cosmo,0:nbins_cosmo]))
-    ax.loglog(l_mids,np.diag(cov_g_mat_cosmo_flat[0:nbins_cosmo,0:nbins_cosmo]))
-    #ax.loglog(l_mids,np.diag(cov_g_mat[bin1,bin2,bin3,bin4]))
-    #ax.loglog(l_mids,np.diag(cov_g_mat_cosmo[bin1,bin2,bin3,bin4]))
-    #ax.loglog(l_mids,Cll_shear_shear[bin1,bin2])
-    #ax.loglog(l_mids,Cll_shear_shear_cosmo[bin1,bin2])
-    #print(Cll_shear_shear[bin1,bin2]/Cll_shear_shear_cosmo[bin1,bin2])
-    plt.show()
+    print "PASS: all assertions passed"
+    do_plot = True
+    if do_plot:
+        import matplotlib.pyplot as plt
+        ax = plt.subplot(111)
+        bin1 = 0
+        bin2 = 0
+        bin3 = 1
+        bin4 = 0
+        ax.loglog(l_mids,np.diag(cov_g_mat_flat[0:nbins_cosmo,0:nbins_cosmo]))
+        ax.loglog(l_mids,np.diag(cov_g_mat_cosmo_flat[0:nbins_cosmo,0:nbins_cosmo]))
+        #ax.loglog(l_mids,np.diag(cov_g_mat[bin1,bin2,bin3,bin4]))
+        #ax.loglog(l_mids,np.diag(cov_g_mat_cosmo[bin1,bin2,bin3,bin4]))
+        #ax.loglog(l_mids,Cll_shear_shear[bin1,bin2])
+        #ax.loglog(l_mids,Cll_shear_shear_cosmo[bin1,bin2])
+        #print(Cll_shear_shear[bin1,bin2]/Cll_shear_shear_cosmo[bin1,bin2])
+        plt.show()
 

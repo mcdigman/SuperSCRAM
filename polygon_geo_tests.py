@@ -362,42 +362,44 @@ def test_rotational_suite(geo_input):
 
 
 if __name__=='__main__':
-    
-    params = get_param_set(np.array([0,0]))
-    gts = GeoTestSet(params)
-    l_max = params['l_max_poly']
-    res_choose = params['res_choose1']
-    poly_geo = gts.poly_geo
-    pp_geo = gts.pp_geo1
-    pp_geo2 = gts.pp_geo2
+    pytest.cmdline.main(['fisher_tests.py'])
+    do_plot = False
+    if do_plot:
+        params = get_param_set(np.array([0,0]))
+        gts = GeoTestSet(params)
+        l_max = params['l_max_poly']
+        res_choose = params['res_choose1']
+        poly_geo = gts.poly_geo
+        pp_geo = gts.pp_geo1
+        pp_geo2 = gts.pp_geo2
 
-     
-    nt = poly_geo.n_v
-   
-    my_table = poly_geo.alm_table.copy()
-    #get RectGeo to cache the values in the table
-    for ll in xrange(0,l_max+1):
-        for mm in xrange(0,ll+1):
-            gts.r_geo.a_lm(ll,mm)
-            if mm>0:
-                gts.r_geo.a_lm(ll,-mm)
-    #r_alm_table = r_geo.alm_table
-    #reconstruct at higher resolution to mitigate resolution effects in determining accuracy
-    totals_pp= pp_geo2.reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],gts.r_geo.alm_table)
-    totals_poly = pp_geo2.reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],my_table)
-    avg_diff = np.average(np.abs(totals_pp-totals_poly))
-    print "mean absolute difference between pixel and exact geo reconstruction: "+str(avg_diff)
-    poly_error = np.sqrt(np.average(np.abs(totals_poly-pp_geo2.contained*1.)**2))
-    pp_error = np.sqrt(np.average(np.abs(totals_pp-pp_geo2.contained*1.)**2))
-    print "rms reconstruction error of exact geo: "+str(poly_error)
-    print "rms reconstruction error of pixel geo at res "+str(res_choose)+": "+str(pp_error)
-    print "improvement in rms reconstruction accuracy: "+str((pp_error-poly_error)/pp_error*100)+"%"
+         
+        nt = poly_geo.n_v
+       
+        my_table = poly_geo.alm_table.copy()
+        #get RectGeo to cache the values in the table
+        for ll in xrange(0,l_max+1):
+            for mm in xrange(0,ll+1):
+                gts.r_geo.a_lm(ll,mm)
+                if mm>0:
+                    gts.r_geo.a_lm(ll,-mm)
+        #r_alm_table = r_geo.alm_table
+        #reconstruct at higher resolution to mitigate resolution effects in determining accuracy
+        totals_pp= pp_geo2.reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],gts.r_geo.alm_table)
+        totals_poly = pp_geo2.reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],my_table)
+        avg_diff = np.average(np.abs(totals_pp-totals_poly))
+        print "mean absolute difference between pixel and exact geo reconstruction: "+str(avg_diff)
+        poly_error = np.sqrt(np.average(np.abs(totals_poly-pp_geo2.contained*1.)**2))
+        pp_error = np.sqrt(np.average(np.abs(totals_pp-pp_geo2.contained*1.)**2))
+        print "rms reconstruction error of exact geo: "+str(poly_error)
+        print "rms reconstruction error of pixel geo at res "+str(res_choose)+": "+str(pp_error)
+        print "improvement in rms reconstruction accuracy: "+str((pp_error-poly_error)/pp_error*100)+"%"
 
-    #totals_alm = pp_geo.reconstruct_from_alm(l_max,pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1],r_alm_table)
-    try_plot=True
-    do_poly=True
-    if try_plot:
-               #try:
+        #totals_alm = pp_geo.reconstruct_from_alm(l_max,pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1],r_alm_table)
+        try_plot=True
+        do_poly=True
+        if try_plot:
+                   #try:
             from mpl_toolkits.basemap import Basemap
             import matplotlib.pyplot as plt
             import matplotlib.colors as colors

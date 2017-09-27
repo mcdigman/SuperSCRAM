@@ -93,6 +93,11 @@ if __name__=='__main__':
             fails+=1
         else:
             print "SOFT PASS: fit at least somewhat better with delta z dependent component than without"
+        if np.all(mean_abs_error1_test[1::]<0.03):
+            print "PASS: testing of delta z component within acceptable error"
+        else:
+            print "FAIL: testing of delta z component outside acceptable error"
+            fails+=1
         if do_plots:
             ax = plt.subplot(111)
             ax.loglog(ls,results1_test.T)
@@ -139,6 +144,12 @@ if __name__=='__main__':
             fails+=1
         else:
             print "SOFT PASS: fit at least somewhat better with z dependent component than without"
+        if np.all(mean_abs_error2_test[1::]<0.01):
+            print "PASS: testing of C^ll and z component within acceptable error"
+        else:
+            print "FAIL: testing of C^ll and z component outside acceptable error"
+            fails+=1
+
 
         if do_plots:
             ax = plt.subplot(111)
