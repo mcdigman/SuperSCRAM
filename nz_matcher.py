@@ -1,12 +1,6 @@
 import numpy as np
-import scipy
 
-import defaults
-import hmf
-from cosmopie import CosmoPie
-from algebra_utils import trapz2
-from polygon_pixel_geo import PolygonPixelGeo
-from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
+from scipy.interpolate import interp1d
 from scipy.integrate import cumtrapz
 #get dN/(dz dOmega)
 class NZMatcher(object):
@@ -76,76 +70,3 @@ class NZMatcher(object):
                 m_cuts[itr] = m_interp#+(nz[itr]-n_avgs[n_avg_index-1])*(mass[n_avg_index]-mass[n_avg_index-1])/(n_avgs[n_avg_index]-n_avgs[n_avg_index-1])
         #print mass
         return m_cuts
-
-
-#TODO: check get_nz and get_M_cut agree
-if __name__ == '__main__':
-#def main():   
-    from time import time
-    import matter_power_spectrum as mps
-    #d = np.loadtxt('camb_m_pow_l.dat')
-    #k = d[:,0]; P = d[:,1]
-    C = CosmoPie(cosmology=defaults.cosmology)
-    P = mps.MatterPower(C)
-    C.P_lin = P
-    C.k = C.P_lin.k
-    theta0 = 0.*np.pi/16.
-    theta1 = 16.*np.pi/16.
-    phi0 = 0.
-    phi1 = np.pi/3.
-
-    theta1s = np.array([theta0,theta1,theta1,theta0,theta0])
-    phi1s = np.array([phi0,phi0,phi1,phi1,phi0])
-    theta_in1 = np.pi/2.
-    phi_in1 = np.pi/12.
-    res_choose = 6
-
-    zs = np.array([.01,1.01])
-    z_fine = np.arange(0.01,4.0,0.01)
-
-    l_max = 25
-    geo1 = PolygonPixelGeo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max,res_healpix = res_choose)
-    n_run = 1
-    nz_params = defaults.nz_params_lsst.copy()
-    nz_params['mirror_boundary'] = False
-    ts = np.zeros(n_run+1)
-    ts[0] = time()
-    for i in xrange(0,n_run):
-        nzc = NZCandel(nz_params)
-        mf = hmf.ST_hmf(C)
-        t1 = time()
-        dN_dz = nzc.get_dN_dzdOmega(z_fine)
-        t2 = time()
-        density_res = trapz2(dN_dz,dx=0.01,given_dx=True)
-        print "total galaxies/steradian: "+str(density_res)+" galaxies/20000 deg^2 = "+str(density_res*np.pi**2/180**2*20000)
-        print "found in: "+str(t2-t1)+" s"
-        nz = nzc.get_nz(geo1)
-        t3 = time()
-        print "nz found in: "+str(t3-t2)+" s"
-        m_cuts = nzc.get_M_cut(mf,geo1)
-        t4 = time()
-        print "m cuts found in: "+str(t4-t3)+" s"
-        n_halo = np.zeros(m_cuts.size)
-        n_halo = mf.n_avg(m_cuts,z_fine)
-        print "avg reconstruction error: "+str(np.average((n_halo-nz)/nz))
-        ts[i+1] = time()
-    #tf = time()
-    #print "avg tot time: "+str((ts[-1]-ts[0])/n_run)+" s"
-    print "avg tot time: "+str(np.average(np.diff(ts)))+" s"
-    print "std dev tot time: "+str(np.std(np.diff(ts)))+" s"
-    do_plot =True
-    if do_plot:
-        import matplotlib.pyplot as plt
-        ax = plt.subplot(111)
-        #ax.loglog(z_fine,m_cuts)
-        #ax.loglog(z_fine,6675415160366.4219*z_fine**2.3941494934544996)
-        plt.plot(z_fine,dN_dz)
-        i_cut_use = 26
-        z0 = 0.0417*i_cut_use-0.744
-        ps_lsst = 1./(2.*z0)*(z_fine/z0)**2.*np.exp(-z_fine/z0)
-        n_per_rad_lsst = 46*10.**(0.31*(i_cut_use-25))*3600.*180.**2/np.pi**2
-        ns_lsst = n_per_rad_lsst*ps_lsst
-        plt.plot(z_fine,ns_lsst)
-        plt.xlabel('z')
-        plt.ylabel('dN/dz(z)')
-        plt.show()

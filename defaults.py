@@ -184,16 +184,20 @@ prior_fisher_params ={ 'row_strip'     :np.array([3,5,6,7]),
                         'n_full'        :45,
                         'n_de'          :36,
                         'z_step'        :0.025}
-halofit_params = {'n_r':3000, #500
+halofit_params = {#'n_r':3000, #500
                     'r_max':6,#5
                     'r_min':0.05,#0.05
                     'r_step':0.01,
-                    'c_threshold':0.001, #0.001
-                    'cutoff':True,
+                 #   'c_threshold':0.001, #0.001
+                 #   'cutoff':True,
                     'max_extend':10,
                     'extrap_wint':True,#
-                    'k_fix'     :500 #require integral in wint to go up this far if extrapolating
+                    'k_fix'     :500, #require integral in wint to go up this far if extrapolating
+                    'min_kh_nonlinear' :0.005, #transition between linear and nonlinear power camb power spectrum
+                    'smooth_width': 0.002 #scale over which to smooth linear to nonlinear transition to avoid spikes in derivatives
                     }
+
+
 wmatcher_params = {'w_step':0.01,
                     'w_min':-3.50,
                     'w_max':0.1,

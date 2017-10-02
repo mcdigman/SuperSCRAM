@@ -1,13 +1,10 @@
 import numpy as np
-import scipy
 
 import defaults
 import hmf
 from cosmopie import CosmoPie
 from algebra_utils import trapz2
 from polygon_pixel_geo import PolygonPixelGeo
-from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
-from scipy.integrate import cumtrapz
 from nz_matcher import NZMatcher
 from nz_lsst import NZLSST
 #get dN/(dz dOmega)

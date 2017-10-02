@@ -1,21 +1,15 @@
 import numpy as np
-from math import isnan
-from astropy.io import fits
+import scipy as sp
 import spherical_geometry.vector as sgv
-import spherical_geometry.graph
 from spherical_geometry.polygon import SphericalPolygon
 import spherical_geometry.great_circle_arc as gca
 from polygon_pixel_geo import PolygonPixelGeo,get_Y_r_dict
-from sph_functions import Y_r
-from geo import PixelGeo,RectGeo,Geo
+from geo import RectGeo,Geo
 from time import time
 import defaults
-import scipy as sp
 from cosmopie import CosmoPie
-from scipy.interpolate import SmoothBivariateSpline
 from warnings import warn
 import alm_utils as au
-from assoc_legendre import assoc_legendre_p
 #get an exact spherical polygon geo
 class PolygonGeo(Geo):
     #TODO check order of thetas,phis
@@ -347,7 +341,6 @@ if __name__=='__main__':
                #try:
             from mpl_toolkits.basemap import Basemap
             import matplotlib.pyplot as plt
-            import matplotlib.colors as colors
             m = Basemap(projection='moll',lon_0=0)
             #m.drawparallels(np.arange(-90.,120.,30.))
             #m.drawmeridians(np.arange(0.,420.,60.))

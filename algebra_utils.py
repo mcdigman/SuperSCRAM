@@ -1,6 +1,5 @@
 import numpy as np
 import scipy.linalg as spl
-from numpy.core.umath_tests import inner1d
 
 from warnings import warn
 

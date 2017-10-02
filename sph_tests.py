@@ -60,7 +60,6 @@ class TestAlmMathematicaAgree1(unittest.TestCase):
         r1 = 100
         r2 = 3000
         
-        r_max_m = mpmath.mpf(r_max)
         r1_m = mpmath.mpf(r1)
         r2_m = mpmath.mpf(r2)
 

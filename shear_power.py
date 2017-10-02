@@ -1,7 +1,6 @@
 """
 Handles lensing observable power spectrum
 """
-from time import time
 from warnings import warn 
 from scipy.interpolate import interp1d,InterpolatedUnivariateSpline,RectBivariateSpline
 

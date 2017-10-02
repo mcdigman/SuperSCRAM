@@ -23,6 +23,7 @@ def dp_ddelta(k_a,P_a,zbar,C,pmodel='linear',epsilon=0.0001):
             dp = 47./21.*pza-1./3.*(k_a*dpdk)
     elif pmodel=='halofit':
         if isinstance(zbar,np.ndarray) and zbar.size>1:
+            #TODO insert prescription to handle the spike when this switches to using the linear matter power spectrum
             pza = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=1.)
             pzb = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=(1.+epsilon/C.get_sigma8())**2)
             pzc = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=(1.-epsilon/C.get_sigma8())**2)

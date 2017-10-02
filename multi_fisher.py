@@ -244,8 +244,8 @@ class MultiFisher(object):
     def get_a_lw(self):
         """get (v.T).C_lw.v where v=\frac{\partial\bar{\delta}}{\delta_\alpha} for [no mitigation, with mitigation] lw covariance matrices"""
         project_lw_a = self.basis.D_delta_bar_D_delta_alpha(self.sw_survey.geo,tomography=True)[0]
-        lw_proj_no_mit = self.get_fisher_lw(f_spec_SSC_no_mit,initial_state=REP_COVAR).project_covar(project_lw_a).get_covar()
-        lw_proj_mit = self.get_fisher_lw(f_spec_SSC_mit,initial_state=REP_CHOL_INV).project_covar(project_lw_a).get_covar()
+        lw_proj_no_mit = self.get_fisher_lw(f_spec_SSC_no_mit,initial_state=fm.REP_COVAR).project_covar(project_lw_a).get_covar()
+        lw_proj_mit = self.get_fisher_lw(f_spec_SSC_mit,initial_state=fm.REP_CHOL_INV).project_covar(project_lw_a).get_covar()
         return np.array([lw_proj_no_mit,lw_proj_mit])
 
 

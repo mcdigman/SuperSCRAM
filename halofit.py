@@ -1,5 +1,6 @@
 import numpy as np
-from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
+from scipy.interpolate import interp1d
+from scipy.integrate import cumtrapz
 import cosmopie as cp
 import defaults
 from warnings import warn
@@ -32,8 +33,13 @@ class HalofitPk(object):
         self.k_in = k_in
         self.params = halofit_params
         self.k_fix = self.params['k_fix']
+        self.linear_cutoff = self.params['min_kh_nonlinear'] 
+        self.smooth_width=self.params['smooth_width']
+        if not self.C.camb_params['leave_h']:
+            self.linear_cutoff = self.linear_cutoff*self.C.cosmology['h']
         #extrapolated internal power spectrum to avoid spurious dependence on input k_max
         k_max_in = np.max(k_in)
+        #TODO probably should low extrap as well
         if self.params['extrap_wint'] and k_max_in<self.k_fix:
             #assume log spaced k_in
             log_k_space = np.average(np.diff(np.log(k_in)))
@@ -41,7 +47,7 @@ class HalofitPk(object):
             self.n_k_extend = np.ceil(k_diff/log_k_space)
             k_extend = np.exp(np.log(k_max_in)+(np.arange(0,self.n_k_extend)+1.0)*log_k_space)
             self.k = np.hstack((k_in,k_extend))
-            self.p_use = np.hstack((p_lin,p_lin[-1]*(k_extend/k_in[-1])**(C.ns-4))) #use ns-4 extrapolation on high end
+            self.p_use = np.hstack((p_lin,p_lin[-1]*(k_extend/k_in[-1])**(C.ns-4.))) #use ns-4 extrapolation on high end
         else:
             self.n_k_extend=0
             self.k = k_in
@@ -56,12 +62,15 @@ class HalofitPk(object):
         #spline might be more accurate, although slower 
         self.p_interp = interp1d(self.k,self.p_input)
 
-        self.c_threshold = halofit_params['c_threshold']
        #TODO check necessary r_min,r_max,n_r nint in wint are good
         r_min = halofit_params['r_min']
         r_max = halofit_params['r_max']
         r_step = halofit_params['r_step']
-        self.cutoff = halofit_params['cutoff']
+
+        #obsolete
+        #self.c_threshold = halofit_params['c_threshold']
+        #self.cutoff = halofit_params['cutoff']
+
         #n_r = halofit_params['n_r']
         #array should use generously sized r_max initially
         rs = np.arange(r_min,r_max,r_step)
@@ -103,8 +112,12 @@ class HalofitPk(object):
         self.r_grow = interp1d(1./sigs,rs)
         self.sig_d1 = interp1d(rs,sig_d1s)
         self.sig_d2 = interp1d(rs,sig_d2s)
-    #way of getting parameters without doing the interpolation, old
-#    def spectral_parameters(self,z):
+#        self.z = np.array([0.])
+#        self.spectral_parameters()
+
+
+#    #way of getting parameters without doing the interpolation, old
+#    def spectral_parameters(self):
 #
 #        growth=self.C.G_norm(self.z)
 #        self.amp=growth
@@ -139,7 +152,7 @@ class HalofitPk(object):
 #                    if abs(diff) > 0.0001:
 #                        warn('halofit may not have converged sufficiently')
 #                    break
-##                       self.amp = growth
+#                       #self.amp = growth
 
     def wint(self,r):
         '''
@@ -156,7 +169,8 @@ class HalofitPk(object):
         #nint=np.floor((self.k_max)/2.)
         #print self.k_max/2.
         #TODO figure out what to do if k_max<2
-        nint =min(np.int(self.k_max/2.),self.k_fix/2.)
+        nint =min(np.int(self.k_max/2.),np.int(self.k_fix/2.))
+        #nint = np.int(self.k_fix/2.)
         t = ( np.arange(nint)+0.5 )/nint
         y = 1./t - 1.
         #rk = y
@@ -194,7 +208,7 @@ class HalofitPk(object):
     #   rk=np.asarray(rk)
     #   return self.C.G_norm(z)**2*self.p_cdm(rk)
     
-    #old way 
+    #old way,obsolete 
     def p_cdm(self,rk):
         # unormalized power spectrum 
         # cf Annu. Rev. Astron. Astrophys. 1994. 32: 319-70 
@@ -205,7 +219,7 @@ class HalofitPk(object):
         q8=1.e-20 + rkeff/self.gams
         tk=1./(1.+(6.4*q+(3.0*q)**1.5+(1.7*q)**2)**1.13)**(1./1.13)
         tk8=1./(1.+(6.4*q8+(3.0*q8)**1.5+(1.7*q8)**2)**1.13)**(1./1.13)
-        return self.C.sigma8*self.C.sigma8*((q/q8)**(3.+p_index))*tk*tk/tk8/tk8
+        return self.C.get_sigma8()*self.C.get_sigma8()*((q/q8)**(3.+p_index))*tk*tk/tk8/tk8
 
     def D2_NL_smith(self,rk,z,return_components = False):
         """
@@ -296,7 +310,7 @@ class HalofitPk(object):
         d2 = self.sig_d2(rmid)
 
         rknl = 1./rmid
-        rn = -3-d1
+        rn = -3.-d1
         rncur = -d2
         #rncur = self.rncur
         #rknl  = self.rknl
@@ -344,16 +358,28 @@ class HalofitPk(object):
         else:
             y=(rk/rknl)
         #fnu from cosmosis  
-        ph = a*y**(f1*3.)/(1.+b*y**(f2)+(f3*c*y)**(3.-gam))*(1+fnu*0.977)
+        ph = a*y**(f1*3.)/(1.+b*y**(f2)+(f3*c*y)**(3.-gam))*(1.+fnu*0.977)
         ph /= (1.+xmu*y**(-1)+xnu*y**(-2))
-        pq = plin*(1.+plin)**beta/(1.+plin*alpha)*np.exp(-y/4.0-y**2/8.0)
+        plinaa=(plin.T*(1+fnu*47.48*rk**2/(1+1.5*rk**2))).T #added to match camb implementation
+        pq = plin*(1.+plinaa)**beta/(1.+plinaa*alpha)*np.exp(-y/4.0-y**2/8.0)
         
         pnl=pq+ph
+        
+        #set values below minimum k cutoff to linear to avoid difference from camb implementation
+        #gaussian smooth transition to avoid spikes in derivatives wrt k 
+        #pnl[rk<self.linear_cutoff] = plin[rk<self.linear_cutoff]
+        gauss_kernel = 1./(self.smooth_width*np.sqrt(2.*np.pi))*np.exp(-0.5*((rk-self.linear_cutoff)/self.smooth_width)**2)
+        gauss_int = cumtrapz(gauss_kernel,rk,initial=0.)
+        #set last value to 1. to mitigate accumulated numerical errors
+        gauss_int/=gauss_int[-1]
 
+        pnl = (plin.T*(1.-gauss_int)+pnl.T*(gauss_int)).T
+        
         if return_components:
             return pnl,pq,ph,plin
         else:
             return pnl
+
     #TODO use or eliminate as obsolete
     def P_NL(self,k,z,return_components = False):
         if(return_components):

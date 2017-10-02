@@ -11,7 +11,8 @@ if __name__=='__main__':
     #k=d[:,0]; P=d[:,1]
 
     C=CosmoPie(cosmology=defaults.cosmology)
-    P = mps.MatterPower(C)
+    camb_params = defaults.camb_params
+    P = mps.MatterPower(C,camb_params=camb_params)
     k = P.k
     C.k=k
     C.P_lin = P

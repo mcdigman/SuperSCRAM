@@ -3,9 +3,7 @@ General class for Fisher matrix and covariance matrix manipulations
 """
 import numpy as np
 import scipy.linalg as spl
-from algebra_utils import cholesky_inv_contract,get_inv_cholesky,invert_triangular,cholesky_inplace,get_cholesky_inv,cholesky_contract
-from warnings import warn
-from time import time
+from algebra_utils import get_inv_cholesky,invert_triangular,cholesky_inplace,get_cholesky_inv
 
 #codes for different possible internal states of fisher matrix
 #Fisher matrix

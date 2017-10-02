@@ -437,7 +437,7 @@ if __name__=="__main__":
             cosmo_fid2['sigma8'] = 0.9
             cosmo_fid2['h']=0.7
             cosmo_fid2['ns'] = 1.0
-            cosmo_fid2 = cosmopie.add_derived_pars(cosmo_fid2,p_space='basic')
+            cosmo_fid2 = cp.add_derived_pars(cosmo_fid2,p_space='basic')
             C2=cp.CosmoPie(cosmo_fid2)
             P2=mps.MatterPower(C2)
             C2.P_lin = P2
@@ -496,7 +496,7 @@ if __name__=="__main__":
             cosmo_fid2['OmegaLh2']=(1-cosmo_fid2['Omegamh2']/cosmo_fid2['h']**2)*cosmo_fid2['h']**2
             cosmo_fid2['sigma8'] = 1.07
             cosmo_fid2['ns']=1.
-            cosmo_fid2 = cosmopie.add_derived_pars(cosmo_fid2,p_space='basic')
+            cosmo_fid2 = cp.add_derived_pars(cosmo_fid2,p_space='basic')
             C2=cp.CosmoPie(cosmo_fid2)
             P2=mps.MatterPower(C2)
             C2.P_lin = P2

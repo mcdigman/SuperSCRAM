@@ -10,8 +10,7 @@
 import numpy as np
 
 from scipy.misc import factorial2
-from scipy.optimize import newton
-from scipy.special import sph_harm as Y_lm, jv, sph_jn
+from scipy.special import sph_harm as Y_lm, jv
 
 from the_mad_house import e_message
 
