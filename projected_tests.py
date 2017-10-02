@@ -1,10 +1,8 @@
 import cosmopie as cp
-from camb_power import camb_pow
 import numpy as np
-from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
+from scipy.interpolate import interp1d
 import shear_power as sp
 import defaults
-from warnings import warn
 import unittest
 import matter_power_spectrum as mps
 

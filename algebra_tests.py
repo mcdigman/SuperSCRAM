@@ -1,11 +1,8 @@
 import numpy as np
 import numpy.linalg as npl
-import scipy as sp
 import scipy.linalg as spl
 import warnings
-from time import time
 from algebra_utils import cholesky_inplace,get_inv_cholesky,ch_inv,invert_triangular,get_mat_from_inv_cholesky,cholesky_inv_contract,get_cholesky_inv,cholesky_contract
-import sys
 import pytest
 
 #Check if A is the cholesky decomposition of B
@@ -106,12 +103,12 @@ rtol_use=1e-6
     #note this loss of precision could cause some random matrices to fail while others pass
     #TODO: better precision testing of code could improve battery
 def test_basic_setup_succeeded(test_mat):
-    chol_i1 = test_mat.chol_i
-    chol1 = test_mat.chol
-    chol_i1_u = test_mat.chol_i_u
-    chol1_u = test_mat.chol_u
-    A = test_mat.A
-    A_i = test_mat.A_i
+    chol_i1 = test_mat.chol_i.copy()
+    chol1 = test_mat.chol.copy()
+    chol_i1_u = test_mat.chol_i_u.copy()
+    chol1_u = test_mat.chol_u.copy()
+    A = test_mat.A.copy()
+    A_i = test_mat.A_i.copy()
         
 
     assert(check_is_cholesky_inv(chol_i1,A,atol_rel=atol_rel_use,rtol=rtol_use,lower=True))
@@ -122,9 +119,8 @@ def test_basic_setup_succeeded(test_mat):
     assert(np.allclose(npl.pinv(chol_i1),chol1,atol=relax_atol,rtol=relax_rtol))
 
 def test_get_inv_cholesky_F_order_direct_lower(test_mat):
-    A = test_mat.A
-    chol_i1 = test_mat.chol_i
-    A_i = test_mat.A_i
+    A = test_mat.A.copy()
+    chol_i1 = test_mat.chol_i.copy()
     #Test directly with fortran ordering
     test_A = A.copy('F')
     test_chol_i1 = get_inv_cholesky(test_A,lower=True)
@@ -136,12 +132,9 @@ def test_get_inv_cholesky_F_order_direct_lower(test_mat):
     assert(np.allclose(test_A,A,atol=atol_loc1,rtol=rtol_use))
     assert(np.allclose(test_chol_i1,chol_i1,atol=atol_loc4,rtol=rtol_use))
     assert(check_is_cholesky_inv(test_chol_i1,A,atol_rel=atol_rel_use,rtol=rtol_use,lower=True))
-    test_A = None
-    test_chol_i1 = None
 
 def test_get_inv_cholesky_F_order_inverse_lower(test_mat):
-    A = test_mat.A
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     #check L*L.T=A^-1 => (L.T^-1)*L^-1=A=B*B.T note significant loss of precision here Fortran ordering
     test_A_i = A_i.copy('F')
     test_chol2 = get_inv_cholesky(test_A_i,lower=True)
@@ -150,16 +143,13 @@ def test_get_inv_cholesky_F_order_inverse_lower(test_mat):
 
     assert(np.allclose(test_A_i,A_i,atol=atol_loc2,rtol=rtol_use))
     assert(check_is_cholesky_inv(test_chol2,A_i,atol_rel=atol_rel_use,rtol=rtol_use,lower=True))
-    test_A_i = None
-    test_chol2 = None
     #print test_chol2.T
     #print chol1
     #assert(np.allclose(test_chol2.T,chol1))
 
 def test_get_inv_cholesky_C_order_direct_lower(test_mat):
-    A = test_mat.A
-    chol_i1 = test_mat.chol_i
-    A_i = test_mat.A_i
+    A = test_mat.A.copy()
+    chol_i1 = test_mat.chol_i.copy()
     #Test directly with C ordering
     test_A = A.copy('C')
     test_chol_i3 = get_inv_cholesky(test_A,lower=True)
@@ -170,12 +160,9 @@ def test_get_inv_cholesky_C_order_direct_lower(test_mat):
     assert(np.allclose(test_A,A,atol=atol_loc1,rtol=rtol_use))
     assert(np.allclose(test_chol_i3,chol_i1,atol=atol_loc4,rtol=rtol_use))
     assert(check_is_cholesky_inv(test_chol_i3,A,atol_rel=tighten_atol,rtol=rtol_use,lower=True))
-    test_A = None
-    test_chol_i3 = None
 
 def test_get_inv_cholesky_C_order_inverse_lower(test_mat):
-    A = test_mat.A
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     #check L*L.T=A^-1 => (L.T^-1)*L^-1=A=B*B.T note significant loss of precision here C ordering
     test_A_i = A_i.copy('C')
     test_chol4 = get_inv_cholesky(test_A_i,lower=True)
@@ -184,14 +171,11 @@ def test_get_inv_cholesky_C_order_inverse_lower(test_mat):
 
     assert(np.allclose(test_A_i,A_i,atol=atol_loc2,rtol=rtol_use))
     assert(check_is_cholesky_inv(test_chol4,A_i,atol_rel=atol_rel_use,rtol=rtol_use,lower=True))
-    test_A_i = None
-    test_chol4 = None
 
 
 def test_get_inv_cholesky_F_order_direct_upper(test_mat):
-    A = test_mat.A
-    chol_i2 = test_mat.chol_i_u
-    A_i = test_mat.A_i
+    A = test_mat.A.copy()
+    chol_i2 = test_mat.chol_i_u.copy()
     #Test directly with fortran ordering
     test_A = A.copy('F')
     test_chol_i2 = get_inv_cholesky(test_A,lower=False)
@@ -202,13 +186,10 @@ def test_get_inv_cholesky_F_order_direct_upper(test_mat):
     assert(np.allclose(test_A,A,atol=atol_loc1,rtol=rtol_use))
     assert(np.allclose(test_chol_i2,chol_i2,atol=atol_loc4,rtol=rtol_use))
     assert(check_is_cholesky_inv(test_chol_i2,A,atol_rel=atol_rel_use,rtol=rtol_use,lower=False))
-    test_A = None
-    test_chol_i1 = None
 
 
 def test_get_inv_cholesky_F_order_inverse_upper(test_mat):
-    A = test_mat.A
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     #check L*L.T=A^-1 => (L.T^-1)*L^-1=A=B*B.T note significant loss of precision here Fortran ordering
     test_A_i = A_i.copy('F')
     test_chol2 = get_inv_cholesky(test_A_i,lower=False)
@@ -217,15 +198,11 @@ def test_get_inv_cholesky_F_order_inverse_upper(test_mat):
 
     assert(np.allclose(test_A_i,A_i,atol=atol_loc2,rtol=rtol_use))
     assert(check_is_cholesky_inv(test_chol2,A_i,atol_rel=atol_rel_use,rtol=rtol_use,lower=False))
-    test_A_i = None
-    test_chol2 = None
     #print test_chol2.T
 
 
 def test_get_inv_cholesky_C_order_direct_upper(test_mat):
-    A = test_mat.A
-    chol_i1_u = test_mat.chol_i_u
-    A_i = test_mat.A_i
+    A = test_mat.A.copy()
     #Test directly with C ordering
     test_A = A.copy('C')
     test_chol_i1 = get_inv_cholesky(test_A,lower=False)
@@ -234,13 +211,10 @@ def test_get_inv_cholesky_C_order_direct_upper(test_mat):
 
     assert(np.allclose(test_A,A,atol=atol_loc1,rtol=rtol_use))
     assert(check_is_cholesky_inv(test_chol_i1,A,atol_rel=tighten_atol,rtol=rtol_use,lower=False))
-    test_A = None
-    test_chol_i1 = None
 
 
 def test_get_inv_cholesky_C_order_inverse_upper(test_mat):
-    A = test_mat.A
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     #check L*L.T=A^-1 => (L.T^-1)*L^-1=A=B*B.T note significant loss of precision here C ordering
     test_A_i = A_i.copy('C')
     test_chol2 = get_inv_cholesky(test_A_i,lower=False)
@@ -249,42 +223,32 @@ def test_get_inv_cholesky_C_order_inverse_upper(test_mat):
 
     assert(np.allclose(test_A_i,A_i,atol=atol_loc2,rtol=rtol_use))
     assert(check_is_cholesky_inv(test_chol2,A_i,atol_rel=atol_rel_use,rtol=rtol_use,lower=False))
-    test_A_i = None
-    test_chol2 = None
     #print test_chol2.T
 
 def test_ch_inv_chol_given_lower(test_mat):
-    A = test_mat.A
-    A_i = test_mat.A_i
-    chol = test_mat.chol
-    chol_i = test_mat.chol_i
+    A_i = test_mat.A_i.copy()
+    chol_i = test_mat.chol_i.copy()
     
-    test_chol = chol.copy()
     test_chol_i = chol_i.copy()
 
-    atol_loc1 = np.max(np.abs(A))*atol_rel_use
     atol_loc2 = np.max(np.abs(A_i))*atol_rel_use
 
     assert(np.allclose(ch_inv(test_chol_i,cholesky_given=True,lower=True),A_i,atol=atol_loc2,rtol=rtol_use))
     
 def test_ch_inv_chol_given_upper(test_mat):
-    A = test_mat.A
-    A_i = test_mat.A_i
-    chol = test_mat.chol_u
+    A_i = test_mat.A_i.copy()
+    chol = test_mat.chol_u.copy()
     chol_i = npl.pinv(chol)
-    i_chol = npl.pinv(spl.cholesky(A_i,lower=False))
     
-    test_chol = chol.copy()
     test_chol_i = chol_i.copy()
 
-    atol_loc1 = np.max(np.abs(A))*atol_rel_use
     atol_loc2 = np.max(np.abs(A_i))*atol_rel_use
 
     assert(np.allclose(ch_inv(test_chol_i,cholesky_given=True,lower=False),A_i,atol=atol_loc2,rtol=rtol_use))
     
 def test_ch_inv_not_chol_given_lower(test_mat):
-    A = test_mat.A
-    A_i = test_mat.A_i
+    A = test_mat.A.copy()
+    A_i = test_mat.A_i.copy()
     
     atol_loc1 = np.max(np.abs(A))*atol_rel_use
     atol_loc2 = np.max(np.abs(A_i))*atol_rel_use
@@ -293,8 +257,8 @@ def test_ch_inv_not_chol_given_lower(test_mat):
     assert(np.allclose(ch_inv(A_i,cholesky_given=False,lower=True),A,atol=atol_loc1,rtol=rtol_use))
 
 def test_ch_inv_not_chol_given_upper(test_mat):
-    A = test_mat.A
-    A_i = test_mat.A_i
+    A = test_mat.A.copy()
+    A_i = test_mat.A_i.copy()
 
     atol_loc1 = np.max(np.abs(A))*atol_rel_use
     atol_loc2 = np.max(np.abs(A_i))*atol_rel_use
@@ -303,11 +267,10 @@ def test_ch_inv_not_chol_given_upper(test_mat):
     assert(np.allclose(ch_inv(A_i,cholesky_given=False,lower=False),A,atol=atol_loc1,rtol=rtol_use))
 
 def test_ch_inv_both_F_order(test_mat):
-    A = test_mat.A
-    A_i = test_mat.A_i
+    A = test_mat.A.copy()
+    A_i = test_mat.A_i.copy()
      
     test_A1 = A.copy('F')
-    test_A_i1 = A_i.copy('F')
 
     atol_loc1 = np.max(np.abs(A))*atol_rel_use
     atol_loc2 = np.max(np.abs(A_i))*atol_rel_use
@@ -316,15 +279,12 @@ def test_ch_inv_both_F_order(test_mat):
     assert(np.allclose(A,test_A1,atol=atol_loc1,rtol=rtol_use))
     assert(np.allclose(ch_inv(ch_inv(test_A1,cholesky_given=False),cholesky_given=False),A,atol=atol_loc1,rtol=rtol_use))
     assert(np.allclose(ch_inv(A_i,cholesky_given=False),A,atol=atol_loc1,rtol=rtol_use))
-    test_A1 = None
-    test_A_i1 = None
 
 def test_ch_inv_both_C_order(test_mat):
-    A = test_mat.A
-    A_i = test_mat.A_i
+    A = test_mat.A.copy()
+    A_i = test_mat.A_i.copy()
 
     test_A1 = A.copy('C')
-    test_A_i1 = A_i.copy('C')
 
     atol_loc1 = np.max(np.abs(A))*atol_rel_use
     atol_loc2 = np.max(np.abs(A_i))*atol_rel_use
@@ -333,16 +293,13 @@ def test_ch_inv_both_C_order(test_mat):
     assert(np.allclose(A,test_A1,atol=atol_loc1,rtol=rtol_use))
     assert(np.allclose(ch_inv(ch_inv(test_A1,cholesky_given=False),cholesky_given=False),A,atol=atol_loc1,rtol=rtol_use))
     assert(np.allclose(ch_inv(A_i,cholesky_given=False),A,atol=atol_loc1,rtol=rtol_use))
-    test_A1 = None
-    test_A_i1 = None
 
 
 def test_ch_inv_F_then_C_order(test_mat):
-    A = test_mat.A
-    A_i = test_mat.A_i
+    A = test_mat.A.copy()
+    A_i = test_mat.A_i.copy()
 
     test_A1 = A.copy('F')
-    test_A_i1 = A_i.copy('C')
 
     atol_loc1 = np.max(np.abs(A))*atol_rel_use
     atol_loc2 = np.max(np.abs(A_i))*atol_rel_use
@@ -351,16 +308,13 @@ def test_ch_inv_F_then_C_order(test_mat):
     assert(np.allclose(A,test_A1,atol=atol_loc1,rtol=rtol_use))
     assert(np.allclose(ch_inv(ch_inv(test_A1,cholesky_given=False),cholesky_given=False),A,atol=atol_loc1,rtol=rtol_use))
     assert(np.allclose(ch_inv(A_i,cholesky_given=False),A,atol=atol_loc1,rtol=rtol_use))
-    test_A1 = None
-    test_A_i1 = None
 
 
 def test_ch_inv_C_then_F_order(test_mat):
-    A = test_mat.A
-    A_i = test_mat.A_i
+    A = test_mat.A.copy()
+    A_i = test_mat.A_i.copy()
 
     test_A1 = A.copy('C')
-    test_A_i1 = A_i.copy('F')
 
     atol_loc1 = np.max(np.abs(A))*atol_rel_use
     atol_loc2 = np.max(np.abs(A_i))*atol_rel_use
@@ -369,13 +323,11 @@ def test_ch_inv_C_then_F_order(test_mat):
     assert(np.allclose(A,test_A1,atol=atol_loc1,rtol=rtol_use))
     assert(np.allclose(ch_inv(ch_inv(test_A1,cholesky_given=False),cholesky_given=False),A,atol=atol_loc1,rtol=rtol_use))
     assert(np.allclose(ch_inv(A_i,cholesky_given=False),A,atol=atol_loc1,rtol=rtol_use))
-    test_A1 = None
-    test_A_i1 = None
 
 
 def test_cholesky_inplace_inplace_F_order(test_mat):
-    A = test_mat.A
-    chol1 = test_mat.chol
+    A = test_mat.A.copy()
+    chol1 = test_mat.chol.copy()
 
     #Test doing cholesky in place with cholesky_inplace
     test_chol_inplace1 = A.copy('F')
@@ -389,8 +341,8 @@ def test_cholesky_inplace_inplace_F_order(test_mat):
 
 
 def test_cholesky_inplace_not_inplace_F_order(test_mat):
-    A = test_mat.A
-    chol1 = test_mat.chol
+    A = test_mat.A.copy()
+    chol1 = test_mat.chol.copy()
     #Test doing cholesky not in place with cholesky_inplace
     test_chol_inplace2 = A.copy('F')
     test_chol_inplace2_res = cholesky_inplace(test_chol_inplace2,inplace=False,lower=True)
@@ -403,8 +355,8 @@ def test_cholesky_inplace_not_inplace_F_order(test_mat):
     assert(np.allclose(test_chol_inplace2,A,atol=atol_loc1,rtol=rtol_use))
  
 def test_cholesky_inplace_not_inplace_C_order(test_mat):
-    A = test_mat.A
-    chol1 = test_mat.chol
+    A = test_mat.A.copy()
+    chol1 = test_mat.chol.copy()
     #Test doing cholesky not in place with C ordering
     test_chol_inplace2 = A.copy('C')
     test_chol_inplace2_res = cholesky_inplace(test_chol_inplace2,inplace=False,lower=True)
@@ -418,8 +370,8 @@ def test_cholesky_inplace_not_inplace_C_order(test_mat):
 
 
 def test_cholesky_inplace_inplace_C_order_nonfatal(test_mat):
-    A = test_mat.A
-    chol1 = test_mat.chol
+    A = test_mat.A.copy()
+    chol1 = test_mat.chol.copy()
     #Test doing cholesky in place with C ordering (should cause warning unless also F ordering)
     test_chol_inplace4 = A.copy('C')
 
@@ -440,16 +392,15 @@ def test_cholesky_inplace_inplace_C_order_nonfatal(test_mat):
     test_chol_inplace4_res=None
 
 def test_cholesky_inplace_inplace_C_order_fatal(test_mat):
-    A = test_mat.A
+    A = test_mat.A.copy()
     #Test doing cholesky in place with C ordering (should cause fatal error)
     test_chol_inplace5 = A.copy('C')
     if not test_chol_inplace5.flags['F']:
         np.testing.assert_raises(RuntimeError, cholesky_inplace,test_chol_inplace5,inplace=True,fatal_errors=True)
-    test_chol_inplace5 = None
     
 def test_invert_triangular_lower(test_mat):
-    chol = test_mat.chol
-    chol_i = test_mat.chol_i
+    chol = test_mat.chol.copy()
+    chol_i = test_mat.chol_i.copy()
 
     chol_i_test = chol_i.copy()
     chol_test = chol.copy()
@@ -461,8 +412,8 @@ def test_invert_triangular_lower(test_mat):
     assert(np.allclose(invert_triangular(chol_i_test,lower=True),chol,atol=atol_loc4,rtol=rtol_use))
 
 def test_invert_triangular_upper(test_mat):
-    chol = test_mat.chol_u
-    chol_i = test_mat.chol_i_u
+    chol = test_mat.chol_u.copy()
+    chol_i = test_mat.chol_i_u.copy()
 
     chol_i_test = chol_i.copy()
     chol_test = chol.copy()
@@ -474,8 +425,8 @@ def test_invert_triangular_upper(test_mat):
     assert(np.allclose(invert_triangular(chol_i_test,lower=False),chol,atol=atol_loc4,rtol=rtol_use))
     
 def test_get_mat_from_inv_cholesky_direct(test_mat):
-    A = test_mat.A
-    chol_i = test_mat.chol_i
+    A = test_mat.A.copy()
+    chol_i = test_mat.chol_i.copy()
  
     chol_i_test = chol_i.copy()
 
@@ -484,8 +435,8 @@ def test_get_mat_from_inv_cholesky_direct(test_mat):
     assert(np.allclose(get_mat_from_inv_cholesky(chol_i_test),A,atol=atol_loc1,rtol=rtol_use))
 
 def test_get_mat_from_inv_cholesky_inverse(test_mat):
-    A_i = test_mat.A_i
-    chol = test_mat.chol.T
+    A_i = test_mat.A_i.copy()
+    chol = test_mat.chol.copy().T
  
     chol_test = chol.copy()
 
@@ -496,7 +447,7 @@ def test_get_mat_from_inv_cholesky_inverse(test_mat):
 
 #TODO random may not be the best option here
 def test_cholesky_inv_contract_scalar_direct_lower(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     A_test = test_mat.A.copy()
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = np.random.rand(A_i.shape[0])   
@@ -509,9 +460,8 @@ def test_cholesky_inv_contract_scalar_direct_lower(test_mat):
      
 
 def test_cholesky_inv_contract_scalar_direct_lower_cholesky_given(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     chol_i = test_mat.chol_i.copy()
-    A_test = test_mat.A.copy()
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = np.random.rand(A_i.shape[0])   
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
@@ -523,7 +473,7 @@ def test_cholesky_inv_contract_scalar_direct_lower_cholesky_given(test_mat):
 
 
 def test_cholesky_inv_contract_scalar_direct_upper(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     A_test = test_mat.A.copy()
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = np.random.rand(A_i.shape[0])   
@@ -536,9 +486,8 @@ def test_cholesky_inv_contract_scalar_direct_upper(test_mat):
      
 
 def test_cholesky_inv_contract_scalar_direct_upper_cholesky_given(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     chol_i = test_mat.chol_i_u.copy()
-    A_test = test_mat.A.copy()
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = np.random.rand(A_i.shape[0])   
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
@@ -549,7 +498,7 @@ def test_cholesky_inv_contract_scalar_direct_upper_cholesky_given(test_mat):
     assert(np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use))
     
 def test_cholesky_inv_contract_scalar_direct_lower_identical(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     A_test = test_mat.A.copy()
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = vec1 
@@ -561,9 +510,8 @@ def test_cholesky_inv_contract_scalar_direct_lower_identical(test_mat):
     assert(np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use))
 
 def test_cholesky_inv_contract_scalar_direct_lower_cholesky_given_identical(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     chol_i = test_mat.chol_i.copy()
-    A_test = test_mat.A.copy()
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = vec1
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
@@ -575,7 +523,7 @@ def test_cholesky_inv_contract_scalar_direct_lower_cholesky_given_identical(test
 
 
 def test_cholesky_inv_contract_scalar_direct_upper_identical(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     A_test = test_mat.A.copy()
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = vec1 
@@ -588,9 +536,8 @@ def test_cholesky_inv_contract_scalar_direct_upper_identical(test_mat):
      
 
 def test_cholesky_inv_contract_scalar_direct_upper_cholesky_given_identical(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     chol_i = test_mat.chol_i_u.copy()
-    A_test = test_mat.A.copy()
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = vec1
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
@@ -602,7 +549,7 @@ def test_cholesky_inv_contract_scalar_direct_upper_cholesky_given_identical(test
 
 
 def test_cholesky_inv_contract_matrix_direct_lower(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
@@ -620,9 +567,8 @@ def test_cholesky_inv_contract_matrix_direct_lower(test_mat):
      
 
 def test_cholesky_inv_contract_matrix_direct_lower_cholesky_given(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     chol_i = test_mat.chol_i.copy()
-    A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
         dim2=1
@@ -639,7 +585,7 @@ def test_cholesky_inv_contract_matrix_direct_lower_cholesky_given(test_mat):
 
 
 def test_cholesky_inv_contract_matrix_direct_upper(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
@@ -657,9 +603,8 @@ def test_cholesky_inv_contract_matrix_direct_upper(test_mat):
      
 
 def test_cholesky_inv_contract_matrix_direct_upper_cholesky_given(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     chol_i = test_mat.chol_i_u.copy()
-    A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
         dim2=1
@@ -675,7 +620,7 @@ def test_cholesky_inv_contract_matrix_direct_upper_cholesky_given(test_mat):
     assert(np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use))
     
 def test_cholesky_inv_contract_matrix_direct_lower_identical_copy(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
@@ -692,9 +637,8 @@ def test_cholesky_inv_contract_matrix_direct_lower_identical_copy(test_mat):
     assert(np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use))
 
 def test_cholesky_inv_contract_matrix_direct_lower_cholesky_given_identical_copy(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     chol_i = test_mat.chol_i.copy()
-    A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
         dim2=1
@@ -711,7 +655,7 @@ def test_cholesky_inv_contract_matrix_direct_lower_cholesky_given_identical_copy
 
 
 def test_cholesky_inv_contract_matrix_direct_upper_identical_copy(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
@@ -729,9 +673,8 @@ def test_cholesky_inv_contract_matrix_direct_upper_identical_copy(test_mat):
      
 
 def test_cholesky_inv_contract_matrix_direct_upper_cholesky_given_identical_copy(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     chol_i = test_mat.chol_i_u.copy()
-    A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
         dim2=1
@@ -747,7 +690,7 @@ def test_cholesky_inv_contract_matrix_direct_upper_cholesky_given_identical_copy
     assert(np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use))
 
 def test_cholesky_inv_contract_matrix_direct_lower_identical_view(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
@@ -764,9 +707,8 @@ def test_cholesky_inv_contract_matrix_direct_lower_identical_view(test_mat):
     assert(np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use))
 
 def test_cholesky_inv_contract_matrix_direct_lower_cholesky_given_identical_view(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     chol_i = test_mat.chol_i.copy()
-    A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
         dim2=1
@@ -783,7 +725,7 @@ def test_cholesky_inv_contract_matrix_direct_lower_cholesky_given_identical_view
 
 
 def test_cholesky_inv_contract_matrix_direct_upper_identical_view(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
@@ -801,9 +743,8 @@ def test_cholesky_inv_contract_matrix_direct_upper_identical_view(test_mat):
      
 
 def test_cholesky_inv_contract_matrix_direct_upper_cholesky_given_identical_view(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     chol_i = npl.pinv(spl.cholesky(test_mat.A,lower=False))
-    A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
         dim2=1
@@ -819,7 +760,7 @@ def test_cholesky_inv_contract_matrix_direct_upper_cholesky_given_identical_view
     assert(np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use))
 
 def test_cholesky_contract_scalar_direct_lower(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     A_test = test_mat.A.copy()
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = np.random.rand(A_i.shape[0])   
@@ -832,7 +773,7 @@ def test_cholesky_contract_scalar_direct_lower(test_mat):
      
 
 def test_cholesky_contract_scalar_direct_lower_cholesky_given(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     chol = test_mat.chol.copy()
     A_test = test_mat.A.copy()
     vec1 = np.random.rand(A_i.shape[0])
@@ -846,7 +787,7 @@ def test_cholesky_contract_scalar_direct_lower_cholesky_given(test_mat):
 
 
 def test_cholesky_contract_scalar_direct_upper(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     A_test = test_mat.A.copy()
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = np.random.rand(A_i.shape[0])   
@@ -857,9 +798,8 @@ def test_cholesky_contract_scalar_direct_upper(test_mat):
 
     assert(np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use))
      
-
-def test_cholesky_inv_contract_scalar_direct_upper_cholesky_given(test_mat):
-    A_i = test_mat.A_i
+def test_cholesky_contract_scalar_direct_upper_cholesky_given(test_mat):
+    A_i = test_mat.A_i.copy()
     chol = test_mat.chol_u.copy()
     A_test = test_mat.A.copy()
     vec1 = np.random.rand(A_i.shape[0])
@@ -872,7 +812,7 @@ def test_cholesky_inv_contract_scalar_direct_upper_cholesky_given(test_mat):
     assert(np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use))
     
 def test_cholesky_contract_scalar_direct_lower_identical(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     A_test = test_mat.A.copy()
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = vec1 
@@ -884,7 +824,7 @@ def test_cholesky_contract_scalar_direct_lower_identical(test_mat):
     assert(np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use))
 
 def test_cholesky_contract_scalar_direct_lower_cholesky_given_identical(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     chol = test_mat.chol.copy()
     A_test = test_mat.A.copy()
     vec1 = np.random.rand(A_i.shape[0])
@@ -898,7 +838,7 @@ def test_cholesky_contract_scalar_direct_lower_cholesky_given_identical(test_mat
 
 
 def test_cholesky_contract_scalar_direct_upper_identical(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     A_test = test_mat.A.copy()
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = vec1 
@@ -911,7 +851,7 @@ def test_cholesky_contract_scalar_direct_upper_identical(test_mat):
      
 
 def test_cholesky_contract_scalar_direct_upper_cholesky_given_identical(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     chol = test_mat.chol_u.copy()
     A_test = test_mat.A.copy()
     vec1 = np.random.rand(A_i.shape[0])
@@ -925,7 +865,7 @@ def test_cholesky_contract_scalar_direct_upper_cholesky_given_identical(test_mat
 
 
 def test_cholesky_contract_matrix_direct_lower(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
@@ -943,7 +883,7 @@ def test_cholesky_contract_matrix_direct_lower(test_mat):
      
 
 def test_cholesky_contract_matrix_direct_lower_cholesky_given(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     chol = test_mat.chol.copy()
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
@@ -962,7 +902,7 @@ def test_cholesky_contract_matrix_direct_lower_cholesky_given(test_mat):
 
 
 def test_cholesky_contract_matrix_direct_upper(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
@@ -980,7 +920,7 @@ def test_cholesky_contract_matrix_direct_upper(test_mat):
      
 
 def test_cholesky_contract_matrix_direct_upper_cholesky_given(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     chol = test_mat.chol_u.copy()
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
@@ -998,7 +938,7 @@ def test_cholesky_contract_matrix_direct_upper_cholesky_given(test_mat):
     assert(np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use))
     
 def test_cholesky_contract_matrix_direct_lower_identical_copy(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
@@ -1015,7 +955,7 @@ def test_cholesky_contract_matrix_direct_lower_identical_copy(test_mat):
     assert(np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use))
 
 def test_cholesky_contract_matrix_direct_lower_cholesky_given_identical_copy(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     chol = test_mat.chol.copy()
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
@@ -1034,7 +974,7 @@ def test_cholesky_contract_matrix_direct_lower_cholesky_given_identical_copy(tes
 
 
 def test_cholesky_contract_matrix_direct_upper_identical_copy(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
@@ -1052,7 +992,7 @@ def test_cholesky_contract_matrix_direct_upper_identical_copy(test_mat):
      
 
 def test_cholesky_contract_matrix_direct_upper_cholesky_given_identical_copy(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     chol = test_mat.chol_u.copy()
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
@@ -1070,7 +1010,7 @@ def test_cholesky_contract_matrix_direct_upper_cholesky_given_identical_copy(tes
     assert(np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use))
 
 def test_cholesky_contract_matrix_direct_lower_identical_view(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
@@ -1087,7 +1027,7 @@ def test_cholesky_contract_matrix_direct_lower_identical_view(test_mat):
     assert(np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use))
 
 def test_cholesky_contract_matrix_direct_lower_cholesky_given_identical_view(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     chol = test_mat.chol.copy()
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
@@ -1106,7 +1046,7 @@ def test_cholesky_contract_matrix_direct_lower_cholesky_given_identical_view(tes
 
 
 def test_cholesky_contract_matrix_direct_upper_identical_view(test_mat):
-    A_i = test_mat.A_i
+    A_i = test_mat.A_i.copy()
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
@@ -1123,9 +1063,9 @@ def test_cholesky_contract_matrix_direct_upper_identical_view(test_mat):
     assert(np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use))
      
 
-def test_cholesky_inv_contract_matrix_direct_upper_cholesky_given_identical_view(test_mat):
-    A_i = test_mat.A_i
-    chol_i = test_mat.chol_i_u
+def test_cholesky_contract_matrix_direct_upper_cholesky_given_identical_view(test_mat):
+    A_i = test_mat.A_i.copy()
+    chol = test_mat.chol_u.copy()
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
@@ -1134,8 +1074,8 @@ def test_cholesky_inv_contract_matrix_direct_upper_cholesky_given_identical_view
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = vec1
-    contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
-    contract_res_test=cholesky_inv_contract(chol_i,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=False)
+    contract_res = np.dot(np.dot(vec1.T,A_test),vec2)
+    contract_res_test=cholesky_contract(chol,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=False)
 
     atol_loc=np.max(np.abs(contract_res))*atol_rel_use
 

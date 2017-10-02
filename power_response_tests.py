@@ -1,9 +1,8 @@
 import numpy as np
-from scipy.interpolate import interp1d,UnivariateSpline
+from scipy.interpolate import interp1d
 import power_response as shp
 import defaults 
 import cosmopie as cp
-import camb_power as cpow
 import matter_power_spectrum as mps
 #replicate chiang&wagner arxiv:1403.3411v2 figure 4-5
 #note that the mean averaged over 1 oscillation should match as should the phase of the oscillations, 
@@ -16,10 +15,7 @@ class PowerDerivativeComparison1:
         C=cp.CosmoPie(cosmology=defaults.cosmology_chiang,p_space='basic',camb_params=camb_params)
         #d = np.loadtxt('camb_m_pow_l.dat')
         #k_in = d[:,0]
-        zs = np.arange(0.1,1.0,0.1)
-        ls = np.arange(1,5000)
         epsilon = 0.00001
-        cosmo_a = C.cosmology.copy()
         #k_a,P_a = cpow.camb_pow(cosmo_a)
         P_a = mps.MatterPower(C,camb_params=camb_params)
         k_a = P_a.k

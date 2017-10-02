@@ -7,7 +7,7 @@
 ''' 
 
 import numpy as np
-from scipy.integrate import romberg, quad, trapz,cumtrapz,odeint
+from scipy.integrate import quad,odeint
 from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
 from algebra_utils import trapz2
 import defaults
@@ -19,7 +19,7 @@ import matter_power_spectrum as mps
 class CosmoPie(object): 
     #TODO convergence test a grid values
     #TODO reduce possibility of circular reference to MatterPower
-    def __init__(self,cosmology=defaults.cosmology, P_lin=None, k=None,p_space=defaults.cosmopie_params['p_space'],needs_power=False,camb_params=defaults.camb_params,a_step=0.001,G_in=None,G_safe=False,silent=False):
+    def __init__(self,cosmology=defaults.cosmology, P_lin=None, k=None,p_space=defaults.cosmopie_params['p_space'],needs_power=False,camb_params=None,a_step=0.001,G_in=None,G_safe=False,silent=False):
         """
         Set up for cosmological parameters in input cosmology.
         Inputs:
@@ -189,7 +189,7 @@ class CosmoPie(object):
         else:
             raise ValueError('unrecognized dark energy model \''+str(self.de_model)+'\'')
 
-        self.camb_params = camb_params.copy()
+        self.camb_params = camb_params
 
         
         # solar mass

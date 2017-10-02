@@ -2,14 +2,12 @@ import numpy as np
 from astropy.io import fits
 import spherical_geometry.vector as sgv
 from spherical_geometry.polygon import SphericalPolygon
-from sph_functions import Y_r
 from numpy.core.umath_tests import inner1d
 from geo import PixelGeo,RectGeo
 from time import time
 import defaults
 import scipy as sp
 from cosmopie import CosmoPie
-from scipy.interpolate import SmoothBivariateSpline
 from warnings import warn
 from math import isnan
 

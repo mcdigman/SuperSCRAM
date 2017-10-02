@@ -14,7 +14,7 @@ import cosmopie as cp
 #TODO clean up
 #TODO treat w0 and w consistently
 class MatterPower(object):
-    def __init__(self,C_in,P_lin=None,k_in=None,matter_power_params=defaults.matter_power_params,camb_params=defaults.camb_params,wmatcher_params=defaults.wmatcher_params,halofit_params=defaults.halofit_params,fpt_params=defaults.fpt_params,wm_in=None,wm_safe=False,P_fid=None,camb_safe=False,de_perturbative=False):
+    def __init__(self,C_in,P_lin=None,k_in=None,matter_power_params=defaults.matter_power_params,camb_params=None,wmatcher_params=defaults.wmatcher_params,halofit_params=defaults.halofit_params,fpt_params=defaults.fpt_params,wm_in=None,wm_safe=False,P_fid=None,camb_safe=False,de_perturbative=False):
         """Generate matter power spectrum for input cosmology
         linear power spectrum use camb, nonlinear can use halofit or FAST-PT
         Inputs:
@@ -48,6 +48,7 @@ class MatterPower(object):
                 self.k = k_camb
             else:
                 if not np.allclose(k_camb,k_in):    
+                    #print "MatterPower: adjusting k grid"
                     #TODO extrapolate properly, not safe on edges now. Issue is k_camb is off by factor of self.cosmology['H0']/71.902712048990196
                     self.P_lin = InterpolatedUnivariateSpline(k_camb,self.P_lin,k=2)(k_in)
                 self.k=k_in
@@ -87,6 +88,7 @@ class MatterPower(object):
             #TODO found bug with force_sigma8 consistency 
             #borrow some parameters from an input power spectrum if camb need not be called repeatedly
             #TODO check robustness ie do not need to also get alternate w_match_grid
+            #TODO not sure all these camb calls are a good idea
             cache_usable = False
             if camb_safe and not  (P_fid is None):
                 self.camb_w_interp = P_fid.camb_w_interp

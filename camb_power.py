@@ -1,11 +1,13 @@
-from time import time
 import numpy as np
 import camb
 import defaults
+from warnings import warn
 
 #TODO may want to investigate possible halofit discrepancy
 #TODO maybe don't let camb_params default
-def camb_pow(cosmology,zbar=0.,camb_params=defaults.camb_params,nonlinear_model=camb.model.NonLinear_none):
+#TODO add accuracy parameter, for either set_accuracy or k_per_logint in set_matter_power
+#Note force_sigma8 forces sigma8_nl(z) to be the sigma8 in the cosmology, not sigma8_lin(z=0.), which may not be ideal behavior
+def camb_pow(cosmology,zbar=0.,camb_params=None,nonlinear_model=camb.model.NonLinear_none):
     """get camb linear power spectrum 
         inputs:    
             cosmology: can vary H0, Omegabh2,Omegach2,Omegak,mnu,As,ns,OmegaL and w
@@ -13,10 +15,12 @@ def camb_pow(cosmology,zbar=0.,camb_params=defaults.camb_params,nonlinear_model=
             camb_params: some parameters controling k
             nonlinear_model: overwride and do something other than linear if set
     """
-        
+    if camb_params is None:
+        raise ValueError('need camb params')
     pars = camb.CAMBparams()
     pars.set_cosmology(H0=cosmology['H0'], ombh2=cosmology['Omegabh2'], omch2=cosmology['Omegach2'],omk=cosmology['Omegak'],mnu=cosmology['mnu']) #ignores tau and YHe for now
 
+    #pars.set_accuracy(4.)
     if cosmology.get('As') is not None:
         pars.InitPower.set_params(ns=cosmology['ns'],As=cosmology['As'])
     else:
@@ -29,7 +33,6 @@ def camb_pow(cosmology,zbar=0.,camb_params=defaults.camb_params,nonlinear_model=
     pars.set_dark_energy(cosmology['w']) #re-set defaults
 
     #Not non-linear corrections couples to smaller scales than you want
-    #TODO kmax here creates problems above this scale but it is very slow to increase it.
     pars.set_matter_power(redshifts=[zbar], kmax=camb_params['kmax'])
     #Linear spectra
     if not nonlinear_model==camb.model.NonLinear_none:
@@ -64,12 +67,14 @@ def camb_pow(cosmology,zbar=0.,camb_params=defaults.camb_params,nonlinear_model=
         else:
             return kh*cosmology['h'],pk[0]/cosmology['h']**3
 
-def camb_sigma8(cosmology,camb_params=defaults.camb_params):
+def camb_sigma8(cosmology,camb_params=None):
     """get camb sigma8 
         inputs:    
             cosmology: can vary H0, Omegabh2,Omegach2,Omegak,mnu,As,ns,OmegaL and w
             camb_params: some parameters controling k
     """
+    if camb_params is None:
+        raise ValueError('need camb params')
     pars = camb.CAMBparams()
     #TODO see about omega r, including tau and YHe
     pars.set_cosmology(H0=cosmology['H0'], ombh2=cosmology['Omegabh2'], omch2=cosmology['Omegach2'],omk=cosmology['Omegak'],mnu=cosmology['mnu'])

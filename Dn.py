@@ -9,7 +9,6 @@ from lw_observable import LWObservable
 import fisher_matrix as fm
 from algebra_utils import trapz2
 from warnings import warn
-import scipy.linalg as spl
 
 class DNumberDensityObservable(LWObservable):
     def __init__(self,geos,params,survey_id, C,basis,nz_params1,nz_params2):  

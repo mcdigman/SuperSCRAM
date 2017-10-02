@@ -1,12 +1,8 @@
 import numpy as np
-from polygon_pixel_geo import PolygonPixelGeo,get_Y_r_dict
-from sph_functions import Y_r
-from geo import PixelGeo,RectGeo,Geo
-from time import time
+from polygon_pixel_geo import PolygonPixelGeo
+from geo import RectGeo
 import defaults
-import scipy as sp
 from cosmopie import CosmoPie
-from scipy.interpolate import SmoothBivariateSpline
 from warnings import warn
 import polygon_geo as pg
 import pytest
@@ -362,7 +358,7 @@ def test_rotational_suite(geo_input):
 
 
 if __name__=='__main__':
-    pytest.cmdline.main(['fisher_tests.py'])
+    pytest.cmdline.main(['polygon_geo_tests.py'])
     do_plot = False
     if do_plot:
         params = get_param_set(np.array([0,0]))

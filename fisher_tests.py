@@ -1,11 +1,7 @@
 import numpy as np
 import numpy.linalg as npl
-import scipy as sp
 import scipy.linalg as spl
-import warnings
-from time import time
-from algebra_utils import cholesky_inplace,get_inv_cholesky,ch_inv,invert_triangular
-import sys
+from algebra_utils import cholesky_inplace,ch_inv,invert_triangular
 import pytest
 import copy
 import fisher_matrix as fm
@@ -126,10 +122,10 @@ def fisher_params(request,fisher_input):
     return FisherWithManual(fisher_input,fisher)
 
 def test_basic_setup_succeeded(fisher_input):
-    fab = fisher_input.fab
-    cov = fisher_input.cov
-    chol_cov = fisher_input.chol_cov
-    chol_cov_i = fisher_input.chol_cov_i
+    fab = fisher_input.fab.copy()
+    cov = fisher_input.cov.copy()
+    chol_cov = fisher_input.chol_cov.copy()
+    chol_cov_i = fisher_input.chol_cov_i.copy()
 
 
     atol_loc1=np.max(np.abs(cov))*atol_rel_use
@@ -148,16 +144,14 @@ def test_basic_setup_succeeded(fisher_input):
     assert(check_is_cholesky_inv(chol_cov_i,cov,atol_rel=atol_rel_use,rtol=rtol_use))
 
 def test_fab_any_input_any_initial(fisher_params):
-    fab = fisher_params.fisher_input.fab
-    cov = fisher_params.fisher_input.cov
-    chol_cov = fisher_params.fisher_input.chol_cov
-    chol_cov_i = fisher_params.fisher_input.chol_cov_i
+    fab = fisher_params.fisher_input.fab.copy()
+    cov = fisher_params.fisher_input.cov.copy()
 
 
     atol_loc1=np.max(np.abs(cov))*atol_rel_use
     atol_loc2=np.max(np.abs(fab))*atol_rel_use
 
-    fisher = fisher_params.fisher
+    fisher = copy.deepcopy(fisher_params.fisher)
 
     fab_res1 = fisher.get_fisher()
     assert(np.all(fab_res1==fab_res1.T))
@@ -167,35 +161,34 @@ def test_fab_any_input_any_initial(fisher_params):
 
 
 def test_chol_cov_any_input_any_initial(fisher_params):
-    cov = fisher_params.fisher_input.cov
-    chol_cov = fisher_params.fisher_input.chol_cov
+    cov = fisher_params.fisher_input.cov.copy()
+    chol_cov = fisher_params.fisher_input.chol_cov.copy()
 
     atol_loc3=np.max(np.abs(chol_cov))*atol_rel_use
 
-    fisher = fisher_params.fisher
+    fisher = copy.deepcopy(fisher_params.fisher)
     chol_cov_res1 = fisher.get_cov_cholesky()
     assert(np.allclose(np.tril(chol_cov_res1),chol_cov_res1,atol=atol_loc3,rtol=rtol_use))
     assert(np.allclose(chol_cov,chol_cov_res1,atol=atol_loc3,rtol=rtol_use))
     assert(check_is_cholesky(chol_cov_res1,cov,atol_rel=atol_rel_use,rtol=rtol_use))
 
 def test_chol_cov_i_any_input_any_initial(fisher_params):
-    fab = fisher_params.fisher_input.fab
-    cov = fisher_params.fisher_input.cov
-    chol_cov_i = fisher_params.fisher_input.chol_cov_i
+    cov = fisher_params.fisher_input.cov.copy()
+    chol_cov_i = fisher_params.fisher_input.chol_cov_i.copy()
 
     atol_loc4=np.max(np.abs(chol_cov_i))*atol_rel_use
 
-    fisher = fisher_params.fisher
+    fisher = copy.deepcopy(fisher_params.fisher)
     chol_cov_i_res1 = fisher.get_cov_cholesky_inv()
     assert(np.allclose(np.tril(chol_cov_i_res1),chol_cov_i_res1,atol=atol_loc4,rtol=rtol_use))
     assert(np.allclose(chol_cov_i,chol_cov_i_res1,atol=atol_loc4,rtol=rtol_use))
     assert(check_is_cholesky_inv(chol_cov_i_res1,cov,atol_rel=atol_rel_use,rtol=rtol_use))
 
 def test_cov_any_input_any_initial(fisher_params):
-    fab = fisher_params.fisher_input.fab
-    cov = fisher_params.fisher_input.cov
+    fab = fisher_params.fisher_input.fab.copy()
+    cov = fisher_params.fisher_input.cov.copy()
 
-    fisher = fisher_params.fisher
+    fisher = copy.deepcopy(fisher_params.fisher)
     cov_res1 = fisher.get_covar()
 
     atol_loc1=np.max(np.abs(cov))*atol_rel_use
@@ -207,7 +200,7 @@ def test_cov_any_input_any_initial(fisher_params):
 
 def test_contract_cov_self_ident_nofisher(fisher_params):
     cov = fisher_params.fisher_input.cov.copy()
-    fisher=fisher_params.fisher
+    fisher=copy.deepcopy(fisher_params.fisher)
     cov_contracted1 = fisher.contract_covar(cov,cov,identical_inputs=True,return_fisher=False)
     cov_contracted2 = np.dot(cov.T,np.dot(cov,cov))
 
@@ -216,10 +209,10 @@ def test_contract_cov_self_ident_nofisher(fisher_params):
     assert(np.allclose(cov_contracted1,cov_contracted1.T,atol=atol_loc,rtol=rtol_use))
 
 def test_contract_cov_fab_ident_nofisher(fisher_params):
-    fab = fisher_params.fisher_input.fab
-    cov = fisher_params.fisher_input.cov
+    fab = fisher_params.fisher_input.fab.copy()
+    cov = fisher_params.fisher_input.cov.copy()
 
-    fisher=fisher_params.fisher
+    fisher=copy.deepcopy(fisher_params.fisher)
     cov_contracted1 = fisher.contract_covar(fab,fab,identical_inputs=True,return_fisher=False)
     cov_contracted2 = np.dot(fab.T,np.dot(cov,fab))
 
@@ -229,10 +222,10 @@ def test_contract_cov_fab_ident_nofisher(fisher_params):
 
 
 def test_contract_cov_fab_cov_nofisher(fisher_params):
-    fab = fisher_params.fisher_input.fab
-    cov = fisher_params.fisher_input.cov
+    fab = fisher_params.fisher_input.fab.copy()
+    cov = fisher_params.fisher_input.cov.copy()
 
-    fisher=fisher_params.fisher
+    fisher=copy.deepcopy(fisher_params.fisher)
     cov_contracted1 = fisher.contract_covar(fab,cov,identical_inputs=False,return_fisher=False)
     cov_contracted2 = np.dot(fab.T,np.dot(cov,cov))
 
@@ -241,10 +234,10 @@ def test_contract_cov_fab_cov_nofisher(fisher_params):
     assert(np.allclose(cov_contracted1,cov_contracted1.T,atol=atol_loc,rtol=rtol_use))
 
 def test_contract_cov_range1_nofisher(fisher_params):
-    cov = fisher_params.fisher_input.cov
+    cov = fisher_params.fisher_input.cov.copy()
     range_mat = np.zeros((cov.shape[0],1))
     range_mat[:,0] = np.arange(cov.shape[0])
-    fisher=fisher_params.fisher
+    fisher=copy.deepcopy(fisher_params.fisher)
     cov_contracted1 = fisher.contract_covar(range_mat,range_mat,identical_inputs=True,return_fisher=False)
     cov_contracted2 = np.dot(range_mat.T,np.dot(cov,range_mat))
 
@@ -253,7 +246,7 @@ def test_contract_cov_range1_nofisher(fisher_params):
     assert(np.allclose(cov_contracted1,cov_contracted1.T,atol=atol_loc,rtol=rtol_use))
 
 def test_contract_cov_range2_nofisher(fisher_params):
-    cov = fisher_params.fisher_input.cov
+    cov = fisher_params.fisher_input.cov.copy()
 
     range_mat1 = np.zeros((cov.shape[0],cov.shape[0]))
     for i in xrange(0,cov.shape[0]):
@@ -261,7 +254,7 @@ def test_contract_cov_range2_nofisher(fisher_params):
 
     range_mat2 = np.zeros((cov.shape[0],1))
     range_mat2[:,0] = np.arange(cov.shape[0])
-    fisher=fisher_params.fisher
+    fisher=copy.deepcopy(fisher_params.fisher)
     cov_contracted1 = fisher.contract_covar(range_mat1,range_mat2,identical_inputs=False,return_fisher=False)
     cov_contracted2 = np.dot(range_mat1.T,np.dot(cov,range_mat2))
     cov_contracted3 = fisher.contract_covar(range_mat2,range_mat1,identical_inputs=False,return_fisher=False)
@@ -275,7 +268,7 @@ def test_contract_cov_range2_nofisher(fisher_params):
 
 def test_project_cov_self(fisher_params):
     cov = fisher_params.fisher_input.cov.copy()
-    fisher=fisher_params.fisher
+    fisher=copy.deepcopy(fisher_params.fisher)
     cov_contracted1 = fisher.project_covar(cov).get_covar()
     cov_contracted2 = np.dot(cov.T,np.dot(cov,cov))
 
@@ -285,10 +278,10 @@ def test_project_cov_self(fisher_params):
     assert(np.allclose(cov_contracted1,cov_contracted1.T,atol=atol_loc,rtol=rtol_use))
 
 def test_project_cov_fab(fisher_params):
-    fab = fisher_params.fisher_input.fab
-    cov = fisher_params.fisher_input.cov
+    fab = fisher_params.fisher_input.fab.copy()
+    cov = fisher_params.fisher_input.cov.copy()
 
-    fisher=fisher_params.fisher
+    fisher=copy.deepcopy(fisher_params.fisher)
     cov_contracted1 = fisher.project_covar(fab).get_covar()
     cov_contracted2 = np.dot(fab.T,np.dot(cov,fab))
 
@@ -298,10 +291,10 @@ def test_project_cov_fab(fisher_params):
     assert(np.allclose(cov_contracted1,cov_contracted1.T,atol=atol_loc,rtol=rtol_use))
 
 def test_project_cov_range1(fisher_params):
-    cov = fisher_params.fisher_input.cov
+    cov = fisher_params.fisher_input.cov.copy()
     range_mat = np.zeros((cov.shape[0],1))
     range_mat[:,0] = np.arange(cov.shape[0])
-    fisher=fisher_params.fisher
+    fisher=copy.deepcopy(fisher_params.fisher)
     cov_contracted1 = fisher.project_covar(range_mat).get_covar()
     cov_contracted2 = np.dot(range_mat.T,np.dot(cov,range_mat))
 
@@ -311,8 +304,8 @@ def test_project_cov_range1(fisher_params):
     assert(np.allclose(cov_contracted1,cov_contracted1.T,atol=atol_loc,rtol=rtol_use))
 
 def test_contract_fab_self_ident_nofisher(fisher_params):
-    fab = fisher_params.fisher_input.fab
-    fisher=fisher_params.fisher
+    fab = fisher_params.fisher_input.fab.copy()
+    fisher=copy.deepcopy(fisher_params.fisher)
     fab_contracted1 = fisher.contract_fisher(fab,fab,identical_inputs=True,return_fisher=False)
     fab_contracted2 = np.dot(fab.T,np.dot(fab,fab))
 
@@ -321,10 +314,10 @@ def test_contract_fab_self_ident_nofisher(fisher_params):
     assert(np.allclose(fab_contracted1,fab_contracted1.T,atol=atol_loc2,rtol=rtol_use))
 
 def test_contract_fab_cov_ident_nofisher(fisher_params):
-    fab = fisher_params.fisher_input.fab
-    cov = fisher_params.fisher_input.cov
+    fab = fisher_params.fisher_input.fab.copy()
+    cov = fisher_params.fisher_input.cov.copy()
 
-    fisher=fisher_params.fisher
+    fisher=copy.deepcopy(fisher_params.fisher)
     fab_contracted1 = fisher.contract_fisher(cov,cov,identical_inputs=True,return_fisher=False)
     fab_contracted2 = np.dot(cov.T,np.dot(fab,cov))
 
@@ -334,10 +327,10 @@ def test_contract_fab_cov_ident_nofisher(fisher_params):
 
 
 def test_contract_fab_fab_cov_nofisher(fisher_params):
-    fab = fisher_params.fisher_input.fab
-    cov = fisher_params.fisher_input.cov
+    fab = fisher_params.fisher_input.fab.copy()
+    cov = fisher_params.fisher_input.cov.copy()
 
-    fisher=fisher_params.fisher
+    fisher=copy.deepcopy(fisher_params.fisher)
     fab_contracted1 = fisher.contract_fisher(cov,fab,identical_inputs=False,return_fisher=False)
     fab_contracted2 = np.dot(cov.T,np.dot(fab,fab))
 
@@ -346,10 +339,10 @@ def test_contract_fab_fab_cov_nofisher(fisher_params):
     assert(np.allclose(fab_contracted1,fab_contracted1.T,atol=atol_loc2,rtol=rtol_use))
 
 def test_contract_fab_range1_nofisher(fisher_params):
-    fab = fisher_params.fisher_input.fab
+    fab = fisher_params.fisher_input.fab.copy()
     range_mat = np.zeros((fab.shape[0],1))
     range_mat[:,0] = np.arange(fab.shape[0])
-    fisher=fisher_params.fisher
+    fisher=copy.deepcopy(fisher_params.fisher)
     fab_contracted1 = fisher.contract_fisher(range_mat,range_mat,identical_inputs=True,return_fisher=False)
     fab_contracted2 = np.dot(range_mat.T,np.dot(fab,range_mat))
 
@@ -358,7 +351,7 @@ def test_contract_fab_range1_nofisher(fisher_params):
     assert(np.allclose(fab_contracted1,fab_contracted1.T,atol=atol_loc2,rtol=rtol_use))
 
 def test_contract_fab_range2_nofisher(fisher_params):
-    fab = fisher_params.fisher_input.fab
+    fab = fisher_params.fisher_input.fab.copy()
 
     range_mat1 = np.zeros((fab.shape[0],fab.shape[0]))
     for i in xrange(0,fab.shape[0]):
@@ -366,7 +359,7 @@ def test_contract_fab_range2_nofisher(fisher_params):
 
     range_mat2 = np.zeros((fab.shape[0],1))
     range_mat2[:,0] = np.arange(fab.shape[0])
-    fisher=fisher_params.fisher
+    fisher=copy.deepcopy(fisher_params.fisher)
     fab_contracted1 = fisher.contract_fisher(range_mat1,range_mat2,identical_inputs=False,return_fisher=False)
     fab_contracted2 = np.dot(range_mat1.T,np.dot(fab,range_mat2))
     fab_contracted3 = fisher.contract_fisher(range_mat2,range_mat1,identical_inputs=False,return_fisher=False)
@@ -379,8 +372,8 @@ def test_contract_fab_range2_nofisher(fisher_params):
     assert(np.allclose(fab_contracted3,fab_contracted4.T,atol=atol_loc2,rtol=rtol_use))
 
 def test_project_fab_self(fisher_params):
-    fab = fisher_params.fisher_input.fab
-    fisher=fisher_params.fisher
+    fab = fisher_params.fisher_input.fab.copy()
+    fisher=copy.deepcopy(fisher_params.fisher)
     fab_contracted1 = fisher.project_fisher(fab).get_fisher()
     fab_contracted2 = np.dot(fab.T,np.dot(fab,fab))
 
@@ -390,10 +383,10 @@ def test_project_fab_self(fisher_params):
     assert(np.allclose(fab_contracted1,fab_contracted1.T,atol=atol_loc2,rtol=rtol_use))
 
 def test_project_fab_cov(fisher_params):
-    fab = fisher_params.fisher_input.fab
-    cov = fisher_params.fisher_input.cov
+    fab = fisher_params.fisher_input.fab.copy()
+    cov = fisher_params.fisher_input.cov.copy()
 
-    fisher=fisher_params.fisher
+    fisher=copy.deepcopy(fisher_params.fisher)
     fab_contracted1 = fisher.project_fisher(cov).get_fisher()
     fab_contracted2 = np.dot(cov.T,np.dot(fab,cov))
 
@@ -403,10 +396,10 @@ def test_project_fab_cov(fisher_params):
     assert(np.allclose(fab_contracted1,fab_contracted1.T,atol=atol_loc2,rtol=rtol_use))
 
 def test_project_fab_range1(fisher_params):
-    fab = fisher_params.fisher_input.fab
+    fab = fisher_params.fisher_input.fab.copy()
     range_mat = np.zeros((fab.shape[0],1))
     range_mat[:,0] = np.arange(fab.shape[0])
-    fisher=fisher_params.fisher
+    fisher=copy.deepcopy(fisher_params.fisher)
     fab_contracted1 = fisher.project_fisher(range_mat).get_fisher()
     fab_contracted2 = np.dot(range_mat.T,np.dot(fab,range_mat))
 
@@ -416,9 +409,9 @@ def test_project_fab_range1(fisher_params):
     assert(np.allclose(fab_contracted1,fab_contracted1.T,atol=atol_loc2,rtol=rtol_use))
 
 def test_chol_right_cov(fisher_params):
-    cov = fisher_params.fisher_input.cov
-    chol_cov = fisher_params.fisher_input.chol_cov
-    fisher = fisher_params.fisher
+    cov = fisher_params.fisher_input.cov.copy()
+    chol_cov = fisher_params.fisher_input.chol_cov.copy()
+    fisher = copy.deepcopy(fisher_params.fisher)
     contracted1 = fisher.contract_chol_right(cov)
     contracted2 = np.dot(chol_cov.T,cov)
     contracted3 = np.dot(contracted2.T,contracted2)
@@ -431,9 +424,9 @@ def test_chol_right_cov(fisher_params):
     assert(np.allclose(contracted3,contracted5,atol=atol_loc1,rtol=rtol_use))
 
 def test_chol_right_range2(fisher_params):
-    cov = fisher_params.fisher_input.cov
-    chol_cov = fisher_params.fisher_input.chol_cov
-    fisher = fisher_params.fisher
+    cov = fisher_params.fisher_input.cov.copy()
+    chol_cov = fisher_params.fisher_input.chol_cov.copy()
+    fisher = copy.deepcopy(fisher_params.fisher)
 
     range_mat1 = np.zeros((cov.shape[0],cov.shape[0]))
     for i in xrange(0,cov.shape[0]):
@@ -457,9 +450,9 @@ def test_chol_right_range2(fisher_params):
     assert(np.allclose(contracted6,contracted7,atol=atol_loc1,rtol=rtol_use))
 
 def test_chol_i_right_fab(fisher_params):
-    fab = fisher_params.fisher_input.fab
-    chol_cov_i = fisher_params.fisher_input.chol_cov_i
-    fisher = fisher_params.fisher
+    fab = fisher_params.fisher_input.fab.copy()
+    chol_cov_i = fisher_params.fisher_input.chol_cov_i.copy()
+    fisher = copy.deepcopy(fisher_params.fisher)
     contracted1 = fisher.contract_chol_inv_right(fab)
     contracted2 = np.dot(chol_cov_i,fab)
     contracted3 = np.dot(contracted2.T,contracted2)
@@ -472,9 +465,9 @@ def test_chol_i_right_fab(fisher_params):
     assert(np.allclose(contracted3,contracted5,atol=atol_loc1,rtol=rtol_use))
 
 def test_chol_i_right_range2(fisher_params):
-    fab = fisher_params.fisher_input.fab
-    chol_cov_i = fisher_params.fisher_input.chol_cov_i
-    fisher = fisher_params.fisher
+    fab = fisher_params.fisher_input.fab.copy()
+    chol_cov_i = fisher_params.fisher_input.chol_cov_i.copy()
+    fisher = copy.deepcopy(fisher_params.fisher)
 
     range_mat1 = np.zeros((fab.shape[0],fab.shape[0]))
     for i in xrange(0,fab.shape[0]):
@@ -498,9 +491,9 @@ def test_chol_i_right_range2(fisher_params):
     assert(np.allclose(contracted6,contracted7,atol=atol_loc1,rtol=rtol_use))
 
 def test_add_fisher1(fisher_params):
-    fab = fisher_params.fisher_input.fab
-    cov = fisher_params.fisher_input.cov
-    fisher=copy.deepcopy(fisher_params.fisher)
+    fab = fisher_params.fisher_input.fab.copy()
+    cov = fisher_params.fisher_input.cov.copy()
+    fisher=copy.deepcopy(copy.deepcopy(fisher_params.fisher))
     fisher.add_fisher(cov)
     fab2 = fisher.get_fisher()
     cov2 = fisher.get_covar()
@@ -512,17 +505,10 @@ def test_add_fisher1(fisher_params):
     assert(np.allclose(fab2,fab3,atol=atol_loc2,rtol=rtol_use))
     assert(np.allclose(cov2,cov3,atol=atol_loc1,rtol=rtol_use))
 
-def test_get_eig_metric_identity(fisher_params):
-    cov = fisher_params.fisher_input.cov
-    fisher = fisher_params.fisher
-
-    metric_mat = np.identity(cov.shape[0])
-    metric_mat_inv = np.linalg.pinv(metric_mat)
-    metric = fm.FisherMatrix(metric_mat,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR)
 
 def test_get_eig_metric_diag_range(fisher_params):
-    cov = fisher_params.fisher_input.cov
-    fisher = fisher_params.fisher
+    cov = fisher_params.fisher_input.cov.copy()
+    fisher = copy.deepcopy(fisher_params.fisher)
 
     metric_mat = np.diag(np.arange(1,cov.shape[0]+1))*1.
     metric_mat_inv = np.linalg.pinv(metric_mat)
@@ -566,8 +552,8 @@ def test_get_eig_metric_diag_range(fisher_params):
     assert(np.allclose(np.dot(m_mat,eigvs_5),eigs_1[0]*eigvs_5,atol=atol_loc,rtol=rtol_use))
 
 def test_get_eig_metric_rand(fisher_params):
-    cov = fisher_params.fisher_input.cov
-    fisher = fisher_params.fisher
+    cov = fisher_params.fisher_input.cov.copy()
+    fisher = copy.deepcopy(fisher_params.fisher)
     metric_mat = np.random.rand(cov.shape[0],cov.shape[1])
     #metric_mat = np.zeros(cov.shape)
 

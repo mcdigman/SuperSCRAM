@@ -2,9 +2,7 @@ import numpy as np
 from shear_power import ShearPower,Cll_q_q
 from cosmopie import CosmoPie
 import defaults
-from scipy.interpolate import SmoothBivariateSpline,interp2d
 from lensing_weight import QShear
-import sys
 import matter_power_spectrum as mps
 
 if __name__=='__main__':
@@ -17,7 +15,7 @@ if __name__=='__main__':
 
 
     C = CosmoPie(defaults.cosmology)
-    P_in = mps.MatterPower(C)
+    P_in = mps.MatterPower(C,camb_params=defaults.camb_params)
     k_in = P_in.k
     C.P_lin = P_in
     C.k = k_in

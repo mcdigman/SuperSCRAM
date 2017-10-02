@@ -3,12 +3,10 @@ from time import time
 from warnings import warn
 
 import numpy as np
-import copy
 
 from polygon_pixel_geo import PolygonPixelGeo
 from polygon_geo import PolygonGeo
 from sph_klim import SphBasisK
-from Dn import DNumberDensityObservable
 from geo import RectGeo
 from sw_survey import SWSurvey
 from lw_survey import LWSurvey
@@ -20,6 +18,7 @@ import matter_power_spectrum as mps
 import multi_fisher as mf
 import cosmopie as cp
 #TODO maybe make possible to serialize/pickle or at least provide a standardized way of storing run information
+#TODO examine possibile platform dependence bug with ruby
 class super_survey:
     ''' This class holds and returns information for all surveys
     ''' 

@@ -1,10 +1,7 @@
 import numpy as np
 from cosmopie import CosmoPie
-from scipy.integrate import cumtrapz,trapz
-from shear_power import ShearPower
-from shear_power import Cll_q_q
+from scipy.integrate import cumtrapz
 import defaults
-from lensing_weight import QShear
 from camb_power import camb_pow
 import scipy.special as spp
 from sph_klim import SphBasisK

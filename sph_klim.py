@@ -1,7 +1,7 @@
 from time import time
 from scipy.special import jv
-from scipy.integrate import trapz, quad,odeint,cumtrapz
-from scipy.interpolate import InterpolatedUnivariateSpline,interp1d
+from scipy.integrate import quad,odeint
+from scipy.interpolate import InterpolatedUnivariateSpline
 import scipy.linalg as spl
 
 import numpy as np
@@ -12,7 +12,6 @@ from algebra_utils import trapz2,cholesky_inplace
 
 import fisher_matrix as fm
 import defaults
-from camb_power import camb_pow
 
 # the smallest value
 eps=np.finfo(float).eps
@@ -53,7 +52,7 @@ class SphBasisK(LWBasis):
         #do not change from linspace for fast
         k = np.linspace(self.kmin,self.kmax,params['n_bessel_oversample'])
         self.dk = k[1]-k[0]
-        #InterpolatedUnivariateSpline is better than interp1d here, because it better approximates increasing npoints for camb
+        #InterpolatedUnivariateSpline is better than interp1d here, because it better approximates the spline used by camb. Increasing camb's accuracy would also change this functions convergence
         #The lw covariance has 2 convergence concerns: increasing n_bessel_oversample converges to P_lin better, increasing npoints gives better P_lin
         P_lin = InterpolatedUnivariateSpline(k_in,P_lin_in,k=3,ext=2)(k)
 
@@ -102,10 +101,10 @@ class SphBasisK(LWBasis):
             kk=self.lm_map[a,1]
             mm=self.lm_map[a,2]
 
-            itr_m1 = itr
+            #itr_m1 = itr
             print "sph_klim: calculating covar for l=",ll
             for c in xrange(mm.size):
-                itr_k1 = itr
+            #    itr_k1 = itr
                 for b in xrange(kk.size):
                     self.C_id[itr,0]=ll
                     self.C_id[itr,1]=kk[b]
