@@ -1,3 +1,5 @@
+"""implement NZMatcher by matching the number density
+in the CANDELS GOODS-S catalogue for a limiting i band magnitude"""
 import numpy as np
 
 import defaults
@@ -7,9 +9,13 @@ from algebra_utils import trapz2
 from polygon_pixel_geo import PolygonPixelGeo
 from nz_matcher import NZMatcher
 from nz_lsst import NZLSST
-#get dN/(dz dOmega)
+
 class NZCandel(NZMatcher):
     def __init__(self,params):
+        """get the CANDELS matcher
+            inputs:
+                params: a dict of params
+        """
         self.params = params
 
         #load data and select nz
@@ -82,7 +88,7 @@ class NZCandel(NZMatcher):
 
 #TODO: check get_nz and get_M_cut agree
 if __name__ == '__main__':
-#def main():   
+#def main():
     from time import time
     import matter_power_spectrum as mps
     #d = np.loadtxt('camb_m_pow_l.dat')
@@ -118,9 +124,9 @@ if __name__ == '__main__':
         nzc = NZCandel(nz_params)
         mf = hmf.ST_hmf(C)
         t1 = time()
-        dN_dz = nzc.get_dN_dzdOmega(z_fine)
+        dN_dz_res = nzc.get_dN_dzdOmega(z_fine)
         t2 = time()
-        density_res = trapz2(dN_dz,dx=0.01,given_dx=True)
+        density_res = trapz2(dN_dz_res,dx=0.01,given_dx=True)
         print "wfirst total galaxies/steradian: "+str(density_res)+" galaxies/2200 deg^2 = "+str(density_res*np.pi**2/180**2*2200)+" g/arcmin^2="+str(density_res*np.pi**2/180**2/3600.)
         print "found in: "+str(t2-t1)+" s"
         nz = nzc.get_nz(geo1)
@@ -148,7 +154,7 @@ if __name__ == '__main__':
         ax = plt.subplot(111)
         #ax.loglog(z_fine,m_cuts)
         #ax.loglog(z_fine,6675415160366.4219*z_fine**2.3941494934544996)
-        plt.plot(z_fine,dN_dz)
+        plt.plot(z_fine,dN_dz_res)
         #i_cut_use = 25.3
         #z0 = 0.0417*i_cut_use-0.744
         #ps_lsst = 1./(2.*z0)*(z_fine/z0)**2.*np.exp(-z_fine/z0)

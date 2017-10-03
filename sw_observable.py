@@ -14,12 +14,12 @@ class SWObservable(object):
         self.survey_id = survey_id
 
     def get_O_I(self):
-        """Must be implemented by subclass, should return a numpy array with the first axis being z bins 
+        """Must be implemented by subclass, should return a numpy array with the first axis being z bins
         return array of vectors representing the observable itself"""
         raise NotImplementedError('Subclasses of sw_observable must implement get_O_I')
 
     def get_dO_I_ddelta_bar(self):
-        """Must be implemented by subclass, should return a numpy array with the first axis being z bins 
+        """Must be implemented by subclass, should return a numpy array with the first axis being z bins
         return array of vectors representing derivative of observable wrt \bar{delta}"""
         raise NotImplementedError('Subclasses of sw_observable must implement get_dO_I_ddelta_bar')
 

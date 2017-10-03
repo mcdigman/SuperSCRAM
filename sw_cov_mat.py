@@ -1,10 +1,10 @@
 """
 SWCovMat calculates gaussian and nongaussian contributions to the covariance
 """
+from warnings import warn
 import numpy as np
 import lensing_observables as lo
-from warnings import warn
-    
+
 class SWCovMat(object):
     def __init__(self,O_I_1,O_I_2,debugging=False):
         """Object to handle retrieving the non SSC short wavelength covariance matrices"""
@@ -17,7 +17,7 @@ class SWCovMat(object):
                 class_b = O_I_1.q2_pow.__class__
                 class_c = O_I_2.q1_pow.__class__
                 class_d = O_I_2.q2_pow.__class__
-                
+
                 #under current assumptions only need sh_pow1
                 sh_pow1 = O_I_1.len_pow.C_pow
                 sh_pow2 = O_I_2.len_pow.C_pow

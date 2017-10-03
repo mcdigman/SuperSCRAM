@@ -1,10 +1,12 @@
+"""Specificatio for a survey geometry"""
 import numpy as np
-from scipy.integrate import dblquad
-from sph_functions import Y_r
-from scipy.interpolate import InterpolatedUnivariateSpline
 
-#Abstract class defining a geometry for a survey. 
-#At the moment, a geometry must 
+from scipy.integrate import dblquad
+from scipy.interpolate import InterpolatedUnivariateSpline
+from sph_functions import Y_r
+
+#Abstract class defining a geometry for a survey.
+#At the moment, a geometry must
 #1) Have a definite coarse z bin structure (for tomography)
 #2) Have a definite fine z bin structure (for integrating over z)
 #3) Be able to compute some kind of surface integral
@@ -12,27 +14,33 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 
 class Geo(object):
     def __init__(self,z_coarse,C,z_fine):
+        """Abstract class for a survey geometry
+            inputs:
+                z_coarse: tomographic bins for the survey
+                C: a CosmoPie object
+                z_fine: fine slices (resolution bins) for the survey
+        """
         self.zs = z_coarse #index of the starts of the tomography bins
         self.C = C #cosmopie
-        #comoving distances associated with the zs 
+        #comoving distances associated with the zs
         self.rs = self.C.D_comov(self.zs)
         self.z_fine = z_fine
         self.r_fine = self.C.D_comov(self.z_fine)
 
-        tot_area = self.angular_area() 
+        tot_area = self.angular_area()
         self.volumes = np.zeros(self.zs.size-1) #volume of each tomography bin
         for i in xrange(0,self.volumes.size):
             self.volumes[i] += (self.rs[i+1]**3-self.rs[i]**3)/3.*tot_area
         self.v_total = np.sum(self.volumes) #total volume of geo
 
         #list r and  z bins as [rmin,rmax] pairs (min in bin, max in bin) for convenience
-        self.rbins = np.zeros((self.rs.size-1,2)) 
+        self.rbins = np.zeros((self.rs.size-1,2))
         self.zbins = np.zeros((self.zs.size-1,2))
         for i in xrange(0,self.rs.size-1):
             self.rbins[i,:] = self.rs[i:i+2]
             self.zbins[i,:] = self.zs[i:i+2]
         #TODO go to 0 more elegantly maybe
-        self.rbins_fine = np.zeros((self.r_fine.size,2)) 
+        self.rbins_fine = np.zeros((self.r_fine.size,2))
         self.zbins_fine = np.zeros((self.z_fine.size,2))
         self.rbins_fine[0,:] = np.array([0.,self.r_fine[0]])
         self.zbins_fine[0,:] = np.array([0.,self.z_fine[0]])
@@ -42,7 +50,7 @@ class Geo(object):
 
         #create list of indices of coarse bin starts in fine grid
         #TODO check handling bin edges correctly
-        self.fine_indices = np.zeros((self.zs.size-1,2),dtype=np.int)    
+        self.fine_indices = np.zeros((self.zs.size-1,2),dtype=np.int)
         self.fine_indices[0,0] = 0
         for i in xrange(1,self.zs.size-1):
             self.fine_indices[i-1,1] = np.argmax(self.z_fine>=self.zs[i])
@@ -52,23 +60,26 @@ class Geo(object):
         self.dzdr = InterpolatedUnivariateSpline(self.r_fine,self.z_fine,ext=2).derivative()(self.r_fine)
         #smalles possible difference for a sum
         self.eps=np.finfo(float).eps
-        
+
         #for caching a_lm
         self.alm_table = {}
-    #integrate a function over the surface of the geo (interpretation of the meaning of the "surface" is up to the subclass)
-    #mainly used for calculating area and a_lm at the moment
     #TODO: consider making specific to a tomography bin (or just let subclasses do that?)
     def surface_integral(self,function):
+        """integrate function over the surface of the geo (interpretation of the meaning of the "surface" is up to the subclass)
+        mainly used for calculating area and a_lm at the moment"""
         raise NotImplementedError, "Subclasses of geo should implement surface_integral"
 
-    #get the angular area (in square radians) occupied by the geometry using the surface integral TODO: consider option to return in degrees or fsky
+    #TODO: consider option to return in degrees or fsky
     def angular_area(self):
+        """get the angular area (in square radians) occupied by the geometry using the surface integral"""
         return self.surface_integral(lambda theta,phi: 1.0)
 
-    # returns \int d theta d phi \sin(theta) Y_lm(theta, phi) (the spherical harmonic a_lm for the area)
-    # l and m are the indices for the spherical harmonics 
     #automatically cache alm. Don't explicitly memoize because other geos will precompute alm_table
     def a_lm(self,l,m):
+        """ returns \int d theta d phi \sin(theta) Y_lm(theta, phi) (the spherical harmonic decomposition a_lm for the window function)
+                inputs:
+                    l,m: indices for the spherical harmonics
+        """
         alm = self.alm_table.get((l,m))
         if alm is None:
             def integrand(phi,theta):
@@ -80,8 +91,8 @@ class Geo(object):
 
     def get_alm_array(self,l_max):
         ls = np.zeros((l_max+1)**2,dtype=int)
-        ms = np.zeros((1+l_max)**2,dtype=int)    
-        alms = np.zeros((1+l_max)**2)    
+        ms = np.zeros((1+l_max)**2,dtype=int)
+        alms = np.zeros((1+l_max)**2)
         itr = 0
         for ll in xrange(0,l_max+1):
             for mm in xrange(-ll,ll+1):
@@ -90,31 +101,23 @@ class Geo(object):
                 alms[itr] = self.a_lm(ll,mm)
                 itr+=1
         return alms,ls,ms
-        
 
-    #volume ddeltabar_dalpha
 
-#class implementing a geometry of rectangles (on the surface of a sphere, defined by theta,phi coordinates of vertices)
-class RectGeo(Geo): 
+class RectGeo(Geo):
     def __init__(self,zs,Theta,Phi,C,z_fine):
-            self.Theta = Theta
-            self.Phi = Phi
-            
-            phi1,phi2=self.Phi
-            theta1,theta2=self.Theta
+        """implements a geometry of rectangles on the surface of a sphere, constant latitude and longitude sides
+            inputs:
+                zs: the tomographic zs
+                Theta,phi: coordinates of the vertices
+                z_fine: the resolution z slices
+        """
+        self.Theta = Theta
+        self.Phi = Phi
 
-            
-            #volumes = np.zeros(zs.size-1)
-            #for i in xrange(0,volumes.size):
-            #    volumes[i] = (phi2-phi1)*(np.cos(theta1)- np.cos(theta2))*(rs[i+1]**3-rs[i]**3)/3.
+        Geo.__init__(self,zs,C,z_fine)
 
-            #v_total=(phi2-phi1)*(np.cos(theta1)- np.cos(theta2))*(rs[-1]**3-rs[0]**3)/3.
-
-
-            Geo.__init__(self,zs,C,z_fine)
-
-    #function(phi,theta)
     def surface_integral(self,function):
+        """do the integral with quadrature over a function(phi,theta)"""
         def integrand(phi,theta):
             return function(phi,theta)*np.sin(theta)
         I=dblquad(integrand,self.Theta[0],self.Theta[1], lambda phi: self.Phi[0], lambda phi: self.Phi[1])[0]
@@ -126,21 +129,27 @@ class RectGeo(Geo):
 #same pixels at every redshift.
 class PixelGeo(Geo):
     def __init__(self,zs,pixels,C,z_fine):
-        #pixel format np.array([(theta,phi,area)])
-        #area should be in steradians for now
+        """pixelated geomtery
+            inputs:
+                zs: tomographic z bins
+                pixels: pixels in format np.array([(theta,phi,area)]), area in steradians
+                C: CosmoPie object
+                z_fine: the fine z slices
+        """
         self.pixels = pixels
-    
+
         Geo.__init__(self,zs,C,z_fine)
-        
+
     #TODO consider vectorizing sum
     def surface_integral(self,function):
+        """do the surface integral by summing over values at the discrete pixels"""
         total = 0.
         for i in xrange(0,self.pixels.shape[0]):
             total+=function(self.pixels[i,0],self.pixels[i,1])*self.pixels[i,2] #f(theta,phi)*A
         return total
 
-    #vectorized a_lm computation relies on vector Y_r
     def a_lm(self,l,m):
+        """vectorized a_lm computation relies on vector Y_r"""
         alm = self.alm_table.get((l,m))
         if alm is None:
             alm = np.sum(Y_r(l,m,self.pixels[:,0],self.pixels[:,1])*self.pixels[:,2])

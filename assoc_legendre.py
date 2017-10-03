@@ -13,9 +13,9 @@ def odd_factorial(k):
 
 def assoc_legendre_p(nu, mu, x):
     """Compute the associated Legendre polynomial with degree nu and order mu.
-    
+
     This function uses the recursion formula in the degree nu.
-    (Abramowitz & Stegun, Section 8.5.)  
+    (Abramowitz & Stegun, Section 8.5.)
     """
     if mu < 0 or mu > nu:
         raise ValueError('require 0 <= mu <= nu, but mu=%d and nu=%d' % (nu, mu))
@@ -71,12 +71,12 @@ def integrand(phi, x, nu, mu, sqrt1mx2):
 
 def assoc_legendre_p2(nu, mu, x):
     """Compute the associated Legendre polynomial with degree nu and order mu.
-    
+
     This function uses an integral representation of the polynomial.
     (Courant and Hilbert, "Methods of Mathematical Physics", Vol. 1,
     Section VII.3.4, p. 505.)  It is generally much slower than the
     function assoc_legendre_p.
-    
+
     It returns a tuple containing the computed value and an estimate of
     the absolute error.
     """

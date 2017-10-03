@@ -1,5 +1,5 @@
 import numpy as np
-from polygon_pixel_geo import PolygonPixelGeo
+from polygon_pixel_geo import PolygonPixelGeo,reconstruct_from_alm
 from geo import RectGeo
 import defaults
 from cosmopie import CosmoPie
@@ -186,7 +186,7 @@ def test_absolute_reconstruction1(geo_input):
     MSE_TOL = 10**-1
     if geo_input.params['do_pp_geo1']:
         pp_geo1 = geo_input.pp_geo1
-        totals_poly = pp_geo1.reconstruct_from_alm(geo_input.params['l_max_poly'],pp_geo1.all_pixels[:,0],pp_geo1.all_pixels[:,1],geo_input.poly_geo.alm_table)
+        totals_poly = reconstruct_from_alm(geo_input.params['l_max_poly'],pp_geo1.all_pixels[:,0],pp_geo1.all_pixels[:,1],geo_input.poly_geo.alm_table)
         abs_error = np.abs(totals_poly-pp_geo1.contained*1.)
         mse = np.sqrt(np.average(abs_error**2))
         assert(MSE_TOL>mse)
@@ -197,8 +197,8 @@ def test_absolute_improvement2(geo_input):
     MSE_TOL = 10**-1
     if geo_input.params['do_pp_geo2']:
         pp_geo2 = geo_input.pp_geo2
-        totals_poly = pp_geo2.reconstruct_from_alm(geo_input.params['l_max_poly'],pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],geo_input.poly_geo.alm_table)
-        totals_pp1 = pp_geo2.reconstruct_from_alm(geo_input.params['l_max_poly'],pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],geo_input.pp_geo1.alm_table)
+        totals_poly = reconstruct_from_alm(geo_input.params['l_max_poly'],pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],geo_input.poly_geo.alm_table)
+        totals_pp1 = reconstruct_from_alm(geo_input.params['l_max_poly'],pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],geo_input.pp_geo1.alm_table)
         abs_error_poly = np.abs(totals_poly-pp_geo2.contained*1.)
         mse_poly = np.sqrt(np.average(abs_error_poly**2))
         assert(MSE_TOL>mse_poly)
@@ -381,8 +381,8 @@ if __name__=='__main__':
                     gts.r_geo.a_lm(ll,-mm)
         #r_alm_table = r_geo.alm_table
         #reconstruct at higher resolution to mitigate resolution effects in determining accuracy
-        totals_pp= pp_geo2.reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],gts.r_geo.alm_table)
-        totals_poly = pp_geo2.reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],my_table)
+        totals_pp= reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],gts.r_geo.alm_table)
+        totals_poly = reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],my_table)
         avg_diff = np.average(np.abs(totals_pp-totals_poly))
         print "mean absolute difference between pixel and exact geo reconstruction: "+str(avg_diff)
         poly_error = np.sqrt(np.average(np.abs(totals_poly-pp_geo2.contained*1.)**2))
@@ -391,7 +391,7 @@ if __name__=='__main__':
         print "rms reconstruction error of pixel geo at res "+str(res_choose)+": "+str(pp_error)
         print "improvement in rms reconstruction accuracy: "+str((pp_error-poly_error)/pp_error*100)+"%"
 
-        #totals_alm = pp_geo.reconstruct_from_alm(l_max,pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1],r_alm_table)
+        #totals_alm = reconstruct_from_alm(l_max,pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1],r_alm_table)
         try_plot=True
         do_poly=True
         if try_plot:

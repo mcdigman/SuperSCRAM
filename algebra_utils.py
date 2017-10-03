@@ -1,10 +1,10 @@
+from warnings import warn
 import numpy as np
 import scipy.linalg as spl
 
-from warnings import warn
 
 #TODO: In the long run, some of these functions would benefit from some low level optimizations, like doing cholesky decompositions
-#and inverses in place (or even lower level, like storing two cholesky decompositions in the same matrix and just masking the one we don't need when doing any given operation), 
+#and inverses in place (or even lower level, like storing two cholesky decompositions in the same matrix and just masking the one we don't need when doing any given operation),
 #because the memory consumption of these matrices is the code's primary performance bottleneck.
 #scipy.linalg.cholesky's overwrite_a option is not reliable for doing things in place, so I would probably need
 #some lower level (lapack?) calls, and I would prefer to wait until the code specification is more stable/good unit tests have been writen.
@@ -98,7 +98,7 @@ def cholesky_contract(A,vec1,vec2,cholesky_given=False,identical_inputs=False,lo
 
     return result
 
-#Do a cholesky decomposition, in place if inplace=True. For safety, the return value should still be assigned, i.e. A=cholesky_inplace(A,inplace=True). 
+#Do a cholesky decomposition, in place if inplace=True. For safety, the return value should still be assigned, i.e. A=cholesky_inplace(A,inplace=True).
 #Cannot currently be done in place if the array is not F contiguous, but will compute decomposition anyway.
 #in place will require less memory, and regardless this function should have less overhead than scipy/numpy (both in time and memory)
 #If absolutely must be done in place, set fatal_errors=True.
@@ -108,15 +108,15 @@ def cholesky_inplace(A,inplace=True,fatal_errors=False,lower=True,clean=True):
 
     try_inplace = inplace
     #assert(np.all(A==A.T))
-    #dpotrf will still work on C contiguous arrays but will silently fail to do them in place regardless of overwrite_a, so raise a warning or error here 
+    #dpotrf will still work on C contiguous arrays but will silently fail to do them in place regardless of overwrite_a, so raise a warning or error here
     #using order='F' when creating the array or A.copy('F') when copying ensures fortran contiguous arrays.
     if (not A.flags['F_CONTIGUOUS']) and try_inplace:
         if fatal_errors:
-            raise RuntimeError('algebra_utils: Cannot do cholesky decomposition in place on C continguous numpy array.') 
+            raise RuntimeError('algebra_utils: Cannot do cholesky decomposition in place on C continguous numpy array.')
         else:
             warn('algebra_utils: Cannot do cholesky decomposition in place on C contiguous numpy array. will output to return value',RuntimeWarning)
             try_inplace = False
-    
+
     #spl.cholesky won't do them in place TODO actually handle it
     if not A.dtype == np.float_:
         raise ValueError('algebra_utils: cholesky_inplace currently only supports arrays with dtype=np.float_')
@@ -126,7 +126,7 @@ def cholesky_inplace(A,inplace=True,fatal_errors=False,lower=True,clean=True):
         warn('algebra_utils: dpotrf may segfault for matrices this large, due to a bug in certain lapack/blas implementations')
     #result = spl.cholesky(A,lower=lower,overwrite_a=try_inplace)
     result,info = spl.lapack.dpotrf(A,lower=lower,clean=clean, overwrite_a=try_inplace)
-    
+
     #Something went wrong. (spl.cholesky and np.linalg.cholesky should fail too)
     if not info==0:
         #eigvals =  np.linalg.eigh(A)[0]
@@ -153,18 +153,18 @@ def trapz2(A,xs=None,dx=None,given_dx=False):
                 dx_use = 1.
             else:
                 dx_use = dx
-                if np.asanyarray(dx).size==1:
+                if np.asanyarray(dx).size == 1:
                     use_const=True
                 else:
                     use_const=False
         else:
             if xs is None:
                 warn('no xs given, using dx=1')
-                dx_use = 1. 
+                dx_use = 1.
                 use_const = True
-            elif not xs.shape[0]==A.shape[0]:
+            elif not xs.shape[0] == A.shape[0]:
                 warn('invalid input shapes, using dx=1')
-                dx_use = 1. 
+                dx_use = 1.
                 use_const = True
             else:
                 dx_use = np.diff(xs,axis=0)
@@ -178,37 +178,36 @@ def trapz2(A,xs=None,dx=None,given_dx=False):
     return result
 
 
-if __name__=='__main__':
-    from time import time
-
-    n_A = 1000
-    n_iter = 10
-    times_chol1 = np.zeros(n_iter)
-    times_chol2 = np.zeros(n_iter)
-    times_inv = np.zeros(n_iter)
-    for i in xrange(n_iter):
-        A = np.random.random((n_A,n_A))
-        A = np.dot(A.T,A)
-        V1 = np.random.random(n_A)
-        V2 = np.random.random(n_A)
-
-        t1 = time()
-        AI1 = np.dot(np.dot(V1,np.linalg.inv(A)),V2)
-        t2 = time()
-        AI2 = cholesky_inv_contract(A,V1,V2)
-        #AI2 = np.linalg.pinv(A)
-        t3 = time()
-        AI3 = np.dot(np.dot(V1,ch_inv(A)),V2)
-        t4 = time()
-        times_chol2[i] = t4-t3
-        times_chol1[i] = t3-t2
-        times_inv[i] = t2-t1
-    print "inv avg time,std: ",np.average(times_inv),np.std(times_inv)
-   # print "pinv time: ",t3-t2
-    print "cholesky_inv_contract avg time,std: ",np.average(times_chol1),np.std(times_chol1)
-    print "cholesky_inv avg time,std: ",np.average(times_chol2),np.std(times_chol2)
-    
-   # print "inv mean error ",np.average(abs(np.linalg.eigvals(np.dot(AI1,A))-np.diag(np.identity(A.shape[0]))))
-    #print "pinv mean error ",np.average(abs(np.linalg.eigvals(np.dot(AI2,A))-np.diag(np.identity(A.shape[0]))))
-    #print "cholesky_inv mean error ",np.average(abs(np.linalg.eigvals(np.dot(AI3,A))-np.diag(np.identity(A.shape[0]))))
-
+#if __name__=='__main__':
+#    from time import time
+#
+#    n_A = 1000
+#    n_iter = 10
+#    times_chol1 = np.zeros(n_iter)
+#    times_chol2 = np.zeros(n_iter)
+#    times_inv = np.zeros(n_iter)
+#    for i in xrange(n_iter):
+#        A = np.random.random((n_A,n_A))
+#        A = np.dot(A.T,A)
+#        V1 = np.random.random(n_A)
+#        V2 = np.random.random(n_A)
+#
+#        t1 = time()
+#        AI1 = np.dot(np.dot(V1,np.linalg.inv(A)),V2)
+#        t2 = time()
+#        AI2 = cholesky_inv_contract(A,V1,V2)
+#        #AI2 = np.linalg.pinv(A)
+#        t3 = time()
+#        AI3 = np.dot(np.dot(V1,ch_inv(A)),V2)
+#        t4 = time()
+#        times_chol2[i] = t4-t3
+#        times_chol1[i] = t3-t2
+#        times_inv[i] = t2-t1
+#    print "inv avg time,std: ",np.average(times_inv),np.std(times_inv)
+#   # print "pinv time: ",t3-t2
+#    print "cholesky_inv_contract avg time,std: ",np.average(times_chol1),np.std(times_chol1)
+#    print "cholesky_inv avg time,std: ",np.average(times_chol2),np.std(times_chol2)
+#
+#   # print "inv mean error ",np.average(abs(np.linalg.eigvals(np.dot(AI1,A))-np.diag(np.identity(A.shape[0]))))
+#    #print "pinv mean error ",np.average(abs(np.linalg.eigvals(np.dot(AI2,A))-np.diag(np.identity(A.shape[0]))))
+#    #print "cholesky_inv mean error ",np.average(abs(np.linalg.eigvals(np.dot(AI3,A))-np.diag(np.identity(A.shape[0]))))

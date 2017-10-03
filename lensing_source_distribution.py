@@ -16,7 +16,7 @@ class SourceDistribution(object):
 class GaussianZSource(SourceDistribution):
     def __init__(self,zs,chis,C,zbar=1.0,sigma=0.4,params=defaults.lensing_params):
         """gaussian source distribution in z space
-            inputs: 
+            inputs:
                 zbar: mean z of sources
                 sigma: width of source distribution
         """
@@ -56,7 +56,7 @@ def get_source_distribution(smodel,zs,chis,C,params=defaults.lensing_params,ps=n
     return dist
 
 def dz_to_dchi(p_in,zs,chis,C,params):
-    """put a z distribution into a distribution in comoving distance""" 
+    """put a z distribution into a distribution in comoving distance"""
     z_min_dist = params['z_min_dist']
     z_max_dist = params['z_max_dist']
     ps = np.zeros(p_in.size)
@@ -64,5 +64,6 @@ def dz_to_dchi(p_in,zs,chis,C,params):
         ps[i] = p_in[i]/(chis[i+1]-chis[i])
     ps[-1] = p_in[-1]/(C.D_comov(2*zs[-1]-zs[-2])-chis[-1]) #patch for last value
     ps = ps*(zs<=z_max_dist)*(zs>=z_min_dist) #cutoff outside dist limits
-    return ps/trapz2(ps,chis) #normalize galaxy probability distribution 
-    
+    return ps/trapz2(ps,chis) #normalize galaxy probability distribution
+
+

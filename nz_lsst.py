@@ -1,8 +1,13 @@
+"""NZMatcher using the n(z) from the LSST whitepaper"""
 import numpy as np
 from nz_matcher import NZMatcher
 
 class NZLSST(NZMatcher):
     def __init__(self,z_grid, params):
+        """match the number density defined in the LSST whitepaper,
+            inputs:
+                z_grid:a numpy array of zs
+                params: a dict of params"""
         self.params = params
         #self.z0 = self.params['z0']
         self.i_cut = self.params['i_cut']

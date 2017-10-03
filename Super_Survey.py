@@ -1,5 +1,4 @@
-
-from time import time 
+from time import time
 from warnings import warn
 
 import numpy as np
@@ -19,9 +18,9 @@ import multi_fisher as mf
 import cosmopie as cp
 #TODO maybe make possible to serialize/pickle or at least provide a standardized way of storing run information
 #TODO examine possibile platform dependence bug with ruby
-class super_survey:
+class SuperSurvey:
     ''' This class holds and returns information for all surveys
-    ''' 
+    '''
     def __init__(self, surveys_sw, surveys_lw, basis,C,get_a=False,do_mitigated=True,do_unmitigated=True):
         """master class for mitigation analysis
             inputs:
@@ -31,7 +30,7 @@ class super_survey:
                 C: a CosmoPie object
                 get_a: get (v.T).C_lw.v where v=\frac{\partial\bar{\delta}}{\delta_\alpha}
                 do_mitigated: if False don't get mitigated covariances
-                do_unmitigate: if False don't get unmitigated covariances"""    
+                do_unmitigate: if False don't get unmitigated covariances"""
         t1=time()
 
         self.get_a = get_a
@@ -42,23 +41,23 @@ class super_survey:
         self.surveys_sw = surveys_sw
         self.N_surveys_sw=surveys_sw.size
         self.N_surveys_lw=surveys_lw.size
-        print'Super_Survey: this is the number of surveys', self.N_surveys_sw, self.N_surveys_lw
-           
+        print'SuperSurvey: this is the number of surveys', self.N_surveys_sw, self.N_surveys_lw
+
         self.C=C
-         
+
           #k_cut = 0.25 #converge to 0.0004
-        self.basis = basis 
+        self.basis = basis
         self.N_O_I=0
-        self.N_O_a=0   
+        self.N_O_a=0
 
         #self.O_a=np.array([], dtype=object)
-        for i in xrange(self.N_surveys_sw): 
-            self.N_O_I=self.N_O_I + surveys_sw[i].get_N_O_I()          
+        for i in xrange(self.N_surveys_sw):
+            self.N_O_I=self.N_O_I + surveys_sw[i].get_N_O_I()
 
-        for i in xrange(self.N_surveys_lw): 
+        for i in xrange(self.N_surveys_lw):
             self.N_O_a=self.N_O_a + surveys_lw[i].get_N_O_a()
-              
-        print('Super_Survey: there are '+str(self.N_O_I)+' short wavelength and '+str(self.N_O_a)+' long wavelength observables')
+
+        print('SuperSurvey: there are '+str(self.N_O_I)+' short wavelength and '+str(self.N_O_a)+' long wavelength observables')
 
         #TODO support multiple sw surveys with MultiFisher
         de_prior_params = defaults.prior_fisher_params
@@ -71,15 +70,15 @@ class super_survey:
         #TODO get this before changing shape in multi_fisher
         if self.get_a:
             self.a_vals = self.multi_f.get_a_lw()
-            print "Super_Survey: mitigated run gave a="+str(self.a_vals)
+            print "SuperSurvey: mitigated run gave a="+str(self.a_vals)
         else:
             self.a_vals = np.zeros(2)
 
         t2=time()
-        print 'Super_Survey: all done'
-        print 'Super_Survey: run time', t2-t1
-     
-     
+        print 'SuperSurvey: all done'
+        print 'SuperSurvey: run time', t2-t1
+
+
 def get_ellipse_specs(covs,dchi2=2.3):
     """Get the widths and angles for plotting covariance ellipses from a covariance matrix covs, with width dchi2"""
     a_s = np.zeros_like(covs)
@@ -125,10 +124,10 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
     xbox_widths = box_widths
     ybox_widths = box_widths
     for itr1 in xrange(0,n_p):
-        for itr2 in xrange(0,n_p): 
+        for itr2 in xrange(0,n_p):
             ax = ax_list[itr2,itr1]
-            param1 = cosmo_par_list[itr1] 
-            param2 = cosmo_par_list[itr2] 
+            param1 = cosmo_par_list[itr1]
+            param2 = cosmo_par_list[itr2]
             fid_point = np.array([C.cosmology[param1],C.cosmology[param2]])
 
             #TODO check sense of rotation
@@ -179,11 +178,12 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
 
     plt.subplots_adjust(wspace=0.,hspace=0.)
     plt.show()
-     #TODO add correlation matrix functionality 
+     #TODO add correlation matrix functionality
 if __name__=="__main__":
     t1 = time()
     #TODO make sure input z cannot exceed z_max in geo
-    z_max=1.35; l_max=50 
+    z_max=1.35
+    l_max=50
 
     #d=np.loadtxt('Pk_Planck15.dat')
     #d=np.loadtxt('camb_m_pow_l.dat')
@@ -201,7 +201,7 @@ if __name__=="__main__":
     if cosmo_fid['de_model'] == 'jdem':
         for i in xrange(0,36):
             cosmo_fid['ws36_'+str(i)] = cosmo_fid['w']
-    
+
     C=cp.CosmoPie(cosmology=cosmo_fid,p_space='jdem',camb_params=camb_params)
     #C=cp.CosmoPie(cosmology=defaults.cosmology,p_space='basic',needs_power=True)
     #k,P=C.get_P_lin()
@@ -280,19 +280,19 @@ if __name__=="__main__":
             geo1 = PolygonGeo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
             geo2 = PolygonGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
         else:
-            geo1 = PolygonPixelGeo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max=l_max,res_healpix=res_choose)  
-            geo2 = PolygonPixelGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max=l_max,res_healpix=res_choose)  
+            geo1 = PolygonPixelGeo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max=l_max,res_healpix=res_choose)
+            geo2 = PolygonPixelGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max=l_max,res_healpix=res_choose)
     else:
         geo1=RectGeo(zs,Theta1,Phi1,C,z_fine)
         geo2=RectGeo(zs,Theta2,Phi2,C,z_fine)
-    
+
     loc_lens_params = defaults.lensing_params.copy()
     loc_lens_params['z_min_dist'] = np.min(zs)
     loc_lens_params['z_max_dist'] = np.max(zs)
     loc_lens_params['pmodel_O'] = 'halofit'
     loc_lens_params['pmodel_dO_ddelta'] = 'halofit'
     loc_lens_params['pmodel_dO_dpar'] = 'halofit'
-    
+
     #TODO put in defaults
     lenless_defaults = defaults.sw_survey_params.copy()
     lenless_defaults['needs_lensing'] = False
@@ -322,20 +322,20 @@ if __name__=="__main__":
     #cosmo_par_epsilons = np.array([0.001,0.001])
     #cosmo_par_list = np.array(['Omegamh2','Omegabh2','ns','h','sigma8'])
     #note that currently (poorly implemented derivative) in jdem, OmegaLh2 and LogAs are both almost completely unconstrained but nondegenerate, while in basic, h and sigma8 are not constrained but are almost completely degenerate
-    survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,cosmo_par_list = cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,len_params=loc_lens_params) 
-    #survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=loc_lens_params) 
- 
-    #survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = np.array([]),len_params=loc_lens_params) 
-    #survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=lenless_defaults,observable_list = np.array([]),cosmo_par_list = np.array([],dtype=object),cosmo_par_epsilons=np.array([]),len_params=loc_lens_params,param_priors=param_priors) 
-     
-     
+    survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,cosmo_par_list = cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,len_params=loc_lens_params)
+    #survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=loc_lens_params)
+
+    #survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = np.array([]),len_params=loc_lens_params)
+    #survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=lenless_defaults,observable_list = np.array([]),cosmo_par_list = np.array([],dtype=object),cosmo_par_epsilons=np.array([]),len_params=loc_lens_params,param_priors=param_priors)
+
+
 
     M_cut=10**(12.5)
-     
-     
+
+
     surveys_sw=np.array([survey_1])
-    
-     
+
+
     geos = np.array([geo1,geo2])
     #geos = np.array([geo1])
     l_lw=np.arange(0,30)
@@ -346,27 +346,27 @@ if __name__=="__main__":
     #about biggest possible, take 414 sec
     #k_cut = 0.0214
     #k_cut = 0.03
-            
+
     basis=SphBasisK(r_max,C,k_cut,l_ceil=100)
     survey_3 = LWSurvey(geos,'lw_survey1',basis,C=C,params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params)
     surveys_lw=np.array([survey_3])
-     
-     
+
+
     print 'main: this is r_max: '+str(r_max)
-    #TODO do not need basis as an argument 
-    SS=super_survey(surveys_sw, surveys_lw,basis,C=C,get_a=False,do_unmitigated=True,do_mitigated=True)
+    #TODO do not need basis as an argument
+    SS=SuperSurvey(surveys_sw, surveys_lw,basis,C=C,get_a=False,do_unmitigated=True,do_mitigated=True)
 
     t2 = time()
     print "main: total run time "+str(t2-t1)+" s"
-     
-    #print "fractional mitigation: ", SS.a_no_mit/SS.a_mit     
+
+    #print "fractional mitigation: ", SS.a_no_mit/SS.a_mit
     #rel_weights1 = SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0]*np.dot(SS.multi_f.get_fisher(mf.f_spec_no_mit,mf.f_return_lw)[0].get_cov_cholesky(),SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0])
     #rel_weights2 = SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0]*np.dot(SS.multi_f.get_fisher(mf.f_spec_mit,mf.f_return_lw)[0].get_cov_cholesky(),SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0])
 
 
  #   ax.plot(rel_weights)
  #   plt.show()
-    
+
 #     cov_ss = SS.cov_no_mit[0].get_gaussian_covar()#np.diag(SS.O_I_data[0]['shear_shear']['covariance'][0,0])
 #    c_ss = SS.O_I_data[0]
    #chol_cov = get_inv_cholesky(cov_ss)
@@ -394,11 +394,11 @@ if __name__=="__main__":
         print "main: mitigated par lambda1,2: "+str(mit_eigs_par[0][-1])+","+str(mit_eigs_par[0][-2])
         print "main: n par mit lambda>2.00000001: "+str(np.sum(np.abs(mit_eigs_par[0])>2.00000001))
         print "main: n par no mit lambda>2.00000001: "+str(np.sum(np.abs(no_mit_eigs_par[0])>2.00000001))
-        v_no_mit_par = np.dot(SS.f_set_nopriors[0][2].get_cov_cholesky(),no_mit_eigs_par[1]) 
-        v_mit_par = np.dot(SS.f_set_nopriors[0][2].get_cov_cholesky(),mit_eigs_par[1]) 
+        v_no_mit_par = np.dot(SS.f_set_nopriors[0][2].get_cov_cholesky(),no_mit_eigs_par[1])
+        v_mit_par = np.dot(SS.f_set_nopriors[0][2].get_cov_cholesky(),mit_eigs_par[1])
 
-        v_no_mit_sw = np.dot(SS.f_set_nopriors[0][1].get_cov_cholesky(),no_mit_eigs_sw[1]) 
-        v_mit_sw = np.dot(SS.f_set_nopriors[0][1].get_cov_cholesky(),mit_eigs_sw[1]) 
+        v_no_mit_sw = np.dot(SS.f_set_nopriors[0][1].get_cov_cholesky(),no_mit_eigs_sw[1])
+        v_mit_sw = np.dot(SS.f_set_nopriors[0][1].get_cov_cholesky(),mit_eigs_sw[1])
 
         test_v=False
         if test_v:
@@ -409,8 +409,8 @@ if __name__=="__main__":
                 warn('some no mit eig vectors may be bad')
             if not np.allclose(np.dot(m_mat_mit_par,v_mit_par)/mit_eigs_par[0],v_mit_par):
                 warn('some mit eig vectors may be bad')
-                
-                
+
+
     except:
         warn('Eig value failed')
 #    print "SS eigenvals:",SS_eig[0]
@@ -434,7 +434,7 @@ if __name__=="__main__":
     print 'main: theta width',(geo1.rs[1]+geo1.rs[0])/2.*(Theta1[1]-Theta1[0])
     print 'main: phi width',(geo1.rs[1]+geo1.rs[0])/2.*(Phi1[1]-Phi1[0])*np.sin((Theta1[1]+Theta1[0])/2)
     ax_ls = np.hstack((l_sw,l_sw))
-    
+
     #v= SS.surveys_sw[0].get_dO_I_dpar_array()
     #eig_nm = SS.cov_no_mit[0].get_SS_eig_param(v)
     #eig_m = SS.cov_mit[0].get_SS_eig_param(v)
@@ -456,23 +456,23 @@ if __name__=="__main__":
         make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',cosmo_par_list,C,dchi2=dchi2)
 
 
-    chol_plot=False
-    if chol_plot:
-        import matplotlib.pyplot as plt
-        ax = plt.subplot(111)
-        chol_gauss = SS.f_set[0][2].get_cov_choleksy()#np.linalg.cholesky(SS.covs_sw[0].get_gaussian_covar())
-        #eig_pars = SS.covs_sw[0].get_SS_eig_param(v)
-        eig_pars = np.zeros(2,dtype=object)
-        eig_pars[0] = SS.f_set[1][2].get_cov_eig_metric(SS.covs_g_pars)
-        eig_pars[1] = SS.f_set[2][2].get_cov_eig_metric(SS.covs_g_pars)
-        for itr in xrange(1,5):
-            #ax.plot(ax_ls,ax_ls*(ax_ls+1.)*np.dot(chol_gauss,SS_eig[1][:,-itr]))
-            #ax.plot(np.dot(chol_gauss,SS_eig[1][:,-itr]))
-            #TODO might just delete this
-            ax.plot(np.dot(chol_gauss,eig_pars[:,-itr]))
-    
-        ax.legend(['1','2','3','4','5'])
-        plt.show()
+#    chol_plot=False
+#    if chol_plot:
+#        import matplotlib.pyplot as plt
+#        ax = plt.subplot(111)
+#        chol_gauss = SS.f_set[0][2].get_cov_choleksy()#np.linalg.cholesky(SS.covs_sw[0].get_gaussian_covar())
+#        #eig_pars = SS.covs_sw[0].get_SS_eig_param(v)
+#        eig_pars = np.zeros(2,dtype=object)
+#        eig_pars[0] = SS.f_set[1][2].get_cov_eig_metric(SS.covs_g_pars)
+#        eig_pars[1] = SS.f_set[2][2].get_cov_eig_metric(SS.covs_g_pars)
+#        for itr in xrange(1,5):
+#            #ax.plot(ax_ls,ax_ls*(ax_ls+1.)*np.dot(chol_gauss,SS_eig[1][:,-itr]))
+#            #ax.plot(np.dot(chol_gauss,SS_eig[1][:,-itr]))
+#            #TODO might just delete this
+#            ax.plot(np.dot(chol_gauss,eig_pars[:,-itr]))
+#
+#        ax.legend(['1','2','3','4','5'])
+#        plt.show()
     #TODO make testing module for this
     test_perturbation = False
     pert_test_fails = 0
@@ -487,7 +487,7 @@ if __name__=="__main__":
         if not np.all(f1.T==f1):
             pert_test_fails+=1
             warn("perturbed fisher matrix not symmetric, unacceptable")
-        #get eigenvalues and set numerically zero values to 0 
+        #get eigenvalues and set numerically zero values to 0
         eigf0 = np.linalg.eigh(f0)[0]
         eigf0[np.abs(eigf0)<REL_TOLERANCE*np.max(np.abs(eigf0))]=0.
         eigf1 = np.linalg.eigh(f1)[0]
@@ -506,11 +506,11 @@ if __name__=="__main__":
         if np.any(diff_eig<0):
             pert_test_fails+=1
             warn("some eigenvalues decreased within tolerance, unacceptable")
-        
+
         #check interlace theorem satisfied (eigenvalues cannot be reordered by more than rank of perturbation)
         n_offset = SS.surveys_lw[0].get_total_rank()
         rolled_eig = (eigf1[::-1][n_offset:eigf0.size]-eigf0[::-1][0:eigf0.size-n_offset])
-        rolled_eig[np.abs(rolled_eig)<REL_TOLERANCE*np.max(np.abs(rolled_eig))]=0.  
+        rolled_eig[np.abs(rolled_eig)<REL_TOLERANCE*np.max(np.abs(rolled_eig))]=0.
         if np.any(rolled_eig>0):
             pert_test_fails+=1
             warn("some eigenvalues fail interlace theorem, unacceptable")
@@ -535,7 +535,7 @@ if __name__=="__main__":
         if np.any(fdiff_eigc>0):
             pert_test_fails+=1
             warn("some covariance eigenvalues increase, unacceptable")
-        
+
         if pert_test_fails==0:
             print "All fisher matrix sanity checks passed"
         else:

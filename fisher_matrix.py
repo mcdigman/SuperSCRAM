@@ -11,7 +11,7 @@ REP_FISHER = 0
 #cholesky decomposition of covariance matrix
 REP_CHOL = 1
 #inverse of cholesky decomposition of covariance matrix
-REP_CHOL_INV = 2 
+REP_CHOL_INV = 2
 #covariance matrix
 REP_COVAR = 3
 
@@ -21,7 +21,7 @@ class FisherMatrix(object):
     def __init__(self,input_matrix,input_type,initial_state = None,fix_input=False,silent=True,triangle_clean=False):
         """create a fisher matrix object
             input_matrix: an input matrix
-            input_type: a code for matrix type of input_matrix, options REP_FISHER, REP_CHOL, REP_CHOL_INV, or REP_COVAR 
+            input_type: a code for matrix type of input_matrix, options REP_FISHER, REP_CHOL, REP_CHOL_INV, or REP_COVAR
             initial_state: code for starting state, defaults to input_type
             fix_input: do not mutate input_matrix (ie make a copy)
             silent: if True, less print statements
@@ -33,12 +33,12 @@ class FisherMatrix(object):
         if initial_state is None:
             initial_state = input_type
 
-        #If not allowed to change the input matrix, then copy it 
+        #If not allowed to change the input matrix, then copy it
         if self.fix_input:
             self.internal_mat = input_matrix.copy()
         else:
-            self.internal_mat = input_matrix 
-    
+            self.internal_mat = input_matrix
+
         self.internal_state = input_type
         self.triangle_clean = triangle_clean
 
@@ -47,7 +47,7 @@ class FisherMatrix(object):
             self.switch_rep(initial_state)
         if not self.silent:
             print("FisherMatrix "+str(id(self))+" created fisher matrix")
-    
+
     def switch_rep(self,new_state):
         """Switches the internal representation of the fisher matrix to new_state
             may mutate internal_mat to save memory"""
@@ -64,7 +64,7 @@ class FisherMatrix(object):
             self.internal_mat = self.get_cov_cholesky_inv(inplace=True,copy_output=False,internal=True)
         elif new_state == REP_FISHER:
             self.internal_mat = self.get_fisher(inplace=True,copy_output=False,internal=True)
-        elif new_state == REP_COVAR: 
+        elif new_state == REP_COVAR:
             self.internal_mat = self.get_covar(inplace=True,copy_output=False,internal=True)
         else:
             raise ValueError("FisherMatrix "+str(id(self))+": unrecognized new state "+str(new_state)+" when asked to switch from state "+str(old_state))
@@ -111,7 +111,7 @@ class FisherMatrix(object):
     def get_covar(self,inplace=False,copy_output=False,internal=False):
         """get covariance matrix
                 inputs:
-                    inplace: if True, will mutate internal_mat to be the covariance matrix    
+                    inplace: if True, will mutate internal_mat to be the covariance matrix
                     copy_output: whether to copy the output matrix, to be safe from mutating internal_mat later"""
         copy_safe = False
         if not self.silent:
@@ -142,11 +142,11 @@ class FisherMatrix(object):
         #TODO protect internal_mat/allow override
         if copy_output and not copy_safe:
             return result.copy()
-        else: 
+        else:
             return result
 
     #TODO trap return_fisher=True and identical_inputs=False, not sensible
-    def contract_covar(self,v1,v2,identical_inputs=False,return_fisher=False,destructive=False):    
+    def contract_covar(self,v1,v2,identical_inputs=False,return_fisher=False,destructive=False):
         """calculates (v1.T).covariance.v2 for getting variance/projecting to another basis
             inputs:
                 v1,v2: vectors with one dimension aligned with internal_mat
@@ -242,7 +242,7 @@ class FisherMatrix(object):
                     res2 = spl.solve_triangular(self.internal_mat,v2,lower=True,check_finite=False)
             else:
                 raise ValueError('unknown internal state '+str(self.internal_state))
-        
+
             if destructive:
                 self.internal_mat = None
 
@@ -287,7 +287,7 @@ class FisherMatrix(object):
         if not self.silent:
             print "FisherMatrix "+str(id(self))+": getting right chol contraction"
         return np.dot(self.get_cov_cholesky(copy_output=False).T,v)
-   
+
     def contract_chol_inv_right(self,v):
         """contract v with the inverse cholesky decomposition of the covariance, L^{-1}.v"""
         if not self.silent:
@@ -299,10 +299,10 @@ class FisherMatrix(object):
     def get_cov_cholesky_inv(self,inplace=False,copy_output=False,internal=False):
         """get inverse of lower triangular cholesky decomposition of covariance
                 inputs:
-                    inplace: if True, will mutate internal_mat to be the inverse cholesky decompostion of the covariance matrix    
+                    inplace: if True, will mutate internal_mat to be the inverse cholesky decompostion of the covariance matrix
                     copy_output: whether to copy the output matrix, to be safe from mutating internal_mat later"""
         copy_safe = False
-        if self.internal_state==REP_CHOL_INV: 
+        if self.internal_state==REP_CHOL_INV:
             if not self.silent:
                 print "FisherMatrix ",id(self)," cholesky decomposition inv retrieved from cache"
             result = self.internal_mat
@@ -336,7 +336,7 @@ class FisherMatrix(object):
     def get_cov_cholesky(self,inplace=False,copy_output=False,internal=False):
         """get lower triangular cholesky decomposition of covariance
                 inputs:
-                    inplace: if True, will mutate internal_mat to be the cholesky decompostion of the covariance matrix    
+                    inplace: if True, will mutate internal_mat to be the cholesky decompostion of the covariance matrix
                     copy_output: whether to copy the output matrix, to be safe from mutating internal_mat later"""
         copy_safe = False
         if self.internal_state==REP_CHOL:
@@ -371,7 +371,7 @@ class FisherMatrix(object):
         if inplace:
             self.internal_mat = result
             self.internal_state = REP_CHOL
-        
+
         #if not being requested internally to FisherMatrix, make sure the upper triangle is all zeros
         if not internal and not self.triangle_clean:
             result = np.tril(result)
@@ -385,9 +385,9 @@ class FisherMatrix(object):
     def get_fisher(self,copy_output=False,inplace=False,internal=False):
         """get fisher matrix
                 inputs:
-                    inplace: if True, will mutate internal_mat to be the fisher matrix    
+                    inplace: if True, will mutate internal_mat to be the fisher matrix
                     copy_output: whether to copy the output matrix, to be safe from mutating internal_mat later"""
-        copy_safe = False 
+        copy_safe = False
         if self.internal_state == REP_FISHER:
             if not self.silent:
                 print "FisherMatrix "+str(id(self))+": retrieved fisher matrix from cache"
@@ -428,4 +428,3 @@ class FisherMatrix(object):
         #mat_retrieved = np.identity(covar_use.shape[0])+np.dot(np.dot(metric_chol_inv,covar_use),metric_chol_inv.T)
         eig_set = np.linalg.eigh(mat_retrieved)
         return eig_set
-

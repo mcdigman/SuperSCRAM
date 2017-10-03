@@ -118,10 +118,10 @@ class SphBasisK(LWBasis):
                 for d in xrange(b,kk.size):
                     coeff = 8.*np.sqrt(kk[b]*kk[d])*kk[b]*kk[d]/(np.pi*self.r_max**2*jv(ll+1.5,kk[b]*self.r_max)*jv(ll+1.5,kk[d]*self.r_max))
                     #TODO convergence test
-                    #note: this integrand is highly oscillatory, and some integration methods may produce inaccurate results, 
+                    #note: this integrand is highly oscillatory, and some integration methods may produce inaccurate results,
                     #especially for off diagonal elements. Tightly sampled trapezoidal rule is at least stable, be careful switching to anything else
-                    self.C_compact[ll][b,d]=coeff*trapz2(integrand1/((k**2-kk[b]**2)*(k**2-kk[d]**2)),dx=self.dk,given_dx=True); #check coefficient
-                    self.C_compact[ll][d,b]=self.C_compact[ll][b,d];
+                    self.C_compact[ll][b,d]=coeff*trapz2(integrand1/((k**2-kk[b]**2)*(k**2-kk[d]**2)),dx=self.dk,given_dx=True) #check coefficient
+                    self.C_compact[ll][d,b]=self.C_compact[ll][b,d]
 
         print "sph_klim: finished calculating covars"
         x_grid = np.linspace(0.,np.max(self.C_id[:,1])*self.r_max,self.params['x_grid_size'])
@@ -139,7 +139,7 @@ class SphBasisK(LWBasis):
     def get_size(self):
         """Get number of basis elements"""
         return self.C_size
-    
+
     def get_covar_array(self):
         result = np.zeros((self.C_id.shape[0],self.C_id.shape[0]),order='F')
         itr_ll = 0
@@ -191,7 +191,7 @@ class SphBasisK(LWBasis):
 
     #get the partial derivatives of an sw observable wrt the basis given an integrand with elements at each r_fine i.e.  \frac{\partial O_i}{\partial \bar(\delta)(r_{fine})}
     def D_O_I_D_delta_alpha(self,geo,integrand,force_recompute = False,use_r=True,range_spec=None):
-        """Get \frac{\partial O^I}{\partial \delta_\alpha} for an observable. 
+        """Get \frac{\partial O^I}{\partial \delta_\alpha} for an observable.
             inputs:
                 geo: a Geo object for the geometry
                 integrand: the observable as a function of geo.r_fine, which must be integrated over
@@ -266,7 +266,7 @@ class SphBasisK(LWBasis):
             result=np.zeros((rbins.shape[0],self.C_id.shape[0]))
             print "sph_klim: calculating with resolution (fine) slices"
 
-        norm=3./(rbins[:,1]**3 - rbins[:,0]**3)/(a_00*2.*np.sqrt(np.pi)) 
+        norm=3./(rbins[:,1]**3 - rbins[:,0]**3)/(a_00*2.*np.sqrt(np.pi))
 
         for itr in xrange(self.C_id.shape[0]):
             ll=int(self.C_id[itr,0])
@@ -323,7 +323,8 @@ def R_int(r_range,k,ll):
 def I_alpha(k_alpha,k,r_max,l_alpha):
     """return the integral \int_0^r_{max} dr r^2 j_{\l_alpha}(k_\alpha r)j_{l_\alpha}(k r)
     needed to calculate long wavelength covariance matrix."""
-    a=k_alpha*r_max; b=k*r_max
+    a=k_alpha*r_max
+    b=k*r_max
     l=l_alpha+.5
     return np.pi/2./np.sqrt(k_alpha*k)/(k_alpha**2 - k**2)*r_max*(-k_alpha*jv(l-1,a)*jv(l,b))
 
@@ -331,31 +332,31 @@ def norm_factor(ka,la,r_max):
     """Get normalization factor, which is I_\alpha(k_\alpha,r_{max}) simplified"""
     return -np.pi*r_max**2/(4.*ka)*jv(la+1.5,ka*r_max)*jv(la-0.5,ka*r_max)
 
-if __name__=="__main__":
-    import geo
-
-    d=np.loadtxt('Pk_Planck15.dat')
-    k=d[:,0]; P=d[:,1]
-
-    zs=np.array([.1,.2,.3])
-    z_fine = np.arange(0.01,np.max(zs),0.01)
-    Theta=[np.pi/4,np.pi/2.]
-    Phi=[0,np.pi/3.]
-
-
-    from cosmopie import CosmoPie
-    C=CosmoPie(k=k,P_lin=P)
-
-    geometry=geo.RectGeo(zs,Theta,Phi,C,z_fine)
-
-    r_max=C.D_comov(0.5)
-
-    k_cut = 0.010
-    l_ceil = 100
-    R=SphBasisK(r_max,C,k_cut,l_ceil)
-    print R.C_size
-
-    r_min=C.D_comov(.1)
-    r_max=C.D_comov(.2)
-
-    print 'this is r range', r_min, r_max
+#if __name__=="__main__":
+#    import geo
+#
+#    d=np.loadtxt('Pk_Planck15.dat')
+#    k=d[:,0]; P=d[:,1]
+#
+#    zs=np.array([.1,.2,.3])
+#    z_fine = np.arange(0.01,np.max(zs),0.01)
+#    Theta=[np.pi/4,np.pi/2.]
+#    Phi=[0,np.pi/3.]
+#
+#
+#    from cosmopie import CosmoPie
+#    C=CosmoPie(k=k,P_lin=P)
+#
+#    geometry=geo.RectGeo(zs,Theta,Phi,C,z_fine)
+#
+#    r_max=C.D_comov(0.5)
+#
+#    k_cut = 0.010
+#    l_ceil = 100
+#    R=SphBasisK(r_max,C,k_cut,l_ceil)
+#    print R.C_size
+#
+#    r_min=C.D_comov(.1)
+#    r_max=C.D_comov(.2)
+#
+#    print 'this is r range', r_min, r_max

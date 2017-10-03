@@ -12,7 +12,7 @@ class LensingPowerBase(object):
         """Shared object to generate and store things that will be needed my multiple LensingObservable objects, such as the lensing weight functions
             inputs:
                 geo: a Geo object for the geometry
-                ls: the set of l bins to compute the sw observables on 
+                ls: the set of l bins to compute the sw observables on
                 survey_id: an identifier for the SWSurvey this object is associated with
                 cosmo_par_list: a list of the names of cosmological parameters to compute \partial{O_I}\partial{\Theta_i} with respect to
                 cosmo_par_epsilons: array of epsilons to use when calculating partial derivatives specified by cosmo_par_list
@@ -34,17 +34,17 @@ class LensingPowerBase(object):
         self.dC_ddelta = sp.ShearPower(C,self.geo.z_fine,ls,omega_s=omega_s,pmodel=params['pmodel_dO_ddelta'],mode='dc_ddelta',params=params,ps=ps)
 
         self.dC_dpars = np.zeros((cosmo_par_list.size,2),dtype=object)
-        self.Cs_pert = ppr.get_perturbed_cosmopies(C,cosmo_par_list,cosmo_par_epsilons,log_param_derivs) 
+        self.Cs_pert = ppr.get_perturbed_cosmopies(C,cosmo_par_list,cosmo_par_epsilons,log_param_derivs)
 
         for i in xrange(0,cosmo_par_list.size):
             self.dC_dpars[i,0] = sp.ShearPower(self.Cs_pert[i,0],self.geo.z_fine,ls,omega_s=omega_s,pmodel=params['pmodel_O'],mode='power',params=params)
             self.dC_dpars[i,1] = sp.ShearPower(self.Cs_pert[i,1],self.geo.z_fine,ls,omega_s=omega_s,pmodel=params['pmodel_O'],mode='power',params=params)
-        
+
 #TODO observables should know their name
 class LensingObservable(SWObservable):
     def __init__(self,len_pow,r1,r2,q1_handle,q2_handle):
         """Generic lensing observable, subclass only need to define a function handle self.len_handle for which obserable to use
-            inputs: 
+            inputs:
                 len_pow: a LensingPowerBase object
                 r1,r2: [min r, max r] for the lensing weights to integrate over
                 q1_handle,q2_handle: function handles for QWeight objects, ie len_w.QShear
@@ -60,7 +60,7 @@ class LensingObservable(SWObservable):
         self.q2_dC = self.q2_handle(self.len_pow.dC_ddelta,self.r2[0],self.r2[1])
         self.q1_dpars = np.zeros((len_pow.cosmo_par_list.size,2),dtype=object)
         self.q2_dpars = np.zeros((len_pow.cosmo_par_list.size,2),dtype=object)
-        for itr in xrange(0,len_pow.cosmo_par_list.size): 
+        for itr in xrange(0,len_pow.cosmo_par_list.size):
             self.q1_dpars[itr,0] = self.q1_handle(self.len_pow.dC_dpars[itr,0],self.r1[0],self.r1[1])
             self.q1_dpars[itr,1] = self.q1_handle(self.len_pow.dC_dpars[itr,1],self.r1[0],self.r1[1])
             self.q2_dpars[itr,0] = self.q2_handle(self.len_pow.dC_dpars[itr,0],self.r2[0],self.r2[1])

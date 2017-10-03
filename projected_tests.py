@@ -15,8 +15,8 @@ class TestCosmosisAgreement1(unittest.TestCase):
     def test_cosmosis_match(self): 
             TOLERANCE_MAX = 0.1
             TOLERANCE_MEAN = 0.05
-
-            C=cp.CosmoPie(cosmology=defaults.cosmology_cosmosis,p_space='overwride')
+            camb_params = defaults.camb_params.copy()
+            C=cp.CosmoPie(cosmology=defaults.cosmology_cosmosis,camb_params=camb_params,p_space='overwride')
             k_in = np.loadtxt('test_inputs/proj_2/k_h.txt')*C.h
             C.k=k_in
             zs = np.loadtxt('test_inputs/proj_2/z.txt')

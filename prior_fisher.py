@@ -1,3 +1,4 @@
+"""Load the prior fisher matrix from the jdem fom working group report and project to the necessary parameter space"""
 import numpy as np
 import defaults
 def read_prior_fisher(params = defaults.prior_fisher_params):
@@ -70,7 +71,7 @@ def project_w0(fisher_mat,params=defaults.prior_fisher_params,return_project=Fal
         return fisher_new
 
 #def get_ws36_to_w0wa_project(params):
-    
+
 
 def project_no_de(fisher_mat,params=defaults.prior_fisher_params):
     n_de = params['n_de']
@@ -137,7 +138,7 @@ if __name__=='__main__':
     assert(np.all(fisher_strip_3567[0:n_r-n_skip,n_r::]==fisher_strip_567[0:n_r-n_skip,n_r+n_c::]))
     assert(np.all(fisher_strip_3567[n_r::,n_r::]==fisher_strip_567[n_r+n_c::,n_r+n_c::]))
 
-    fisher_project,project_mat = project_w0(fisher_strip,params=param_1,return_project=True) 
+    fisher_project,project_mat = project_w0(fisher_strip,params=param_1,return_project=True)
     assert(fisher_project.shape==(6,6))
     #projection matrix must be idempotent, have determinant 0, trace=dimension of subspace projected 2,all eigenvalues 0 or 1
     assert(np.all(np.dot(project_mat,project_mat)==project_mat))
@@ -145,7 +146,7 @@ if __name__=='__main__':
     assert(np.trace(project_mat)==6)
     project_eig = np.linalg.eig(project_mat)[0]
     assert(np.all((project_eig==0) | (project_eig==1)))
-   
+
     fisher_project2,project_mat2 = project_w0(fisher_mat,params=param_1,return_project=True)
     assert(np.all(np.dot(project_mat2,project_mat2)==project_mat2))
     assert(np.linalg.det(project_mat2)==0.)

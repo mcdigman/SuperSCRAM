@@ -8,7 +8,7 @@ class QWeight(object):
     def __init__(self,chis,qs,chi_min=0.,chi_max=np.inf):
         """abstract class for weight function
             inputs:
-                chis: an array of comoving distances 
+                chis: an array of comoving distances
                 qs: the weight function at each comoving distance
                 chi_min: the minimum comoving distance to use in integrations
                 chi_max: the maximum comoving distance to use in integrations
@@ -26,14 +26,14 @@ class QShear(QWeight):
                 mult: a constant multiplier for the weight function
         """
         qs = 3./2.*(sp.C.H0/sp.C.c)**2*sp.C.Omegam*sp.chi_As/sp.sc_as*self.gs(sp,chi_max=chi_max,chi_min=chi_min)*mult
-        QWeight.__init__(self,sp.chis,qs,chi_min=chi_min,chi_max=chi_max) 
+        QWeight.__init__(self,sp.chis,qs,chi_min=chi_min,chi_max=chi_max)
 
     def gs(self,sp,chi_max=np.inf,chi_min=0):
         """helper function for QShear"""
         g_vals = np.zeros(sp.n_z)
         low_mask = (sp.chis>=chi_min)*1. #so only integrate from max(chi,chi_min)
         high_mask = (sp.chis<=chi_max)*1. #so only integrate from max(chi,chi_min)
-        
+
         ps_norm = sp.ps*high_mask*low_mask/trapz2(sp.ps*low_mask*high_mask,sp.chis) #TODO check normalization
         for i in xrange(0,sp.n_z):
             if chi_max<sp.chis[i]:

@@ -1,14 +1,13 @@
+"""Module for a spherical polygon Geo, defined by vertices with great circle edges"""
+from warnings import warn
 import numpy as np
 import scipy as sp
 import spherical_geometry.vector as sgv
 from spherical_geometry.polygon import SphericalPolygon
 import spherical_geometry.great_circle_arc as gca
-from polygon_pixel_geo import PolygonPixelGeo,get_Y_r_dict
-from geo import RectGeo,Geo
-from time import time
+from polygon_pixel_geo import get_Y_r_dict
+from geo import Geo
 import defaults
-from cosmopie import CosmoPie
-from warnings import warn
 import alm_utils as au
 #get an exact spherical polygon geo
 class PolygonGeo(Geo):
@@ -16,8 +15,16 @@ class PolygonGeo(Geo):
     #vertices should be specified such that the clockwise oriented contour contains the area
     #theta_in and phi_in do not actually determine the inside, but are necessary for now if generating intersects with SphericalPolygon
     def __init__(self,zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max,poly_params=defaults.polygon_params):
-        #if isnan(self.sp_poly.area()):
-        #    raise ValueError("PolygonGeo: Calculated area of polygon is nan, likely invalid polygon")
+        """create a spherical polygon defined by vertices
+                inputs:
+                    zs: the tomographic z bins
+                    thetas,phis: an array of theta values for the edges in radians, last value should be first for closure, edges will be clockwise
+                    theta_in,phi_in: a theta and phi known to be outside, needed for finding intersect for now
+                    C: a CosmoPie object
+                    z_fine: the resolution z slices
+                    l_max: the maximum l to compute the alm table to
+                    poly_params: a dict of parameters
+        """
 
         self.n_double = poly_params['n_double']
 
@@ -29,9 +36,9 @@ class PolygonGeo(Geo):
         self.bounding_phi = np.pi-phis
         self.bounding_xyz = np.asarray(sgv.radec_to_vector(self.bounding_phi,self.bounding_theta,degrees=False)).T
 
-        #this gets correct internal angles with specified vertex order (copied from spherical_polygon clas) 
+        #this gets correct internal angles with specified vertex order (copied from spherical_polygon clas)
         self.internal_angles = 2.*np.pi-np.hstack([gca.angle(self.bounding_xyz[:-2], self.bounding_xyz[1:-1], self.bounding_xyz[2:], degrees=False),gca.angle(self.bounding_xyz[-2], self.bounding_xyz[0], self.bounding_xyz[1], degrees=False)])
-    
+
         Geo.__init__(self,zs,C,z_fine)
 
         self.sp_poly = get_poly(thetas,phis,theta_in,phi_in)
@@ -39,7 +46,7 @@ class PolygonGeo(Geo):
         print "PolygonGeo: area calculated by PolygonGeo: "+str(self.angular_area())+" sr or "+str(self.angular_area()*(180./np.pi)**2)+" deg^2"
 
         self.alm_table = {(0,0):self.angular_area()/np.sqrt(4.*np.pi)}
-         
+
 
         self.z_hats = np.zeros((self.n_v,3))
         self.y_hats = np.zeros_like(self.z_hats)
@@ -93,9 +100,8 @@ class PolygonGeo(Geo):
                 self.y_hats[itr1] = y1
                 assert(np.allclose(pa1*np.cos(self.betas[itr1])-y1*np.sin(self.betas[itr1]),pa2))
                 assert(np.allclose(np.cross(pa1,y1),self.z_hats[itr1]))
-                self.xps[itr1] = np.array([self.z_hats[itr1][1]*pa1[0]-self.z_hats[itr1][0]*pa1[1],
-                    self.z_hats[itr1][1]*y1[0]-self.z_hats[itr1][0]*y1[1],0.])
-                
+                self.xps[itr1] = np.array([self.z_hats[itr1][1]*pa1[0]-self.z_hats[itr1][0]*pa1[1],self.z_hats[itr1][1]*y1[0]-self.z_hats[itr1][0]*y1[1],0.])
+
                 #self.gamma_alphas[itr1] = np.arctan2(self.z_hats[itr1,1],self.z_hats[itr1,0])-np.pi/2.
                 self.gamma_alphas[itr1] = np.mod(np.arctan2(-self.z_hats[itr1,0],self.z_hats[itr1,1]),2.*np.pi)
                 self.omega_alphas[itr1] = -np.arctan2(self.xps[itr1,1],self.xps[itr1,0])
@@ -112,13 +118,13 @@ class PolygonGeo(Geo):
                     print "PolygonGeo: setting theta_alpha to 0 at "+str(itr1)
                     self.theta_alphas[itr1] = 0.
 
-        
-        self.expand_alm_table(l_max)
-        print "PolygonGeo: finished initialization" 
 
-    #use angle defect formula (Girard's theorem) to get a00 
+        self.expand_alm_table(l_max)
+        print "PolygonGeo: finished initialization"
+
+    #use angle defect formula (Girard's theorem) to get a00
     def angular_area(self):
-        return (np.sum(self.internal_angles)-(self.n_v-2.)*np.pi)
+        return np.sum(self.internal_angles)-(self.n_v-2.)*np.pi
 
     #TODO test: probably bug somehow is giving float to get_Y_r_dict
     def expand_alm_table(self,l_max):
@@ -178,7 +184,7 @@ class PolygonGeo(Geo):
         d_alm_table4 = au.rot_alm_z(d_alm_table3,self.gamma_alphas,ls)
 
         for l_itr in xrange(0,ls.size):
-            ll = ls[l_itr] 
+            ll = ls[l_itr]
             for mm in xrange(0,ll+1):
                 if mm==0:
                     self.alm_table[(ll,mm)] = np.sum(d_alm_table4[l_itr][ll+mm])
@@ -197,7 +203,7 @@ class PolygonGeo(Geo):
         if alm is None:
             raise RuntimeError('PolygonGeo: a_lm generation failed for unknown reason at l='+str(l)+',m='+str(m))
         return alm
-    
+
     #TODO make robust for type of poly2
     #TODO avoid relying on SphericalPolygon
     def get_overlap_fraction(self,geo2):
@@ -206,7 +212,7 @@ class PolygonGeo(Geo):
             result = self.sp_poly.overlap(geo2.sp_poly)
         except:
             warn('spherical_geometry overlap failed, assuming total overlap')
-            if self.geo1.angular_area()<=self.geo2.angular_area():
+            if self.angular_area()<=geo2.angular_area():
                 result = 1.
             else:
                 result = geo2.angular_area()/self.angular_area()
@@ -218,8 +224,8 @@ class PolygonGeo(Geo):
 #Note these are spherical polygons so all the sides are great circles (not lines of constant theta!)
 #So area will differ from integral if assuming constant theta
 #vertices must have same first and last coordinate so polygon is closed
-#last point is arbitrary point inside because otherwise 2 polygons possible. 
-#Behavior may be unpredictable if the inside point is very close to an edge or vertex. 
+#last point is arbitrary point inside because otherwise 2 polygons possible.
+#Behavior may be unpredictable if the inside point is very close to an edge or vertex.
 def get_poly(theta_vertices,phi_vertices,theta_in,phi_in):
     bounding_theta = theta_vertices-np.pi/2. #to radec
     bounding_phi = phi_vertices
@@ -246,127 +252,130 @@ def check_mutually_orthonormal(vectors):
                     fails+=1
     return fails
 
-if __name__=='__main__':
-    toffset = np.pi/2.
-    #theta0=np.pi/6+toffset
-    #theta1=np.pi/3.+toffset
-    #theta0=2.82893228356285
-    theta0=np.pi-np.arccos(1.-5.*np.pi/324.)
-    #theta0=(1.25814+toffset)
-    theta1=np.pi/2.+toffset
-    theta2=np.pi/3.+0.1+toffset
-    theta3=theta2-np.pi/3.
-    theta4 = theta3+np.pi/6.
-    offset=0.
-    phi0=0.+offset
-    phi1 = 4.*np.pi/3.+offset
-    #phi1 = np.pi/3.+offset
-    phi2 = phi1+np.pi/2.
-    phi3 = phi2-np.pi/6.
-    phi4 = phi3-np.pi/3.
-    n_steps = 120
-    thetas = np.zeros(n_steps+2)+theta0
-    phis = np.zeros(n_steps+2)
-    phis[0] = phi0
-    phis[-1] = phi0
-    for itr in xrange(1,n_steps+1):
-        phis[itr] = phi0+itr*2.*np.pi/n_steps
-    phis = phis[::-1]
-    #thetas = np.array([theta0,theta0,theta0,theta0,theta0,theta0,theta0,theta0])
-    #phis = np.array([phi0,phi0+np.pi/3.,phi0+2.*np.pi/3.,phi0+np.pi,phi0+4.*np.pi/3.,phi0+5.*np.pi/3.,6.*np.pi/3.,phi0])[::-1]
-    #thetas = np.array([theta0,theta1,theta1,theta0,theta0])
-    #phis = np.array([phi0,phi0,phi1,phi1,phi0])
-    #thetas = np.array([theta0,theta1,theta1,theta0,theta0])
-    #phis = np.array([phi0,phi0,phi1,phi1,phi0])
-    #thetas = np.array([theta0,theta1,theta1,theta2,theta0,theta3,theta3,theta4,theta0])
-    #phis = np.array([phi0,phi0,phi1,phi1,phi2,phi3,phi4,phi4,phi0])
-    #theta_in = np.pi/4.+toffset
-    #phi_in = np.pi/6.+offset
-    theta_in = theta0+0.1
-    phi_in = phi0-0.1
-    res_choose = 6
-    res_choose2 = 7
-    l_max = 50
-
-    
-    #some setup to make an actual geo
-    d=np.loadtxt('camb_m_pow_l.dat')
-    k=d[:,0]; P=d[:,1]
-    C=CosmoPie(k=k,P_lin=P,cosmology=defaults.cosmology)
-    zs=np.array([.01,1.01])
-    z_fine = np.arange(defaults.lensing_params['z_min_integral'],np.max(zs),defaults.lensing_params['z_resolution'])
-
-    
-    t0 = time()
-    poly_params = defaults.polygon_params.copy()
-    poly_geo = PolygonGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,poly_params=poly_params)
-    t1 = time()
-    print "PolygonGeo initialized in time: "+str(t1-t0) 
-    pp_geo = PolygonPixelGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,res_healpix=res_choose)
-    t2 = time()
-    print "PolygonPixelGeo initialized at res "+str(res_choose)+" in time: "+str(t2-t1)
-    pp_geo2 = PolygonPixelGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,res_healpix=res_choose2)
-    t3 = time()
-    print "PolygonPixelGeo initialized at res "+str(res_choose2)+" in time: "+str(t3-t2)
-    r_geo = RectGeo(zs,np.array([theta0,theta1]),np.array([phi0,phi1]),C,z_fine)
-    alm1 = r_geo.get_alm_array(10)[0]
-    alm2 = poly_geo.get_alm_array(10)[0]
-    print "max diff from rect "+str(np.max(np.abs(alm2-alm1)))
-    nt = poly_geo.n_v
-   
-    my_table = poly_geo.alm_table.copy()
-    #get RectGeo to cache the values in the table
-    #for ll in xrange(0,l_max+1):
-    #    for mm in xrange(0,ll+1):
-    #        r_geo.a_lm(ll,mm)
-    #        if mm>0:
-    #            r_geo.a_lm(ll,-mm)
-    #r_alm_table = r_geo.alm_table
-    #reconstruct at higher resolution to mitigate resolution effects in determining accuracy
-    totals_pp= pp_geo2.reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],pp_geo.alm_table)
-    totals_poly = pp_geo2.reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],my_table)
-    avg_diff = np.average(np.abs(totals_pp-totals_poly))
-    print "mean absolute difference between pixel and exact geo reconstruction: "+str(avg_diff)
-    poly_error = np.sqrt(np.average(np.abs(totals_poly-pp_geo2.contained*1.)**2))
-    pp_error = np.sqrt(np.average(np.abs(totals_pp-pp_geo2.contained*1.)**2))
-    print "rms reconstruction error of exact geo: "+str(poly_error)
-    print "rms reconstruction error of pixel geo at res "+str(res_choose)+": "+str(pp_error)
-    #can be negative if res_choose2=res_choose due to pixelation effects
-    print "improvement in rms reconstruction accuracy: "+str((pp_error-poly_error)/pp_error*100)+"%"
-
-    #totals_alm = pp_geo.reconstruct_from_alm(l_max,pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1],r_alm_table)
-    try_plot=True
-    do_poly=True
-    if try_plot:
-               #try:
-            from mpl_toolkits.basemap import Basemap
-            import matplotlib.pyplot as plt
-            m = Basemap(projection='moll',lon_0=0)
-            #m.drawparallels(np.arange(-90.,120.,30.))
-            #m.drawmeridians(np.arange(0.,420.,60.))
-            #restrict = totals_recurse>-1.
-            lats = (pp_geo2.all_pixels[:,0]-np.pi/2.)*180/np.pi
-            lons = pp_geo2.all_pixels[:,1]*180/np.pi
-            x,y=m(lons,lats)
-            #have to switch because histogram2d considers y horizontal, x vertical
-            fig = plt.figure(figsize=(10,5))
-            ax = fig.add_subplot(121)
-            H1,yedges1,xedges1 = np.histogram2d(y,x,100,weights=totals_pp)
-            X1, Y1 = np.meshgrid(xedges1, yedges1)
-            pc1 = ax.pcolormesh(X1,Y1,-H1,cmap='gray')
-            ax.set_aspect('equal')
-            ax.set_title("PolygonPixelGeo reconstruction")
-            #fig.colorbar(pc1,ax=ax)
-            #m.plot(x,y,'bo',markersize=1)
-            pp_geo2.sp_poly.draw(m,color='red')
-            if do_poly:
-                ax = fig.add_subplot(122)
-                H2,yedges2,xedges2 = np.histogram2d(y,x,100,weights=1.*totals_poly)
-                X2, Y2 = np.meshgrid(xedges2, yedges2)
-                ax.pcolormesh(X2,Y2,-H2,cmap='gray')
-                ax.set_aspect('equal')
-                #m.plot(x,y,'bo',markersize=1)
-                ax.set_title("PolygonGeo reconstruction")
-                pp_geo2.sp_poly.draw(m,color='red')
-            plt.show()
-
+#if __name__=='__main__':
+#    from polygon_pixel_geo import PolygonPixelGeo,reconstruc_from_alm
+#    from geo import RectGeo
+#    from cosmopie import CosmoPie
+#    from time import time
+#    toffset = np.pi/2.
+#    #theta0=np.pi/6+toffset
+#    #theta1=np.pi/3.+toffset
+#    #theta0=2.82893228356285
+#    theta0=np.pi-np.arccos(1.-5.*np.pi/324.)
+#    #theta0=(1.25814+toffset)
+#    theta1=np.pi/2.+toffset
+#    theta2=np.pi/3.+0.1+toffset
+#    theta3=theta2-np.pi/3.
+#    theta4 = theta3+np.pi/6.
+#    offset=0.
+#    phi0=0.+offset
+#    phi1 = 4.*np.pi/3.+offset
+#    #phi1 = np.pi/3.+offset
+#    phi2 = phi1+np.pi/2.
+#    phi3 = phi2-np.pi/6.
+#    phi4 = phi3-np.pi/3.
+#    n_steps = 120
+#    thetas = np.zeros(n_steps+2)+theta0
+#    phis = np.zeros(n_steps+2)
+#    phis[0] = phi0
+#    phis[-1] = phi0
+#    for itr in xrange(1,n_steps+1):
+#        phis[itr] = phi0+itr*2.*np.pi/n_steps
+#    phis = phis[::-1]
+#    #thetas = np.array([theta0,theta0,theta0,theta0,theta0,theta0,theta0,theta0])
+#    #phis = np.array([phi0,phi0+np.pi/3.,phi0+2.*np.pi/3.,phi0+np.pi,phi0+4.*np.pi/3.,phi0+5.*np.pi/3.,6.*np.pi/3.,phi0])[::-1]
+#    #thetas = np.array([theta0,theta1,theta1,theta0,theta0])
+#    #phis = np.array([phi0,phi0,phi1,phi1,phi0])
+#    #thetas = np.array([theta0,theta1,theta1,theta0,theta0])
+#    #phis = np.array([phi0,phi0,phi1,phi1,phi0])
+#    #thetas = np.array([theta0,theta1,theta1,theta2,theta0,theta3,theta3,theta4,theta0])
+#    #phis = np.array([phi0,phi0,phi1,phi1,phi2,phi3,phi4,phi4,phi0])
+#    #theta_in = np.pi/4.+toffset
+#    #phi_in = np.pi/6.+offset
+#    theta_in = theta0+0.1
+#    phi_in = phi0-0.1
+#    res_choose = 6
+#    res_choose2 = 7
+#    l_max = 50
+#
+#
+#    #some setup to make an actual geo
+#    d=np.loadtxt('camb_m_pow_l.dat')
+#    k=d[:,0]; P=d[:,1]
+#    C=CosmoPie(k=k,P_lin=P,cosmology=defaults.cosmology)
+#    zs=np.array([.01,1.01])
+#    z_fine = np.arange(defaults.lensing_params['z_min_integral'],np.max(zs),defaults.lensing_params['z_resolution'])
+#
+#
+#    t0 = time()
+#    poly_params = defaults.polygon_params.copy()
+#    poly_geo = PolygonGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,poly_params=poly_params)
+#    t1 = time()
+#    print "PolygonGeo initialized in time: "+str(t1-t0)
+#    pp_geo = PolygonPixelGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,res_healpix=res_choose)
+#    t2 = time()
+#    print "PolygonPixelGeo initialized at res "+str(res_choose)+" in time: "+str(t2-t1)
+#    pp_geo2 = PolygonPixelGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,res_healpix=res_choose2)
+#    t3 = time()
+#    print "PolygonPixelGeo initialized at res "+str(res_choose2)+" in time: "+str(t3-t2)
+#    r_geo = RectGeo(zs,np.array([theta0,theta1]),np.array([phi0,phi1]),C,z_fine)
+#    alm1 = r_geo.get_alm_array(10)[0]
+#    alm2 = poly_geo.get_alm_array(10)[0]
+#    print "max diff from rect "+str(np.max(np.abs(alm2-alm1)))
+#    nt = poly_geo.n_v
+#
+#    my_table = poly_geo.alm_table.copy()
+#    #get RectGeo to cache the values in the table
+#    #for ll in xrange(0,l_max+1):
+#    #    for mm in xrange(0,ll+1):
+#    #        r_geo.a_lm(ll,mm)
+#    #        if mm>0:
+#    #            r_geo.a_lm(ll,-mm)
+#    #r_alm_table = r_geo.alm_table
+#    #reconstruct at higher resolution to mitigate resolution effects in determining accuracy
+#    totals_pp= reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],pp_geo.alm_table)
+#    totals_poly = reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],my_table)
+#    avg_diff = np.average(np.abs(totals_pp-totals_poly))
+#    print "mean absolute difference between pixel and exact geo reconstruction: "+str(avg_diff)
+#    poly_error = np.sqrt(np.average(np.abs(totals_poly-pp_geo2.contained*1.)**2))
+#    pp_error = np.sqrt(np.average(np.abs(totals_pp-pp_geo2.contained*1.)**2))
+#    print "rms reconstruction error of exact geo: "+str(poly_error)
+#    print "rms reconstruction error of pixel geo at res "+str(res_choose)+": "+str(pp_error)
+#    #can be negative if res_choose2=res_choose due to pixelation effects
+#    print "improvement in rms reconstruction accuracy: "+str((pp_error-poly_error)/pp_error*100)+"%"
+#
+#    #totals_alm = reconstruct_from_alm(l_max,pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1],r_alm_table)
+#    try_plot=True
+#    do_poly=True
+#    if try_plot:
+#               #try:
+#            from mpl_toolkits.basemap import Basemap
+#            import matplotlib.pyplot as plt
+#            m = Basemap(projection='moll',lon_0=0)
+#            #m.drawparallels(np.arange(-90.,120.,30.))
+#            #m.drawmeridians(np.arange(0.,420.,60.))
+#            #restrict = totals_recurse>-1.
+#            lats = (pp_geo2.all_pixels[:,0]-np.pi/2.)*180/np.pi
+#            lons = pp_geo2.all_pixels[:,1]*180/np.pi
+#            x,y=m(lons,lats)
+#            #have to switch because histogram2d considers y horizontal, x vertical
+#            fig = plt.figure(figsize=(10,5))
+#            ax = fig.add_subplot(121)
+#            H1,yedges1,xedges1 = np.histogram2d(y,x,100,weights=totals_pp)
+#            X1, Y1 = np.meshgrid(xedges1, yedges1)
+#            pc1 = ax.pcolormesh(X1,Y1,-H1,cmap='gray')
+#            ax.set_aspect('equal')
+#            ax.set_title("PolygonPixelGeo reconstruction")
+#            #fig.colorbar(pc1,ax=ax)
+#            #m.plot(x,y,'bo',markersize=1)
+#            pp_geo2.sp_poly.draw(m,color='red')
+#            if do_poly:
+#                ax = fig.add_subplot(122)
+#                H2,yedges2,xedges2 = np.histogram2d(y,x,100,weights=1.*totals_poly)
+#                X2, Y2 = np.meshgrid(xedges2, yedges2)
+#                ax.pcolormesh(X2,Y2,-H2,cmap='gray')
+#                ax.set_aspect('equal')
+#                #m.plot(x,y,'bo',markersize=1)
+#                ax.set_title("PolygonGeo reconstruction")
+#                pp_geo2.sp_poly.draw(m,color='red')
+#            plt.show()

@@ -15,9 +15,17 @@ if __name__ == '__main__':
     cosmo_shear = np.loadtxt(input_dir+'shear_shear_cosmo_3.dat')
     cosmo_nz = np.loadtxt(input_dir+'n_z_2.dat')
 
+    camb_params = defaults.camb_params
+    camb_params['force_sigma8']=True
+    camb_params['leave_h'] =False
+    camb_params['npoints']=1000
+    camb_params['minkh']=1.1e-4
+    camb_params['maxkh']=100.
+    camb_params['kmax']=1.
+
     RTOL = 3.*10**-2
     ATOL = 10**-10
-    C=CosmoPie(defaults.cosmology_cosmolike)
+    C=CosmoPie(defaults.cosmology_cosmolike,camb_params=camb_params)
     lmin_cosmo = 20
     lmax_cosmo = 5000
     nbins_cosmo = 20
@@ -136,13 +144,6 @@ if __name__ == '__main__':
 
     #d=np.loadtxt('camb_m_pow_l.dat')
     #k_in=d[:,0]; P_in=d[:,1]
-    camb_params = defaults.camb_params
-    camb_params['force_sigma8']=True
-    camb_params['leave_h'] =False
-    camb_params['npoints']=1000
-    camb_params['minkh']=1.1e-4
-    camb_params['maxkh']=100.
-    camb_params['kmax']=1.
     #k_in,P_in=camb_pow(defaults.cosmology_cosmolike,camb_params=camb_params)
     P_in = mps.MatterPower(C,camb_params=camb_params)
     k_in =P_in.k

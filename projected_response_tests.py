@@ -10,8 +10,8 @@ if __name__=='__main__':
     #d=np.loadtxt('camb_m_pow_l.dat')
     #k=d[:,0]; P=d[:,1]
 
-    C=CosmoPie(cosmology=defaults.cosmology)
     camb_params = defaults.camb_params
+    C=CosmoPie(cosmology=defaults.cosmology,camb_params=camb_params)
     P = mps.MatterPower(C,camb_params=camb_params)
     k = P.k
     C.k=k

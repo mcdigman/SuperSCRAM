@@ -44,6 +44,7 @@ def test_vary_1_parameter(param_set,param_vary):
         C_pert = cp.CosmoPie(cosmo_pert,camb_params=camb_params,p_space='jdem')
         P_pert = mps.MatterPower(C_pert,camb_params=camb_params)
         k_pert = P_pert.k
+        C_pert.k = k_pert
 
         P_res1 = P_pert.get_matter_power(np.array([0.]),pmodel=param_set[2])[:,0]
         k_res2,P_res2 = camb_pow(C_pert.cosmology,zbar=np.array([0.]),camb_params=camb_params,nonlinear_model=nonlinear_model)

@@ -19,6 +19,7 @@ class PowerDerivativeComparison1:
         #k_a,P_a = cpow.camb_pow(cosmo_a)
         P_a = mps.MatterPower(C,camb_params=camb_params)
         k_a = P_a.k
+        C.k=k_a
         k_a_h = P_a.k/C.cosmology['h']
 
         d_chiang_halo = np.loadtxt('test_inputs/dp_1/dp_chiang_halofit.dat')
@@ -37,9 +38,9 @@ class PowerDerivativeComparison1:
         if do_plots:
             import matplotlib.pyplot as plt
         zbar = np.array([3.])
-        dcalt1,p1a = shp.dp_ddelta(k_a,P_a,zbar,C=C,pmodel='linear',epsilon=epsilon)
-        dcalt2,p2a = shp.dp_ddelta(k_a,P_a,zbar,C=C,pmodel='halofit',epsilon=epsilon)
-        dcalt3,p3a = shp.dp_ddelta(k_a,P_a,zbar,C=C,pmodel='fastpt',epsilon=epsilon)
+        dcalt1,p1a = shp.dp_ddelta(P_a,zbar,C=C,pmodel='linear',epsilon=epsilon)
+        dcalt2,p2a = shp.dp_ddelta(P_a,zbar,C=C,pmodel='halofit',epsilon=epsilon)
+        dcalt3,p3a = shp.dp_ddelta(P_a,zbar,C=C,pmodel='fastpt',epsilon=epsilon)
         if do_plots:
             ax = plt.subplot(221)
             plt.xlim([0.,0.4])
@@ -51,9 +52,9 @@ class PowerDerivativeComparison1:
             ax.plot(k_a_h,abs(dcalt3/p3a))
 
         zbar = np.array([2.])
-        dcalt1,p1a = shp.dp_ddelta(k_a,P_a,zbar,C=C,pmodel='linear',epsilon=epsilon)
-        dcalt2,p2a = shp.dp_ddelta(k_a,P_a,zbar,C=C,pmodel='halofit',epsilon=epsilon)
-        dcalt3,p3a = shp.dp_ddelta(k_a,P_a,zbar,C=C,pmodel='fastpt',epsilon=epsilon)
+        dcalt1,p1a = shp.dp_ddelta(P_a,zbar,C=C,pmodel='linear',epsilon=epsilon)
+        dcalt2,p2a = shp.dp_ddelta(P_a,zbar,C=C,pmodel='halofit',epsilon=epsilon)
+        dcalt3,p3a = shp.dp_ddelta(P_a,zbar,C=C,pmodel='fastpt',epsilon=epsilon)
 
         if do_plots:
             ax = plt.subplot(222)
@@ -67,9 +68,9 @@ class PowerDerivativeComparison1:
         
 
         zbar = np.array([1.])
-        dcalt1,p1a = shp.dp_ddelta(k_a,P_a,zbar,C=C,pmodel='linear',epsilon=epsilon)
-        dcalt2,p2a = shp.dp_ddelta(k_a,P_a,zbar,C=C,pmodel='halofit',epsilon=epsilon)
-        dcalt3,p3a = shp.dp_ddelta(k_a,P_a,zbar,C=C,pmodel='fastpt',epsilon=epsilon)
+        dcalt1,p1a = shp.dp_ddelta(P_a,zbar,C=C,pmodel='linear',epsilon=epsilon)
+        dcalt2,p2a = shp.dp_ddelta(P_a,zbar,C=C,pmodel='halofit',epsilon=epsilon)
+        dcalt3,p3a = shp.dp_ddelta(P_a,zbar,C=C,pmodel='fastpt',epsilon=epsilon)
         if do_plots:
             ax = plt.subplot(223)
             plt.xlim([0.,0.4])
@@ -93,9 +94,9 @@ class PowerDerivativeComparison1:
         
 
         zbar = np.array([0.])
-        dcalt1,p1a = shp.dp_ddelta(k_a,P_a,zbar,C=C,pmodel='linear',epsilon=epsilon)
-        dcalt2,p2a = shp.dp_ddelta(k_a,P_a,zbar,C=C,pmodel='halofit',epsilon=epsilon)
-        dcalt3,p3a = shp.dp_ddelta(k_a,P_a,zbar,C=C,pmodel='fastpt',epsilon=epsilon)
+        dcalt1,p1a = shp.dp_ddelta(P_a,zbar,C=C,pmodel='linear',epsilon=epsilon)
+        dcalt2,p2a = shp.dp_ddelta(P_a,zbar,C=C,pmodel='halofit',epsilon=epsilon)
+        dcalt3,p3a = shp.dp_ddelta(P_a,zbar,C=C,pmodel='fastpt',epsilon=epsilon)
         if do_plots:
             ax = plt.subplot(224)
             plt.xlim([0.,0.4])
