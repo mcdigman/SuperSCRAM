@@ -6,13 +6,14 @@ import numpy as np
 import lensing_observables as lo
 
 class SWCovMat(object):
-    def __init__(self,O_I_1,O_I_2,debugging=False):
+    def __init__(self,O_I_1,O_I_2,debug=True,silent=False):
         """Object to handle retrieving the non SSC short wavelength covariance matrices"""
         self.gaussian_covar = 0.
         self.dimension = 0
         if isinstance(O_I_1,lo.LensingObservable) and isinstance(O_I_2,lo.LensingObservable):
             if O_I_1.get_survey_id() == O_I_2.get_survey_id():
-                print "sw_cov_mat: retrieving covariance"
+                if not silent:
+                    print "SWCovMat: retrieving covariance"
                 class_a = O_I_1.q1_pow.__class__
                 class_b = O_I_1.q2_pow.__class__
                 class_c = O_I_2.q1_pow.__class__
@@ -40,9 +41,10 @@ class SWCovMat(object):
                 #ns[0:2] =
                 self.gaussian_covar = np.diagflat(sh_pow1.cov_g_diag(np.array([O_I_1.q1_pow,O_I_1.q2_pow,O_I_2.q1_pow,O_I_2.q2_pow]),ns))
                 self.dimension = self.gaussian_covar.shape[0]
-                print "sw_cov_mat: covariance retrieved"
+                if not silent:
+                    print "SWCovMat: covariance retrieved"
 
-                if debugging:
+                if debug:
                     #check that covariance matrix possesses all expected symmetries
                     assert(np.all(self.gaussian_covar.T==self.gaussian_covar))
                     assert(np.all(np.linalg.eigh(self.gaussian_covar)[0]>0.))

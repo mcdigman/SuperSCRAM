@@ -11,8 +11,10 @@ from astropy.io import fits
 import spherical_geometry.vector as sgv
 from spherical_geometry.polygon import SphericalPolygon
 
+
 import defaults
 import scipy as sp
+import alm_utils as au
 
 #TODO consider using sp_poly area for angular_area()
 #TODO consider smoothing to get area precisely correct
@@ -88,6 +90,8 @@ class PolygonPixelGeo(PixelGeo):
         return a_lms,ls,ms
     #TODO check numerical stability
     def get_a_lm_table(self,l_max):
+        if l_max>85:
+            raise ValueError('cannot use scipy precision for getting alm for l>85')
         n_tot = (l_max+1)**2
         pixel_area = self.pixels[0,2]
 
@@ -152,129 +156,131 @@ class PolygonPixelGeo(PixelGeo):
 
 
 #may be some loss of precision; fails to identify possible exact 0s
-def reconstruct_from_alm(l_max,thetas,phis,alms):
-    n_tot = (l_max+1)**2
-
-    ls = np.zeros(n_tot)
-    ms = np.zeros(n_tot)
-    reconstructed = np.zeros(thetas.size)
-
-    lm_dict = {}
-    itr = 0
-    for ll in xrange(0,l_max+1):
-        for mm in xrange(-ll,ll+1):
-            ms[itr] = mm
-            ls[itr] = ll
-            lm_dict[(ll,mm)] = itr
-            itr+=1
-
-    cos_theta = np.cos(thetas)
-    sin_theta = np.sin(thetas)
-    abs_sin_theta = np.abs(sin_theta)
-
-
-    sin_phi_m = np.zeros((l_max+1,thetas.size))
-    cos_phi_m = np.zeros((l_max+1,thetas.size))
-    for mm in xrange(0,l_max+1):
-        sin_phi_m[mm] = np.sin(mm*phis)
-        cos_phi_m[mm] = np.cos(mm*phis)
-
-    factorials = sp.misc.factorial(np.arange(0,2*l_max+1))
-
-    known_legendre = {(0,0):(np.zeros(thetas.size)+1.),(1,0):cos_theta,(1,1):-abs_sin_theta}
-
-    for ll in xrange(0,l_max+1):
-        if ll>=2:
-            known_legendre[(ll,ll-1)] = (2.*ll-1.)*cos_theta*known_legendre[(ll-1,ll-1)]
-            known_legendre[(ll,ll)] = -(2.*ll-1.)*abs_sin_theta*known_legendre[(ll-1,ll-1)]
-        for mm in xrange(0,ll+1):
-            if mm<=ll-2:
-                known_legendre[(ll,mm)] = ((2.*ll-1.)/(ll-mm)*cos_theta*known_legendre[(ll-1,mm)]-(ll+mm-1.)/(ll-mm)*known_legendre[(ll-2,mm)])
-
-            prefactor = np.sqrt((2.*ll+1.)/(4.*np.pi)*factorials[ll-mm]/factorials[ll+mm])
-            base = known_legendre[(ll,mm)]
-            if mm==0:
-                reconstructed += prefactor*alms[(ll,mm)]*base
-            else:
-                #Note: check condon shortley phase convention
-                reconstructed+= (-1)**(mm)*np.sqrt(2.)*alms[(ll,mm)]*prefactor*base*cos_phi_m[mm]
-                reconstructed+= (-1)**(mm)*np.sqrt(2.)*alms[(ll,-mm)]*prefactor*base*sin_phi_m[mm]
-        if mm<=ll-2:
-            known_legendre.pop((ll-2,mm),None)
-
-    return reconstructed
+#def reconstruct_from_alm(l_max,thetas,phis,alms):
+#    n_tot = (l_max+1)**2
+#
+#    ls = np.zeros(n_tot)
+#    ms = np.zeros(n_tot)
+#    reconstructed = np.zeros(thetas.size)
+#
+#    lm_dict = {}
+#    itr = 0
+#    for ll in xrange(0,l_max+1):
+#        for mm in xrange(-ll,ll+1):
+#            ms[itr] = mm
+#            ls[itr] = ll
+#            lm_dict[(ll,mm)] = itr
+#            itr+=1
+#
+#    cos_theta = np.cos(thetas)
+#    sin_theta = np.sin(thetas)
+#    abs_sin_theta = np.abs(sin_theta)
+#
+#
+#    sin_phi_m = np.zeros((l_max+1,thetas.size))
+#    cos_phi_m = np.zeros((l_max+1,thetas.size))
+#    for mm in xrange(0,l_max+1):
+#        sin_phi_m[mm] = np.sin(mm*phis)
+#        cos_phi_m[mm] = np.cos(mm*phis)
+#
+#    factorials = sp.misc.factorial(np.arange(0,2*l_max+1))
+#
+#    known_legendre = {(0,0):(np.zeros(thetas.size)+1.),(1,0):cos_theta,(1,1):-abs_sin_theta}
+#
+#    for ll in xrange(0,l_max+1):
+#        if ll>=2:
+#            known_legendre[(ll,ll-1)] = (2.*ll-1.)*cos_theta*known_legendre[(ll-1,ll-1)]
+#            known_legendre[(ll,ll)] = -(2.*ll-1.)*abs_sin_theta*known_legendre[(ll-1,ll-1)]
+#        for mm in xrange(0,ll+1):
+#            if mm<=ll-2:
+#                known_legendre[(ll,mm)] = ((2.*ll-1.)/(ll-mm)*cos_theta*known_legendre[(ll-1,mm)]-(ll+mm-1.)/(ll-mm)*known_legendre[(ll-2,mm)])
+#
+#            prefactor = np.sqrt((2.*ll+1.)/(4.*np.pi)*factorials[ll-mm]/factorials[ll+mm])
+#            base = known_legendre[(ll,mm)]
+#            if mm==0:
+#                reconstructed += prefactor*alms[(ll,mm)]*base
+#            else:
+#                #Note: check condon shortley phase convention
+#                reconstructed+= (-1)**(mm)*np.sqrt(2.)*alms[(ll,mm)]*prefactor*base*cos_phi_m[mm]
+#                reconstructed+= (-1)**(mm)*np.sqrt(2.)*alms[(ll,-mm)]*prefactor*base*sin_phi_m[mm]
+#        if mm<=ll-2:
+#            known_legendre.pop((ll-2,mm),None)
+#
+#    return reconstructed
 
 #TODO split this stuff into another file
 #alternate way of computing Y_r from the way in sph_functions
-def Y_r_2(ll,mm,theta,phi,known_legendre):
-    prefactor = np.sqrt((2.*ll+1.)/(4.*np.pi)*sp.misc.factorial(ll-np.abs(mm))/sp.misc.factorial(ll+np.abs(mm)))
-    base = (prefactor*(-1)**mm)*known_legendre[(ll,np.abs(mm))]
-    if mm==0:
-        return base
-    elif mm>0:
-        return base*np.sqrt(2.)*np.cos(mm*phi)
-    else:
-        return base*np.sqrt(2.)*np.sin(np.abs(mm)*phi)
-
-def get_Y_r_dict(l_max,thetas,phis):
-    ytable,ls,ms = get_Y_r_table(l_max,thetas,phis)
-    ydict = {}
-    for itr in xrange(0,ls.size):
-        ydict[(ls[itr],ms[itr])] = ytable[itr]
-    return ydict
-def get_Y_r_table(l_max,thetas,phis):
-    n_tot = (l_max+1)**2
-
-    ls = np.zeros(n_tot)
-    ms = np.zeros(n_tot)
-    Y_lms = np.zeros((n_tot,thetas.size))
-
-    lm_dict = {}
-    itr = 0
-    for ll in xrange(0,l_max+1):
-        for mm in xrange(-ll,ll+1):
-            ms[itr] = mm
-            ls[itr] = ll
-            lm_dict[(ll,mm)] = itr
-            itr+=1
-
-    cos_theta = np.cos(thetas)
-    sin_theta = np.sin(thetas)
-    abs_sin_theta = np.abs(sin_theta)
-
-
-    sin_phi_m = np.zeros((l_max+1,thetas.size))
-    cos_phi_m = np.zeros((l_max+1,thetas.size))
-    for mm in xrange(0,l_max+1):
-        sin_phi_m[mm] = np.sin(mm*phis)
-        cos_phi_m[mm] = np.cos(mm*phis)
-
-        factorials = sp.misc.factorial(np.arange(0,2*l_max+1))
-
-    known_legendre = {(0,0):(np.zeros(thetas.size)+1.),(1,0):cos_theta,(1,1):-abs_sin_theta}
-
-    for ll in xrange(0,l_max+1):
-        if ll>=2:
-            known_legendre[(ll,ll-1)] = (2.*ll-1.)*cos_theta*known_legendre[(ll-1,ll-1)]
-            known_legendre[(ll,ll)] = -(2.*ll-1.)*abs_sin_theta*known_legendre[(ll-1,ll-1)]
-        for mm in xrange(0,ll+1):
-            if mm<=ll-2:
-                known_legendre[(ll,mm)] = ((2.*ll-1.)/(ll-mm)*cos_theta*known_legendre[(ll-1,mm)]-(ll+mm-1.)/(ll-mm)*known_legendre[(ll-2,mm)])
-
-            prefactor = np.sqrt((2.*ll+1.)/(4.*np.pi)*factorials[ll-mm]/factorials[ll+mm])
-            base = known_legendre[(ll,mm)]
-            if mm==0:
-                Y_lms[lm_dict[(ll,mm)]] = prefactor*base
-            else:
-                #Note: check condon shortley phase convention
-
-                Y_lms[lm_dict[(ll,mm)]] = (-1)**(mm)*np.sqrt(2.)*prefactor*base*cos_phi_m[mm]
-                Y_lms[lm_dict[(ll,-mm)]] = (-1)**(mm)*np.sqrt(2.)*prefactor*base*sin_phi_m[mm]
-            if mm<=ll-2:
-                known_legendre.pop((ll-2,mm),None)
-
-
-    return Y_lms,ls,ms
+#def Y_r_2(ll,mm,theta,phi,known_legendre):
+#    prefactor = np.sqrt((2.*ll+1.)/(4.*np.pi)*sp.misc.factorial(ll-np.abs(mm))/sp.misc.factorial(ll+np.abs(mm)))
+#    base = (prefactor*(-1)**mm)*known_legendre[(ll,np.abs(mm))]
+#    if mm==0:
+#        return base
+#    elif mm>0:
+#        return base*np.sqrt(2.)*np.cos(mm*phi)
+#    else:
+#        return base*np.sqrt(2.)*np.sin(np.abs(mm)*phi)
+#
+#def get_Y_r_dict(l_max,thetas,phis):
+#    ytable,ls,ms = get_Y_r_table(l_max,thetas,phis)
+#    ydict = {}
+#    for itr in xrange(0,ls.size):
+#        ydict[(ls[itr],ms[itr])] = ytable[itr]
+#    return ydict
+#def get_Y_r_table(l_max,thetas,phis):
+#    n_tot = (l_max+1)**2
+#
+#    ls = np.zeros(n_tot)
+#    ms = np.zeros(n_tot)
+#    Y_lms = np.zeros((n_tot,thetas.size))
+#
+#    lm_dict = {}
+#    itr = 0
+#    for ll in xrange(0,l_max+1):
+#        for mm in xrange(-ll,ll+1):
+#            ms[itr] = mm
+#            ls[itr] = ll
+#            lm_dict[(ll,mm)] = itr
+#            itr+=1
+#
+#    cos_theta = np.cos(thetas)
+#    sin_theta = np.sin(thetas)
+#    abs_sin_theta = np.abs(sin_theta)
+#
+#
+#    sin_phi_m = np.zeros((l_max+1,thetas.size))
+#    cos_phi_m = np.zeros((l_max+1,thetas.size))
+#    for mm in xrange(0,l_max+1):
+#        sin_phi_m[mm] = np.sin(mm*phis)
+#        cos_phi_m[mm] = np.cos(mm*phis)
+#
+#        factorials = sp.misc.factorial(np.arange(0,2*l_max+1))
+#
+#    known_legendre = {(0,0):(np.zeros(thetas.size)+1.),(1,0):cos_theta,(1,1):-abs_sin_theta}
+#
+#    for ll in xrange(0,l_max+1):
+#        if ll>=2:
+#            known_legendre[(ll,ll-1)] = (2.*ll-1.)*cos_theta*known_legendre[(ll-1,ll-1)]
+#            known_legendre[(ll,ll)] = -(2.*ll-1.)*abs_sin_theta*known_legendre[(ll-1,ll-1)]
+#            #print ll,abs_sin_theta,known_legendre[(ll,ll)],known_legendre[(ll-1,ll-1)],known_legendre[(ll-1,ll-2)]
+#        for mm in xrange(0,ll+1):
+#            if mm<=ll-2:
+#                known_legendre[(ll,mm)] = ((2.*ll-1.)/(ll-mm)*cos_theta*known_legendre[(ll-1,mm)]-(ll+mm-1.)/(ll-mm)*known_legendre[(ll-2,mm)])
+#            prefactor = np.sqrt((2.*ll+1.)/(4.*np.pi)*factorials[ll-mm]/factorials[ll+mm])
+#            #if mm==ll:
+#            #    print prefactor
+#            base = known_legendre[(ll,mm)]
+#            if mm==0:
+#                Y_lms[lm_dict[(ll,mm)]] = prefactor*base
+#            else:
+#                #Note: check condon shortley phase convention
+#
+#                Y_lms[lm_dict[(ll,mm)]] = (-1)**(mm)*np.sqrt(2.)*prefactor*base*cos_phi_m[mm]
+#                Y_lms[lm_dict[(ll,-mm)]] = (-1)**(mm)*np.sqrt(2.)*prefactor*base*sin_phi_m[mm]
+#            if mm<=ll-2:
+#                known_legendre.pop((ll-2,mm),None)
+#
+#
+#    return Y_lms,ls,ms
 
 
 

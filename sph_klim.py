@@ -30,7 +30,7 @@ class SphBasisK(LWBasis):
                 l_ceil: maximum l value allowed independent of k_cut, mainly because limited table of bessel function zeros available
                 important! no little h in any of the calculations
         """
-        print "sph_klim: begin init basis id: ",id(self)
+        print "sph_klim: begin init basis id: "+str(id(self))+" with r_max="+str(r_max)+" k_cut="+str(k_cut)
         LWBasis.__init__(self,C)
         #TODO check correct power spectrum
         self.r_max = r_max
@@ -129,7 +129,7 @@ class SphBasisK(LWBasis):
 
         for ll in xrange(0,self.n_l):
             r_I = lambda y,x: x**2*j_n(ll,x)
-            result_ll = odeint(r_I,0.,x_grid,atol=10e-20,rtol=10e-10)[:,0]
+            result_ll = odeint(r_I,0.,x_grid,atol=1e-20,rtol=1e-13)[:,0]
             self.rints[ll] = InterpolatedUnivariateSpline(x_grid,result_ll,ext=2,k=3)
 
         t2 = time()
@@ -139,6 +139,10 @@ class SphBasisK(LWBasis):
     def get_size(self):
         """Get number of basis elements"""
         return self.C_size
+
+    def get_n_l(self):
+        """get the number of l values"""
+        return self.n_l
 
     def get_covar_array(self):
         result = np.zeros((self.C_id.shape[0],self.C_id.shape[0]),order='F')
@@ -184,6 +188,34 @@ class SphBasisK(LWBasis):
             return fm.FisherMatrix(self.get_cov_cholesky_array(),input_type=fm.REP_CHOL,initial_state=fm.REP_CHOL,silent=True)
         else:
             return fm.FisherMatrix(self.get_covar_array(),input_type=fm.REP_COVAR,initial_state=initial_state,silent=True)
+
+    def get_variance(self,geo,k_cut_in=None):
+        """get the variance  (v.T).C_lw.v where v=\frac{\partial\bar{\delta}}{\delta_\alpha} in the given geometry"""
+        v = np.array([self.D_delta_bar_D_delta_alpha(geo,tomography=True)[0]]).T
+        variance = 0.
+
+        if k_cut_in is None:
+            k_cut_use = self.k_cut
+        else:
+            k_cut_use = k_cut_in
+
+        itr_ll = 0
+        for ll in xrange(0,self.n_l):
+            n_k = self.C_compact[ll].shape[0]
+            res = self.C_compact[ll]
+            n_break = n_k
+            for k_itr in xrange(0,n_k):
+                if self.C_id[itr_ll+k_itr,1]>k_cut_use:
+                    n_break = k_itr
+                    break
+            #if n_break == 0:
+            #    continue
+            for m_itr in xrange(0,2*ll+1):
+                variance+=np.dot(v[itr_ll:itr_ll+n_break].T,np.dot(res[0:n_break,0:n_break],v[itr_ll:itr_ll+n_break]))
+                itr_ll+=n_k
+            res = None
+        return variance
+
 
     def k_LW(self):
         """return the long-wavelength wave vector k"""
@@ -315,7 +347,7 @@ def R_int(r_range,k,ll):
     def integrand(r):
         return r**2*j_n(ll,r*k)
     #TODO can be done with trapz
-    I = quad(integrand,r_range[0],r_range[1],epsabs=10e-20,epsrel=10-7)[0]
+    I = quad(integrand,r_range[0],r_range[1],epsabs=10e-20,epsrel=1e-10)[0]
     #TODO check if eps logic needed
     return I
 

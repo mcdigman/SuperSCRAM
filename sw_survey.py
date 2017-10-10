@@ -104,7 +104,7 @@ class SWSurvey(object):
         for i in xrange(0,self.get_N_O_I()):
             n2 = 0
             for j in xrange(0,self.get_N_O_I()):
-                cov = SWCovMat(self.observables[i],self.observables[j])
+                cov = SWCovMat(self.observables[i],self.observables[j],silent=True)
                 #could exploit/enforce all symmetries of gaussian covariance matrix, ie C^{ABCD}=C^{BACD}=C^{BADC}=C^{ABDC} if time consumption of this function is ever important
                 cov_mats[0,n1:n1+ds[i],n2:n2+ds[j]] = cov.get_gaussian_covar_array()
                 cov_mats[0,n2:n2+ds[j],n1:n1+ds[i]] = cov_mats[0,n1:n1+ds[i],n2:n2+ds[j]]

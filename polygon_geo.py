@@ -5,10 +5,11 @@ import scipy as sp
 import spherical_geometry.vector as sgv
 from spherical_geometry.polygon import SphericalPolygon
 import spherical_geometry.great_circle_arc as gca
-from polygon_pixel_geo import get_Y_r_dict
+#from polygon_pixel_geo import get_Y_r_dict
+from alm_utils_mpmath import get_Y_r_dict,get_Y_r_dict_central 
+import alm_utils as au
 from geo import Geo
 import defaults
-import alm_utils as au
 #get an exact spherical polygon geo
 class PolygonGeo(Geo):
     #TODO check order of thetas,phis
@@ -128,56 +129,41 @@ class PolygonGeo(Geo):
 
     #TODO test: probably bug somehow is giving float to get_Y_r_dict
     def expand_alm_table(self,l_max):
-        ls = np.arange(self._l_max+1,l_max+1)
+        ls = np.arange(np.int(self._l_max)+1,np.int(l_max)+1)
         n_l = ls.size
         d_alm_table1 = np.zeros(n_l,dtype=object)
         Y_r_dict = get_Y_r_dict(np.max(ls),np.zeros(1)+np.pi/2.,np.zeros(1))
-        self.factorials = sp.misc.factorial(np.arange(0,2*np.max(ls)+1))
-        #coeff_table = {(1,0):1,(1,1):0}
-#            for ll in xrange(1,np.max(ls)):
-#                #TODO use other legendre function to be safe
-#                coeff_table[(ll+1,0)] = assoc_legendre_p(ll,0,0.)
-#                coeff_table[(ll+1,ll+1)] = 0.
-#                for mm in xrange(1,ll+1):
-#                    if mm<ll:
-#                        if ll==25 and mm==3:
-#                            print coeff_table[(ll,mm+1)]
-#                            print coeff_table[(ll,mm-1)]
-#                        #    sys.exit()
-#                        coeff_table[(ll+1,mm)] = -1./(2.*mm)*(np.sqrt((ll-mm+1)*(ll-mm))*coeff_table[(ll,mm+1)]+(ll+mm-1.)*np.sqrt((ll+mm)/(ll+mm+1.))*coeff_table[(ll,mm-1)])
-#                    else:
-#                        coeff_table[(ll+1,mm)] = -1./(2.*mm)*((ll+mm-1.)*np.sqrt((ll+mm)/(ll+mm+1.))*coeff_table[(ll,mm-1)])
-               # sys.exit()
+        #Y_r(l,m,pi/2.,0.) has an analytic solution, use it
+        #Y_r_dict = get_Y_r_dict_central(l_max)
+        #self.factorials = sp.misc.factorial(np.arange(0,2*np.max(ls)+1))
         for l_itr in xrange(0,ls.size):
             ll=ls[l_itr]
             d_alm_table1[l_itr] = np.zeros((2*ll+1,self.n_v))
             for mm in xrange(0,ll+1):
-                #TODO lpmv may be introducing error
-                #if np.abs(coeff_table[(ll,mm)]-np.sqrt(self.factorials[ll-mm]/self.factorials[ll+mm])*spp.lpmv(mm,ll-1,0.))/(np.sqrt(self.factorials[ll-mm]/self.factorials[ll+mm])*spp.lpmv(mm,ll-1,0.))>1.0:
-                #    print ll,mm
-                #    print coeff_table[(ll,mm)]
-                #    sys.exit()
-                #if not np.isclose(coeff_table[ll,mm],np.sqrt(self.factorials[ll-mm]/self.factorials[ll+mm])*spp.lpmv(mm,ll-1,0.)):
-                #    print ll,mm
-                #    print coeff_table[ll,mm]
-                #prefactor = (ll+mm)/(ll*(ll+1.))*np.sqrt((2.*ll+1.)/(4.*np.pi))*coeff_table[(ll,mm)]#self.factorials[ll-mm]/self.factorials[ll+mm])*spp.lpmv(mm,ll-1,0.)
-                #if ll-1>=mm:
-                #    prefactor = (ll+mm)/(ll*(ll+1.))*np.sqrt((2.*ll+1.)/(4.*np.pi)*self.factorials[ll-mm]/self.factorials[ll+mm])*assoc_legendre_p(ll-1,mm,0.)
-                #else:
-                #prefactor = (ll+mm)/(ll*(ll+1.))*np.sqrt((2.*ll+1.)/(4.*np.pi)*self.factorials[ll-mm]/self.factorials[ll+mm])*spp.lpmv(mm,ll-1,0.)
                 if mm>ll-1:
                     prefactor = 0.
                 else:
-                    prefactor = (-1)**mm*np.sqrt((4.*ll**2-1.)*(ll-mm)*(ll+mm)/2.)/(ll*(-1+ll+2*ll**2))*Y_r_dict[(ll-1,mm)]
+                    #if ll-mm is odd or mm<0, then Y_r(ll,mm,pi/2,0)=0 anayltically, enforce
+                    if mm<0 or  (mm-ll-1) % 2 == 1:
+                        prefactor = 0.
+                    else:
+                        prefactor = (-1)**mm*np.sqrt((4.*ll**2-1.)*(ll-mm)*(ll+mm)/2.)/(ll*(-1+ll+2*ll**2))*Y_r_dict[(ll-1,mm)]
                 #else:
                 #    prefactor=0
-                if np.isnan(prefactor):
+                if not np.all(np.isfinite(prefactor)):
+                    #print ll,mm,Y_r_dict[(ll-1,mm)]
                     raise ValueError('prefactor is nan at l='+str(ll)+',m='+str(mm))
                 if mm==0:
                     d_alm_table1[l_itr][ll+mm] = np.sqrt(2.)*prefactor*self.betas
                 else:
                     d_alm_table1[l_itr][ll+mm] = prefactor*np.sqrt(2.)/mm*np.sin(self.betas*mm)
                     d_alm_table1[l_itr][ll-mm] = prefactor*np.sqrt(2.)/mm*(1.-np.cos(self.betas*mm))
+                #if (ll-mm) % 2 == 1:
+                    #d_alm_table1[l_itr][ll+mm]*= 0.
+                    #d_alm_table1[l_itr][ll-mm]*= 0.
+            #if l_itr % 2 ==1:
+            #    print "zerocand",d_alm_table1[l_itr] 
+                #d_alm_table1[l_itr]=np.zeros((2*ll+1,self.n_v)) 
 
         d_alm_table2 = au.rot_alm_z(d_alm_table1,self.omega_alphas,ls)
         d_alm_table3 = au.rot_alm_x(d_alm_table2,self.theta_alphas,ls,n_double=self.n_double)

@@ -1,5 +1,7 @@
 import numpy as np
-from polygon_pixel_geo import PolygonPixelGeo,reconstruct_from_alm
+#from polygon_pixel_geo import PolygonPixelGeo,reconstruct_from_alm
+from polygon_pixel_geo import PolygonPixelGeo
+from alm_utils import reconstruct_from_alm
 from geo import RectGeo
 import defaults
 from cosmopie import CosmoPie
@@ -358,8 +360,8 @@ def test_rotational_suite(geo_input):
 
 
 if __name__=='__main__':
-    pytest.cmdline.main(['polygon_geo_tests.py'])
-    do_plot = False
+    #pytest.cmdline.main(['polygon_geo_tests.py'])
+    do_plot = True
     if do_plot:
         params = get_param_set(np.array([0,0]))
         gts = GeoTestSet(params)

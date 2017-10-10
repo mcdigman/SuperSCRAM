@@ -1,13 +1,13 @@
 """some utility functions for real spherical harmonic a_lm computations, used by PolygonGeo"""
 import numpy as np
 import scipy as sp
-
+from mpmath import mp
 import defaults
 
+mp.dps = 200
 
 def rot_alm_z(d_alm_table_in,angles,ls):
     """rotate alms around z axis by angle gamma_alpha"""
-    print "alm_utils: rot z"
     d_alm_table_out = np.zeros_like(d_alm_table_in)
     n_v = angles.size
     for l_itr in xrange(0,ls.size):
@@ -22,7 +22,6 @@ def rot_alm_z(d_alm_table_in,angles,ls):
 
 def rot_alm_x(d_alm_table_in,angles,ls,n_double=defaults.polygon_params['n_double'],debug=True):
     """rotate alms around x axis by angle theta_alpha"""
-    print "alm_utils: rot x"
     d_alm_table_out=np.zeros_like(d_alm_table_in)
     n_v = angles.size
     for l_itr in xrange(0,ls.size):
@@ -48,7 +47,6 @@ def rot_alm_x(d_alm_table_in,angles,ls,n_double=defaults.polygon_params['n_doubl
         #m_mat_i = np.conjugate(m_mat.T)
         #infinitesimal form of El(epsilon) (must be multiplied by epsilon)
         el_mat_real = np.real(np.dot(np.dot(np.conjugate(m_mat.T),el_mat_complex),m_mat))
-        print ll
         if debug:
             #E_l matrices should be antisymmetric
             assert(np.all(el_mat_complex==-el_mat_complex.conjugate().T))
@@ -56,27 +54,27 @@ def rot_alm_x(d_alm_table_in,angles,ls,n_double=defaults.polygon_params['n_doubl
             #check m_mat is actually unitary
             assert(np.allclose(np.identity(m_mat.shape[0]),np.dot(np.conjugate(m_mat.T),m_mat)))
             #TODO add assertion  for correct sparseness structure
-        print ll
 
         for itr in xrange(0,n_v):
             epsilon = angles[itr]/2.**n_double
             el_mat = epsilon*el_mat_real.copy()
             #use angle doubling fomula to get to correct angle
             for itr2 in xrange(0,n_double):
-                el_mat = 2.*el_mat+np.dot(el_mat,el_mat)
+                el_mat = np.asfortranarray(2.*el_mat+np.dot(el_mat,el_mat))
             d_mat = el_mat+np.identity(el_mat.shape[0])
             d_alm_table_out[l_itr][:,itr] = np.dot(d_mat,d_alm_table_in[l_itr][:,itr])
     return d_alm_table_out
 
-#may be some loss of precision; fails to identify possible exact 0s
-def reconstruct_from_alm(l_max,thetas,phis,alms):
-    if 2*l_max>170:
-        raise ValueError('Scipy factorial will fail for n!>170 because 171!>2^1024, need to use arbitrary precision or implement asymptotic form')
-    n_tot = (l_max+1)**2
 
-    ls = np.zeros(n_tot,dtype=np.int)
-    ms = np.zeros(n_tot,dtype=np.int)
-    reconstructed = np.zeros(thetas.size)
+def reconstruct_from_alm(l_max,thetas,phis,alms):
+    n_tot = (l_max+1)**2
+    phis = mp.matrix(phis)
+    thetas = mp.matrix(thetas)
+
+    ls = np.zeros(n_tot)
+    ms = np.zeros(n_tot)
+
+    reconstructed = mp.zeros(thetas.rows,1)
 
     lm_dict = {}
     itr = 0
@@ -87,47 +85,42 @@ def reconstruct_from_alm(l_max,thetas,phis,alms):
             lm_dict[(ll,mm)] = itr
             itr+=1
 
-    cos_theta = np.cos(thetas)
-    sin_theta = np.sin(thetas)
-    abs_sin_theta = np.abs(sin_theta)
+    sin_theta = mp.matrix([mp.sin(val) for val in thetas])
+    cos_theta = mp.matrix([mp.cos(val) for val in thetas])
+    abs_sin_theta = mp.matrix([mp.fabs(val) for val in sin_theta])
 
 
-    sin_phi_m = np.zeros((l_max+1,thetas.size))
-    cos_phi_m = np.zeros((l_max+1,thetas.size))
+    sin_phi_m = mp.zeros(l_max+1,phis.rows)
+    cos_phi_m = mp.zeros(l_max+1,phis.rows)
     for mm in xrange(0,l_max+1):
-        sin_phi_m[mm] = np.sin(mm*phis)
-        cos_phi_m[mm] = np.cos(mm*phis)
+        sin_phi_m[mm,:] = mp.matrix([mp.sin(mm*val) for val in phis])[:,0].T
+        cos_phi_m[mm,:] = mp.matrix([mp.cos(mm*val) for val in phis])[:,0].T
 
-    factorials = sp.misc.factorial(np.arange(0,2*l_max+1))
+    factorials = mp.matrix([mp.factorial(val) for val in np.arange(0,2*l_max+1)])
+    known_legendre = {(0,0):(mp.zeros(thetas.rows,1)+1.),(1,0):cos_theta,(1,1):-abs_sin_theta}
 
-    known_legendre = {(0,0):(np.zeros(thetas.size)+1.),(1,0):cos_theta,(1,1):-abs_sin_theta}
-
-    for ll in xrange(0,l_max+1):
+    for ll in np.arange(0,l_max+1):
         if ll>=2:
-            known_legendre[(ll,ll-1)] = (2.*ll-1.)*cos_theta*known_legendre[(ll-1,ll-1)]
-            known_legendre[(ll,ll)] = -(2.*ll-1.)*abs_sin_theta*known_legendre[(ll-1,ll-1)]
-        for mm in xrange(0,ll+1):
+            known_legendre[(ll,ll-1)] = mp.matrix([(2.*ll-1.)*cos_theta[i,0]*known_legendre[(ll-1,ll-1)][i,0] for i in xrange(0,thetas.rows)])
+            known_legendre[(ll,ll)] = mp.matrix([-(2.*ll-1.)*abs_sin_theta[i,0]*known_legendre[(ll-1,ll-1)][i,0] for i in xrange(0,thetas.rows)])
+        for mm in np.arange(0,ll+1):
             if mm<=ll-2:
-                known_legendre[(ll,mm)] = ((2.*ll-1.)/(ll-mm)*cos_theta*known_legendre[(ll-1,mm)]-(ll+mm-1.)/(ll-mm)*known_legendre[(ll-2,mm)])
+                known_legendre[(ll,mm)] = mp.matrix([((2.*ll-1.)/(ll-mm)*cos_theta[i,0]*known_legendre[(ll-1,mm)][i,0]-(ll+mm-1.)/(ll-mm)*known_legendre[(ll-2,mm)][i,0]) for i in xrange(0,thetas.rows)])
+            prefactor = mp.sqrt((2.*ll+1.)/(4.*mp.pi)*factorials[ll-mm]/factorials[ll+mm])
 
-            prefactor = np.sqrt((2.*ll+1.)/(4.*np.pi)*factorials[ll-mm]/factorials[ll+mm])
             base = known_legendre[(ll,mm)]
-            if not np.all(np.isfinite(prefactor)):
-                raise ValueError('Value evaluates to nan, l_max='+str(l_max)+' is likely too large')
-            if not np.all(np.isfinite(base)):
-                raise ValueError('Value evaluates to nan, l_max='+str(l_max)+' is likely too large')
             if mm==0:
-                reconstructed += prefactor*alms[(ll,mm)]*base
+                for i in xrange(0,thetas.rows):
+                    reconstructed[i,:]+= prefactor*alms[(ll,mm)]*base[i,:]
             else:
                 #Note: check condon shortley phase convention
-                reconstructed+= (-1)**(mm)*np.sqrt(2.)*alms[(ll,mm)]*prefactor*base*cos_phi_m[mm]
-                reconstructed+= (-1)**(mm)*np.sqrt(2.)*alms[(ll,-mm)]*prefactor*base*sin_phi_m[mm]
-        if mm<=ll-2:
-            known_legendre.pop((ll-2,mm),None)
+                for i in xrange(0,thetas.rows):
+                    reconstructed[i,:] =reconstructed[i,:]+((-1)**(mm)*mp.sqrt(2.)*alms[(ll,mm)]*prefactor*base[i,:]*cos_phi_m[mm,i]) 
+                    reconstructed[i,:] =reconstructed[i,:]+((-1)**(mm)*mp.sqrt(2.)*alms[(ll,mm)]*prefactor*base[i,:]*sin_phi_m[mm,i]) 
+            if mm<=ll-2:
+                known_legendre.pop((ll-2,mm),None)
+    return np.array(reconstructed.tolist(),dtype=np.double)[:,0]
 
-    return reconstructed
-
-#TODO split this stuff into another file
 #alternate way of computing Y_r from the way in sph_functions
 def Y_r_2(ll,mm,theta,phi,known_legendre):
     prefactor = np.sqrt((2.*ll+1.)/(4.*np.pi)*sp.misc.factorial(ll-np.abs(mm))/sp.misc.factorial(ll+np.abs(mm)))
@@ -146,38 +139,31 @@ def get_Y_r_dict(l_max,thetas,phis):
         ydict[(ls[itr],ms[itr])] = ytable[itr]
     return ydict
 
-#use analytic formula for Y_r(l,m,pi/2,0)
 def get_Y_r_dict_central(l_max):
-    if 2*l_max>170:
-        raise ValueError('Scipy factorial will fail for n!>170 because 171!>2^1024, need to use arbitrary precision or implement asymptotic form')
-#    n_tot = (l_max+1)**2
-#    ls = np.zeros(n_tot)
-#    ms = np.zeros(n_tot)
-    Y_lms = {(0,0):1./np.sqrt(4.*np.pi)}
-    factorials = sp.misc.factorial(np.arange(0,2*l_max+1))
+    Y_lms = {(0,0):1./np.sqrt(4.*np.pi)}    
+    factorials = mp.matrix([mp.factorial(val) for val in np.arange(0,2*l_max+1)])
     for ll in xrange(1,l_max+1):
         for mm in xrange(-l_max,0):
             Y_lms[(ll,mm)] = 0.
         for nn in xrange(0,np.int(ll/2.)+1):
             Y_lms[(ll,ll-2*nn-1)] = 0.
-            if 2*nn==ll:
-                Y_lms[(ll,ll-2*nn)] = (-1)**(nn+ll)*np.sqrt((2.*ll+1.)/(4.*np.pi)*(factorials[2*nn]/factorials[2*ll-2*nn]))*2**-ll*(factorials[(2*ll-2*nn)]/factorials[ll-nn]*1./factorials[nn])
+            if 2*nn ==ll:
+                Y_lms[(ll,ll-2*nn)] = np.double((-1)**(nn)*np.sqrt((2.*ll+1.)/(4.*mp.pi)*(factorials[2*nn]/factorials[2*ll-2*nn]))*2**-ll*(factorials[(2*ll-2*nn)]/factorials[ll-nn]*1./factorials[nn]))
             else:
-                Y_lms[(ll,ll-2*nn)] = (-1)**(nn+ll)*np.sqrt((2.*ll+1.)/(2.*np.pi)*(factorials[2*nn]/factorials[2*ll-2*nn]))*2**-ll*(factorials[(2*ll-2*nn)]/factorials[ll-nn]*1./factorials[nn])
-
+                Y_lms[(ll,ll-2*nn)] = np.double((-1)**(nn)*np.sqrt((2.*ll+1.)/(2.*mp.pi)*(factorials[2*nn]/factorials[2*ll-2*nn]))*2**-ll*(factorials[(2*ll-2*nn)]/factorials[ll-nn]*1./factorials[nn]))
             if not np.isfinite(Y_lms[(ll,ll-2*nn)]):
                 raise ValueError('result not finite at l='+str(ll)+' m='+str(ll-2*nn)+' try decreasing l_max')
-
     return Y_lms
 
+
 def get_Y_r_table(l_max,thetas,phis):
-    if 2*l_max>170:
-        raise ValueError('Scipy factorial will fail for n!>170 because 171!>2^1024, need to use arbitrary precision or implement asymptotic form')
     n_tot = (l_max+1)**2
+    phis = mp.matrix(phis)
+    thetas = mp.matrix(thetas)
 
     ls = np.zeros(n_tot)
     ms = np.zeros(n_tot)
-    Y_lms = np.zeros((n_tot,thetas.size))
+    Y_lms = np.zeros((n_tot,thetas.rows))
 
     lm_dict = {}
     itr = 0
@@ -188,48 +174,37 @@ def get_Y_r_table(l_max,thetas,phis):
             lm_dict[(ll,mm)] = itr
             itr+=1
 
-    cos_theta = np.cos(thetas)
-    sin_theta = np.sin(thetas)
-    abs_sin_theta = np.abs(sin_theta)
+    sin_theta = mp.matrix([mp.sin(val) for val in thetas])
+    cos_theta = mp.matrix([mp.cos(val) for val in thetas])
+    abs_sin_theta = mp.matrix([mp.fabs(val) for val in sin_theta])
 
 
-    sin_phi_m = np.zeros((l_max+1,thetas.size))
-    cos_phi_m = np.zeros((l_max+1,thetas.size))
+    sin_phi_m = mp.zeros(l_max+1,phis.rows)
+    cos_phi_m = mp.zeros(l_max+1,phis.rows)
     for mm in xrange(0,l_max+1):
-        sin_phi_m[mm] = np.sin(mm*phis)
-        cos_phi_m[mm] = np.cos(mm*phis)
+        sin_phi_m[mm,:] = mp.matrix([mp.sin(mm*val) for val in phis])[:,0].T
+        cos_phi_m[mm,:] = mp.matrix([mp.cos(mm*val) for val in phis])[:,0].T
 
-        factorials = sp.misc.factorial(np.arange(0,2*l_max+1))
+    factorials = mp.matrix([mp.factorial(val) for val in np.arange(0,2*l_max+1)])
+    known_legendre = {(0,0):(mp.zeros(thetas.rows,1)+1.),(1,0):cos_theta,(1,1):-abs_sin_theta}
 
-    known_legendre = {(0,0):(np.zeros(thetas.size)+1.),(1,0):cos_theta,(1,1):-abs_sin_theta}
-
-    for ll in xrange(0,l_max+1):
+    for ll in np.arange(0,l_max+1):
         if ll>=2:
-            known_legendre[(ll,ll-1)] = (2.*ll-1.)*cos_theta*known_legendre[(ll-1,ll-1)]
-            known_legendre[(ll,ll)] = -(2.*ll-1.)*abs_sin_theta*known_legendre[(ll-1,ll-1)]
-            #print ll,abs_sin_theta,known_legendre[(ll,ll)],known_legendre[(ll-1,ll-1)],known_legendre[(ll-1,ll-2)]
-        for mm in xrange(0,ll+1):
+            known_legendre[(ll,ll-1)] = mp.matrix([(2.*ll-1.)*cos_theta[i,0]*known_legendre[(ll-1,ll-1)][i,0] for i in xrange(0,thetas.rows)])
+            known_legendre[(ll,ll)] = mp.matrix([-(2.*ll-1.)*abs_sin_theta[i,0]*known_legendre[(ll-1,ll-1)][i,0] for i in xrange(0,thetas.rows)])
+        for mm in np.arange(0,ll+1):
             if mm<=ll-2:
-                known_legendre[(ll,mm)] = ((2.*ll-1.)/(ll-mm)*cos_theta*known_legendre[(ll-1,mm)]-(ll+mm-1.)/(ll-mm)*known_legendre[(ll-2,mm)])
-            prefactor = np.sqrt((2.*ll+1.)/(4.*np.pi)*factorials[ll-mm]/factorials[ll+mm])
-            #if mm==ll:
-            #    print prefactor
+                known_legendre[(ll,mm)] = mp.matrix([((2.*ll-1.)/(ll-mm)*cos_theta[i,0]*known_legendre[(ll-1,mm)][i,0]-(ll+mm-1.)/(ll-mm)*known_legendre[(ll-2,mm)][i,0]) for i in xrange(0,thetas.rows)])
+            prefactor = mp.sqrt((2.*ll+1.)/(4.*mp.pi)*factorials[ll-mm]/factorials[ll+mm])
+
             base = known_legendre[(ll,mm)]
-
-            if not np.all(np.isfinite(prefactor)):
-                raise ValueError('Value not finite, l_max='+str(l_max)+' is likely too large for numerical precision')
-            if not np.all(np.isfinite(base)):
-                raise ValueError('Value not finite, l_max='+str(l_max)+' is likely too large for numerical precision')
-
             if mm==0:
-                Y_lms[lm_dict[(ll,mm)]] = prefactor*base
+                for i in xrange(0,thetas.rows):
+                    Y_lms[lm_dict[(ll,mm)]][i] = np.double(prefactor*base[i,:]) 
             else:
-                #Note: check condon shortley phase convention
-
-                Y_lms[lm_dict[(ll,mm)]] = (-1)**(mm)*np.sqrt(2.)*prefactor*base*cos_phi_m[mm]
-                Y_lms[lm_dict[(ll,-mm)]] = (-1)**(mm)*np.sqrt(2.)*prefactor*base*sin_phi_m[mm]
+                for i in xrange(0,thetas.rows):
+                    Y_lms[lm_dict[(ll,mm)]][i] = np.double(((-1)**(mm)*mp.sqrt(2.)*prefactor*base*cos_phi_m[mm]))
+                    Y_lms[lm_dict[(ll,-mm)]][i] = np.double(((-1)**(mm)*mp.sqrt(2.)*prefactor*base*sin_phi_m[mm]))
             if mm<=ll-2:
                 known_legendre.pop((ll-2,mm),None)
-
-
     return Y_lms,ls,ms

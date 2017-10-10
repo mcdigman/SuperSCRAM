@@ -61,12 +61,12 @@ class SuperSurvey:
 
         #TODO support multiple sw surveys with MultiFisher
         de_prior_params = defaults.prior_fisher_params
-        self.multi_f = mf.MultiFisher(basis,surveys_sw[0],surveys_lw,prior_params=de_prior_params)
+        self.multi_f = mf.MultiFisher(basis,surveys_sw[0],surveys_lw,prior_params=de_prior_params,needs_a=self.get_a,do_mit=self.do_mitigated)
 
-        self.f_set_nopriors = self.multi_f.get_fisher_set(include_priors=False)
-        self.f_set = self.multi_f.get_fisher_set(include_priors=True)
-        self.eig_set = self.multi_f.get_eig_set(self.f_set_nopriors)
-        self.eig_set_ssc = self.multi_f.get_eig_set(self.f_set_nopriors,ssc_metric=True)
+#        self.f_set_nopriors = self.multi_f.get_fisher_set(include_priors=False)
+#        self.f_set = self.multi_f.get_fisher_set(include_priors=True)
+#        self.eig_set = self.multi_f.get_eig_set(self.f_set_nopriors)
+#        self.eig_set_ssc = self.multi_f.get_eig_set(self.f_set_nopriors,ssc_metric=True)
         #TODO get this before changing shape in multi_fisher
         if self.get_a:
             self.a_vals = self.multi_f.get_a_lw()
@@ -338,11 +338,11 @@ if __name__=="__main__":
 
     geos = np.array([geo1,geo2])
     #geos = np.array([geo1])
-    l_lw=np.arange(0,30)
-    n_zeros=49
-    k_cut = 0.005
+    #l_lw=np.arange(0,30)
+    #n_zeros=49
+    #k_cut = 0.005
     #k_cut = 0.016
-    #k_cut = 0.019
+    k_cut = 0.019
     #about biggest possible, take 414 sec
     #k_cut = 0.0214
     #k_cut = 0.03
@@ -354,7 +354,7 @@ if __name__=="__main__":
 
     print 'main: this is r_max: '+str(r_max)
     #TODO do not need basis as an argument
-    SS=SuperSurvey(surveys_sw, surveys_lw,basis,C=C,get_a=False,do_unmitigated=True,do_mitigated=True)
+    SS=SuperSurvey(surveys_sw, surveys_lw,basis,C=C,get_a=True,do_unmitigated=True,do_mitigated=True)
 
     t2 = time()
     print "main: total run time "+str(t2-t1)+" s"

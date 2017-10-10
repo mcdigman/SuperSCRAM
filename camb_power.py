@@ -5,6 +5,7 @@ import camb
 #TODO may want to investigate possible halofit discrepancy
 #TODO maybe don't let camb_params default
 #TODO add accuracy parameter, for either set_accuracy or k_per_logint in set_matter_power
+#TODO set pivot_scalar to be a parameter
 #Note force_sigma8 forces sigma8_nl(z) to be the sigma8 in the cosmology, not sigma8_lin(z=0.), which may not be ideal behavior
 def camb_pow(cosmology,zbar=0.,camb_params=None,nonlinear_model=camb.model.NonLinear_none):
     """get camb linear power spectrum
@@ -19,9 +20,9 @@ def camb_pow(cosmology,zbar=0.,camb_params=None,nonlinear_model=camb.model.NonLi
     pars = camb.CAMBparams()
     pars.set_cosmology(H0=cosmology['H0'], ombh2=cosmology['Omegabh2'], omch2=cosmology['Omegach2'],omk=cosmology['Omegak'],mnu=cosmology['mnu']) #ignores tau and YHe for now
 
-    #pars.set_accuracy(4.)
+    pars.set_accuracy(2.)
     if cosmology.get('As') is not None:
-        pars.InitPower.set_params(ns=cosmology['ns'],As=cosmology['As'])
+        pars.InitPower.set_params(ns=cosmology['ns'],As=cosmology['As'],pivot_scalar=0.05)
     else:
         pars.InitPower.set_params(ns=cosmology['ns'])
 

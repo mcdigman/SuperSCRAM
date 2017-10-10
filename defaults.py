@@ -126,9 +126,8 @@ lw_observable_list = ['d_number_density']
 lw_survey_params = {    'cross_bins': False} 
 basis_params = {    'allow_caching'         :True,
                     'n_bessel_oversample'   :100000,
-                    'k_max'                 :10.,#TODO check
-                    'k_min'                 :10**-4,
-                    'n_radial_sample':100000,
+                   # 'k_max'                 :10.,#TODO check
+                   # 'k_min'                 :10**-4,
                     'x_grid_size':100000}#convergence related
 polygon_params = {'res_healpix':6,'n_double':30}
 nz_params = {   'data_source'   :'./data/CANDELS-GOODSS2.dat',

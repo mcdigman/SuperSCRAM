@@ -7,6 +7,8 @@ from nz_candel import NZCandel
 from nz_lsst import NZLSST
 from lw_observable import LWObservable
 from algebra_utils import trapz2
+from polygon_geo import PolygonGeo
+from polygon_pixel_geo import PolygonPixelGeo
 
 import numpy as np
 import fisher_matrix as fm
@@ -35,7 +37,11 @@ class DNumberDensityObservable(LWObservable):
 
         #there is a bug in spherical_geometry that causes overlap to fail if geometries are nested and 1 side is identical, handle this case unless they fix it
         try:
-            self.overlap_fraction = self.geo1.get_overlap_fraction(self.geo2)
+            if isinstance(self.geo1,PolygonGeo) or isinstance(self.geo1,PolygonPixelGeo):
+                self.overlap_fraction = self.geo1.get_overlap_fraction(self.geo2)
+            else:
+                warn('Dn: do not know how to compute overlap, assuming 0')
+                self.overlap_fraction = 0.
         except:
             warn('spherical_geometry overlap failed, assuming total overlap')
             if self.geo1.angular_area()<=self.geo2.angular_area():
