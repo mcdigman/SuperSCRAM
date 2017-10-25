@@ -69,7 +69,6 @@ class MultiFisher(object):
             self.a_vals = None
             self.project_lw_a = None
 
-        return
 
         self.lw_F_no_mit=self.get_lw_fisher(f_spec_SSC_no_mit,initial_state=fm.REP_COVAR)
 

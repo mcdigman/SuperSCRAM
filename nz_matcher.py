@@ -2,6 +2,7 @@
 by abundance matching a cutoff mass M to the halo mass function"""
 
 import numpy as np
+import algebra_utils as au
 
 from scipy.interpolate import interp1d
 from scipy.integrate import cumtrapz
@@ -19,6 +20,10 @@ class NZMatcher(object):
     def get_dN_dzdOmega(self,z_fine):
         """get the number density of sources on a z grid"""
         return self.dN_dz_interp(z_fine)
+
+    def get_N_projected(self,z_fine,omega_tot):
+        """get total number of galaxies in area omega_tot steradians"""
+        return au.trapz2(self.dN_dz_interp(z_fine),z_fine)*omega_tot
 
     def get_nz(self,geo):
         """get n(z) for the input geometry's fine z grid"""

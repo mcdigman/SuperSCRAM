@@ -6,7 +6,7 @@ import numpy as np
 import lensing_observables as lo
 
 class SWCovMat(object):
-    def __init__(self,O_I_1,O_I_2,debug=True,silent=False):
+    def __init__(self,O_I_1,O_I_2,debug=False,silent=False):
         """Object to handle retrieving the non SSC short wavelength covariance matrices"""
         self.gaussian_covar = 0.
         self.dimension = 0

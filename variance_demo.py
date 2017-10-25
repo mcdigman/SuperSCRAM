@@ -37,17 +37,21 @@ if __name__ == '__main__':
 
     #x_cut = 527.
     #l_max = 515
-    x_cut = 30
-    l_max = 515
+    x_cut = 360
+    l_max = 340
+    #x_cut = 150
+    #l_max = 140
+    #x_cut = 30
+    #l_max = 30
 
-    param_use = 3
+    param_use = 7
     do_plot = True
     if param_use == 1:
         #matches to  0.918455921357 for l_max=340,x_cut=360, not monotonic
-        theta0=np.pi/2.-np.pi/1801.87*10.*30.*1.3
-        theta1=np.pi/2.+np.pi/1801.87*10.*30.*1.3
+        theta0=np.pi/2.-np.pi*0.21644180767757945
+        theta1=np.pi/2.+np.pi*0.21644180767757945
         phi0=0.
-        phi1=np.pi/900.93*10.*30.*1.3
+        phi1=np.pi*0.4328860177816256
 
         z_coarse = np.array([0.001,0.005])
         z_max = 0.0055
@@ -57,10 +61,10 @@ if __name__ == '__main__':
         variance_pred2 = 6.47471e-01
     elif param_use == 2:
         #matches to 0.984883733033 for l_max=340,x_cut=360, monotonic 
-        theta0=np.pi/2.-np.pi/1801.87*10.
-        theta1=np.pi/2.+np.pi/1801.87*10.
+        theta0=np.pi/2.-np.pi*0.005549789940450755
+        theta1=np.pi/2.+np.pi*0.005549789940450755
         phi0=0.
-        phi1=np.pi/900.93*10.
+        phi1=np.pi*0.011099641481580144
 
         z_coarse = np.array([0.9,1.0])
         z_fine = np.arange(0.0005,1.,0.0005)
@@ -70,6 +74,7 @@ if __name__ == '__main__':
         variance_pred2=1.38770e-02
     elif param_use ==3:
         #matches to  0.256984236659 for l_max=340,x_cut=360, monotonic but convergence appears poor
+        #matches to 0.442356296589 for l_max=515, x_cut=
         theta0=np.pi/2.-np.pi/1801.87
         theta1=np.pi/2.+np.pi/1801.87
         phi0=0.
@@ -82,34 +87,67 @@ if __name__ == '__main__':
         variance_pred1=1.18262e+00
         variance_pred2 = 1.18253e+00
     elif param_use==4:
-        #matches to 0.982322621415 for l_max=340,x_cut=360, monotonic, convergence looks good 
-        theta0=np.pi/2.-np.pi/1801.87*47
-        theta1=np.pi/2.+np.pi/1801.87*47
+        #matches to 0.982422823102 side 0.985672230237 volume  for l_max=340,x_cut=360, monotonic, convergence looks good 
+        theta0=np.pi/2.-np.pi*0.025320951131222628
+        theta1=np.pi/2.+np.pi*0.025320951131222628
         phi0=0.
-        phi1=np.pi/900.93*47
+        phi1=np.pi*0.05064218331592479
 
-        z_coarse = np.array([0.8,1.0])
+        z_coarse = np.array([0.8102,1.0])
         z_fine = np.arange(0.0005,1.,0.0005)
         z_max = 1.05
 
-        variance_pred1=4.39584e-04
-        variance_pred2=4.38021e-04
+        variance_pred1=4.91106e-04
+        variance_pred2=4.89487E-04
     elif param_use==5:
+        #20000 deg^2
         #matches to side 1.17896133281 vol 0.914043964767 for l_max=340,x_cut=360, appears converged
-        theta0=np.pi/2.-np.pi/1801.87*100*8.7
-        theta1=np.pi/2.+np.pi/1801.87*100*8.7
+        theta0=np.pi/2.-np.pi*0.48476681987396752
+        theta1=np.pi/2.+np.pi*0.48476681987396752
         phi0=0.
-        phi1=np.pi/900.93*100*8.7
+        phi1=np.pi*0.96953902048583762
 
-        z_coarse = np.array([0.6,1.3])
+        z_coarse = np.array([0.9,1.3])
         z_fine = np.arange(0.0005,1.,0.0005)
         z_max = 1.301
 
         #by sides 
-        variance_pred1=1.45123e-07
+        variance_pred1=2.88548E-07
         #by volume
-        variance_pred2 = 1.87184e-07
+        variance_pred2=3.10674E-07
+    elif param_use==6:
+        #2000 deg^2
+        #matches to side 1.17896133281 vol 0.914043964767 for l_max=340,x_cut=360, appears converged
+        theta0=np.pi/2.-np.pi*0.12306206198097261
+        theta1=np.pi/2.+np.pi*0.12306206198097261
 
+        phi0=0.
+        phi1=np.pi*0.24612548990671312
+
+        z_coarse = np.array([0.9,1.3])
+        z_fine = np.arange(0.0005,1.,0.0005)
+        z_max = 1.301
+
+        #by sides 
+        variance_pred1=5.50604e-06
+        #by volume
+        variance_pred2 = 4.95809e-06
+    elif param_use==7:
+        #20000 deg^2
+        #matches to side 1.17896133281 vol 0.914043964767 for l_max=340,x_cut=360, appears converged
+        theta0=np.pi/2.-np.pi*0.48476681987396752
+        theta1=np.pi/2.+np.pi*0.48476681987396752
+        phi0=0.
+        phi1=np.pi*0.96953902048583762
+
+        z_coarse = np.array([0.2,1.3])
+        z_fine = np.arange(0.0005,1.,0.0005)
+        z_max = 1.301
+
+        #by sides 
+        variance_pred1=1.12606e-07
+        #by volume
+        variance_pred2=1.50551e-07
     thetas = np.array([theta0,theta1,theta1,theta0,theta0])
     phis = np.array([phi0,phi0,phi1,phi1,phi0])
     theta_in = (theta1+theta0)/2.
@@ -198,7 +236,8 @@ if __name__ == '__main__':
     print "main: variance/predicted by sides is "+str(variances[-1]/variance_pred1)
     print "main: variance/predicted by volume is "+str(variances[-1]/variance_pred2)
     #print "main: rate of change of variance is "+str((variances[-1]-variances[-2])/(k_tests[-1]-k_tests[-2]))
-    approx_deriv = np.average((np.diff(variances)/np.diff(n_basis))[-5::])
+    #approx_deriv = np.average((np.diff(variances)/np.diff(n_basis))[-5::])
+    approx_deriv = (variances[-1]-variances[-5])/(n_basis[-1]-n_basis[-5])
     estim_change = approx_deriv*n_basis[-1]*2.
     estim_converge = estim_change/variances[-1]
-    print "main: estimate variance converged to within "+str(estim_converge*100.)+"%, first approx of true value ~"+str(estim_change+variances[-1])
+    print "main: estimate variance converged to within an error of"+str(estim_converge*100.)+"%, first approx of true value ~"+str(estim_change+variances[-1])

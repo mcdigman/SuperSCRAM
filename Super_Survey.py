@@ -16,6 +16,7 @@ import prior_fisher
 import matter_power_spectrum as mps
 import multi_fisher as mf
 import cosmopie as cp
+import algebra_utils as au
 #TODO maybe make possible to serialize/pickle or at least provide a standardized way of storing run information
 #TODO examine possibile platform dependence bug with ruby
 class SuperSurvey:
@@ -63,10 +64,10 @@ class SuperSurvey:
         de_prior_params = defaults.prior_fisher_params
         self.multi_f = mf.MultiFisher(basis,surveys_sw[0],surveys_lw,prior_params=de_prior_params,needs_a=self.get_a,do_mit=self.do_mitigated)
 
-#        self.f_set_nopriors = self.multi_f.get_fisher_set(include_priors=False)
-#        self.f_set = self.multi_f.get_fisher_set(include_priors=True)
-#        self.eig_set = self.multi_f.get_eig_set(self.f_set_nopriors)
-#        self.eig_set_ssc = self.multi_f.get_eig_set(self.f_set_nopriors,ssc_metric=True)
+        self.f_set_nopriors = self.multi_f.get_fisher_set(include_priors=False)
+        self.f_set = self.multi_f.get_fisher_set(include_priors=True)
+        self.eig_set = self.multi_f.get_eig_set(self.f_set_nopriors)
+        self.eig_set_ssc = self.multi_f.get_eig_set(self.f_set_nopriors,ssc_metric=True)
         #TODO get this before changing shape in multi_fisher
         if self.get_a:
             self.a_vals = self.multi_f.get_a_lw()
@@ -78,10 +79,36 @@ class SuperSurvey:
         print 'SuperSurvey: all done'
         print 'SuperSurvey: run time', t2-t1
 
+    def print_standard_analysis(self):
+        print "SuperSurvey: Summary analysis"
+        print "----------------------------------------------------"
+        print "----------------------------------------------------"
+        print "top 2 eigenvalues without mitigation using gaussian metric: "+str(self.eig_set[1,0][0][-1])+","+str(self.eig_set[1,0][0][-2])
+        print "top 2 eigenvalues with mitigation using gaussian metric: "+str(self.eig_set[1,1][0][-1])+","+str(self.eig_set[1,1][0][-2])
+        print "bottom 2 eigenvalues with mitigation using unmitigated metric: "+str(self.eig_set_ssc[1,1][0][0])+","+str(self.eig_set_ssc[1,1][0][1])
+        print "number eigenvalues>2.00000001 without mitigation using gaussian metric: "+str(np.sum(np.abs(self.eig_set[1,0][0])>2.00000001))
+        print "number eigenvalues>2.00000001 with mitigation using gaussian metric: "+str(np.sum(np.abs(self.eig_set[1,1][0])>2.00000001))
+        print "number eigenvalues<1.99999999 with mitigation using unmitigated metric: "+str(np.sum(np.abs(self.eig_set_ssc[1,1][0])<1.99999999))
+        print "----------------------------------------------------"
+        print "----------------------------------------------------"
+
+    def make_standard_ellipse_plot(self):
+        no_mit_color = np.array([1.,0.,0.])
+        mit_color = np.array([0.,1.,0.])
+        g_color = np.array([0.,0.,1.])
+        color_set = np.array([mit_color,no_mit_color,g_color])
+        opacity_set = np.array([1.0,1.0,1.0])
+        box_widths = np.array([0.015,0.005,0.0005,0.005,0.1,0.05])
+        dchi2 = 2.3
+        #cov_set = np.array([SS.covs_params[1],SS.covs_params[0],SS.covs_g_pars[0]])
+        cov_set = np.array([self.f_set[2][2].get_covar(),self.f_set[1][2].get_covar(),self.f_set[0][2].get_covar()])
+        label_set = np.array(["ssc+mit+g","ssc+g","g"])
+        make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',self.surveys_sw[0].cosmo_par_list,self.C,dchi2=dchi2)
+
 
 def get_ellipse_specs(covs,dchi2=2.3):
     """Get the widths and angles for plotting covariance ellipses from a covariance matrix covs, with width dchi2"""
-    a_s = np.zeros_like(covs)
+    a_s = np.zeros_like(coself)
     b_s = np.zeros_like(covs)
     #dchi2 = 2.3
     alpha =np.sqrt(dchi2)
@@ -97,6 +124,7 @@ def get_ellipse_specs(covs,dchi2=2.3):
     width2s = b_s*alpha
     areas = np.pi*width1s*width2s
     return width1s,width2s,angles,areas
+
 
 def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_par_list,C,dchi2,adaptive_mult=1.05):
     import matplotlib.pyplot as plt
@@ -126,6 +154,7 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
     for itr1 in xrange(0,n_p):
         for itr2 in xrange(0,n_p):
             ax = ax_list[itr2,itr1]
+            ax.set_axisbelow(True)
             param1 = cosmo_par_list[itr1]
             param2 = cosmo_par_list[itr2]
             fid_point = np.array([C.cosmology[param1],C.cosmology[param2]])
@@ -161,6 +190,7 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
             #ax.ticklabel_format(useOffset=False)
 
             ax.grid()
+
             if itr1==itr2==0:
                 ax.legend(handles=[es[0],es[1],es[2]],loc=2,prop={'size':6})
             if itr1==0:
@@ -175,10 +205,13 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
                 ax.set_xlabel(param1,fontsize=8)
                 ax.tick_params(axis='x',labelsize=8,labelbottom='on')
              #   ax.ticklabel_format(axis='x',useOffset=True)
-
     plt.subplots_adjust(wspace=0.,hspace=0.)
     plt.show()
      #TODO add correlation matrix functionality
+
+
+
+
 if __name__=="__main__":
     t1 = time()
     #TODO make sure input z cannot exceed z_max in geo
@@ -213,32 +246,37 @@ if __name__=="__main__":
     r_max=C.D_comov(z_max)
     print 'this is r max and l_max', r_max , l_max
 
-    #theta0=0.
-    #theta1=np.pi/2.
+#    #theta0=0.
+#    #theta1=np.pi/2.
+    phi1s = np.array([-19.,-19.,-11.,-11.,7.,25.,25.,43.,43.,50.,50.,50.,24.,5.,5.,7.,7.,-19.])*np.pi/180.
+    theta1s = np.array([-50.,-35.,-35.,-19.,-19.,-19.,-15.8,-15.8,-40.,-40.,-55.,-78.,-78.,-78.,-55.,-55.,-50.,-50.])*np.pi/180.+np.pi/2.
+    phi_in1 = 7./180.*np.pi
+    theta_in1 = -35.*np.pi/180.+np.pi/2.
+
     theta0=np.pi/4.
-    theta1=np.pi/2.
+    theta1=3.*np.pi/4.
     phi0=0.
-    #phi1=5.*np.pi**2/162. #gives exactly a 1000 square degree field of view
-    phi1 = 5*np.pi**2./(np.sqrt(2.)*81.)*2.3033
+#    #phi1=5.*np.pi**2/162. #gives exactly a 1000 square degree field of view
+    phi1 = 3.074096023740458
     phi2=np.pi/3.
     phi3=phi2+(phi1-phi0)
-    theta1s = np.array([theta0,theta1,theta1,theta0,theta0])
-    phi1s = np.array([phi0,phi0,phi1,phi1,phi0])-phi1/2.
-    theta_in1 = 3.*np.pi/8.
-    #phi_in1 = 4.*np.pi**2/162.
-    phi_in1 = 5*np.pi**2/(2.*np.sqrt(2)*162.)
-
-    #theta2s = np.array([theta0,theta1,theta1,theta0,theta0])
-    #phi2s = np.array([phi2,phi2,phi3,phi3,phi2])
-    #theta_in2 = 3.*np.pi/8.
-    #phi_in2 = phi2+(phi_in1-phi0)
-
-    theta2s = np.array([theta0,3./2.*theta1,3./2.*theta1,theta0,theta0])
-    phi2s = phi1s.copy()
-    phi2s*=4.*0.7745282
-    theta_in2=theta_in1
-    phi_in2 = phi_in1
-
+#    theta1s = np.array([theta0,theta1,theta1,theta0,theta0])
+#    phi1s = np.array([phi0,phi0,phi1,phi1,phi0])-phi1/2.
+#    theta_in1 = 3.*np.pi/8.
+#    #phi_in1 = 4.*np.pi**2/162.
+#    phi_in1 = 5*np.pi**2/(2.*np.sqrt(2)*162.)
+#
+#    #theta2s = np.array([theta0,theta1,theta1,theta0,theta0])
+#    #phi2s = np.array([phi2,phi2,phi3,phi3,phi2])
+#    #theta_in2 = 3.*np.pi/8.
+#    #phi_in2 = phi2+(phi_in1-phi0)
+#
+    theta2s = np.array([theta0,theta1,theta1,theta0,theta0])
+    phi2s = np.array([phi0,phi0,phi1,phi1,phi0])-phi1/2.
+    theta_in2 = np.pi/2.
+    phi_in2 = 0.
+    #phi2s*=4.*0.7745282
+    #phi_in2 = 5*np.pi**2/(2.*np.sqrt(2)*162.)
     #theta0=np.pi/16.
     #theta1=np.pi/2.
     #phi0=0.
@@ -322,16 +360,21 @@ if __name__=="__main__":
     #cosmo_par_epsilons = np.array([0.001,0.001])
     #cosmo_par_list = np.array(['Omegamh2','Omegabh2','ns','h','sigma8'])
     #note that currently (poorly implemented derivative) in jdem, OmegaLh2 and LogAs are both almost completely unconstrained but nondegenerate, while in basic, h and sigma8 are not constrained but are almost completely degenerate
-    survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,cosmo_par_list = cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,len_params=loc_lens_params)
+    nz_params = defaults.nz_params_wfirst_lens.copy()
+    #nz_params['data_source'] = 'data/H-5x140s.dat'
+    #nz_params['area_sterad'] =  0.040965*np.pi**2/180**2
+    #nz_params['smooth_sigma'] = 0.01
+    #nz_params['n_right_extend'] = 16
+        
+    from nz_wfirst import NZWFirst
+    nz_matcher = NZWFirst(nz_params)
+    loc_lens_params['n_gal'] = au.trapz2(nz_matcher.get_dN_dzdOmega(geo1.z_fine),geo1.z_fine)*geo1.angular_area()
+    loc_lens_params['smodel'] = 'nzmatcher'
+    survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,cosmo_par_list = cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,len_params=loc_lens_params,nz_matcher=nz_matcher)
     #survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=loc_lens_params)
 
     #survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = np.array([]),len_params=loc_lens_params)
     #survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=lenless_defaults,observable_list = np.array([]),cosmo_par_list = np.array([],dtype=object),cosmo_par_epsilons=np.array([]),len_params=loc_lens_params,param_priors=param_priors)
-
-
-
-    M_cut=10**(12.5)
-
 
     surveys_sw=np.array([survey_1])
 
@@ -342,7 +385,8 @@ if __name__=="__main__":
     #n_zeros=49
     #k_cut = 0.005
     #k_cut = 0.016
-    k_cut = 0.019
+    #k_cut = 0.019
+    k_cut = 0.005
     #about biggest possible, take 414 sec
     #k_cut = 0.0214
     #k_cut = 0.03
@@ -354,7 +398,7 @@ if __name__=="__main__":
 
     print 'main: this is r_max: '+str(r_max)
     #TODO do not need basis as an argument
-    SS=SuperSurvey(surveys_sw, surveys_lw,basis,C=C,get_a=True,do_unmitigated=True,do_mitigated=True)
+    SS=SuperSurvey(surveys_sw, surveys_lw,basis,C=C,get_a=False,do_unmitigated=True,do_mitigated=True)
 
     t2 = time()
     print "main: total run time "+str(t2-t1)+" s"
@@ -433,7 +477,7 @@ if __name__=="__main__":
     print 'main: r diffs',np.diff(geo1.rs)
     print 'main: theta width',(geo1.rs[1]+geo1.rs[0])/2.*(Theta1[1]-Theta1[0])
     print 'main: phi width',(geo1.rs[1]+geo1.rs[0])/2.*(Phi1[1]-Phi1[0])*np.sin((Theta1[1]+Theta1[0])/2)
-    ax_ls = np.hstack((l_sw,l_sw))
+    #ax_ls = np.hstack((l_sw,l_sw))
 
     #v= SS.surveys_sw[0].get_dO_I_dpar_array()
     #eig_nm = SS.cov_no_mit[0].get_SS_eig_param(v)

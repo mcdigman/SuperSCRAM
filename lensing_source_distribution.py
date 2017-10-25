@@ -23,6 +23,7 @@ class GaussianZSource(SourceDistribution):
         ps = np.exp(-(zs-zbar)**2/(2.*(sigma)**2))
         ps = dz_to_dchi(ps,zs,chis,C,params)
         SourceDistribution.__init__(self,ps,zs,chis,C,params)
+
 class ConstantZSource(SourceDistribution):
     def __init__(self,zs,chis,C,params=defaults.lensing_params):
         """constant source distribution"""
@@ -38,7 +39,14 @@ class CosmoLikeZSource(SourceDistribution):
         ps = dz_to_dchi(ps,zs,chis,C,params)
         SourceDistribution.__init__(self,ps,zs,chis,C,params)
 
-def get_source_distribution(smodel,zs,chis,C,params=defaults.lensing_params,ps=np.array([])):
+class NZMatcherZSource(SourceDistribution):
+    def __init__(self,zs,chis,C,nz_match,params=defaults.lensing_params):
+        """source distribution using an NZMatcher object"""
+        ps = nz_match.get_dN_dzdOmega(zs)
+        ps = dz_to_dchi(ps,zs,chis,C,params)
+        SourceDistribution.__init__(self,ps,zs,chis,C,params)
+
+def get_source_distribution(smodel,zs,chis,C,params=defaults.lensing_params,ps=np.array([]),nz_matcher=None):
     """generate a source distribution from among the list of available source distributions"""
     if smodel == 'gaussian':
         dist = GaussianZSource(zs,chis,C,zbar=params['zbar'],sigma=params['sigma'])
@@ -51,6 +59,8 @@ def get_source_distribution(smodel,zs,chis,C,params=defaults.lensing_params,ps=n
             dist = SourceDistribution(dz_to_dchi(ps,zs,chis,C,params),zs,chis,C,params)
         else:
             raise ValueError('input zs.size='+str(zs.size)+'and ps.size='+str(ps.size)+' do not match')
+    elif smodel=='nzmatcher':
+        dist = NZMatcherZSource(zs,chis,C,nz_matcher,params)
     else:
         raise ValueError('invalid smodel value\''+str(smodel)+'\'')
     return dist

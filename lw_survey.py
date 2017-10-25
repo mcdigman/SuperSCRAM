@@ -67,7 +67,7 @@ class LWSurvey(object):
         itr = 0
         for key in names:
             if re.match('^d_number_density',key):
-                observables[itr] = DNumberDensityObservable(self.geos,self.dn_params,self.survey_id,self.C,self.basis,defaults.nz_params_wfirst,defaults.nz_params_lsst)
+                observables[itr] = DNumberDensityObservable(self.geos,self.dn_params,self.survey_id,self.C,self.basis,defaults.nz_params_wfirst_gal,defaults.nz_params_wfirst_gal)
             else:
                 warn('unrecognized or unprocessable observable: \'',key,'\', skipping')
                 observables[itr] = None

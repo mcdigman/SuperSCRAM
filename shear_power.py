@@ -16,7 +16,7 @@ import defaults
 #TODO check integral boundaries ok
 #TODO remove explicit cosmosis pmodel
 class ShearPower(object):
-    def __init__(self,C,zs,ls,omega_s,pmodel='halofit',ps=np.array([]),params=defaults.lensing_params,mode='power'):
+    def __init__(self,C,zs,ls,omega_s,pmodel='halofit',ps=np.array([]),params=defaults.lensing_params,mode='power',nz_matcher=None):
         """
             Handles lensing power spectra
             inputs:
@@ -27,6 +27,7 @@ class ShearPower(object):
                 pmodel: nonlinear power spectrum model to use, options 'linear','halofit','fastpt','cosmosis'
                 ps: lensing source distribution. Optional.
                 mode: whether to get power spectrum 'power' or dC/d\\bar{\\delta} 'dc_ddelta'
+                nz_matcher: an NZMatcher object
         """
         self.k_in = C.k
         self.C = C
@@ -99,7 +100,7 @@ class ShearPower(object):
         self.p_gg_use = self.p_dd_use
         self.p_gd_use = self.p_dd_use
 
-        self.source_dist = get_source_distribution(self.params['smodel'],self.zs,self.chis,self.C,self.params,ps=ps)
+        self.source_dist = get_source_distribution(self.params['smodel'],self.zs,self.chis,self.C,self.params,ps=ps,nz_matcher=nz_matcher)
         self.ps = self.source_dist.ps
         self.z_min_dist = params['z_min_dist']
         self.z_max_dist = params['z_max_dist']

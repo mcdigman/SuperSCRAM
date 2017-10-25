@@ -48,7 +48,7 @@ def rot_alm_x(d_alm_table_in,angles,ls,n_double=defaults.polygon_params['n_doubl
         #m_mat_i = np.conjugate(m_mat.T)
         #infinitesimal form of El(epsilon) (must be multiplied by epsilon)
         el_mat_real = np.real(np.dot(np.dot(np.conjugate(m_mat.T),el_mat_complex),m_mat))
-        print ll
+        #print ll
         if debug:
             #E_l matrices should be antisymmetric
             assert(np.all(el_mat_complex==-el_mat_complex.conjugate().T))
@@ -56,7 +56,7 @@ def rot_alm_x(d_alm_table_in,angles,ls,n_double=defaults.polygon_params['n_doubl
             #check m_mat is actually unitary
             assert(np.allclose(np.identity(m_mat.shape[0]),np.dot(np.conjugate(m_mat.T),m_mat)))
             #TODO add assertion  for correct sparseness structure
-        print ll
+        #print ll
 
         for itr in xrange(0,n_v):
             epsilon = angles[itr]/2.**n_double

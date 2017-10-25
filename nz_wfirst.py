@@ -10,7 +10,7 @@ from polygon_pixel_geo import PolygonPixelGeo
 from nz_matcher import NZMatcher
 from nz_lsst import NZLSST
 
-class NZCandel(NZMatcher):
+class NZWFirst(NZMatcher):
     def __init__(self,params):
         """get the CANDELS matcher
             inputs:
@@ -22,10 +22,11 @@ class NZCandel(NZMatcher):
         self.data = np.loadtxt(self.params['data_source'])
         #use separate internal grid for calculations because smoothing means galaxies beyond max z_fine can create edge effects
         z_grid = np.arange(0.,np.max(self.data[:,1])+self.params['smooth_sigma']*self.params['n_right_extend'],self.params['z_resolution'])
-        self.chosen = (self.data[:,5]<self.params['i_cut'])
+        #self.chosen = (self.data[:,5]<self.params['i_cut'])
+        self.chosen = np.full(self.data[:,0].size,True,dtype=bool)
         #cut off faint galaxies
         self.zs_chosen = self.data[self.chosen,1]
-        print "nz_candel: "+str(self.zs_chosen.size)+" available galaxies"
+        print "nz_wfirst: "+str(self.zs_chosen.size)+" available galaxies"
 
         dN_dz = np.zeros(z_grid.size)
         #apply gaussian smoothing width sigma
@@ -114,14 +115,21 @@ if __name__ == '__main__':
     l_max = 25
     geo1 = PolygonPixelGeo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max,res_healpix = res_choose)
     n_run = 1
-    nz_params = defaults.nz_params_wfirst_gal.copy()
+    nz_params = defaults.nz_params_wfirst.copy()
+    nz_params_candel = nz_params.copy()
+    nz_params['data_source'] = 'data/H-5x140s.dat'
+    nz_params['area_sterad'] =  0.040965*np.pi**2/180**2
+    nz_params['smooth_sigma'] = 0.01
+    nz_params['n_right_extend'] = 16
+    nz_params_candel['smooth_sigma'] = 0.01
+    nz_params_candel['n_right_extend'] = 4
     #nz_params['mirror_boundary'] = False
     nz_lsst_params = defaults.nz_params_lsst.copy()
     nz_lsst_params['i_cut'] = 25.3
     ts = np.zeros(n_run+1)
     ts[0] = time()
     for i in xrange(0,n_run):
-        nzc = NZCandel(nz_params)
+        nzc = NZWFirst(nz_params)
         mf = hmf.ST_hmf(C)
         t1 = time()
         dN_dz_res = nzc.get_dN_dzdOmega(z_fine)
@@ -143,8 +151,11 @@ if __name__ == '__main__':
     #print "avg tot time: "+str((ts[-1]-ts[0])/n_run)+" s"
     print "avg tot time: "+str(np.average(np.diff(ts)))+" s"
     print "std dev tot time: "+str(np.std(np.diff(ts)))+" s"
+    from nz_candel import NZCandel
+    nz2 = NZCandel(nz_params_candel)
     nz_lsst = NZLSST(nzc.z_grid,nz_lsst_params)
     dN_dz_lsst = nz_lsst.get_dN_dzdOmega(z_fine)
+    dN_dz_candel = nz2.get_dN_dzdOmega(z_fine)
     m_cuts_lsst = nz_lsst.get_M_cut(mf,geo1)
     density_res_lsst = trapz2(dN_dz_lsst,dx=0.01,given_dx=True)
     print "lsst total galaxies/steradian: "+str(density_res_lsst)+" galaxies/20000 deg^2 = "+str(density_res_lsst*np.pi**2/180**2*20000)+" g/arcmin^2="+str(density_res_lsst*np.pi**2/180**2/3600.)
@@ -162,6 +173,7 @@ if __name__ == '__main__':
         #ns_lsst = n_per_rad_lsst*ps_lsst
         #plt.plot(z_fine,ns_lsst)
         plt.plot(z_fine,dN_dz_lsst)
+        plt.plot(z_fine,dN_dz_candel)
         plt.xlabel('z')
         plt.ylabel('dN/dz(z)')
         plt.show()

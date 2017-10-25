@@ -10,7 +10,7 @@ import lensing_observables as lo
 from sw_cov_mat import SWCovMat
 
 class SWSurvey(object):
-    def __init__(self,geo,survey_id,C,ls = np.array([]),cosmo_par_list=np.array([],dtype=object),cosmo_par_epsilons=np.array([]),params=defaults.sw_survey_params,observable_list=defaults.sw_observable_list,len_params=defaults.lensing_params,ps=np.array([])):
+    def __init__(self,geo,survey_id,C,ls = np.array([]),cosmo_par_list=np.array([],dtype=object),cosmo_par_epsilons=np.array([]),params=defaults.sw_survey_params,observable_list=defaults.sw_observable_list,len_params=defaults.lensing_params,ps=np.array([]),nz_matcher=None):
         """Short wavelength survey: manage short wavelength observables and get their non SSC covariances and derivatives
                 inputs:
                     geo: a Geo object
@@ -22,6 +22,7 @@ class SWSurvey(object):
                     params, len_params: parameters
                     observable_list: list of observable names to get
                     ps: lensing source distribution. optional
+                    nz_matcher: NZMatcher object. optional
         """
 
         print "sw_survey: began initializing survey: "+str(survey_id)
@@ -32,8 +33,9 @@ class SWSurvey(object):
         self.ls = ls
         self.survey_id = survey_id
         self.cosmo_par_list = cosmo_par_list
+        self.nz_matcher=nz_matcher
         if self.needs_lensing:
-            self.len_pow = lo.LensingPowerBase(self.geo,self.ls,survey_id,C=C,params=len_params,cosmo_par_list=cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,ps=ps)
+            self.len_pow = lo.LensingPowerBase(self.geo,self.ls,survey_id,C=C,params=len_params,cosmo_par_list=cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,ps=ps,nz_matcher=self.nz_matcher)
             self.len_params = len_params
         else:
             self.len_pow = None

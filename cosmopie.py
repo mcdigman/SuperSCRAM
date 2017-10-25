@@ -509,6 +509,14 @@ class CosmoPie(object):
         else:
             return self.P_lin.get_sigma8_eff(np.array([0.]))[0]
 
+    #TODO be consistent about use of this function
+    def set_power(self,P_in):
+        """set the matter power spectrum for the CosmoPie
+            inputs:
+                P_in: a MatterPower object
+        """
+        self.P_lin = P_in
+        self.k = P_in.k
 
     # -----------------------------------------------------------------------------
 

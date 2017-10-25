@@ -134,7 +134,8 @@ class PolygonGeo(Geo):
         d_alm_table1 = np.zeros(n_l,dtype=object)
         Y_r_dict = get_Y_r_dict(np.max(ls),np.zeros(1)+np.pi/2.,np.zeros(1))
         #Y_r(l,m,pi/2.,0.) has an analytic solution, use it
-        #Y_r_dict = get_Y_r_dict_central(l_max)
+        Y_r_dict2 = get_Y_r_dict_central(l_max)
+        #assert(np.allclose(Y_r_dict.values(),Y_r_dict2.values()))
         #self.factorials = sp.misc.factorial(np.arange(0,2*np.max(ls)+1))
         for l_itr in xrange(0,ls.size):
             ll=ls[l_itr]
@@ -182,7 +183,7 @@ class PolygonGeo(Geo):
     def a_lm(self,l,m):
 
         if l>self._l_max:
-            print "PolygonPixelGeo: l value "+str(l)+" exceeds maximum precomputed l "+str(self._l_max)+",expanding table"
+            print "PolygonGeo: l value "+str(l)+" exceeds maximum precomputed l "+str(self._l_max)+",expanding table"
             self.expand_alm_table(l)
 
         alm = self.alm_table.get((l,m))
@@ -237,7 +238,49 @@ def check_mutually_orthonormal(vectors):
                     print prod
                     fails+=1
     return fails
+if __name__=='__main__':
+    from cosmopie import CosmoPie
 
+    poly_params = defaults.polygon_params.copy()
+    l_max = 30
+    zs = np.array([0.01,1.01])
+    z_fine = np.arange(0.01,1.05,0.01)
+    C = CosmoPie(defaults.cosmology)
+
+    #phis = np.array([-19.,7.,25.,-19.])/180.*np.pi
+    #thetas = np.pi/2.+np.array([-50,-35.,-55.,-50.])/180.*np.pi
+    #phis = np.array([-19.,7.,25.,-19.])/180.*np.pi
+    #thetas = np.pi/2.+np.array([-50,-35.,-55.,-50.])/180.*np.pi
+    #phis = np.array([-19.,7.,-11.,7.,25.,5.,24.,43.,-19.])/180.*np.pi
+    #thetas = np.array([-50.,-55.,-35.,-35.,-55.,-78.,-78.-78.,-55.,-50.])/180.*np.pi+np.pi/2.
+    #phis = np.array([-19.,7.,7.,25.,-11.,7.,7.,25.,25.,43.,5.,24.,24.,50.,43.,50.,-19.])*np.pi/180.
+    #thetas = np.array([-50.,-35.,-55.,-35.,-35.,-20.,-35.,-19.,-55.,-15.8,-78.,-55.,-78.,-55.,-55.,-40.,-50.])*np.pi/180.+np.pi/2.
+    #phis = np.array([-19.,7.,25.,-19.])/180.*np.pi
+    #thetas = np.pi/2.+np.array([-50,-35.,-55.,-50.])/180.*np.pi
+    #theta_in = np.pi/2.-40./180.*np.pi
+    #phi_in = 0./180.*np.pi
+    #phis = np.array([-11.,7.,25.,43.,-11.])/180.*np.pi
+    #thetas = np.array([-20.,-35.,-19.
+    phis = np.array([-19.,-19.,-11.,-11.,7.,25.,25.,43.,43.,50.,50.,50.,24.,5.,5.,7.,7.,-19.])*np.pi/180.
+    thetas = np.array([-50.,-35.,-35.,-19.,-19.,-19.,-15.8,-15.8,-40.,-40.,-55.,-78.,-78.,-78.,-55.,-55.,-50.,-50.])*np.pi/180.+np.pi/2.
+    phi_in = 7./180.*np.pi
+    theta_in = -35.*np.pi/180.+np.pi/2.
+    poly_geo = PolygonGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,poly_params=poly_params)
+
+
+    theta2s = np.array([np.pi/4.,3.*np.pi/4.,3*np.pi/4.,np.pi/4.,np.pi/4.])
+    phi2s = np.array([0.,0.,3.0740962890559151,3.0740962890559151,0.])-3.0740962890559151/2.
+    #phi2s*=3.0981128
+    theta_in2 = np.pi/2.
+    phi_in2 = 0.
+    poly_geo2 = PolygonGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max=l_max,poly_params=poly_params)
+
+    from mpl_toolkits.basemap import Basemap
+    import matplotlib.pyplot as plt
+    m = Basemap(projection='moll',lon_0=0)
+    poly_geo.sp_poly.draw(m,color='red')
+    poly_geo2.sp_poly.draw(m,color='blue')
+    plt.show()
 #if __name__=='__main__':
 #    from polygon_pixel_geo import PolygonPixelGeo,reconstruc_from_alm
 #    from geo import RectGeo

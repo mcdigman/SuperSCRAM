@@ -137,11 +137,17 @@ nz_params = {   'data_source'   :'./data/CANDELS-GOODSS2.dat',
                 'n_right_extend':4,
                 'z_resolution'  :0.0001,
                 'mirror_boundary':True}
-nz_params_wfirst = {   'data_source'   :'./data/CANDELS-GOODSS2.dat',
+nz_params_wfirst_gal = {   'data_source'   :'./data/CANDELS-GOODSS2.dat',
                 'i_cut'         :26,
                 'area_sterad'   :0.0409650328530259/3282.80635,
                 'smooth_sigma'  :0.04,
                 'n_right_extend':4,
+                'z_resolution'  :0.001,
+                'mirror_boundary':True}
+nz_params_wfirst_lens = {   'data_source'   :'./data/H-5x140s.dat',
+                'area_sterad'   : 0.040965*np.pi**2/180**2,
+                'smooth_sigma'  :0.01,
+                'n_right_extend':16,
                 'z_resolution'  :0.001,
                 'mirror_boundary':True}
 nz_params_lsst = {   'data_source'   :'./data/CANDELS-GOODSS2.dat',
