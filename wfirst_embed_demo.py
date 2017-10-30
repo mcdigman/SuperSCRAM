@@ -19,9 +19,12 @@ if __name__=='__main__':
     time0 = time()
     #get dictionaries of parameters that various functions will need
     cosmo = defaults.cosmology.copy()
-    cosmo['de_model'] = 'constant_w'
+    cosmo['de_model'] = 'w0wa'
+    cosmo['wa'] = 0.
+    cosmo['w0'] = -1.
     p_space = 'jdem' 
     camb_params = defaults.camb_params.copy()
+    camb_params['force_sigma8'] = False
     poly_params = defaults.polygon_params.copy()
     lensing_params = defaults.lensing_params.copy()
     nz_params_wfirst_lens = defaults.nz_params_wfirst_lens.copy()
@@ -42,7 +45,8 @@ if __name__=='__main__':
         
     #create the WFIRST geometry
     #zs are the bounding redshifts of the tomographic bins
-    zs = np.array([0.2,0.43,.63,0.9, 1.3])
+    #zs = np.array([0.2,0.43,.63,0.9, 1.3])
+    zs = np.arange(0.2,3.01,0.2)
     #z_fine are the resolution redshift slices to be integrated over
     z_fine = np.arange(lensing_params['z_min_integral'],np.max(zs),lensing_params['z_resolution'])
     #l_max is the highest l that should be precomputed
@@ -105,7 +109,8 @@ if __name__=='__main__':
     z_max = zs[-1]+0.001
     r_max = C.D_comov(z_max)
     #k_cut is the maximum k balue for the bessel function zeros that define the basis
-    k_cut = 0.005 
+    x_cut = 40.
+    k_cut = x_cut/r_max
     #l_max caps maximum l regardless of k
     print "main: begin constructing basis for long wavelength fluctuations"
     basis = SphBasisK(r_max,C,k_cut,l_ceil=l_max)
@@ -143,3 +148,31 @@ if __name__=='__main__':
     SS.print_standard_analysis() 
     #make the ellipse plot
     SS.make_standard_ellipse_plot()
+    
+    valfound_g = {}
+    f_base_g = SS.f_set[0][2].get_fisher()
+    c_base_g = np.linalg.inv(f_base_g)
+    valfound_g[()] = c_base_g[4,4]
+    valfound_mit = {}
+    f_base_mit = SS.f_set[2][2].get_fisher()
+    c_base_mit = np.linalg.inv(f_base_mit)
+    valfound_mit[()] = c_base_mit[4,4]
+    valfound_no_mit = {}
+    f_base_no_mit = SS.f_set[1][2].get_fisher()
+    c_base_no_mit = np.linalg.inv(f_base_no_mit)
+    valfound_no_mit[()] = c_base_no_mit[4,4]
+    import itertools
+    for itr in xrange(1,7):
+        for combo in itertools.combinations(np.hstack([np.arange(0,4),np.array([5,6])]),itr):
+            fix_mat = np.zeros_like(SS.f_set[1][2].get_covar())
+            for index in combo:
+                fix_mat[index,index]=1e9
+            f_mat_g = f_base_g+fix_mat
+            c_mat_g = np.linalg.inv(f_mat_g)
+            valfound_g[combo] = c_mat_g[4,4] 
+            f_mat_mit = f_base_mit+fix_mat
+            c_mat_mit = np.linalg.inv(f_mat_mit)
+            valfound_mit[combo] = c_mat_mit[4,4] 
+            f_mat_no_mit = f_base_no_mit+fix_mat
+            c_mat_no_mit = np.linalg.inv(f_mat_no_mit)
+            valfound_no_mit[combo] = c_mat_no_mit[4,4] 

@@ -416,6 +416,9 @@ class FisherMatrix(object):
         else:
             return result
 
+    def get_correlation_matrix(self):
+        return np.corrcoef(self.get_covar(copy_output=False,internal=False))
+
     #TODO actually gets eigensystem with u
     def get_cov_eig_metric(self,metric):
         """get the eigensystem solving C^{ij}metric^{-1 ij}v=lambda v

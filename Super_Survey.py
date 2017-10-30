@@ -89,6 +89,39 @@ class SuperSurvey:
         print "number eigenvalues>2.00000001 without mitigation using gaussian metric: "+str(np.sum(np.abs(self.eig_set[1,0][0])>2.00000001))
         print "number eigenvalues>2.00000001 with mitigation using gaussian metric: "+str(np.sum(np.abs(self.eig_set[1,1][0])>2.00000001))
         print "number eigenvalues<1.99999999 with mitigation using unmitigated metric: "+str(np.sum(np.abs(self.eig_set_ssc[1,1][0])<1.99999999))
+        #print "components of eigenvectors, sorted by descending importance, eigenvectors sorted by descending contamination without mitigation"
+        #for i in xrange(0,6):
+        #    comp_no_mit = lambda itr1,itr2: cmp(np.abs(self.eig_set[1,0][1][itr1,-1-i]),np.abs(self.eig_set[1,0][1][itr2,-1-i]))
+        #    list_no_mit = np.arange(self.eig_set[1,0][0].size)
+        #    list_no_mit = sorted(list_no_mit,comp_no_mit)
+        #    print "descending order of component along worst direction without mitigation using gaussian metric: "+str(self.surveys_sw[0].cosmo_par_list[list_no_mit][::-1])
+        #for i in xrange(0,6):
+        #    comp_mit = lambda itr1,itr2: cmp(np.abs(self.eig_set[1,1][1][itr1,-1-i]),np.abs(self.eig_set[1,1][1][itr2,-1-i]))
+        #    list_mit = np.array(np.arange(self.eig_set[1,1][0].size))
+        #    list_mit = np.array(sorted(list_mit,comp_mit))
+        #    print "descending order of component along worst direction with mitigation using gaussian metric: "+str(self.surveys_sw[0].cosmo_par_list[list_mit][::-1])
+        #for i in xrange(0,6):
+        #    comp_ssc = lambda itr1,itr2: cmp(np.abs(self.eig_set_ssc[1,1][1][itr1,i]),np.abs(self.eig_set_ssc[1,1][1][itr2,i]))
+        #    list_ssc = np.arange(self.eig_set_ssc[1,1][0].size)
+        #    list_ssc = np.array(sorted(list_ssc,comp_ssc))
+        #    print "descending order of component along most improved direction with mitigation using unmitigated metric: "+str(self.surveys_sw[0].cosmo_par_list[list_ssc][::-1])
+        width1s_g,width2s_g,angles_g,areas_g = get_ellipse_specs(self.f_set_nopriors[0][2].get_covar())
+        width1s_no_mit,width2s_no_mit,angles_no_mit,areas_no_mit = get_ellipse_specs(self.f_set_nopriors[1][2].get_covar())
+        width1s_mit,width2s_mit,angles_mit,areas_mit = get_ellipse_specs(self.f_set_nopriors[2][2].get_covar())
+        rat_no_mit_g = areas_no_mit/areas_g
+        rat_no_mit_g[np.isnan(rat_no_mit_g)]=0.
+        rat_mit_g = areas_mit/areas_g
+        rat_mit_g[np.isnan(rat_mit_g)]=0.
+        rat_mit_no_mit = areas_mit/areas_no_mit
+        rat_mit_no_mit[np.isnan(rat_mit_no_mit)]=0.
+
+        print "alignment of most contaminated direction before and most contaminated direction after mitigation: "+str(np.dot(self.eig_set[1,0][1][:,-1],self.eig_set[1,1][1][:,-1]))
+        print "alignment of most contaminated direction before mitigation and most improved direction: "+str(np.dot(self.eig_set[1,0][1][:,-1],self.eig_set_ssc[1,1][1][:,0]))
+        print "alignment of second most contaminated direction before and second most contaminated direction after mitigation: "+str(np.dot(self.eig_set[1,0][1][:,-2],self.eig_set[1,1][1][:,-2]))
+        print "alignment of second most contaminated direction before mitigation and second most improved direction: "+str(np.dot(self.eig_set[1,0][1][:,-2],self.eig_set_ssc[1,1][1][:,1]))
+        
+
+                
         print "----------------------------------------------------"
         print "----------------------------------------------------"
 
@@ -108,7 +141,7 @@ class SuperSurvey:
 
 def get_ellipse_specs(covs,dchi2=2.3):
     """Get the widths and angles for plotting covariance ellipses from a covariance matrix covs, with width dchi2"""
-    a_s = np.zeros_like(coself)
+    a_s = np.zeros_like(covs)
     b_s = np.zeros_like(covs)
     #dchi2 = 2.3
     alpha =np.sqrt(dchi2)
@@ -482,22 +515,23 @@ if __name__=="__main__":
     #v= SS.surveys_sw[0].get_dO_I_dpar_array()
     #eig_nm = SS.cov_no_mit[0].get_SS_eig_param(v)
     #eig_m = SS.cov_mit[0].get_SS_eig_param(v)
-    ellipse_plot_setup = True
-    if ellipse_plot_setup:
-        no_mit_color = np.array([1.,0.,0.])
-        mit_color = np.array([0.,1.,0.])
-        g_color = np.array([0.,0.,1.])
-        color_set = np.array([mit_color,no_mit_color,g_color])
-        opacity_set = np.array([1.0,1.0,1.0])
-        box_widths = np.array([0.015,0.005,0.0005,0.005,0.1,0.05])
-        dchi2 = 2.3
-        #cov_set = np.array([SS.covs_params[1],SS.covs_params[0],SS.covs_g_pars[0]])
-        cov_set = np.array([SS.f_set[2][2].get_covar(),SS.f_set[1][2].get_covar(),SS.f_set[0][2].get_covar()])
-        label_set = np.array(["ssc+mit+g","ssc+g","g"])
+#    ellipse_plot_setup = True
+#    if ellipse_plot_setup:
+#        no_mit_color = np.array([1.,0.,0.])
+#        mit_color = np.array([0.,1.,0.])
+#        g_color = np.array([0.,0.,1.])
+#        color_set = np.array([mit_color,no_mit_color,g_color])
+#        opacity_set = np.array([1.0,1.0,1.0])
+#        box_widths = np.array([0.015,0.005,0.0005,0.005,0.1,0.05])
+#        dchi2 = 2.3
+#        #cov_set = np.array([SS.covs_params[1],SS.covs_params[0],SS.covs_g_pars[0]])
+#        cov_set = np.array([SS.f_set[2][2].get_covar(),SS.f_set[1][2].get_covar(),SS.f_set[0][2].get_covar()])
+#        label_set = np.array(["ssc+mit+g","ssc+g","g"])
 
     ellipse_plot=False
     if ellipse_plot:
-        make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',cosmo_par_list,C,dchi2=dchi2)
+#        make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',cosmo_par_list,C,dchi2=dchi2)
+        SS.make_standard_ellipse_plot()
 
 
 #    chol_plot=False

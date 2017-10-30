@@ -219,8 +219,8 @@ class MatterPower(object):
                     cosmo_hf_i = self.cosmology.copy()
                     cosmo_hf_i['de_model'] = 'constant_w'
                     cosmo_hf_i['w'] = w_match_grid[i]
-                    hf_C_calc = cp.CosmoPie(cosmology=cosmo_hf_i,silent=True,G_safe=True,G_in=InterpolatedUnivariateSpline(self.C.z_grid,self.wm.growth_interp(w_match_grid[i],self.C.a_grid),ext=2,k=2),needs_power=False)
-                    hf_C_calc[i]=self.k
+                    hf_C_calc = cp.CosmoPie(cosmology=cosmo_hf_i,silent=True,G_safe=True,G_in=InterpolatedUnivariateSpline(self.C.z_grid,self.wm.growth_interp(w_match_grid[i],self.C.a_grid),ext=2,k=2),needs_power=False,camb_params=self.camb_params)
+                    hf_C_calc.k=self.k
                     hf_calc = halofit.HalofitPk(hf_C_calc,p_lin=Pbases[:,i],halofit_params=self.halofit_params)
                     P_nonlin[:,i] = 2.*np.pi**2*(hf_calc.D2_NL(self.k,zs[i]).T/self.k**3)
             else:
