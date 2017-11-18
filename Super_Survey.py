@@ -86,9 +86,9 @@ class SuperSurvey:
         print "top 2 eigenvalues without mitigation using gaussian metric: "+str(self.eig_set[1,0][0][-1])+","+str(self.eig_set[1,0][0][-2])
         print "top 2 eigenvalues with mitigation using gaussian metric: "+str(self.eig_set[1,1][0][-1])+","+str(self.eig_set[1,1][0][-2])
         print "bottom 2 eigenvalues with mitigation using unmitigated metric: "+str(self.eig_set_ssc[1,1][0][0])+","+str(self.eig_set_ssc[1,1][0][1])
-        print "number eigenvalues>2.00000001 without mitigation using gaussian metric: "+str(np.sum(np.abs(self.eig_set[1,0][0])>2.00000001))
-        print "number eigenvalues>2.00000001 with mitigation using gaussian metric: "+str(np.sum(np.abs(self.eig_set[1,1][0])>2.00000001))
-        print "number eigenvalues<1.99999999 with mitigation using unmitigated metric: "+str(np.sum(np.abs(self.eig_set_ssc[1,1][0])<1.99999999))
+        print "number eigenvalues>1.00000001 without mitigation using gaussian metric: "+str(np.sum(np.abs(self.eig_set[1,0][0])>1.00000001))
+        print "number eigenvalues>1.00000001 with mitigation using gaussian metric: "+str(np.sum(np.abs(self.eig_set[1,1][0])>1.00000001))
+        print "number eigenvalues<0.99999999 with mitigation using unmitigated metric: "+str(np.sum(np.abs(self.eig_set_ssc[1,1][0])<0.99999999))
         #print "components of eigenvectors, sorted by descending importance, eigenvectors sorted by descending contamination without mitigation"
         #for i in xrange(0,6):
         #    comp_no_mit = lambda itr1,itr2: cmp(np.abs(self.eig_set[1,0][1][itr1,-1-i]),np.abs(self.eig_set[1,0][1][itr2,-1-i]))
@@ -105,9 +105,10 @@ class SuperSurvey:
         #    list_ssc = np.arange(self.eig_set_ssc[1,1][0].size)
         #    list_ssc = np.array(sorted(list_ssc,comp_ssc))
         #    print "descending order of component along most improved direction with mitigation using unmitigated metric: "+str(self.surveys_sw[0].cosmo_par_list[list_ssc][::-1])
-        width1s_g,width2s_g,angles_g,areas_g = get_ellipse_specs(self.f_set_nopriors[0][2].get_covar())
-        width1s_no_mit,width2s_no_mit,angles_no_mit,areas_no_mit = get_ellipse_specs(self.f_set_nopriors[1][2].get_covar())
-        width1s_mit,width2s_mit,angles_mit,areas_mit = get_ellipse_specs(self.f_set_nopriors[2][2].get_covar())
+        dchi2=2.3
+        width1s_g,width2s_g,angles_g,areas_g = get_ellipse_specs(self.f_set_nopriors[0][2].get_covar(),dchi2=dchi2)
+        width1s_no_mit,width2s_no_mit,angles_no_mit,areas_no_mit = get_ellipse_specs(self.f_set_nopriors[1][2].get_covar(),dchi2=dchi2)
+        width1s_mit,width2s_mit,angles_mit,areas_mit = get_ellipse_specs(self.f_set_nopriors[2][2].get_covar(),dchi2=dchi2)
         rat_no_mit_g = areas_no_mit/areas_g
         rat_no_mit_g[np.isnan(rat_no_mit_g)]=0.
         rat_mit_g = areas_mit/areas_g
@@ -125,17 +126,28 @@ class SuperSurvey:
         print "----------------------------------------------------"
         print "----------------------------------------------------"
 
-    def make_standard_ellipse_plot(self):
-        no_mit_color = np.array([1.,0.,0.])
-        mit_color = np.array([0.,1.,0.])
-        g_color = np.array([0.,0.,1.])
-        color_set = np.array([mit_color,no_mit_color,g_color])
-        opacity_set = np.array([1.0,1.0,1.0])
-        box_widths = np.array([0.015,0.005,0.0005,0.005,0.1,0.05])
-        dchi2 = 2.3
+    def make_standard_ellipse_plot(self,c_extra=None,include_base=True,dchi2=2.3):
+        if c_extra is None:
+            c_extra = np.zeros((0,self.surveys_sw[0].cosmo_par_list.size,self.surveys_sw[0].cosmo_par_list.size))
+        extra_colors = np.zeros((c_extra.size,3))
+        for i in xrange(0,c_extra.size):
+            extra_colors[i] = np.random.rand(3)
+
+        if include_base:
+            no_mit_color = np.array([1.,0.,0.])
+            mit_color = np.array([0.,1.,0.])
+            g_color = np.array([0.,0.,1.])
+            color_set = np.vstack([np.array([mit_color,no_mit_color,g_color]),extra_colors])
+            opacity_set = np.full(3+c_extra.size,1.)#np.array([1.0,1.0,1.0])
+            cov_set = np.vstack([np.array([self.f_set[2][2].get_covar(),self.f_set[1][2].get_covar(),self.f_set[0][2].get_covar()]),c_extra])
+            label_set = np.hstack([np.array(["ssc+mit+g","ssc+g","g"]),np.full(c_extra.shape[0],'extra')])
+        else:
+            color_set = extra_colors
+            opacity_set = np.full(c_extra.size,1.)#np.array([1.0,1.0,1.0])
+            cov_set = c_extra
+            label_set = np.full(c_extra.shape[0],'extra')
+        box_widths = np.array([0.015,0.005,0.0005,0.005,0.1,0.05])*3.
         #cov_set = np.array([SS.covs_params[1],SS.covs_params[0],SS.covs_g_pars[0]])
-        cov_set = np.array([self.f_set[2][2].get_covar(),self.f_set[1][2].get_covar(),self.f_set[0][2].get_covar()])
-        label_set = np.array(["ssc+mit+g","ssc+g","g"])
         make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',self.surveys_sw[0].cosmo_par_list,self.C,dchi2=dchi2)
 
 
@@ -160,6 +172,7 @@ def get_ellipse_specs(covs,dchi2=2.3):
 
 
 def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_par_list,C,dchi2,adaptive_mult=1.05):
+    formatted_labels = {"ns":"$n_s$","Omegamh2":"$\Omega_m h^2$","OmegaLh2":"$\Omega_\phi h^2$","Omegabh2":"$\Omega_b h^2$","LogAs":"$ln(A_s)$","As":"$A_s$","sigma8":"$\sigma_8$","w0":"$w_0$","wa":"$w_a$","w":"w","Omegam":"$\Omega_m$","OmegaL":"$\Omega_\phi$","Omegab":"$\Omega_b$","h":"h","H0":"H_0","Omegach2":"$\Omega_c h^2$","Omegac":"$\Omega_c$"}
     import matplotlib.pyplot as plt
     import matplotlib.ticker as ticker
     from matplotlib.patches import Ellipse
@@ -179,7 +192,7 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
     if box_widths=="adaptive":
         box_widths = np.zeros(n_p)
         for itr3 in xrange(0,n_c):
-            box_widths = np.max(np.array([box_widths,2.*np.sqrt(np.diag(cov_set[itr3]))]),axis=0)
+            box_widths = np.max(np.array([box_widths,3.*np.sqrt(np.diag(cov_set[itr3]))]),axis=0)
         box_widths*=adaptive_mult
 
     xbox_widths = box_widths
@@ -188,57 +201,103 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
         for itr2 in xrange(0,n_p):
             ax = ax_list[itr2,itr1]
             ax.set_axisbelow(True)
+            if itr2<itr1:
+                ax.axis('off')
+                #ax.tick_params(axis='both',labelsize='small',labelbottom='off',labelleft='off',labeltop='off',labelright='off')
+                continue
             param1 = cosmo_par_list[itr1]
             param2 = cosmo_par_list[itr2]
-            fid_point = np.array([C.cosmology[param1],C.cosmology[param2]])
+            #fid_point = np.array([C.cosmology[param1],C.cosmology[param2]])
+            fid_point = np.array([0.,0.])
 
             #TODO check sense of rotation
             es = np.zeros(n_c,dtype=object)
             for itr3  in xrange(0,n_c):
                 es[itr3] = Ellipse(fid_point,width1_set[itr3][itr1,itr2],width2_set[itr3][itr1,itr2],angle=180./np.pi*angle_set[itr3][itr1,itr2],label=label_set[itr3])
-                ax.add_artist(es[itr3])
+                if itr1==itr2:
+                    xs = np.linspace(-xbox_widths[itr1]/2.,xbox_widths[itr1]/2.,200)
+                    sigma = np.sqrt(cov_set[itr3][itr1,itr1])#width1_set[itr3][itr1,itr1]
+                    ax.plot(xs,1./np.sqrt(2.*np.pi*sigma**2)*np.exp(-xs**2/(2.*sigma**2)),color=color_set[itr3])
+                    ybox_width = np.max(1./np.sqrt(2.*np.pi*sigma**2)*np.exp(-xs**2/(2.*sigma**2)))*1.05
+                elif itr1<itr2:
+                    ax.add_artist(es[itr3])
                 es[itr3].set_clip_box(ax.bbox)
                 es[itr3].set_alpha(opacity_set[itr3])
                 es[itr3].set_edgecolor(color_set[itr3])
                 es[itr3].set_facecolor(color_set[itr3])
                 es[itr3].set_fill(False)
 
-            xbox_width = xbox_widths[itr1]
-            ybox_width = ybox_widths[itr2]
-            nticks = 3
+            if itr1<itr2:
+                xbox_width = xbox_widths[itr1]
+                ybox_width = ybox_widths[itr2]
+            elif itr1==itr2:
+                xbox_width = xbox_widths[itr1]
+            #    ybox_width = 1.
+            nticks = 2
             tickrange =0.7
-            xtickspacing = xbox_width*tickrange/nticks
-            ytickspacing = ybox_width*tickrange/nticks
-            xticks = np.arange(fid_point[0]-tickrange/2*xbox_width,fid_point[0]+tickrange/2*xbox_width+0.01*xtickspacing,xtickspacing)
-            yticks = np.arange(fid_point[1]-tickrange/2*ybox_width,fid_point[1]+tickrange/2*ybox_width+0.01*ytickspacing,ytickspacing)
+            #xticks = np.arange(fid_point[0]-tickrange/2*xbox_width,fid_point[0]+tickrange/2*xbox_width+0.01*xtickspacing,xtickspacing)
+            #yticks = np.arange(fid_point[1]-tickrange/2*ybox_width,fid_point[1]+tickrange/2*ybox_width+0.01*ytickspacing,ytickspacing)
             #ax.set_title('1-sigma contours')
-            ax.xaxis.set_major_locator(ticker.FixedLocator(xticks))
-            ax.yaxis.set_major_locator(ticker.FixedLocator(yticks))
-            formatter=ticker.FormatStrFormatter("%.4f")
-            ax.xaxis.set_major_formatter(formatter)
-            ax.yaxis.set_major_formatter(formatter)
-            ax.set_xlim(fid_point[0]-xbox_width/2.,fid_point[0]+xbox_width/2.)
-            ax.set_ylim(fid_point[1]-ybox_width/2.,fid_point[1]+ybox_width/2.)
-            ax.tick_params(axis='both',labelsize='small',labelbottom='off',labelleft='off',labeltop='off',labelright='off')
-            #ax.ticklabel_format(useOffset=False)
+            formatter=ticker.FormatStrFormatter("%.1e")
+            if itr1<=itr2:
+                xtickspacing = xbox_width*tickrange/nticks
+                xticks = np.arange(-tickrange/2*xbox_width,tickrange/2*xbox_width+0.01*xtickspacing,xtickspacing)
+                ax.xaxis.set_major_locator(ticker.FixedLocator(xticks))
+                ax.xaxis.set_major_formatter(formatter)
+                ax.set_xlim(-xbox_width/2.,xbox_width/2.)
+
+            
+            if itr1 <= itr2:
+                if itr1==itr2: 
+                    ytickspacing = (ybox_width)*tickrange/nticks
+                    yticks = np.arange(ybox_width/2.-tickrange/2*ybox_width,ybox_width/2.+tickrange/2*ybox_width+0.01*ytickspacing,ytickspacing)
+                else:
+                    ytickspacing = (ybox_width)*tickrange/nticks
+                    yticks = np.arange(-tickrange/2*ybox_width,tickrange/2*ybox_width+0.01*ytickspacing,ytickspacing)
+                ax.yaxis.set_major_locator(ticker.FixedLocator(yticks))
+                ax.yaxis.set_major_formatter(formatter)
+                if itr1==itr2:
+                    ax.set_ylim(0.,ybox_width)
+                else:
+                    ax.set_ylim(-ybox_width/2.,ybox_width/2.)
+                #ax.set_xlim(fid_point[0]-xbox_width/2.,fid_point[0]+xbox_width/2.)
+                #ax.set_ylim(fid_point[1]-ybox_width/2.,fid_point[1]+ybox_width/2.)
+                ax.tick_params(axis='both',labelsize='small',labelbottom='off',labelleft='off',labeltop='off',labelright='off')
+                #ax.ticklabel_format(useOffset=False)
 
             ax.grid()
+            #print "itr1,itr2,yticks,yboxwidth",itr1,itr2,yticks,ybox_width
 
             if itr1==itr2==0:
-                ax.legend(handles=[es[0],es[1],es[2]],loc=2,prop={'size':6})
-            if itr1==0:
-                ax.set_ylabel(param2,fontsize=8)
-                ax.tick_params(axis='y',labelsize=8,labelleft='on')
-            if itr1==n_p-1:
-                ax.tick_params(axis='y',labelsize=8,labelright='on')
-            if itr2==0:
-                ax.tick_params(axis='x',labelsize=8,labeltop='on')
+                #ax.legend(handles=[es[0],es[1],es[2]],loc=2,prop={'size':6})
+                ax.legend(handles=es.tolist(),loc=2,prop={'size':6})
+            if itr1==0 and itr1<itr2:
+                param2_pretty = formatted_labels.get(param2)
+                if param2_pretty is None:
+                    param2_pretty = param2
+                ax.set_ylabel("$\\Delta$"+str(param2_pretty),fontsize=8)
+                ax.tick_params(axis='y',labelsize=6,labelleft='on',pad=0.2,bottom='on',left='on',right='on',top='on',direction='inout')
+            #if itr1==n_p-1:
+            #    ax.tick_params(axis='y',labelsize=6,labelright='on')
+            #if itr2==0:
+            #    ax.tick_params(axis='x',labelsize=6,labeltop='on')
              #   ax.ticklabel_format(axis='x',useOffset=True)
             if itr2==n_p-1:
-                ax.set_xlabel(param1,fontsize=8)
-                ax.tick_params(axis='x',labelsize=8,labelbottom='on')
+                param1_pretty = formatted_labels.get(param1)
+                if param1_pretty is None:
+                    param1_pretty = param1
+                ax.set_xlabel("$\\Delta$"+str(param1_pretty),fontsize=8)
+                ax.tick_params(axis='x',labelsize=6,labelbottom='on',pad=0.2,bottom='on',left='on',right='on',top='on',direction='inout')
              #   ax.ticklabel_format(axis='x',useOffset=True)
-    plt.subplots_adjust(wspace=0.,hspace=0.)
+            if itr1==itr2:
+                if itr2==n_p-1:
+                    ax.tick_params(axis='both',labelsize=6,labelright='on',labeltop='on',pad=0.2,bottom='on',left='on',right='on',top='on',direction='inout')
+                elif itr2==0:
+                    ax.tick_params(axis='both',labelsize=6,labelright='on',labeltop='on',labelleft='on',pad=0.2,bottom='on',left='on',right='on',top='on',direction='inout')
+                else:
+                    ax.tick_params(axis='both',labelsize=6,labelright='on',labeltop='on',labelbottom='on',pad=0.2,bottom='on',left='on',right='on',top='on',direction='inout')
+                #ax.tick_params(axis='x',labelsize=6,labeltop='on')
+    plt.subplots_adjust(wspace=0.,hspace=0.,left=0.1,right=0.9,top=0.9,bottom=0.1)
     plt.show()
      #TODO add correlation matrix functionality
 
@@ -465,12 +524,12 @@ if __name__=="__main__":
         #TODO check eigenvalue interlace for this projection
         print "main: unmitigated sw lambda1,2: "+str(no_mit_eigs_sw[0][-1])+","+str(no_mit_eigs_sw[0][-2])
         print "main: mitigated sw lambda1,2: "+str(mit_eigs_sw[0][-1])+","+str(mit_eigs_sw[0][-2])
-        print "main: n sw mit lambda>2.00000001: "+str(np.sum(np.abs(mit_eigs_sw[0])>2.00000001))
-        print "main: n sw no mit lambda>2.00000001: "+str(np.sum(np.abs(no_mit_eigs_sw[0])>2.00000001))
+        print "main: n sw mit lambda>1.00000001: "+str(np.sum(np.abs(mit_eigs_sw[0])>1.00000001))
+        print "main: n sw no mit lambda>1.00000001: "+str(np.sum(np.abs(no_mit_eigs_sw[0])>1.00000001))
         print "main: unmitigated par lambda1,2: "+str(no_mit_eigs_par[0][-1])+","+str(no_mit_eigs_par[0][-2])
         print "main: mitigated par lambda1,2: "+str(mit_eigs_par[0][-1])+","+str(mit_eigs_par[0][-2])
-        print "main: n par mit lambda>2.00000001: "+str(np.sum(np.abs(mit_eigs_par[0])>2.00000001))
-        print "main: n par no mit lambda>2.00000001: "+str(np.sum(np.abs(no_mit_eigs_par[0])>2.00000001))
+        print "main: n par mit lambda>1.00000001: "+str(np.sum(np.abs(mit_eigs_par[0])>1.00000001))
+        print "main: n par no mit lambda>1.00000001: "+str(np.sum(np.abs(no_mit_eigs_par[0])>1.00000001))
         v_no_mit_par = np.dot(SS.f_set_nopriors[0][2].get_cov_cholesky(),no_mit_eigs_par[1])
         v_mit_par = np.dot(SS.f_set_nopriors[0][2].get_cov_cholesky(),mit_eigs_par[1])
 

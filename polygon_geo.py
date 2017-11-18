@@ -27,7 +27,11 @@ class PolygonGeo(Geo):
                     poly_params: a dict of parameters
         """
 
+        self.poly_params = poly_params
         self.n_double = poly_params['n_double']
+        self.theta_in = theta_in
+        self.phi_in = phi_in
+        self.l_max = l_max
 
         #maximum alm already available, only a00 available at start
         self._l_max = 0
@@ -131,6 +135,8 @@ class PolygonGeo(Geo):
     def expand_alm_table(self,l_max):
         ls = np.arange(np.int(self._l_max)+1,np.int(l_max)+1)
         n_l = ls.size
+        if n_l==0:
+            return
         d_alm_table1 = np.zeros(n_l,dtype=object)
         Y_r_dict = get_Y_r_dict(np.max(ls),np.zeros(1)+np.pi/2.,np.zeros(1))
         #Y_r(l,m,pi/2.,0.) has an analytic solution, use it
@@ -242,7 +248,7 @@ if __name__=='__main__':
     from cosmopie import CosmoPie
 
     poly_params = defaults.polygon_params.copy()
-    l_max = 30
+    l_max = 20
     zs = np.array([0.01,1.01])
     z_fine = np.arange(0.01,1.05,0.01)
     C = CosmoPie(defaults.cosmology)
@@ -266,21 +272,144 @@ if __name__=='__main__':
     phi_in = 7./180.*np.pi
     theta_in = -35.*np.pi/180.+np.pi/2.
     poly_geo = PolygonGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,poly_params=poly_params)
-
-
-    theta2s = np.array([np.pi/4.,3.*np.pi/4.,3*np.pi/4.,np.pi/4.,np.pi/4.])
-    phi2s = np.array([0.,0.,3.0740962890559151,3.0740962890559151,0.])-3.0740962890559151/2.
+    
+    n_fill = 20
+    theta_high = np.pi/2.+5.*np.pi/180.
+    theta_low = np.pi/2.-65.*np.pi/180.
+    theta_high_fill = np.full(n_fill,theta_high)
+    theta_low_fill = np.full(n_fill,theta_low)
+    theta2s = np.hstack([[theta_high],theta_high_fill,[theta_high,theta_low],theta_low_fill,[theta_low,theta_high]])
+    #phi_high1 = 252.7*np.pi/180.-3.*np.pi
+    #phi_high2 = 232.5*np.pi/180.-np.pi
+    #phi_low1 = 181.5*np.pi/180.-np.pi#phi_high2
+    #phi_low2 = 223.*np.pi/180.-3*np.pi
+    #phi_high1 = 186.3285*np.pi/180.-2.*np.pi
+    #phi_high2 = 174.67*np.pi/180.-0.*np.pi
+    #phi_low1 = 174.67*np.pi/180.-0.*np.pi#phi_high2
+    #phi_low2 = 186.3285*np.pi/180.-2*np.pi
+#    phi_high1 = 160.*np.pi/180.-2.*np.pi
+#    phi_high2 = 160.*np.pi/180.-0.01
+    #phi_low1 = 160.*np.pi/180.-0.01
+    #phi_low2 = 160.*np.pi/180.-2.*np.pi
+#    phi_high_fill = np.linspace(phi_high1,phi_high2,n_fill+2)[1:-1]
+    #phi_low_fill = phi_high_fill[::-1]
+    #phi_low_fill = np.linspace(phi_low1,phi_low2,n_fill+2)[1:-1]
+#    phi2s = np.hstack([[phi_high1],phi_high_fill,[phi_high2,phi_low1],phi_low_fill[::-1],[phi_low2,phi_high1]])-np.pi/2.
+    #    theta2s = np.array([np.pi/4.,3.*np.pi/4.,3*np.pi/4.,np.pi/4.,np.pi/4.])
+    #    phi2s = np.array([0.,0.,3.0740962890559151,3.0740962890559151,0.])-3.0740962890559151/2.
     #phi2s*=3.0981128
-    theta_in2 = np.pi/2.
-    phi_in2 = 0.
+#    theta_in2 = 3.*np.pi/8.
+#    phi_in2 = 0.
+    #phi2_high1_d = =160.-360.
+    #phi2_high2_d = =160.-0.01
+    theta2r_high_fill = np.full(n_fill,5.)
+    theta2r_low_fill =np.full(n_fill, -65.)
+    phi2r_high_fill = np.linspace(180.-360.,180.-10.,n_fill)
+    phi2r_low_fill = phi2r_high_fill[::-1] 
+    theta2rs = np.hstack([theta2r_high_fill,theta2r_low_fill,theta2r_high_fill[0]])
+    phi2rs = np.hstack([phi2r_high_fill,phi2r_low_fill,phi2r_high_fill[0]])
+
+    theta2s= np.zeros_like(theta2rs)
+    phi2s= np.zeros_like(theta2rs)
+    from astropy.coordinates import SkyCoord
+    for itr in xrange(0,theta2rs.size):
+        coord_gal = SkyCoord(phi2rs[itr], theta2rs[itr], frame='icrs', unit='deg')
+        theta2s[itr] = coord_gal.geocentrictrueecliptic.lat.rad+np.pi/2. 
+        phi2s[itr] = coord_gal.geocentrictrueecliptic.lon.rad
+    theta_in2= SkyCoord(0.,0.,frame='icrs',unit='deg').geocentrictrueecliptic.lat.rad+np.pi/2.
+    phi_in2 = SkyCoord(0.,0.,frame='icrs',unit='deg').geocentrictrueecliptic.lon.rad
+     
     poly_geo2 = PolygonGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max=l_max,poly_params=poly_params)
 
-    from mpl_toolkits.basemap import Basemap
+    thetar_high_fill = np.full(n_fill,20.)
+    thetar_low_fill =np.full(n_fill, -20.)
+    phir_high_fill = np.linspace(160.-360.,160.-20.,n_fill)
+    phir_low_fill = np.linspace(160.-360.,160.-20.,n_fill)[::-1]
+    thetars = np.hstack([thetar_high_fill,thetar_low_fill,thetar_high_fill[0]])
+    phirs = np.hstack([phir_high_fill,phir_low_fill,phir_high_fill[0]])
+
+    thetas_mask= np.zeros_like(thetars)
+    phis_mask= np.zeros_like(thetars)
+    for itr in xrange(0,thetars.size):
+        coord_gal = SkyCoord(phirs[itr], thetars[itr], frame='galactic', unit='deg')
+        thetas_mask[itr] = coord_gal.geocentrictrueecliptic.lat.rad+np.pi/2. 
+        phis_mask[itr] = coord_gal.geocentrictrueecliptic.lon.rad
+    theta_in_mask = SkyCoord(0.,0.,frame='galactic',unit='deg').geocentrictrueecliptic.lat.rad+np.pi/2.
+    phi_in_mask = SkyCoord(0.,0.,frame='galactic',unit='deg').geocentrictrueecliptic.lon.rad
+    mask_geo = PolygonGeo(zs,thetas_mask,phis_mask,theta_in_mask,phi_in_mask,C,z_fine,l_max=l_max,poly_params=poly_params)
+    
+    import polygon_union_geo as pug
+    union_geo = pug.PolygonUnionGeo(np.array([poly_geo2]),np.array([mask_geo],dtype=object)) 
+
     import matplotlib.pyplot as plt
-    m = Basemap(projection='moll',lon_0=0)
-    poly_geo.sp_poly.draw(m,color='red')
-    poly_geo2.sp_poly.draw(m,color='blue')
-    plt.show()
+    from mpl_toolkits.basemap import Basemap
+    m  = Basemap(projection='moll',lon_0=0)
+    do_plot1 = False
+    if do_plot1:
+       # poly_geo.sp_poly.draw(m,color='red')
+        poly_geo2.sp_poly.draw(m,color='blue')
+        mask_geo.sp_poly.draw(m,color='green')
+        union_geo.union_mask.draw(m,color='red')
+        plt.show()
+
+    do_plot3 = False
+    if do_plot3:
+        #poly_geo.sp_poly.draw(m,color='red')
+        poly_geo2.sp_poly.draw(m,color='blue')
+        mask_geo.sp_poly.draw(m,color='red')
+        union_geo.union_geo.sp_poly.draw(m,color='green')
+        plt.show()
+
+    do_reconstruct = True
+    if do_reconstruct:
+        from alm_utils import reconstruct_from_alm
+        from polygon_pixel_geo import PolygonPixelGeo
+        import matplotlib.colors as colors
+        pp_geo2 = PolygonPixelGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max=l_max,res_healpix=6)
+        pp_geo = PolygonPixelGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,res_healpix=6)
+        pp_mask_geo = PolygonPixelGeo(zs,thetas_mask,phis_mask,theta_in_mask,phi_in_mask,C,z_fine,l_max=l_max,res_healpix=6)
+        #mask = ((pp_geo2.contained*1.-pp_mask_geo.contained*1.)>0)
+        from polygon_pixel_geo import get_healpix_pixelation,contains_points
+        all_pixels = get_healpix_pixelation(res_choose=6)
+        mask =  contains_points(all_pixels,union_geo.union_mask)
+        #union_geo.union_mask.draw(m,color='red')
+        totals_poly = reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],union_geo.alm_table.copy())
+        print "mean squared reconstruction error/point = ",np.linalg.norm(totals_poly-mask)/mask.size
+    #    m = Basemap(projection='moll',lon_0=0)
+        lats = (pp_geo2.all_pixels[:,0]-np.pi/2.)*180/np.pi
+        lons = pp_geo2.all_pixels[:,1]*180/np.pi
+        x,y=m(lons,lats)
+        #have to switch because histogram2d considers y horizontal, x vertical
+        fig = plt.figure(figsize=(10,5))
+        #minC = np.min([totals_poly,totals_pp])
+        #maxC = np.max([totals_poly,totals_pp])
+        minC =np.min(totals_poly)
+        maxC = np.max(totals_poly)
+        bounds = np.linspace(minC,maxC,10)
+        norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
+        ax = fig.add_subplot(121)
+        H1,yedges1,xedges1 = np.histogram2d(y,x,100,weights=totals_poly)
+        X1, Y1 = np.meshgrid(xedges1, yedges1)
+        pc1 = ax.pcolormesh(X1,Y1,-H1,cmap='gray')
+        ax.set_title("PolygonGeo reconstruction")
+        ax.set_aspect('equal')
+        #fig.colorbar(pc1,ax=ax)
+        #m.plot(x,y,'bo',markersize=1)
+        pp_geo2.sp_poly.draw(m,color='blue')
+        do_poly=True
+        if do_poly:
+            ax = fig.add_subplot(122)
+            H2,yedges2,xedges2 = np.histogram2d(y,x,100,weights=mask)
+            X2, Y2 = np.meshgrid(xedges2, yedges2)
+            ax.pcolormesh(X2,Y2,-H2,cmap='gray')
+            ax.set_aspect('equal')
+            #m.plot(x,y,'bo',markersize=1)
+            ax.set_title("PolygonPixelGeo mask")
+            union_geo.union_mask.draw(m,color='red')
+            #pp_geo2.sp_poly.draw(m,color='red')
+        plt.show()
+    from astropy import units as u
+    from astropy.coordinates import SkyCoord
 #if __name__=='__main__':
 #    from polygon_pixel_geo import PolygonPixelGeo,reconstruc_from_alm
 #    from geo import RectGeo
@@ -408,3 +537,4 @@ if __name__=='__main__':
 #                ax.set_title("PolygonGeo reconstruction")
 #                pp_geo2.sp_poly.draw(m,color='red')
 #            plt.show()
+

@@ -515,19 +515,21 @@ def test_get_eig_metric_diag_range(fisher_params):
     metric = fm.FisherMatrix(metric_mat,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR)
 
     eigs_1 = fisher.get_cov_eig_metric(metric)
-    atol_loc = np.max(np.abs(eigs_1[0]-2.))*atol_rel_use
+    atol_loc = np.max(np.abs(eigs_1[0]-1.))*atol_rel_use
 
-    m_mat = np.identity(cov.shape[0])+np.dot(cov,metric_mat_inv)
+    #m_mat = np.identity(cov.shape[0])+np.dot(cov,metric_mat_inv)
+    m_mat = np.dot(cov,metric_mat_inv)
     eigs_3 = spl.eig(m_mat)
     #check matrix is positive semidefinite
     assert(np.all(eigs_3[0]>0.))
-    assert(np.all(np.abs(np.imag(eigs_3[0]-2.))[::-1]<atol_loc))
+    assert(np.all(np.abs(np.imag(eigs_3[0]-1.))[::-1]<atol_loc))
     #check eigenvalues match
-    assert(np.allclose(np.sort(eigs_1[0]-2.),np.sort(np.real(eigs_3[0]-2.)),atol=atol_loc,rtol=rtol_use))
+    assert(np.allclose(np.sort(eigs_1[0]-1.),np.sort(np.real(eigs_3[0]-1.)),atol=atol_loc,rtol=rtol_use))
 
     chol_metric = spl.cholesky(metric_mat,lower=True)
     chol_inv_metric = npl.pinv(chol_metric)
-    alt_mat = np.identity(cov.shape[0])+np.dot(chol_inv_metric,np.dot(cov,chol_inv_metric.T))
+    #alt_mat = np.identity(cov.shape[0])+np.dot(chol_inv_metric,np.dot(cov,chol_inv_metric.T))
+    alt_mat = np.dot(chol_inv_metric,np.dot(cov,chol_inv_metric.T))
     #u vectors
     eigvs_4 = np.dot(chol_inv_metric,eigs_3[1])
     #v vectors
@@ -565,19 +567,21 @@ def test_get_eig_metric_rand(fisher_params):
     metric = fm.FisherMatrix(metric_mat,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR)
 
     eigs_1 = fisher.get_cov_eig_metric(metric)
-    atol_loc = np.max(np.abs(eigs_1[0]-2.))*atol_rel_use
+    atol_loc = np.max(np.abs(eigs_1[0]-1.))*atol_rel_use
 
-    m_mat = np.identity(cov.shape[0])+np.dot(cov,metric_mat_inv)
+    #m_mat = np.identity(cov.shape[0])+np.dot(cov,metric_mat_inv)
+    m_mat = np.dot(cov,metric_mat_inv)
     eigs_3 = spl.eig(m_mat)
     #check matrix is positive semidefinite
     assert(np.all(eigs_3[0]>0.))
-    assert(np.all(np.abs(np.imag(eigs_3[0]-2.))[::-1]<atol_loc))
+    assert(np.all(np.abs(np.imag(eigs_3[0]-1.))[::-1]<atol_loc))
     #check eigenvalues match
-    assert(np.allclose(np.sort(eigs_1[0]-2.),np.sort(np.real(eigs_3[0]-2.)),atol=atol_loc,rtol=rtol_use))
+    assert(np.allclose(np.sort(eigs_1[0]-1.),np.sort(np.real(eigs_3[0]-1.)),atol=atol_loc,rtol=rtol_use))
 
     chol_metric = spl.cholesky(metric_mat,lower=True)
     chol_inv_metric = npl.pinv(chol_metric)
-    alt_mat = np.identity(cov.shape[0])+np.dot(chol_inv_metric,np.dot(cov,chol_inv_metric.T))
+    #alt_mat = np.identity(cov.shape[0])+np.dot(chol_inv_metric,np.dot(cov,chol_inv_metric.T))
+    alt_mat = np.dot(chol_inv_metric,np.dot(cov,chol_inv_metric.T))
     #u vectors
     eigvs_4 = np.dot(chol_inv_metric,eigs_3[1])
     #v vectors

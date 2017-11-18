@@ -426,7 +426,8 @@ class FisherMatrix(object):
         metric_chol_inv = metric.get_cov_cholesky_inv(copy_output=False,internal=False)
         #covar_use = self.get_covar()
         #use algebra trick with cholesky decompositions to get symmetric matrix with desired eigenvalues
-        mat_retrieved = np.identity(self.internal_mat.shape[0])+self.project_covar(metric_chol_inv.T).get_covar(copy_output=False)
+        #mat_retrieved = np.identity(self.internal_mat.shape[0])+self.project_covar(metric_chol_inv.T).get_covar(copy_output=False)
+        mat_retrieved = self.project_covar(metric_chol_inv.T).get_covar(copy_output=False)
         #mat_retrieved = (mat_retrieved+mat_retrieved.T)/2.
         #mat_retrieved = np.identity(covar_use.shape[0])+np.dot(np.dot(metric_chol_inv,covar_use),metric_chol_inv.T)
         eig_set = np.linalg.eigh(mat_retrieved)
