@@ -21,6 +21,14 @@ import alm_utils as au
 class PolygonPixelGeo(PixelGeo):
     def __init__(self,zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max,res_healpix=defaults.polygon_params['res_healpix'],overwride_precompute=False):
         """get a healpix pixelated spherical polygon geo"""
+        self.thetas = thetas
+        self.phis = phis
+        self.theta_in = theta_in
+        self.phi_in = phi_in
+        self.C = C
+        self.z_fine = z_fine
+        self.res_healpix = res_helpix
+        self.overwride_precompute = overwride_precompute 
         all_pixels = get_healpix_pixelation(res_choose=res_healpix)
         self.sp_poly = get_poly(thetas,phis,theta_in,phi_in)
         if isnan(self.sp_poly.area()):

@@ -248,11 +248,23 @@ if __name__=='__main__':
     from cosmopie import CosmoPie
 
     poly_params = defaults.polygon_params.copy()
-    l_max = 20
+    poly_params['n_double'] = 82
+    l_max = 250
     zs = np.array([0.01,1.01])
     z_fine = np.arange(0.01,1.05,0.01)
     C = CosmoPie(defaults.cosmology)
-
+    thetas_wfirst = np.array([-50.,-35.,-35.,-19.,-19.,-19.,-15.8,-15.8,-40.,-40.,-55.,-78.,-78.,-78.,-55.,-55.,-50.,-50.])*np.pi/180.+np.pi/2.
+    phis_wfirst = np.array([-19.,-19.,-11.,-11.,7.,25.,25.,43.,43.,50.,50.,50.,24.,5.,5.,7.,7.,-19.])*np.pi/180.
+    phi_in_wfirst = 7./180.*np.pi
+    theta_in_wfirst = -35.*np.pi/180.+np.pi/2.
+    print "main: begin constructing WFIRST PolygonGeo"
+    geo_wfirst = PolygonGeo(zs,thetas_wfirst,phis_wfirst,theta_in_wfirst,phi_in_wfirst,C,z_fine,l_max=l_max,poly_params=poly_params)
+    #poly_params2 = poly_params.copy()
+    #poly_params2['n_double']+=48
+    #geo_wfirst2 = PolygonGeo(zs,thetas_wfirst,phis_wfirst,theta_in_wfirst,phi_in_wfirst,C,z_fine,l_max=l_max,poly_params=poly_params2)
+    #print np.max(np.abs(np.array(geo_wfirst.alm_table.values())-np.array(geo_wfirst2.alm_table.values()))/np.array(geo_wfirst2.alm_table.values()))
+    import sys
+    sys.exit()
     #phis = np.array([-19.,7.,25.,-19.])/180.*np.pi
     #thetas = np.pi/2.+np.array([-50,-35.,-55.,-50.])/180.*np.pi
     #phis = np.array([-19.,7.,25.,-19.])/180.*np.pi
@@ -304,7 +316,7 @@ if __name__=='__main__':
     #phi2_high2_d = =160.-0.01
     theta2r_high_fill = np.full(n_fill,5.)
     theta2r_low_fill =np.full(n_fill, -65.)
-    phi2r_high_fill = np.linspace(180.-360.,180.-10.,n_fill)
+    phi2r_high_fill = np.linspace(180.-360.,180.-1.,n_fill)
     phi2r_low_fill = phi2r_high_fill[::-1] 
     theta2rs = np.hstack([theta2r_high_fill,theta2r_low_fill,theta2r_high_fill[0]])
     phi2rs = np.hstack([phi2r_high_fill,phi2r_low_fill,phi2r_high_fill[0]])
@@ -344,7 +356,7 @@ if __name__=='__main__':
     import matplotlib.pyplot as plt
     from mpl_toolkits.basemap import Basemap
     m  = Basemap(projection='moll',lon_0=0)
-    do_plot1 = False
+    do_plot1 = True
     if do_plot1:
        # poly_geo.sp_poly.draw(m,color='red')
         poly_geo2.sp_poly.draw(m,color='blue')
@@ -360,7 +372,7 @@ if __name__=='__main__':
         union_geo.union_geo.sp_poly.draw(m,color='green')
         plt.show()
 
-    do_reconstruct = True
+    do_reconstruct = False
     if do_reconstruct:
         from alm_utils import reconstruct_from_alm
         from polygon_pixel_geo import PolygonPixelGeo

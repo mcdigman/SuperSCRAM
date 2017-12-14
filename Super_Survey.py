@@ -126,7 +126,7 @@ class SuperSurvey:
         print "----------------------------------------------------"
         print "----------------------------------------------------"
 
-    def make_standard_ellipse_plot(self,c_extra=None,include_base=True,dchi2=2.3):
+    def make_standard_ellipse_plot(self,c_extra=None,include_base=True,dchi2=2.3,include_diag=True):
         if c_extra is None:
             c_extra = np.zeros((0,self.surveys_sw[0].cosmo_par_list.size,self.surveys_sw[0].cosmo_par_list.size))
         extra_colors = np.zeros((c_extra.size,3))
@@ -148,7 +148,7 @@ class SuperSurvey:
             label_set = np.full(c_extra.shape[0],'extra')
         box_widths = np.array([0.015,0.005,0.0005,0.005,0.1,0.05])*3.
         #cov_set = np.array([SS.covs_params[1],SS.covs_params[0],SS.covs_g_pars[0]])
-        make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',self.surveys_sw[0].cosmo_par_list,self.C,dchi2=dchi2)
+        make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',self.surveys_sw[0].cosmo_par_list,self.C,dchi2=dchi2,include_diag=include_diag)
 
 
 def get_ellipse_specs(covs,dchi2=2.3):
@@ -171,13 +171,16 @@ def get_ellipse_specs(covs,dchi2=2.3):
     return width1s,width2s,angles,areas
 
 
-def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_par_list,C,dchi2,adaptive_mult=1.05):
+def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_par_list,C,dchi2,adaptive_mult=1.05,include_diag=True):
     formatted_labels = {"ns":"$n_s$","Omegamh2":"$\Omega_m h^2$","OmegaLh2":"$\Omega_\phi h^2$","Omegabh2":"$\Omega_b h^2$","LogAs":"$ln(A_s)$","As":"$A_s$","sigma8":"$\sigma_8$","w0":"$w_0$","wa":"$w_a$","w":"w","Omegam":"$\Omega_m$","OmegaL":"$\Omega_\phi$","Omegab":"$\Omega_b$","h":"h","H0":"H_0","Omegach2":"$\Omega_c h^2$","Omegac":"$\Omega_c$"}
     import matplotlib.pyplot as plt
     import matplotlib.ticker as ticker
     from matplotlib.patches import Ellipse
     n_p = cosmo_par_list.size
-    fig,ax_list = plt.subplots(n_p,n_p)
+    if include_diag:
+        fig,ax_list = plt.subplots(n_p,n_p)
+    else:
+        fig,ax_list = plt.subplots(n_p-1,n_p-1)
     #width1s_g,width2s_g,angles_g,areas_g = get_ellipse_specs(SS.c_g_params,dchi2=dchi2)
     #width1s_no_mit,width2s_no_mit,angles_no_mit,areas_no_mit = get_ellipse_specs(SS.c_no_mit_params,dchi2=dchi2)
     #width1s_mit,width2s_mit,angles_mit,areas_mit = get_ellipse_specs(SS.c_mit_params,dchi2=dchi2)
@@ -189,7 +192,7 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
     area_set = np.zeros((n_c,n_p,n_p))
     for itr3 in xrange(0,n_c):
         width1_set[itr3],width2_set[itr3],angle_set[itr3],area_set[itr3] = get_ellipse_specs(cov_set[itr3],dchi2=dchi2)
-    if box_widths=="adaptive":
+    if not(type(box_widths) is np.ndarray) and box_widths == "adaptive":
         box_widths = np.zeros(n_p)
         for itr3 in xrange(0,n_c):
             box_widths = np.max(np.array([box_widths,3.*np.sqrt(np.diag(cov_set[itr3]))]),axis=0)
@@ -199,7 +202,20 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
     ybox_widths = box_widths
     for itr1 in xrange(0,n_p):
         for itr2 in xrange(0,n_p):
-            ax = ax_list[itr2,itr1]
+            if not include_diag:
+                if itr1==itr2 or itr2==0 or itr1==n_p-1:
+                    continue
+                else:
+                    if n_p==2:
+                        ax = ax_list
+                    else:
+                        ax = ax_list[itr2-1,itr1]
+            else:
+                if n_p==1:
+                    ax = ax_list
+                else:
+                    ax = ax_list[itr2,itr1]
+            #ax.set_aspect('equal')
             ax.set_axisbelow(True)
             if itr2<itr1:
                 ax.axis('off')
@@ -212,13 +228,15 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
 
             #TODO check sense of rotation
             es = np.zeros(n_c,dtype=object)
+            ybox_width = 0.
             for itr3  in xrange(0,n_c):
                 es[itr3] = Ellipse(fid_point,width1_set[itr3][itr1,itr2],width2_set[itr3][itr1,itr2],angle=180./np.pi*angle_set[itr3][itr1,itr2],label=label_set[itr3])
                 if itr1==itr2:
                     xs = np.linspace(-xbox_widths[itr1]/2.,xbox_widths[itr1]/2.,200)
                     sigma = np.sqrt(cov_set[itr3][itr1,itr1])#width1_set[itr3][itr1,itr1]
                     ax.plot(xs,1./np.sqrt(2.*np.pi*sigma**2)*np.exp(-xs**2/(2.*sigma**2)),color=color_set[itr3])
-                    ybox_width = np.max(1./np.sqrt(2.*np.pi*sigma**2)*np.exp(-xs**2/(2.*sigma**2)))*1.05
+                    ybox_width = np.max(np.array([ybox_width,np.max(1./np.sqrt(2.*np.pi*sigma**2)*np.exp(-xs**2/(2.*sigma**2)))*1.05]))
+                    #ybox_width=5.
                 elif itr1<itr2:
                     ax.add_artist(es[itr3])
                 es[itr3].set_clip_box(ax.bbox)
@@ -270,6 +288,10 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
 
             if itr1==itr2==0:
                 #ax.legend(handles=[es[0],es[1],es[2]],loc=2,prop={'size':6})
+                param2_pretty = formatted_labels.get(param2)
+                if param2_pretty is None:
+                    param2_pretty = param2
+                ax.set_ylabel("$\\Delta$"+str(param2_pretty),fontsize=8)
                 ax.legend(handles=es.tolist(),loc=2,prop={'size':6})
             if itr1==0 and itr1<itr2:
                 param2_pretty = formatted_labels.get(param2)
@@ -291,11 +313,11 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
              #   ax.ticklabel_format(axis='x',useOffset=True)
             if itr1==itr2:
                 if itr2==n_p-1:
-                    ax.tick_params(axis='both',labelsize=6,labelright='on',labeltop='on',pad=0.2,bottom='on',left='on',right='on',top='on',direction='inout')
+                    ax.tick_params(axis='both',labelsize=6,labelright='off',labeltop='off',pad=0.2,bottom='on',left='on',right='on',top='on',direction='inout')
                 elif itr2==0:
-                    ax.tick_params(axis='both',labelsize=6,labelright='on',labeltop='on',labelleft='on',pad=0.2,bottom='on',left='on',right='on',top='on',direction='inout')
+                    ax.tick_params(axis='both',labelsize=6,labelright='off',labeltop='off',labelleft='on',pad=0.2,bottom='on',left='on',right='off',top='on',direction='inout')
                 else:
-                    ax.tick_params(axis='both',labelsize=6,labelright='on',labeltop='on',labelbottom='on',pad=0.2,bottom='on',left='on',right='on',top='on',direction='inout')
+                    ax.tick_params(axis='both',labelsize=6,labelright='off',labeltop='off',labelbottom='on',pad=0.2,bottom='on',left='on',right='off',top='on',direction='inout')
                 #ax.tick_params(axis='x',labelsize=6,labeltop='on')
     plt.subplots_adjust(wspace=0.,hspace=0.,left=0.1,right=0.9,top=0.9,bottom=0.1)
     plt.show()

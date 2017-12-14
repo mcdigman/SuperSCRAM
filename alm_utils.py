@@ -64,6 +64,30 @@ def rot_alm_x(d_alm_table_in,angles,ls,n_double=defaults.polygon_params['n_doubl
             #use angle doubling fomula to get to correct angle
             for itr2 in xrange(0,n_double):
                 el_mat = 2.*el_mat+np.dot(el_mat,el_mat)
+            ######Walled
+            for itr3 in xrange(1,3):
+                epsilon2 = angles[itr]/2.**(n_double+itr3)
+                el_mat2 = epsilon2*el_mat_real.copy()
+                #use angle doubling fomula to get to correct angle
+                for itr2 in xrange(0,n_double+itr3):
+                    el_mat2 = 2.*el_mat2+np.dot(el_mat2,el_mat2)
+                if itr3>1:
+                    #print itr3,np.average(np.abs(el_mat-el_mat2))-last
+                    print itr3,ll,np.average(np.abs(el_mat2-el_last))-last,np.max(np.abs(el_mat2-el_last)),(np.average(np.abs(el_mat2-el_last))-last)/last
+                    last = np.average(np.abs(el_mat2-el_last))
+                    if not last==0:
+                        raise RuntimeError('did not converge')
+                    #if np.average(np.abs(el_mat2-el_last))-last<0.:
+                    #    print "stop itr,ll",itr3,ll
+                      # break
+                    #if itr3==9:
+                    #    print "fail itr,ll",itr3,ll
+                else:
+                    last = np.average(np.abs(el_mat2-el_mat))
+                #last=np.average(np.abs(el_mat2-el_last))
+
+                el_last = el_mat2
+            ######
             d_mat = el_mat+np.identity(el_mat.shape[0])
             d_alm_table_out[l_itr][:,itr] = np.dot(d_mat,d_alm_table_in[l_itr][:,itr])
     return d_alm_table_out

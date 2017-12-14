@@ -1,6 +1,6 @@
 import numpy as np
 
-from time import time 
+from time import time
 
 from Super_Survey import SuperSurvey
 from lw_survey import LWSurvey
@@ -22,27 +22,29 @@ if __name__=='__main__':
     cosmo['de_model'] = 'w0wa'
     cosmo['wa'] = 0.
     cosmo['w0'] = -1.
-    p_space = 'jdem' 
+    p_space = 'jdem'
     camb_params = defaults.camb_params.copy()
     camb_params['force_sigma8'] = False
     poly_params = defaults.polygon_params.copy()
     lensing_params = defaults.lensing_params.copy()
+    wmatcher_params = defaults.wmatcher_params.copy()
     nz_params_wfirst_lens = defaults.nz_params_wfirst_lens.copy()
     sw_survey_params=defaults.sw_survey_params.copy()
     lw_survey_params=defaults.lw_survey_params.copy()
     sw_observable_list = defaults.sw_observable_list
     lw_observable_list = defaults.lw_observable_list
     dn_params = defaults.dn_params.copy()
+    #wmatcher_params['w_step']=0.05
 
     #creat a CosmoPie object to manage the cosmology details
     print "main: begin constructing CosmoPie"
-    C = CosmoPie(cosmo,camb_params=camb_params,p_space=p_space) 
+    C = CosmoPie(cosmo,camb_params=camb_params,p_space=p_space)
 
     #get the matter power spectrum and give it to the CosmoPie
     print "main: begin constructing MatterPower"
-    P = MatterPower(C,camb_params=camb_params)
+    P = MatterPower(C,camb_params=camb_params,wmatcher_params=wmatcher_params)
     C.set_power(P)
-        
+
     #create the WFIRST geometry
     #zs are the bounding redshifts of the tomographic bins
     #zs = np.array([0.2,0.43,.63,0.9, 1.3])
@@ -86,7 +88,7 @@ if __name__=='__main__':
         cosmo_par_epsilons = np.array([0.002,0.0005,0.0001,0.0005,0.1,0.01])
     else:
         raise ValueError('unrecognized de_model '+str(cosmo['de_model']))
-    
+
     #create the number density of lensing sources
     print "main: begin constructing lensing source density for WFIRST"
     nz_wfirst_lens = NZWFirst(nz_params_wfirst_lens)
@@ -111,7 +113,8 @@ if __name__=='__main__':
     z_max = zs[-1]+0.001
     r_max = C.D_comov(z_max)
     #k_cut is the maximum k balue for the bessel function zeros that define the basis
-    x_cut = 40.
+    x_cut = 70.
+    #x_cut = 40.
     #x_cut = 10.
     k_cut = x_cut/r_max
     #l_max caps maximum l regardless of k
@@ -121,13 +124,14 @@ if __name__=='__main__':
     #create the lw survey
     geos = np.array([geo_wfirst,geo_lsst],dtype=object)
     print "main: begin constructing LWSurvey for mitigation"
+    #TODO control cut out here
     survey_lw = LWSurvey(geos,'combined_survey',basis,C=C,params=lw_survey_params,observable_list=lw_observable_list,dn_params=dn_params)
     surveys_lw=np.array([survey_lw])
 
     #create the SuperSurvey with mitigation
     print "main: begin constructing SuperSurvey"
     SS=SuperSurvey(surveys_sw, surveys_lw,basis,C=C,get_a=False,do_unmitigated=True,do_mitigated=True)
-    
+
     time1 = time()
     print "main: finished construction tasks in "+str(time1-time0)+"s"
 
@@ -147,78 +151,78 @@ if __name__=='__main__':
     #cov_set = np.array([SS.covs_params[1],SS.covs_params[0],SS.covs_g_pars[0]])
     cov_set = np.array([SS.f_set[2][2].get_covar(),SS.f_set[1][2].get_covar(),SS.f_set[0][2].get_covar()])
     label_set = np.array(["ssc+mit+g","ssc+g","g"])
-    
-    SS.print_standard_analysis() 
+
+    SS.print_standard_analysis()
     #make the ellipse plot
     SS.make_standard_ellipse_plot()
-    
-    valfound_g = {}
-    f_base_g = SS.f_set[0][2].get_fisher()
-    c_base_g = np.linalg.inv(f_base_g)
-    valfound_g[()] = c_base_g[4,4]
-    valfound_mit = {}
-    f_base_mit = SS.f_set[2][2].get_fisher()
-    c_base_mit = np.linalg.inv(f_base_mit)
-    valfound_mit[()] = c_base_mit[4,4]
-    valfound_no_mit = {}
-    f_base_no_mit = SS.f_set[1][2].get_fisher()
-    c_base_no_mit = np.linalg.inv(f_base_no_mit)
-    valfound_no_mit[()] = c_base_no_mit[4,4]
-    import itertools
-    for itr in xrange(1,7):
-        for combo in itertools.combinations(np.hstack([np.arange(0,4),np.array([5,6])]),itr):
-            fix_mat = np.zeros_like(SS.f_set[1][2].get_covar())
-            for index in combo:
-                fix_mat[index,index]=1e9
-            f_mat_g = f_base_g+fix_mat
-            c_mat_g = np.linalg.inv(f_mat_g)
-            valfound_g[combo] = c_mat_g[4,4] 
-            f_mat_mit = f_base_mit+fix_mat
-            c_mat_mit = np.linalg.inv(f_mat_mit)
-            valfound_mit[combo] = c_mat_mit[4,4] 
-            f_mat_no_mit = f_base_no_mit+fix_mat
-            c_mat_no_mit = np.linalg.inv(f_mat_no_mit)
-            valfound_no_mit[combo] = c_mat_no_mit[4,4] 
-f_fix_h = np.zeros_like(f_base_no_mit)
-sigma_fix_h = 0.00001
-f_fix_h[1,1] = 1./sigma_fix_h**2*(1./2.*1./(C.cosmology['Omegamh2']+C.cosmology['OmegaLh2']))**2
-f_fix_h[1,3] = 1./sigma_fix_h**2*(1./2.*1./(C.cosmology['Omegamh2']+C.cosmology['OmegaLh2']))**2
-f_fix_h[3,1] = 1./sigma_fix_h**2*(1./2.*1./(C.cosmology['Omegamh2']+C.cosmology['OmegaLh2']))**2
-f_fix_h[3,3] = 1./sigma_fix_h**2*(1./2.*1./(C.cosmology['Omegamh2']+C.cosmology['OmegaLh2']))**2
-f_h_fixed = f_base_no_mit+f_fix_h
-c_h_fixed = np.linalg.inv(f_h_fixed)
 
-dsigma8_dLogAs = (SS.surveys_sw[0].len_pow.Cs_pert[4][0].get_sigma8()-SS.surveys_sw[0].len_pow.Cs_pert[4][1].get_sigma8())/(2*cosmo_par_epsilons[4])
-dsigma8_dOmegamh2 = (SS.surveys_sw[0].len_pow.Cs_pert[1][0].get_sigma8()-SS.surveys_sw[0].len_pow.Cs_pert[1][1].get_sigma8())/(2*cosmo_par_epsilons[1])
-dsigma8_dOmegaLh2 = (SS.surveys_sw[0].len_pow.Cs_pert[3][0].get_sigma8()-SS.surveys_sw[0].len_pow.Cs_pert[3][1].get_sigma8())/(2*cosmo_par_epsilons[3])
-alpha_S8 = 0.5
-dS8_dLogAs = dsigma8_dLogAs*(C.cosmology['Omegam']/0.3)**alpha_S8
-dS8_dOmegamh2 = C.get_sigma8()*alpha_S8*C.cosmology['OmegaLh2']/(0.3**alpha_S8*C.h**4)*(C.cosmology['Omegam'])**(alpha_S8-1.)+dsigma8_dOmegamh2*(C.cosmology['Omegam']/0.3)**alpha_S8
-dS8_dOmegaLh2 = -C.get_sigma8()*alpha_S8/(0.3**alpha_S8*C.h**2)*(C.cosmology['Omegam'])**(alpha_S8)+dsigma8_dOmegaLh2*(C.cosmology['Omegam']/0.3)**alpha_S8
-dS8_dLogAs = (SS.surveys_sw[0].len_pow.Cs_pert[4][0].get_sigma8()*(SS.surveys_sw[0].len_pow.Cs_pert[4][0].cosmology['Omegam']/0.3)**alpha_S8-SS.surveys_sw[0].len_pow.Cs_pert[4][1].get_sigma8()*(SS.surveys_sw[0].len_pow.Cs_pert[4][1].cosmology['Omegam']/0.3)**alpha_S8)/(2*cosmo_par_epsilons[4])
-dS8_dns = (SS.surveys_sw[0].len_pow.Cs_pert[0][0].get_sigma8()*(SS.surveys_sw[0].len_pow.Cs_pert[0][0].cosmology['Omegam']/0.3)**alpha_S8-SS.surveys_sw[0].len_pow.Cs_pert[0][1].get_sigma8()*(SS.surveys_sw[0].len_pow.Cs_pert[0][1].cosmology['Omegam']/0.3)**alpha_S8)/(2*cosmo_par_epsilons[0])
-dS8_dOmegabh2 = (SS.surveys_sw[0].len_pow.Cs_pert[2][0].get_sigma8()*(SS.surveys_sw[0].len_pow.Cs_pert[2][0].cosmology['Omegam']/0.3)**alpha_S8-SS.surveys_sw[0].len_pow.Cs_pert[2][1].get_sigma8()*(SS.surveys_sw[0].len_pow.Cs_pert[2][1].cosmology['Omegam']/0.3)**alpha_S8)/(2*cosmo_par_epsilons[0])
-dS8_dw0 = (SS.surveys_sw[0].len_pow.Cs_pert[5][0].get_sigma8()*(SS.surveys_sw[0].len_pow.Cs_pert[5][0].cosmology['Omegam']/0.3)**alpha_S8-SS.surveys_sw[0].len_pow.Cs_pert[5][1].get_sigma8()*(SS.surveys_sw[0].len_pow.Cs_pert[5][1].cosmology['Omegam']/0.3)**alpha_S8)/(2*cosmo_par_epsilons[0])
-dS8_dwa = (SS.surveys_sw[0].len_pow.Cs_pert[6][0].get_sigma8()*(SS.surveys_sw[0].len_pow.Cs_pert[6][0].cosmology['Omegam']/0.3)**alpha_S8-SS.surveys_sw[0].len_pow.Cs_pert[6][1].get_sigma8()*(SS.surveys_sw[0].len_pow.Cs_pert[6][1].cosmology['Omegam']/0.3)**alpha_S8)/(2*cosmo_par_epsilons[0])
-
-f_rot_param_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','S8','w0','wa']) 
-cosmo_param_fid = np.array([C.cosmology['ns'],C.cosmology['Omegamh2'],C.cosmology['Omegabh2'],C.cosmology['OmegaLh2'],C.cosmology['LogAs'],C.cosmology['w0'],C.cosmology['wa']])
-#f_rot_no_mit = c_base_no_mit.copy() 
-proj_S8 = np.identity(f_rot_param_list.size)
-proj_S8[4,4] = 1./dS8_dLogAs
-#proj_S8[4,1] = 1./dS8_dOmegamh2
-proj_S8[1,4] = 1./dS8_dOmegamh2
-#proj_S8[4,2] = 1./dS8_dOmegabh2
-proj_S8[2,4] = 1./dS8_dOmegabh2
-#proj_S8[4,3] = 1./dS8_dOmegaLh2
-proj_S8[3,4] = 1./dS8_dOmegaLh2
-#proj_S8[4,5] = 1./dS8_dw0
-proj_S8[5,4] = 1./dS8_dw0
-#proj_S8[4,6] = 1./dS8_dwa
-proj_S8[6,4] = 1./dS8_dwa
-f_rot_no_mit = np.dot(proj_S8,np.dot(f_base_no_mit,proj_S8.T))
-f_rot_no_mit = (f_rot_no_mit+f_rot_no_mit.T)/2.
-c_rot_no_mit = np.linalg.inv(f_rot_no_mit)
+#    valfound_g = {}
+#    f_base_g = SS.f_set[0][2].get_fisher()
+#    c_base_g = np.linalg.inv(f_base_g)
+#    valfound_g[()] = c_base_g[4,4]
+#    valfound_mit = {}
+#    f_base_mit = SS.f_set[2][2].get_fisher()
+#    c_base_mit = np.linalg.inv(f_base_mit)
+#    valfound_mit[()] = c_base_mit[4,4]
+#    valfound_no_mit = {}
+#    f_base_no_mit = SS.f_set[1][2].get_fisher()
+#    c_base_no_mit = np.linalg.inv(f_base_no_mit)
+#    valfound_no_mit[()] = c_base_no_mit[4,4]
+#    import itertools
+#    for itr in xrange(1,7):
+#        for combo in itertools.combinations(np.hstack([np.arange(0,4),np.array([5,6])]),itr):
+#            fix_mat = np.zeros_like(SS.f_set[1][2].get_covar())
+#            for index in combo:
+#                fix_mat[index,index]=1e9
+#            f_mat_g = f_base_g+fix_mat
+#            c_mat_g = np.linalg.inv(f_mat_g)
+#            valfound_g[combo] = c_mat_g[4,4]
+#            f_mat_mit = f_base_mit+fix_mat
+#            c_mat_mit = np.linalg.inv(f_mat_mit)
+#            valfound_mit[combo] = c_mat_mit[4,4]
+#            f_mat_no_mit = f_base_no_mit+fix_mat
+#            c_mat_no_mit = np.linalg.inv(f_mat_no_mit)
+#            valfound_no_mit[combo] = c_mat_no_mit[4,4]
+#f_fix_h = np.zeros_like(f_base_no_mit)
+#sigma_fix_h = 0.00001
+#f_fix_h[1,1] = 1./sigma_fix_h**2*(1./2.*1./(C.cosmology['Omegamh2']+C.cosmology['OmegaLh2']))**2
+#f_fix_h[1,3] = 1./sigma_fix_h**2*(1./2.*1./(C.cosmology['Omegamh2']+C.cosmology['OmegaLh2']))**2
+#f_fix_h[3,1] = 1./sigma_fix_h**2*(1./2.*1./(C.cosmology['Omegamh2']+C.cosmology['OmegaLh2']))**2
+#f_fix_h[3,3] = 1./sigma_fix_h**2*(1./2.*1./(C.cosmology['Omegamh2']+C.cosmology['OmegaLh2']))**2
+#f_h_fixed = f_base_no_mit+f_fix_h
+#c_h_fixed = np.linalg.inv(f_h_fixed)
+#
+#dsigma8_dLogAs = (SS.surveys_sw[0].len_pow.Cs_pert[4][0].get_sigma8()-SS.surveys_sw[0].len_pow.Cs_pert[4][1].get_sigma8())/(2*cosmo_par_epsilons[4])
+#dsigma8_dOmegamh2 = (SS.surveys_sw[0].len_pow.Cs_pert[1][0].get_sigma8()-SS.surveys_sw[0].len_pow.Cs_pert[1][1].get_sigma8())/(2*cosmo_par_epsilons[1])
+#dsigma8_dOmegaLh2 = (SS.surveys_sw[0].len_pow.Cs_pert[3][0].get_sigma8()-SS.surveys_sw[0].len_pow.Cs_pert[3][1].get_sigma8())/(2*cosmo_par_epsilons[3])
+#alpha_S8 = 0.5
+#dS8_dLogAs = dsigma8_dLogAs*(C.cosmology['Omegam']/0.3)**alpha_S8
+#dS8_dOmegamh2 = C.get_sigma8()*alpha_S8*C.cosmology['OmegaLh2']/(0.3**alpha_S8*C.h**4)*(C.cosmology['Omegam'])**(alpha_S8-1.)+dsigma8_dOmegamh2*(C.cosmology['Omegam']/0.3)**alpha_S8
+#dS8_dOmegaLh2 = -C.get_sigma8()*alpha_S8/(0.3**alpha_S8*C.h**2)*(C.cosmology['Omegam'])**(alpha_S8)+dsigma8_dOmegaLh2*(C.cosmology['Omegam']/0.3)**alpha_S8
+#dS8_dLogAs = (SS.surveys_sw[0].len_pow.Cs_pert[4][0].get_sigma8()*(SS.surveys_sw[0].len_pow.Cs_pert[4][0].cosmology['Omegam']/0.3)**alpha_S8-SS.surveys_sw[0].len_pow.Cs_pert[4][1].get_sigma8()*(SS.surveys_sw[0].len_pow.Cs_pert[4][1].cosmology['Omegam']/0.3)**alpha_S8)/(2*cosmo_par_epsilons[4])
+#dS8_dns = (SS.surveys_sw[0].len_pow.Cs_pert[0][0].get_sigma8()*(SS.surveys_sw[0].len_pow.Cs_pert[0][0].cosmology['Omegam']/0.3)**alpha_S8-SS.surveys_sw[0].len_pow.Cs_pert[0][1].get_sigma8()*(SS.surveys_sw[0].len_pow.Cs_pert[0][1].cosmology['Omegam']/0.3)**alpha_S8)/(2*cosmo_par_epsilons[0])
+#dS8_dOmegabh2 = (SS.surveys_sw[0].len_pow.Cs_pert[2][0].get_sigma8()*(SS.surveys_sw[0].len_pow.Cs_pert[2][0].cosmology['Omegam']/0.3)**alpha_S8-SS.surveys_sw[0].len_pow.Cs_pert[2][1].get_sigma8()*(SS.surveys_sw[0].len_pow.Cs_pert[2][1].cosmology['Omegam']/0.3)**alpha_S8)/(2*cosmo_par_epsilons[0])
+#dS8_dw0 = (SS.surveys_sw[0].len_pow.Cs_pert[5][0].get_sigma8()*(SS.surveys_sw[0].len_pow.Cs_pert[5][0].cosmology['Omegam']/0.3)**alpha_S8-SS.surveys_sw[0].len_pow.Cs_pert[5][1].get_sigma8()*(SS.surveys_sw[0].len_pow.Cs_pert[5][1].cosmology['Omegam']/0.3)**alpha_S8)/(2*cosmo_par_epsilons[0])
+#dS8_dwa = (SS.surveys_sw[0].len_pow.Cs_pert[6][0].get_sigma8()*(SS.surveys_sw[0].len_pow.Cs_pert[6][0].cosmology['Omegam']/0.3)**alpha_S8-SS.surveys_sw[0].len_pow.Cs_pert[6][1].get_sigma8()*(SS.surveys_sw[0].len_pow.Cs_pert[6][1].cosmology['Omegam']/0.3)**alpha_S8)/(2*cosmo_par_epsilons[0])
+#
+#f_rot_param_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','S8','w0','wa'])
+#cosmo_param_fid = np.array([C.cosmology['ns'],C.cosmology['Omegamh2'],C.cosmology['Omegabh2'],C.cosmology['OmegaLh2'],C.cosmology['LogAs'],C.cosmology['w0'],C.cosmology['wa']])
+##f_rot_no_mit = c_base_no_mit.copy()
+#proj_S8 = np.identity(f_rot_param_list.size)
+#proj_S8[4,4] = 1./dS8_dLogAs
+##proj_S8[4,1] = 1./dS8_dOmegamh2
+#proj_S8[1,4] = 1./dS8_dOmegamh2
+##proj_S8[4,2] = 1./dS8_dOmegabh2
+#proj_S8[2,4] = 1./dS8_dOmegabh2
+##proj_S8[4,3] = 1./dS8_dOmegaLh2
+#proj_S8[3,4] = 1./dS8_dOmegaLh2
+##proj_S8[4,5] = 1./dS8_dw0
+#proj_S8[5,4] = 1./dS8_dw0
+##proj_S8[4,6] = 1./dS8_dwa
+#proj_S8[6,4] = 1./dS8_dwa
+#f_rot_no_mit = np.dot(proj_S8,np.dot(f_base_no_mit,proj_S8.T))
+#f_rot_no_mit = (f_rot_no_mit+f_rot_no_mit.T)/2.
+#c_rot_no_mit = np.linalg.inv(f_rot_no_mit)
 
 cov_g = SS.f_set_nopriors[0][2].get_covar()
 cov_g_inv = SS.f_set_nopriors[0][2].get_fisher()
@@ -226,46 +230,28 @@ chol_g = SS.f_set_nopriors[0][2].get_cov_cholesky()
 chol_g_inv = SS.f_set_nopriors[0][2].get_cov_cholesky_inv()
 u_no_mit = SS.eig_set[1][0][1]
 v_no_mit = np.dot(chol_g,u_no_mit)
-of_no_mit = np.dot(cov_g,v_no_mit)
-u_mit = SS.eig_set[1][1][1]
-v_mit = np.dot(chol_g,u_mit)
-of_mit = np.dot(cov_g_inv,v_mit)
+of_no_mit = np.dot(cov_g_inv,v_no_mit)
+#u_mit = SS.eig_set[1][1][1]
+#v_mit = np.dot(chol_g,u_mit)
+#of_mit = np.dot(cov_g_inv,v_mit)
 
-#rot_of = np.zeros_like(cov_g)
-
-
-rot_of_no_mit = of_no_mit
-#f_rot_eig_no_mit = np.dot(rot_of_no_mit,np.dot(SS.f_set[1][2].get_fisher(),rot_of_no_mit.T))
-#f_rot_eig_no_mit = (f_rot_eig_no_mit+f_rot_eig_no_mit.T)/2.
-#c_rot_eig_no_mit = np.linalg.inv(f_rot_eig_no_mit)
+c_rot_eig_no_mit = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[1][2].get_covar(),of_no_mit))
 #c_rot_eig_no_mit = (c_rot_eig_no_mit+c_rot_eig_no_mit.T)/2.
-#c_rot_eig_no_mit = np.dot(rot_of_no_mit,np.dot(SS.f_set[1][2].get_covar(),rot_of_no_mit))
-#c_rot_eig_no_mit = np.dot(rot_of_no_mit,np.dot(SS.f_set[1][2].get_covar(),rot_of_no_mit))
-c_rot_eig_no_mit = np.dot(of_no_mit.T,np.dot(SS.f_set[1][2].get_covar(),of_no_mit))
-c_rot_eig_no_mit = (c_rot_eig_no_mit+c_rot_eig_no_mit.T)/2.
-f_rot_eig_no_mit = np.linalg.inv(c_rot_eig_no_mit)
-f_rot_eig_no_mit = (f_rot_eig_no_mit+f_rot_eig_no_mit.T)/2.
+#f_rot_eig_no_mit = np.linalg.inv(c_rot_eig_no_mit)
+#f_rot_eig_no_mit = (f_rot_eig_no_mit+f_rot_eig_no_mit.T)/2.
 
-#c_base = [[1.,2.],[3.,4.]]
-#of_no_mit = np.array([[1.,2.],[3.,4.]])
-#c_base = np.dot(c_base.T,c_base)
-#c_base = SS.f_set[1][2].get_covar()
-#c_rot_no_mit2 = np.zeros_like(c_rot_eig_no_mit)
-#for i in xrange(0,c_rot_no_mit2.shape[0]):
-#    for j in xrange(0,c_rot_no_mit2.shape[0]):
-#        for a in xrange(0,c_rot_no_mit2.shape[0]):
-#            for b in xrange(0,c_rot_no_mit2.shape[0]):
-#                c_rot_no_mit2[i,j] += of_no_mit[a,i]*c_base[a,b]*of_no_mit[b,j]
+c_rot_eig_mit = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[2][2].get_covar(),of_no_mit))
+#c_rot_eig_mit = (c_rot_eig_mit+c_rot_eig_mit.T)/2.
+#f_rot_eig_mit = np.linalg.inv(c_rot_eig_mit)
+#f_rot_eig_mit = (f_rot_eig_mit+f_rot_eig_mit.T)/2.
 
-c_rot_eig_mit = np.dot(of_no_mit.T,np.dot(SS.f_set[2][2].get_covar(),of_no_mit))
-c_rot_eig_mit = (c_rot_eig_mit+c_rot_eig_mit.T)/2.
-f_rot_eig_mit = np.linalg.inv(c_rot_eig_mit)
-f_rot_eig_mit = (f_rot_eig_mit+f_rot_eig_mit.T)/2.
+c_rot_eig_g = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[0][2].get_covar(),of_no_mit))
+#c_rot_eig_g = (c_rot_eig_g+c_rot_eig_g.T)/2.
+#f_rot_eig_g = np.linalg.inv(c_rot_eig_g)
+#f_rot_eig_g = (f_rot_eig_g+f_rot_eig_g.T)/2.
 
-c_rot_eig_g = np.dot(of_no_mit.T,np.dot(SS.f_set[0][2].get_covar(),of_no_mit))
-c_rot_eig_g = (c_rot_eig_g+c_rot_eig_g.T)/2.
-f_rot_eig_g = np.linalg.inv(c_rot_eig_g)
-f_rot_eig_g = (f_rot_eig_g+f_rot_eig_g.T)/2.
+#assert(np.allclose(np.diagonal(c_rot_eig_no_mit/c_rot_eig_g),SS.eig_set[1][0][0]))
+#assert(np.allclose(np.diagonal(c_rot_eig_mit/c_rot_eig_g),SS.eig_set[1][1][0]))
 
 #f_rot_eig_mit2 = np.dot(rot_of_mit,np.dot(SS.f_set[1][2].get_fisher(),rot_of_mit.T))
 #f_rot_eig_mit2 = (f_rot_eig_mit2+f_rot_eig_mit2.T)/2.
@@ -275,4 +261,6 @@ f_rot_eig_g = (f_rot_eig_g+f_rot_eig_g.T)/2.
 #m_mat = np.dot(chol_g_inv,np.dot(SS.f_set[1][2].get_fisher(),chol_g_inv.T))f
 from Super_Survey import make_ellipse_plot
 #make_ellipse_plot(np.array([c_rot_eig_g[-2:,-2:],c_rot_eig_no_mit[-2:,-2:],c_rot_eig_mit[-2:,-2:]]),np.array([[0,1,0],[1,0,0],[0,0,1]]),np.array([1.,1.,1.]),np.array(['g','no mit','mit']),np.array([0.0002,0.0025]),np.array(['p2','p1']),C,dchi2,adaptive_mult=1.05)
-make_ellipse_plot(np.array([c_rot_eig_g,c_rot_eig_no_mit,c_rot_eig_mit]),np.array([[0,1,0],[1,0,0],[0,0,1]]),np.array([1.,1.,1.]),np.array(['g','no mit','mit']),"adaptive",np.array(['p7','p6','p5','p4','p3','p2','p1']),C,dchi2,adaptive_mult=1.05)
+#make_ellipse_plot(np.array([c_rot_eig_g,c_rot_eig_no_mit,c_rot_eig_mit]),np.array([[0,1,0],[1,0,0],[0,0,1]]),np.array([1.,1.,1.]),np.array(['g','no mit','mit']),np.array([5.,5.,5.,5.,5.,5.,5.,]),np.array(['p7','p6','p5','p4','p3','p2','p1']),C,dchi2,adaptive_mult=1.05)
+#make_ellipse_plot(np.array([c_rot_eig_g[-2:,-2:],c_rot_eig_no_mit[-2:,-2:],c_rot_eig_mit[-2:,-2:]]),np.array([[0,1,0],[1,0,0],[0,0,1]]),np.array([1.,1.,1.]),np.array(['g','no mit','mit']),np.array([5.,5.]),np.array(['p2','p1']),C,dchi2,adaptive_mult=1.05)
+make_ellipse_plot(np.array([c_rot_eig_g[-2:,-2:],c_rot_eig_no_mit[-2:,-2:],c_rot_eig_mit[-2:,-2:]]),np.array([[0,1,0],[1,0,0],[0,0,1]]),np.array([1.,1.,1.]),np.array(['g','no mit','mit']),np.array([5.,5.]),np.array(['p2','p1']),C,dchi2,adaptive_mult=1.05,include_diag=False)
