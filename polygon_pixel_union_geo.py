@@ -1,10 +1,5 @@
-from polygon_geo import PolygonGeo
 import numpy as np
-import spherical_geometry.vector as sgv
-from spherical_geometry.polygon import SphericalPolygon
-import spherical_geometry.great_circle_arc as gca
-
-from geo import Geo
+from polygon_pixel_geo import PolygonPixelGeo
 
 class PolygonPixelUnionGeo(PolygonPixelGeo):
     def __init__(self,geos,masks):
@@ -55,7 +50,7 @@ class PolygonPixelUnionGeo(PolygonPixelGeo):
         #    self.mask_theta=None
         #    self.mask_geo=None
         
-
+        #TODO PRIORITY actually use union_mask
         PolygonPixelGeo.__init__(self,geos[0].zs,geos[0].thetas,geos[0].phis,geos[0].theta_in,geos[0].phi_in,geos[0].C,geos[0].z_fine,geos[0]._l_max,geos[0].res_healpix,geos[0].overwride_precompute)
         #Geo.__init__(self,self.union_geo.zs,self.union_geo.C,self.union_geo.z_fine)
         #self.alm_table = {(0,0):self.angular_area()/np.sqrt(4.*np.pi)}
@@ -65,9 +60,8 @@ class PolygonPixelUnionGeo(PolygonPixelGeo):
         #for itr1 in xrange(0,self.n_g):
         #    for itr2 in xrange(0,self.n_g):
         #        intersect_polys[itr1,itr2] = geos[itr1].sp_poly.intersection(geos[itr2].sp_poly.intersection)
-
+    #TODO angular_area
 #    def angular_area(self):
-#        #TODO include mask
 #        if self.mask_geo is not None:
 #            return self.union_geo.angular_area()-self.mask_geo.angular_area()
 #        else:

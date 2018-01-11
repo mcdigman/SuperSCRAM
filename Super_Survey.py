@@ -506,7 +506,9 @@ if __name__=="__main__":
     #k_cut = 0.03
 
     basis=SphBasisK(r_max,C,k_cut,l_ceil=100)
-    survey_3 = LWSurvey(geos,'lw_survey1',basis,C=C,params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params)
+    lw_param_list = defaults.lw_param_list.copy()
+    lw_observable_list = defaults.lw_observable_list.copy()
+    survey_3 = LWSurvey(geos,'lw_survey1',basis,C=C,params=defaults.lw_survey_params,observable_list=lw_observable_list,param_list = lw_param_list)
     surveys_lw=np.array([survey_3])
 
 

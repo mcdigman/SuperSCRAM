@@ -117,12 +117,12 @@ lensing_params = {  'z_resolution'    :0.002, #fine resolution
                     'zbar'            :0.1, #mean of gaussian source distribution
                     'sigma'           :0.4, #stdev of gaussian source distribution
                     'epsilon'         :0.0001} #small parameter 
-sw_observable_list = ['len_shear_shear']
+sw_observable_list = np.array(['len_shear_shear'])
 sw_survey_params = {    'needs_lensing'     : True,
                         'cross_bins'        : True}
 dn_params = {   'M_cut'         : 10**12.5,
                 'variable_cut'  : True}#(12.5)}
-lw_observable_list = ['d_number_density']
+lw_observable_list = np.array(['d_number_density'])
 lw_survey_params = {    'cross_bins': False} 
 basis_params = {    'allow_caching'         :True,
                     'n_bessel_oversample'   :100000,
@@ -221,3 +221,4 @@ matter_power_params = {'needs_halofit'  :True,
                         'a_max' : 1.0,
                         'a_step' : 0.05,
                         'nonlinear_model':'halofit'}
+lw_param_list = lw_param_list = np.array([{'dn_params':dn_params,'n1_params':nz_params_wfirst_gal,'n2_params':nz_params_wfirst_gal}])

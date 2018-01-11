@@ -1,7 +1,7 @@
 import numpy as np
 #from polygon_pixel_geo import PolygonPixelGeo,reconstruct_from_alm
 from polygon_pixel_geo import PolygonPixelGeo
-from alm_utils import reconstruct_from_alm
+from ylm_utils import reconstruct_from_alm
 from geo import RectGeo
 import defaults
 from cosmopie import CosmoPie

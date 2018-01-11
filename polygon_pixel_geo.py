@@ -14,7 +14,6 @@ from spherical_geometry.polygon import SphericalPolygon
 
 import defaults
 import scipy as sp
-import alm_utils as au
 
 #TODO consider using sp_poly area for angular_area()
 #TODO consider smoothing to get area precisely correct
@@ -27,7 +26,7 @@ class PolygonPixelGeo(PixelGeo):
         self.phi_in = phi_in
         self.C = C
         self.z_fine = z_fine
-        self.res_healpix = res_helpix
+        self.res_healpix = res_healpix
         self.overwride_precompute = overwride_precompute 
         all_pixels = get_healpix_pixelation(res_choose=res_healpix)
         self.sp_poly = get_poly(thetas,phis,theta_in,phi_in)
@@ -99,7 +98,7 @@ class PolygonPixelGeo(PixelGeo):
     #TODO check numerical stability
     def get_a_lm_table(self,l_max):
         if l_max>85:
-            raise ValueError('cannot use scipy precision for getting alm for l>85')
+            raise ValueError('cannot use scipy precision for getting alm for l>85 because 171! is too large')
         n_tot = (l_max+1)**2
         pixel_area = self.pixels[0,2]
 

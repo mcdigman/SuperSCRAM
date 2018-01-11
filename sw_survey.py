@@ -8,7 +8,7 @@ import re
 from warnings import warn
 import lensing_observables as lo
 from sw_cov_mat import SWCovMat
-
+#TODO evaluate if param_list as used by LWSurvey more elegant
 class SWSurvey(object):
     def __init__(self,geo,survey_id,C,ls = np.array([]),cosmo_par_list=np.array([],dtype=object),cosmo_par_epsilons=np.array([]),params=defaults.sw_survey_params,observable_list=defaults.sw_observable_list,len_params=defaults.lensing_params,ps=np.array([]),nz_matcher=None):
         """Short wavelength survey: manage short wavelength observables and get their non SSC covariances and derivatives

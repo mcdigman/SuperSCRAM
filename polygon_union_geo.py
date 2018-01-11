@@ -1,8 +1,6 @@
 from polygon_geo import PolygonGeo
 import numpy as np
 import spherical_geometry.vector as sgv
-from spherical_geometry.polygon import SphericalPolygon
-import spherical_geometry.great_circle_arc as gca
 
 from geo import Geo
 

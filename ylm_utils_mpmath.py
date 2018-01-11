@@ -1,70 +1,10 @@
 """some utility functions for real spherical harmonic a_lm computations, used by PolygonGeo"""
 import numpy as np
-import scipy as sp
 from mpmath import mp
-import defaults
 
+#TODO check what dps should be
 mp.dps = 200
-
-def rot_alm_z(d_alm_table_in,angles,ls):
-    """rotate alms around z axis by angle gamma_alpha"""
-    d_alm_table_out = np.zeros_like(d_alm_table_in)
-    n_v = angles.size
-    for l_itr in xrange(0,ls.size):
-        ll = ls[l_itr]
-        d_alm_table_out[l_itr] = np.zeros((2*ll+1,n_v))
-        ms = np.arange(1,ll+1)
-        m_angles = np.outer(ms,angles)
-        d_alm_table_out[l_itr][ll+ms] = np.cos(m_angles)*d_alm_table_in[l_itr][ll+ms]+np.sin(m_angles)*d_alm_table_in[l_itr][ll-ms]
-        d_alm_table_out[l_itr][ll-ms] = -np.sin(m_angles)*d_alm_table_in[l_itr][ll+ms]+np.cos(m_angles)*d_alm_table_in[l_itr][ll-ms]
-        d_alm_table_out[l_itr][ll] = d_alm_table_in[l_itr][ll]
-    return d_alm_table_out
-
-def rot_alm_x(d_alm_table_in,angles,ls,n_double=defaults.polygon_params['n_double'],debug=True):
-    """rotate alms around x axis by angle theta_alpha"""
-    d_alm_table_out=np.zeros_like(d_alm_table_in)
-    n_v = angles.size
-    for l_itr in xrange(0,ls.size):
-        ll = ls[l_itr]
-        d_alm_table_out[l_itr] = np.zeros((2*ll+1,n_v))
-        ms = np.arange(-ll,ll)
-
-        el_mat_complex = np.zeros((2*ll+1,2*ll+1),dtype=complex)
-        #add -1j/2*lplus
-        el_mat_complex[ms+ll,ms+ll+1] = -1j/2.*np.sqrt(ll*(ll+1.)-ms*(ms+1.))
-        #add -1j/2*lminus
-        el_mat_complex[ms+ll+1,ms+ll] = -1j/2.*np.sqrt(ll*(ll+1.)-(ms+1.)*ms)
-
-
-        m_mat = np.zeros_like(el_mat_complex)
-        m_mat[ll,ll] = 1.
-        ms = np.arange(1,ll+1)
-        m_mat[ms+ll,ms+ll]=1./np.sqrt(2.)
-        m_mat[ms+ll,-ms+ll] = -1j/np.sqrt(2.)
-        m_mat[-ms+ll,ms+ll]=(-1)**ms/np.sqrt(2.)
-        m_mat[-ms+ll,-ms+ll] = 1j*(-1)**ms/np.sqrt(2.)
-
-        #m_mat_i = np.conjugate(m_mat.T)
-        #infinitesimal form of El(epsilon) (must be multiplied by epsilon)
-        el_mat_real = np.real(np.dot(np.dot(np.conjugate(m_mat.T),el_mat_complex),m_mat))
-        if debug:
-            #E_l matrices should be antisymmetric
-            assert(np.all(el_mat_complex==-el_mat_complex.conjugate().T))
-            assert(np.all(el_mat_real==-el_mat_real.T))
-            #check m_mat is actually unitary
-            assert(np.allclose(np.identity(m_mat.shape[0]),np.dot(np.conjugate(m_mat.T),m_mat)))
-            #TODO add assertion  for correct sparseness structure
-
-        for itr in xrange(0,n_v):
-            epsilon = angles[itr]/2.**n_double
-            el_mat = epsilon*el_mat_real.copy()
-            #use angle doubling fomula to get to correct angle
-            for itr2 in xrange(0,n_double):
-                el_mat = np.asfortranarray(2.*el_mat+np.dot(el_mat,el_mat))
-            d_mat = el_mat+np.identity(el_mat.shape[0])
-            d_alm_table_out[l_itr][:,itr] = np.dot(d_mat,d_alm_table_in[l_itr][:,itr])
-    return d_alm_table_out
-
+#TODO write test case to compare with non mpmath
 
 def reconstruct_from_alm(l_max,thetas,phis,alms):
     n_tot = (l_max+1)**2
@@ -121,16 +61,6 @@ def reconstruct_from_alm(l_max,thetas,phis,alms):
                 known_legendre.pop((ll-2,mm),None)
     return np.array(reconstructed.tolist(),dtype=np.double)[:,0]
 
-#alternate way of computing Y_r from the way in sph_functions
-def Y_r_2(ll,mm,theta,phi,known_legendre):
-    prefactor = np.sqrt((2.*ll+1.)/(4.*np.pi)*sp.misc.factorial(ll-np.abs(mm))/sp.misc.factorial(ll+np.abs(mm)))
-    base = (prefactor*(-1)**mm)*known_legendre[(ll,np.abs(mm))]
-    if mm==0:
-        return base
-    elif mm>0:
-        return base*np.sqrt(2.)*np.cos(mm*phi)
-    else:
-        return base*np.sqrt(2.)*np.sin(np.abs(mm)*phi)
 
 def get_Y_r_dict(l_max,thetas,phis):
     ytable,ls,ms = get_Y_r_table(l_max,thetas,phis)
@@ -143,7 +73,7 @@ def get_Y_r_dict_central(l_max):
     Y_lms = {(0,0):1./np.sqrt(4.*np.pi)}    
     factorials = mp.matrix([mp.factorial(val) for val in np.arange(0,2*l_max+1)])
     for ll in xrange(1,l_max+1):
-        for mm in xrange(-l_max,0):
+        for mm in xrange(-ll,0):
             Y_lms[(ll,mm)] = 0.
         for nn in xrange(0,np.int(ll/2.)+1):
             Y_lms[(ll,ll-2*nn-1)] = 0.

@@ -1,9 +1,8 @@
-
+#TODO eliminate this file from main code base if nothing uses it
 from math import sqrt, cos, pi
 
 from scipy.integrate import quad
-
-
+#TODO pretty sure theres a builtin for this
 def odd_factorial(k):
     f = k
     while k >= 3:

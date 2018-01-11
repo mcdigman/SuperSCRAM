@@ -12,7 +12,10 @@ import numpy as np
 from scipy.misc import factorial2
 from scipy.special import sph_harm as Y_lm, jv
 
+#TODO maybe dont use the_mad_house
 from the_mad_house import e_message
+
+from warnings import warn
 
 eps =np.finfo(float).eps
 z_cut=1e-2
@@ -39,7 +42,7 @@ def sph_Bessel_down(n,z):
         j0_true=np.sin(z)/z
     # renormalize and return result
     return result*j0_true/j0
-
+#TODO don't like z_cut usage
 #print 'this is eps', eps
 #print 'check eps', 1+eps
 def sph_Bessel_array(n,z):
@@ -51,7 +54,11 @@ def sph_Bessel_array(n,z):
     id2=np.where( z > z_cut)[0]
 
     if id1.size !=0:
-        result[id1]= z[id1]**n/factorial2(2*n+1, exact=True)
+        if 2*n+1>=301:
+            warn('factorial2(2*n+1) will be too close to 0. for floating point precision, using 0.')
+            result[id1] = 0.
+        else:
+            result[id1]= z[id1]**n/factorial2(2*n+1, exact=True)
     if n==0:
         result[id2]=np.sin(z[id2])/z[id2]
     if n==1:
@@ -80,7 +87,11 @@ def sph_Bessel_array(n,z):
 def sph_Bessel(n,z):
     # limiting case for z near zero
     if  z <= z_cut:
-        return z**n/factorial2(2*n+1, exact=True)
+        if 2*n+1>=301:
+            warn('factorial2(2*n+1) will be too close to 0. for floating point precision, using 0.')
+            return 0.
+        else:
+            return z**n/factorial2(2*n+1, exact=True)
     if n==0:
         return np.sin(z)/z
     if n==1:

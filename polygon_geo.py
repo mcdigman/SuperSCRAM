@@ -1,12 +1,11 @@
 """Module for a spherical polygon Geo, defined by vertices with great circle edges"""
 from warnings import warn
 import numpy as np
-import scipy as sp
 import spherical_geometry.vector as sgv
 from spherical_geometry.polygon import SphericalPolygon
 import spherical_geometry.great_circle_arc as gca
 #from polygon_pixel_geo import get_Y_r_dict
-from alm_utils_mpmath import get_Y_r_dict,get_Y_r_dict_central 
+from ylm_utils_mpmath import get_Y_r_dict_central 
 import alm_utils as au
 from geo import Geo
 import defaults
@@ -138,11 +137,21 @@ class PolygonGeo(Geo):
         if n_l==0:
             return
         d_alm_table1 = np.zeros(n_l,dtype=object)
-        Y_r_dict = get_Y_r_dict(np.max(ls),np.zeros(1)+np.pi/2.,np.zeros(1))
         #Y_r(l,m,pi/2.,0.) has an analytic solution, use it
-        Y_r_dict2 = get_Y_r_dict_central(l_max)
-        #assert(np.allclose(Y_r_dict.values(),Y_r_dict2.values()))
-        #self.factorials = sp.misc.factorial(np.arange(0,2*np.max(ls)+1))
+        Y_r_dict = get_Y_r_dict_central(np.max(ls))
+#for checking consistency of Y_r_dict2 and Y_r_dict
+#        Y_r_dict2 = get_Y_r_dict(np.max(ls),np.zeros(1)+np.pi/2.,np.zeros(1))
+#        keys1 = sorted(Y_r_dict.keys())
+#        keys2 = sorted(Y_r_dict2.keys())
+#        assert(keys1==keys1)
+#        n_k = len(keys1)
+#        vals1 = np.zeros(n_k)
+#        vals2 = np.zeros(n_k)
+#        for itr in xrange(0,n_k):
+#            vals1[itr] = Y_r_dict[keys1[itr]]
+#            vals2[itr] = Y_r_dict2[keys2[itr]]
+#        assert(np.allclose(vals1,vals2))
+
         for l_itr in xrange(0,ls.size):
             ll=ls[l_itr]
             d_alm_table1[l_itr] = np.zeros((2*ll+1,self.n_v))
@@ -248,8 +257,8 @@ if __name__=='__main__':
     from cosmopie import CosmoPie
 
     poly_params = defaults.polygon_params.copy()
-    poly_params['n_double'] = 82
-    l_max = 250
+    poly_params['n_double'] = 85
+    l_max = 90
     zs = np.array([0.01,1.01])
     z_fine = np.arange(0.01,1.05,0.01)
     C = CosmoPie(defaults.cosmology)
@@ -374,7 +383,7 @@ if __name__=='__main__':
 
     do_reconstruct = False
     if do_reconstruct:
-        from alm_utils import reconstruct_from_alm
+        from ylm_utils import reconstruct_from_alm
         from polygon_pixel_geo import PolygonPixelGeo
         import matplotlib.colors as colors
         pp_geo2 = PolygonPixelGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max=l_max,res_healpix=6)

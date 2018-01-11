@@ -7,9 +7,9 @@ import re
 import defaults
 
 import numpy as np
-
+#TODO no good reason to use defaults at all here
 class LWSurvey(object):
-    def __init__(self,geos,survey_id,basis,C,params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params):
+    def __init__(self,geos,survey_id,basis,C,params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,param_list=None):
         """handle getting long wavelength observables and their fisher matrices for mitigation
             inputs:
                 geos: an array of Geo objects, fo the survey windows of different long wavelength surveys
@@ -26,8 +26,12 @@ class LWSurvey(object):
         self.C = C
         self.survey_id = survey_id
         self.basis = basis
-        self.dn_params = dn_params
-        self.observable_names = generate_observable_names(observable_list)
+        #self.dn_params = dn_params
+        if param_list is None:
+            self.param_list = np.full(observable_list.size,{})
+        else:
+            self.param_list = param_list
+        self.observable_names = generate_observable_names(observable_list,param_list)
         self.observables = self.names_to_observables(self.observable_names)
         print "lw_survey: finished initializing long wavelength survey: "+str(survey_id)
 
@@ -59,7 +63,6 @@ class LWSurvey(object):
             if not self.observables[itr] is None:
                 rank+=self.observables[itr].get_rank()
         return rank
-
     def names_to_observables(self,names):
         """get the list of long wavelength observables corresponding to a given dictionary of names
             only currently recognized name is d_number_density"""
@@ -67,20 +70,26 @@ class LWSurvey(object):
         itr = 0
         for key in names:
             if re.match('^d_number_density',key):
-                observables[itr] = DNumberDensityObservable(self.geos,self.dn_params,self.survey_id,self.C,self.basis,defaults.nz_params_wfirst_gal,defaults.nz_params_wfirst_gal)
+                #TODO this is a really bad way of handling parameters, bc it uses hard coded defaults
+                #names[key]['params']['n1_params']
+                params = names[key]
+                #TODO don't think actually needs both n1_params and n2_params anymore
+                observables[itr] = DNumberDensityObservable(self.geos,params['dn_params'],self.survey_id,self.C,self.basis,params['n1_params'],params['n2_params'])
             else:
                 warn('unrecognized or unprocessable observable: \'',key,'\', skipping')
                 observables[itr] = None
             itr+=1
         return observables
 
-def generate_observable_names(observable_list):
-    """get a dictionary of names from the given list of names
-        can include parameters but names_to_observables does not currently need that functionality"""
+def generate_observable_names(observable_list,param_list):
+    """get a dictionary of full names from the given list of names
+        param_list, of dicts of parameters as needed for names_to_observables"""
     names = {}
-    for name in observable_list:
+
+    for itr in xrange(0,observable_list.size):
+        name = observable_list[itr]
         if re.match('^d_number_density',name):
-            names[name] = {}
+            names[name] = param_list[itr]
         else:
             warn('observable name \'',name,'\' unrecognized, ignoring')
     return names

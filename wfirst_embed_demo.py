@@ -32,8 +32,11 @@ if __name__=='__main__':
     sw_survey_params=defaults.sw_survey_params.copy()
     lw_survey_params=defaults.lw_survey_params.copy()
     sw_observable_list = defaults.sw_observable_list
+    #TODO don't use defaults for setting up the core demo
     lw_observable_list = defaults.lw_observable_list
     dn_params = defaults.dn_params.copy()
+    n_params_wfirst = defaults.nz_params_wfirst_gal.copy()
+    lw_param_list = np.array([{'dn_params':dn_params,'n1_params':n_params_wfirst,'n2_params':n_params_wfirst}])
     #wmatcher_params['w_step']=0.05
 
     #creat a CosmoPie object to manage the cosmology details
@@ -80,11 +83,11 @@ if __name__=='__main__':
     #list of comsological parameters that will need to be varied
     if cosmo['de_model']=='w0wa':
         cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w0','wa'])
-        cosmo_par_string = ["$n_s$","$\Omega_m h^2$","$\Omega_\phi h^2$","$ln(A_s)$","$w_0$","$w_a$"]
+        cosmo_par_string = ["$n_s$","$\Omega_m h^2$","$\Omega_{de} h^2$","$ln(A_s)$","$w_0$","$w_a$"]
         cosmo_par_epsilons = np.array([0.002,0.0005,0.0001,0.0005,0.1,0.01,0.07])
     elif cosmo['de_model']=='constant_w':
         cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w'])
-        cosmo_par_string = ["$n_s$","$\Omega_m h^2$","$\Omega_\phi h^2$","$ln(A_s)$","$w_0$"]
+        cosmo_par_string = ["$n_s$","$\Omega_m h^2$","$\Omega_{de} h^2$","$ln(A_s)$","$w_0$"]
         cosmo_par_epsilons = np.array([0.002,0.0005,0.0001,0.0005,0.1,0.01])
     else:
         raise ValueError('unrecognized de_model '+str(cosmo['de_model']))
@@ -125,7 +128,7 @@ if __name__=='__main__':
     geos = np.array([geo_wfirst,geo_lsst],dtype=object)
     print "main: begin constructing LWSurvey for mitigation"
     #TODO control cut out here
-    survey_lw = LWSurvey(geos,'combined_survey',basis,C=C,params=lw_survey_params,observable_list=lw_observable_list,dn_params=dn_params)
+    survey_lw = LWSurvey(geos,'combined_survey',basis,C=C,params=lw_survey_params,observable_list=lw_observable_list,param_list=lw_param_list)
     surveys_lw=np.array([survey_lw])
 
     #create the SuperSurvey with mitigation
