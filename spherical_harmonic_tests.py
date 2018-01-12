@@ -1,9 +1,12 @@
+"""tests of spherical harmonic utilities"""
+#pylint: disable=W0621
+#TODO expand
 import numpy as np
 import sph_functions as sph
-import polygon_pixel_geo as ppg
+import ylm_utils as ylmu
 import pytest
 
-class ThetaPhiList:
+class ThetaPhiList(object):
     def __init__(self,key):
         if key==1:
             n_side = 100
@@ -26,13 +29,12 @@ def test_Y_R_agreement1(theta_phis):
     thetas = theta_phis.thetas.copy()
     phis = theta_phis.phis.copy()
     l_max = 30
-    Y_r_1s,ls,ms = ppg.get_Y_r_table(l_max,thetas,phis)
+    Y_r_1s,ls,ms = ylmu.get_Y_r_table(l_max,thetas,phis)
     Y_r_2s = np.zeros_like(Y_r_1s)
     for itr in xrange(0,ls.size):
         Y_r_2s[itr] = sph.Y_r(ls[itr],ms[itr],thetas,phis)
-    assert(np.allclose(Y_r_1s,Y_r_2s))
+    assert np.allclose(Y_r_1s,Y_r_2s)
 
 
 if __name__=='__main__':
-        pytest.cmdline.main(['spherical_harmonic_tests.py'])
-
+    pytest.cmdline.main(['spherical_harmonic_tests.py'])

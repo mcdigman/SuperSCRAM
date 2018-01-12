@@ -1,24 +1,21 @@
+"""demonstration of ability to compute super sample variance term in a geometry"""
+from time import time
 import numpy as np
-from sw_survey import SWSurvey
-from lw_survey import LWSurvey
 from polygon_geo import PolygonGeo
-from geo import RectGeo
 from cosmopie import CosmoPie
 import defaults
 from sph_klim import SphBasisK
-from Super_Survey import SuperSurvey
-from time import time
 
 if __name__ == '__main__':
     time0 = time()
-    camb_params = {'npoints':1000,
-        'minkh':1.1e-4,
-        'maxkh':1.476511342960e+02,
-        'kmax':1.476511342960e+02,
-        'leave_h':False,
-        'force_sigma8':True,
-        'return_sigma8':False
-    }
+    camb_params = { 'npoints':1000,
+                    'minkh':1.1e-4,
+                    'maxkh':1.476511342960e+02,
+                    'kmax':1.476511342960e+02,
+                    'leave_h':False,
+                    'force_sigma8':True,
+                    'return_sigma8':False
+                  }
     print "main: building cosmology"
     cosmo_use = defaults.cosmology.copy()
     cosmo_use['h'] = 0.6774
@@ -60,7 +57,7 @@ if __name__ == '__main__':
         variance_pred1=6.94974e-01
         variance_pred2 = 6.47471e-01
     elif param_use == 2:
-        #matches to 0.984883733033 for l_max=340,x_cut=360, monotonic 
+        #matches to 0.984883733033 for l_max=340,x_cut=360, monotonic
         theta0=np.pi/2.-np.pi*0.005549789940450755
         theta1=np.pi/2.+np.pi*0.005549789940450755
         phi0=0.
@@ -87,7 +84,7 @@ if __name__ == '__main__':
         variance_pred1=1.18262e+00
         variance_pred2 = 1.18253e+00
     elif param_use==4:
-        #matches to 0.982422823102 side 0.985672230237 volume  for l_max=340,x_cut=360, monotonic, convergence looks good 
+        #matches to 0.982422823102 side 0.985672230237 volume  for l_max=340,x_cut=360, monotonic, convergence looks good
         theta0=np.pi/2.-np.pi*0.025320951131222628
         theta1=np.pi/2.+np.pi*0.025320951131222628
         phi0=0.
@@ -111,7 +108,7 @@ if __name__ == '__main__':
         z_fine = np.arange(0.0005,1.,0.0005)
         z_max = 1.301
 
-        #by sides 
+        #by sides
         variance_pred1=2.88548E-07
         #by volume
         variance_pred2=3.10674E-07
@@ -128,7 +125,7 @@ if __name__ == '__main__':
         z_fine = np.arange(0.0005,1.,0.0005)
         z_max = 1.301
 
-        #by sides 
+        #by sides
         variance_pred1=5.50604e-06
         #by volume
         variance_pred2 = 4.95809e-06
@@ -144,7 +141,7 @@ if __name__ == '__main__':
         z_fine = np.arange(0.0005,1.,0.0005)
         z_max = 1.301
 
-        #by sides 
+        #by sides
         variance_pred1=1.12606e-07
         #by volume
         variance_pred2=1.50551e-07

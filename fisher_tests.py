@@ -1,9 +1,11 @@
+"""tests for the fisher_matrix module"""
+#pylint: disable=W0621,duplicate-code
+import copy
 import numpy as np
 import numpy.linalg as npl
 import scipy.linalg as spl
 from algebra_utils import cholesky_inplace,ch_inv,invert_triangular
 import pytest
-import copy
 import fisher_matrix as fm
 #Check if A is the cholesky decomposition of B
 def check_is_cholesky(A,B,atol_rel=1e-08,rtol=1e-05,lower=True):
@@ -72,14 +74,14 @@ def get_test_mat(key):
     else:
         raise ValueError('unrecognized input key:'+str(key))
 
-class ManualFisherFromFab1:
+class ManualFisherFromFab1(object):
     def __init__(self,fisher_in):
         self.fab = fisher_in
         self.cov = ch_inv(self.fab,cholesky_given=False,lower=True)
         self.chol_cov = cholesky_inplace(self.cov,inplace=False,lower=True)
         self.chol_cov_i = invert_triangular(self.chol_cov,lower=True)
 
-class ManualFisherFromCov1:
+class ManualFisherFromCov1(object):
     def __init__(self,cov_in):
         self.cov = cov_in
         self.chol_cov = cholesky_inplace(self.cov,inplace=False,lower=True)
@@ -101,7 +103,7 @@ def fisher_input(request):
     else:
         raise ValueError("fisher_input: unrecognized input: "+str(request.param))
 
-class FisherWithManual:
+class FisherWithManual(object):
     def __init__(self,fish_in,fisher):
         self.fisher=fisher
         self.fisher_input = fish_in
@@ -133,15 +135,15 @@ def test_basic_setup_succeeded(fisher_input):
     atol_loc3=np.max(np.abs(chol_cov))*atol_rel_use
     atol_loc4=np.max(np.abs(chol_cov_i))*atol_rel_use
 
-    assert(np.allclose(npl.pinv(cov),fab,atol=atol_loc2,rtol=rtol_use))
-    assert(np.allclose(npl.pinv(fab),cov,atol=atol_loc1,rtol=rtol_use))
-    assert(np.allclose(npl.pinv(chol_cov_i),chol_cov,atol=atol_loc3,rtol=rtol_use))
-    assert(np.allclose(npl.pinv(chol_cov),chol_cov_i,atol=atol_loc4,rtol=rtol_use))
-    assert(np.allclose(np.tril(chol_cov),chol_cov,atol=atol_loc3,rtol=rtol_use))
-    assert(check_is_cholesky(chol_cov,cov,atol_rel=atol_rel_use,rtol=rtol_use))
-    assert(check_is_cholesky_inv(chol_cov_i,cov,atol_rel=atol_rel_use,rtol=rtol_use))
-    assert(np.allclose(np.tril(chol_cov_i),chol_cov_i,atol=atol_loc4,rtol=rtol_use))
-    assert(check_is_cholesky_inv(chol_cov_i,cov,atol_rel=atol_rel_use,rtol=rtol_use))
+    assert np.allclose(npl.pinv(cov),fab,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(npl.pinv(fab),cov,atol=atol_loc1,rtol=rtol_use)
+    assert np.allclose(npl.pinv(chol_cov_i),chol_cov,atol=atol_loc3,rtol=rtol_use)
+    assert np.allclose(npl.pinv(chol_cov),chol_cov_i,atol=atol_loc4,rtol=rtol_use)
+    assert np.allclose(np.tril(chol_cov),chol_cov,atol=atol_loc3,rtol=rtol_use)
+    assert check_is_cholesky(chol_cov,cov,atol_rel=atol_rel_use,rtol=rtol_use)
+    assert check_is_cholesky_inv(chol_cov_i,cov,atol_rel=atol_rel_use,rtol=rtol_use)
+    assert np.allclose(np.tril(chol_cov_i),chol_cov_i,atol=atol_loc4,rtol=rtol_use)
+    assert check_is_cholesky_inv(chol_cov_i,cov,atol_rel=atol_rel_use,rtol=rtol_use)
 
 def test_fab_any_input_any_initial(fisher_params):
     fab = fisher_params.fisher_input.fab.copy()
@@ -154,10 +156,10 @@ def test_fab_any_input_any_initial(fisher_params):
     fisher = copy.deepcopy(fisher_params.fisher)
 
     fab_res1 = fisher.get_fisher()
-    assert(np.all(fab_res1==fab_res1.T))
-    assert(np.allclose(fab,fab_res1,atol=atol_loc2,rtol=rtol_use))
-    assert(np.allclose(ch_inv(fab_res1,lower=True),cov,atol=atol_loc1,rtol=rtol_use))
-    assert(np.allclose(ch_inv(cov,lower=True),fab_res1,atol=atol_loc2,rtol=rtol_use))
+    assert np.all(fab_res1==fab_res1.T)
+    assert np.allclose(fab,fab_res1,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(ch_inv(fab_res1,lower=True),cov,atol=atol_loc1,rtol=rtol_use)
+    assert np.allclose(ch_inv(cov,lower=True),fab_res1,atol=atol_loc2,rtol=rtol_use)
 
 
 def test_chol_cov_any_input_any_initial(fisher_params):
@@ -168,9 +170,9 @@ def test_chol_cov_any_input_any_initial(fisher_params):
 
     fisher = copy.deepcopy(fisher_params.fisher)
     chol_cov_res1 = fisher.get_cov_cholesky()
-    assert(np.allclose(np.tril(chol_cov_res1),chol_cov_res1,atol=atol_loc3,rtol=rtol_use))
-    assert(np.allclose(chol_cov,chol_cov_res1,atol=atol_loc3,rtol=rtol_use))
-    assert(check_is_cholesky(chol_cov_res1,cov,atol_rel=atol_rel_use,rtol=rtol_use))
+    assert np.allclose(np.tril(chol_cov_res1),chol_cov_res1,atol=atol_loc3,rtol=rtol_use)
+    assert np.allclose(chol_cov,chol_cov_res1,atol=atol_loc3,rtol=rtol_use)
+    assert check_is_cholesky(chol_cov_res1,cov,atol_rel=atol_rel_use,rtol=rtol_use)
 
 def test_chol_cov_i_any_input_any_initial(fisher_params):
     cov = fisher_params.fisher_input.cov.copy()
@@ -180,9 +182,9 @@ def test_chol_cov_i_any_input_any_initial(fisher_params):
 
     fisher = copy.deepcopy(fisher_params.fisher)
     chol_cov_i_res1 = fisher.get_cov_cholesky_inv()
-    assert(np.allclose(np.tril(chol_cov_i_res1),chol_cov_i_res1,atol=atol_loc4,rtol=rtol_use))
-    assert(np.allclose(chol_cov_i,chol_cov_i_res1,atol=atol_loc4,rtol=rtol_use))
-    assert(check_is_cholesky_inv(chol_cov_i_res1,cov,atol_rel=atol_rel_use,rtol=rtol_use))
+    assert np.allclose(np.tril(chol_cov_i_res1),chol_cov_i_res1,atol=atol_loc4,rtol=rtol_use)
+    assert np.allclose(chol_cov_i,chol_cov_i_res1,atol=atol_loc4,rtol=rtol_use)
+    assert check_is_cholesky_inv(chol_cov_i_res1,cov,atol_rel=atol_rel_use,rtol=rtol_use)
 
 def test_cov_any_input_any_initial(fisher_params):
     fab = fisher_params.fisher_input.fab.copy()
@@ -193,10 +195,10 @@ def test_cov_any_input_any_initial(fisher_params):
 
     atol_loc1=np.max(np.abs(cov))*atol_rel_use
     atol_loc2=np.max(np.abs(fab))*atol_rel_use
-    assert(np.all(cov_res1==cov_res1.T))
-    assert(np.allclose(cov,cov_res1,atol=atol_loc1,rtol=rtol_use))
-    assert(np.allclose(ch_inv(cov_res1,lower=True),fab,atol=atol_loc2,rtol=rtol_use))
-    assert(np.allclose(ch_inv(fab,lower=True),cov_res1,atol=atol_loc1,rtol=rtol_use))
+    assert np.all(cov_res1==cov_res1.T)
+    assert np.allclose(cov,cov_res1,atol=atol_loc1,rtol=rtol_use)
+    assert np.allclose(ch_inv(cov_res1,lower=True),fab,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(ch_inv(fab,lower=True),cov_res1,atol=atol_loc1,rtol=rtol_use)
 
 def test_contract_cov_self_ident_nofisher(fisher_params):
     cov = fisher_params.fisher_input.cov.copy()
@@ -205,8 +207,8 @@ def test_contract_cov_self_ident_nofisher(fisher_params):
     cov_contracted2 = np.dot(cov.T,np.dot(cov,cov))
 
     atol_loc=np.max(np.abs(cov_contracted1))*atol_rel_use
-    assert(np.allclose(cov_contracted1,cov_contracted2,atol=atol_loc,rtol=rtol_use))
-    assert(np.allclose(cov_contracted1,cov_contracted1.T,atol=atol_loc,rtol=rtol_use))
+    assert np.allclose(cov_contracted1,cov_contracted2,atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(cov_contracted1,cov_contracted1.T,atol=atol_loc,rtol=rtol_use)
 
 def test_contract_cov_fab_ident_nofisher(fisher_params):
     fab = fisher_params.fisher_input.fab.copy()
@@ -217,8 +219,8 @@ def test_contract_cov_fab_ident_nofisher(fisher_params):
     cov_contracted2 = np.dot(fab.T,np.dot(cov,fab))
 
     atol_loc=np.max(np.abs(cov_contracted1))*atol_rel_use
-    assert(np.allclose(cov_contracted1,cov_contracted2,atol=atol_loc,rtol=rtol_use))
-    assert(np.allclose(cov_contracted1,cov_contracted1.T,atol=atol_loc,rtol=rtol_use))
+    assert np.allclose(cov_contracted1,cov_contracted2,atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(cov_contracted1,cov_contracted1.T,atol=atol_loc,rtol=rtol_use)
 
 
 def test_contract_cov_fab_cov_nofisher(fisher_params):
@@ -230,8 +232,8 @@ def test_contract_cov_fab_cov_nofisher(fisher_params):
     cov_contracted2 = np.dot(fab.T,np.dot(cov,cov))
 
     atol_loc=np.max(np.abs(cov_contracted1))*atol_rel_use
-    assert(np.allclose(cov_contracted1,cov_contracted2,atol=atol_loc,rtol=rtol_use))
-    assert(np.allclose(cov_contracted1,cov_contracted1.T,atol=atol_loc,rtol=rtol_use))
+    assert np.allclose(cov_contracted1,cov_contracted2,atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(cov_contracted1,cov_contracted1.T,atol=atol_loc,rtol=rtol_use)
 
 def test_contract_cov_range1_nofisher(fisher_params):
     cov = fisher_params.fisher_input.cov.copy()
@@ -242,8 +244,8 @@ def test_contract_cov_range1_nofisher(fisher_params):
     cov_contracted2 = np.dot(range_mat.T,np.dot(cov,range_mat))
 
     atol_loc=np.max(np.abs(cov_contracted1))*atol_rel_use
-    assert(np.allclose(cov_contracted1,cov_contracted2,atol=atol_loc,rtol=rtol_use))
-    assert(np.allclose(cov_contracted1,cov_contracted1.T,atol=atol_loc,rtol=rtol_use))
+    assert np.allclose(cov_contracted1,cov_contracted2,atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(cov_contracted1,cov_contracted1.T,atol=atol_loc,rtol=rtol_use)
 
 def test_contract_cov_range2_nofisher(fisher_params):
     cov = fisher_params.fisher_input.cov.copy()
@@ -261,10 +263,10 @@ def test_contract_cov_range2_nofisher(fisher_params):
     cov_contracted4 = np.dot(range_mat2.T,np.dot(cov,range_mat1))
 
     atol_loc=np.max(np.abs(cov_contracted1))*atol_rel_use
-    assert(np.allclose(cov_contracted1,cov_contracted2,atol=atol_loc,rtol=rtol_use))
-    assert(np.allclose(cov_contracted1,cov_contracted2,atol=atol_loc,rtol=rtol_use))
-    assert(np.allclose(cov_contracted3,cov_contracted4.T,atol=atol_loc,rtol=rtol_use))
-    assert(np.allclose(cov_contracted3,cov_contracted4.T,atol=atol_loc,rtol=rtol_use))
+    assert np.allclose(cov_contracted1,cov_contracted2,atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(cov_contracted1,cov_contracted2,atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(cov_contracted3,cov_contracted4.T,atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(cov_contracted3,cov_contracted4.T,atol=atol_loc,rtol=rtol_use)
 
 def test_project_cov_self(fisher_params):
     cov = fisher_params.fisher_input.cov.copy()
@@ -273,9 +275,9 @@ def test_project_cov_self(fisher_params):
     cov_contracted2 = np.dot(cov.T,np.dot(cov,cov))
 
     atol_loc=np.max(np.abs(cov_contracted1))*atol_rel_use
-    assert(np.all(cov_contracted1==cov_contracted1.T))
-    assert(np.allclose(cov_contracted1,cov_contracted2,atol=atol_loc,rtol=rtol_use))
-    assert(np.allclose(cov_contracted1,cov_contracted1.T,atol=atol_loc,rtol=rtol_use))
+    assert np.all(cov_contracted1==cov_contracted1.T)
+    assert np.allclose(cov_contracted1,cov_contracted2,atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(cov_contracted1,cov_contracted1.T,atol=atol_loc,rtol=rtol_use)
 
 def test_project_cov_fab(fisher_params):
     fab = fisher_params.fisher_input.fab.copy()
@@ -286,9 +288,9 @@ def test_project_cov_fab(fisher_params):
     cov_contracted2 = np.dot(fab.T,np.dot(cov,fab))
 
     atol_loc=np.max(np.abs(cov_contracted1))*atol_rel_use
-    assert(np.all(cov_contracted1==cov_contracted1.T))
-    assert(np.allclose(cov_contracted1,cov_contracted2,atol=atol_loc,rtol=rtol_use))
-    assert(np.allclose(cov_contracted1,cov_contracted1.T,atol=atol_loc,rtol=rtol_use))
+    assert np.all(cov_contracted1==cov_contracted1.T)
+    assert np.allclose(cov_contracted1,cov_contracted2,atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(cov_contracted1,cov_contracted1.T,atol=atol_loc,rtol=rtol_use)
 
 def test_project_cov_range1(fisher_params):
     cov = fisher_params.fisher_input.cov.copy()
@@ -299,9 +301,9 @@ def test_project_cov_range1(fisher_params):
     cov_contracted2 = np.dot(range_mat.T,np.dot(cov,range_mat))
 
     atol_loc=np.max(np.abs(cov_contracted1))*atol_rel_use
-    assert(np.all(cov_contracted1==cov_contracted1.T))
-    assert(np.allclose(cov_contracted1,cov_contracted2,atol=atol_loc,rtol=rtol_use))
-    assert(np.allclose(cov_contracted1,cov_contracted1.T,atol=atol_loc,rtol=rtol_use))
+    assert np.all(cov_contracted1==cov_contracted1.T)
+    assert np.allclose(cov_contracted1,cov_contracted2,atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(cov_contracted1,cov_contracted1.T,atol=atol_loc,rtol=rtol_use)
 
 def test_contract_fab_self_ident_nofisher(fisher_params):
     fab = fisher_params.fisher_input.fab.copy()
@@ -310,8 +312,8 @@ def test_contract_fab_self_ident_nofisher(fisher_params):
     fab_contracted2 = np.dot(fab.T,np.dot(fab,fab))
 
     atol_loc2=np.max(np.abs(fab_contracted1))*atol_rel_use
-    assert(np.allclose(fab_contracted1,fab_contracted2,atol=atol_loc2,rtol=rtol_use))
-    assert(np.allclose(fab_contracted1,fab_contracted1.T,atol=atol_loc2,rtol=rtol_use))
+    assert np.allclose(fab_contracted1,fab_contracted2,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(fab_contracted1,fab_contracted1.T,atol=atol_loc2,rtol=rtol_use)
 
 def test_contract_fab_cov_ident_nofisher(fisher_params):
     fab = fisher_params.fisher_input.fab.copy()
@@ -322,8 +324,8 @@ def test_contract_fab_cov_ident_nofisher(fisher_params):
     fab_contracted2 = np.dot(cov.T,np.dot(fab,cov))
 
     atol_loc2=np.max(np.abs(fab_contracted1))*atol_rel_use
-    assert(np.allclose(fab_contracted1,fab_contracted2,atol=atol_loc2,rtol=rtol_use))
-    assert(np.allclose(fab_contracted1,fab_contracted1.T,atol=atol_loc2,rtol=rtol_use))
+    assert np.allclose(fab_contracted1,fab_contracted2,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(fab_contracted1,fab_contracted1.T,atol=atol_loc2,rtol=rtol_use)
 
 
 def test_contract_fab_fab_cov_nofisher(fisher_params):
@@ -335,8 +337,8 @@ def test_contract_fab_fab_cov_nofisher(fisher_params):
     fab_contracted2 = np.dot(cov.T,np.dot(fab,fab))
 
     atol_loc2=np.max(np.abs(fab_contracted1))*atol_rel_use
-    assert(np.allclose(fab_contracted1,fab_contracted2,atol=atol_loc2,rtol=rtol_use))
-    assert(np.allclose(fab_contracted1,fab_contracted1.T,atol=atol_loc2,rtol=rtol_use))
+    assert np.allclose(fab_contracted1,fab_contracted2,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(fab_contracted1,fab_contracted1.T,atol=atol_loc2,rtol=rtol_use)
 
 def test_contract_fab_range1_nofisher(fisher_params):
     fab = fisher_params.fisher_input.fab.copy()
@@ -347,8 +349,8 @@ def test_contract_fab_range1_nofisher(fisher_params):
     fab_contracted2 = np.dot(range_mat.T,np.dot(fab,range_mat))
 
     atol_loc2=np.max(np.abs(fab_contracted1))*atol_rel_use
-    assert(np.allclose(fab_contracted1,fab_contracted2,atol=atol_loc2,rtol=rtol_use))
-    assert(np.allclose(fab_contracted1,fab_contracted1.T,atol=atol_loc2,rtol=rtol_use))
+    assert np.allclose(fab_contracted1,fab_contracted2,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(fab_contracted1,fab_contracted1.T,atol=atol_loc2,rtol=rtol_use)
 
 def test_contract_fab_range2_nofisher(fisher_params):
     fab = fisher_params.fisher_input.fab.copy()
@@ -366,10 +368,10 @@ def test_contract_fab_range2_nofisher(fisher_params):
     fab_contracted4 = np.dot(range_mat2.T,np.dot(fab,range_mat1))
 
     atol_loc2=np.max(np.abs(fab_contracted1))*atol_rel_use
-    assert(np.allclose(fab_contracted1,fab_contracted2,atol=atol_loc2,rtol=rtol_use))
-    assert(np.allclose(fab_contracted1,fab_contracted2,atol=atol_loc2,rtol=rtol_use))
-    assert(np.allclose(fab_contracted3,fab_contracted4.T,atol=atol_loc2,rtol=rtol_use))
-    assert(np.allclose(fab_contracted3,fab_contracted4.T,atol=atol_loc2,rtol=rtol_use))
+    assert np.allclose(fab_contracted1,fab_contracted2,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(fab_contracted1,fab_contracted2,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(fab_contracted3,fab_contracted4.T,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(fab_contracted3,fab_contracted4.T,atol=atol_loc2,rtol=rtol_use)
 
 def test_project_fab_self(fisher_params):
     fab = fisher_params.fisher_input.fab.copy()
@@ -378,9 +380,9 @@ def test_project_fab_self(fisher_params):
     fab_contracted2 = np.dot(fab.T,np.dot(fab,fab))
 
     atol_loc2=np.max(np.abs(fab_contracted1))*atol_rel_use
-    assert(np.all(fab_contracted1==fab_contracted1.T))
-    assert(np.allclose(fab_contracted1,fab_contracted2,atol=atol_loc2,rtol=rtol_use))
-    assert(np.allclose(fab_contracted1,fab_contracted1.T,atol=atol_loc2,rtol=rtol_use))
+    assert np.all(fab_contracted1==fab_contracted1.T)
+    assert np.allclose(fab_contracted1,fab_contracted2,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(fab_contracted1,fab_contracted1.T,atol=atol_loc2,rtol=rtol_use)
 
 def test_project_fab_cov(fisher_params):
     fab = fisher_params.fisher_input.fab.copy()
@@ -391,9 +393,9 @@ def test_project_fab_cov(fisher_params):
     fab_contracted2 = np.dot(cov.T,np.dot(fab,cov))
 
     atol_loc2=np.max(np.abs(fab_contracted1))*atol_rel_use
-    assert(np.all(fab_contracted1==fab_contracted1.T))
-    assert(np.allclose(fab_contracted1,fab_contracted2,atol=atol_loc2,rtol=rtol_use))
-    assert(np.allclose(fab_contracted1,fab_contracted1.T,atol=atol_loc2,rtol=rtol_use))
+    assert np.all(fab_contracted1==fab_contracted1.T)
+    assert np.allclose(fab_contracted1,fab_contracted2,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(fab_contracted1,fab_contracted1.T,atol=atol_loc2,rtol=rtol_use)
 
 def test_project_fab_range1(fisher_params):
     fab = fisher_params.fisher_input.fab.copy()
@@ -404,9 +406,9 @@ def test_project_fab_range1(fisher_params):
     fab_contracted2 = np.dot(range_mat.T,np.dot(fab,range_mat))
 
     atol_loc2=np.max(np.abs(fab_contracted1))*atol_rel_use
-    assert(np.all(fab_contracted1==fab_contracted1.T))
-    assert(np.allclose(fab_contracted1,fab_contracted2,atol=atol_loc2,rtol=rtol_use))
-    assert(np.allclose(fab_contracted1,fab_contracted1.T,atol=atol_loc2,rtol=rtol_use))
+    assert np.all(fab_contracted1==fab_contracted1.T)
+    assert np.allclose(fab_contracted1,fab_contracted2,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(fab_contracted1,fab_contracted1.T,atol=atol_loc2,rtol=rtol_use)
 
 def test_chol_right_cov(fisher_params):
     cov = fisher_params.fisher_input.cov.copy()
@@ -419,9 +421,9 @@ def test_chol_right_cov(fisher_params):
     contracted5 = np.dot(cov.T,np.dot(cov,cov))
 
     atol_loc1 = np.max(np.abs(contracted1))*atol_rel_use
-    assert(np.allclose(contracted1,contracted2,atol=atol_loc1,rtol=rtol_use))
-    assert(np.allclose(contracted3,contracted4,atol=atol_loc1,rtol=rtol_use))
-    assert(np.allclose(contracted3,contracted5,atol=atol_loc1,rtol=rtol_use))
+    assert np.allclose(contracted1,contracted2,atol=atol_loc1,rtol=rtol_use)
+    assert np.allclose(contracted3,contracted4,atol=atol_loc1,rtol=rtol_use)
+    assert np.allclose(contracted3,contracted5,atol=atol_loc1,rtol=rtol_use)
 
 def test_chol_right_range2(fisher_params):
     cov = fisher_params.fisher_input.cov.copy()
@@ -444,10 +446,10 @@ def test_chol_right_range2(fisher_params):
     contracted5 = np.dot(range_mat1.T,np.dot(cov,range_mat2))
 
     atol_loc1 = np.max(np.abs(contracted1))*atol_rel_use
-    assert(np.allclose(contracted1,contracted2,atol=atol_loc1,rtol=rtol_use))
-    assert(np.allclose(contracted3,contracted4,atol=atol_loc1,rtol=rtol_use))
-    assert(np.allclose(contracted3,contracted5,atol=atol_loc1,rtol=rtol_use))
-    assert(np.allclose(contracted6,contracted7,atol=atol_loc1,rtol=rtol_use))
+    assert np.allclose(contracted1,contracted2,atol=atol_loc1,rtol=rtol_use)
+    assert np.allclose(contracted3,contracted4,atol=atol_loc1,rtol=rtol_use)
+    assert np.allclose(contracted3,contracted5,atol=atol_loc1,rtol=rtol_use)
+    assert np.allclose(contracted6,contracted7,atol=atol_loc1,rtol=rtol_use)
 
 def test_chol_i_right_fab(fisher_params):
     fab = fisher_params.fisher_input.fab.copy()
@@ -460,9 +462,9 @@ def test_chol_i_right_fab(fisher_params):
     contracted5 = np.dot(fab.T,np.dot(fab,fab))
 
     atol_loc1 = np.max(np.abs(contracted1))*atol_rel_use
-    assert(np.allclose(contracted1,contracted2,atol=atol_loc1,rtol=rtol_use))
-    assert(np.allclose(contracted3,contracted4,atol=atol_loc1,rtol=rtol_use))
-    assert(np.allclose(contracted3,contracted5,atol=atol_loc1,rtol=rtol_use))
+    assert np.allclose(contracted1,contracted2,atol=atol_loc1,rtol=rtol_use)
+    assert np.allclose(contracted3,contracted4,atol=atol_loc1,rtol=rtol_use)
+    assert np.allclose(contracted3,contracted5,atol=atol_loc1,rtol=rtol_use)
 
 def test_chol_i_right_range2(fisher_params):
     fab = fisher_params.fisher_input.fab.copy()
@@ -485,10 +487,10 @@ def test_chol_i_right_range2(fisher_params):
     contracted5 = np.dot(range_mat1.T,np.dot(fab,range_mat2))
 
     atol_loc1 = np.max(np.abs(contracted1))*atol_rel_use
-    assert(np.allclose(contracted1,contracted2,atol=atol_loc1,rtol=rtol_use))
-    assert(np.allclose(contracted3,contracted4,atol=atol_loc1,rtol=rtol_use))
-    assert(np.allclose(contracted3,contracted5,atol=atol_loc1,rtol=rtol_use))
-    assert(np.allclose(contracted6,contracted7,atol=atol_loc1,rtol=rtol_use))
+    assert np.allclose(contracted1,contracted2,atol=atol_loc1,rtol=rtol_use)
+    assert np.allclose(contracted3,contracted4,atol=atol_loc1,rtol=rtol_use)
+    assert np.allclose(contracted3,contracted5,atol=atol_loc1,rtol=rtol_use)
+    assert np.allclose(contracted6,contracted7,atol=atol_loc1,rtol=rtol_use)
 
 def test_add_fisher1(fisher_params):
     fab = fisher_params.fisher_input.fab.copy()
@@ -502,8 +504,8 @@ def test_add_fisher1(fisher_params):
     atol_loc2=np.max(np.abs(fab))*atol_rel_use
     atol_loc1=np.max(np.abs(cov2))*atol_rel_use
 
-    assert(np.allclose(fab2,fab3,atol=atol_loc2,rtol=rtol_use))
-    assert(np.allclose(cov2,cov3,atol=atol_loc1,rtol=rtol_use))
+    assert np.allclose(fab2,fab3,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(cov2,cov3,atol=atol_loc1,rtol=rtol_use)
 
 
 def test_get_eig_metric_diag_range(fisher_params):
@@ -521,10 +523,10 @@ def test_get_eig_metric_diag_range(fisher_params):
     m_mat = np.dot(cov,metric_mat_inv)
     eigs_3 = spl.eig(m_mat)
     #check matrix is positive semidefinite
-    assert(np.all(eigs_3[0]>0.))
-    assert(np.all(np.abs(np.imag(eigs_3[0]-1.))[::-1]<atol_loc))
+    assert np.all(eigs_3[0]>0.)
+    assert np.all(np.abs(np.imag(eigs_3[0]-1.))[::-1]<atol_loc)
     #check eigenvalues match
-    assert(np.allclose(np.sort(eigs_1[0]-1.),np.sort(np.real(eigs_3[0]-1.)),atol=atol_loc,rtol=rtol_use))
+    assert np.allclose(np.sort(eigs_1[0]-1.),np.sort(np.real(eigs_3[0]-1.)),atol=atol_loc,rtol=rtol_use)
 
     chol_metric = spl.cholesky(metric_mat,lower=True)
     chol_inv_metric = npl.pinv(chol_metric)
@@ -536,22 +538,22 @@ def test_get_eig_metric_diag_range(fisher_params):
     eigvs_5 = np.dot(chol_metric,eigs_1[1])
 
     #check eigenvalues work
-    assert(np.allclose(np.dot(m_mat,eigs_3[1]),eigs_3[0]*eigs_3[1],atol=atol_loc,rtol=rtol_use))
-    assert(np.allclose(np.dot(alt_mat,eigs_1[1]),eigs_1[0]*eigs_1[1],atol=atol_loc,rtol=rtol_use))
-    assert(np.allclose(np.identity(cov.shape[0]),np.dot(eigs_1[1].T,eigs_1[1]),atol=atol_loc,rtol=rtol_use))
+    assert np.allclose(np.dot(m_mat,eigs_3[1]),eigs_3[0]*eigs_3[1],atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(np.dot(alt_mat,eigs_1[1]),eigs_1[0]*eigs_1[1],atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(np.identity(cov.shape[0]),np.dot(eigs_1[1].T,eigs_1[1]),atol=atol_loc,rtol=rtol_use)
     p_mat0 = np.dot(eigs_3[1].T,np.dot(metric_mat_inv,eigs_3[1]))
     p_mat0_use = p_mat0-np.diag(np.diag(p_mat0))
-    assert(np.allclose(np.zeros(cov.shape),p_mat0_use,atol=atol_loc,rtol=rtol_use))
+    assert np.allclose(np.zeros(cov.shape),p_mat0_use,atol=atol_loc,rtol=rtol_use)
 
     #check cholesky transforms eigenvalues as expected
     p_mat1 = np.dot(eigvs_4.T,eigvs_4)
     p_mat1_use=p_mat1-np.diag(np.diag(p_mat1))
-    assert(np.allclose(np.zeros(cov.shape),p_mat1_use,atol=atol_loc,rtol=rtol_use))
-    assert(np.allclose(np.dot(alt_mat,eigvs_4),(eigs_3[0]*eigvs_4),atol=atol_loc,rtol=rtol_use))
+    assert np.allclose(np.zeros(cov.shape),p_mat1_use,atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(np.dot(alt_mat,eigvs_4),(eigs_3[0]*eigvs_4),atol=atol_loc,rtol=rtol_use)
     p_mat2 = np.dot(eigvs_5.T,np.dot(metric_mat_inv,eigvs_5))
     p_mat2_use=p_mat2-np.diag(np.diag(p_mat2))
-    assert(np.allclose(np.zeros(cov.shape),p_mat2_use,atol=atol_loc,rtol=rtol_use))
-    assert(np.allclose(np.dot(m_mat,eigvs_5),eigs_1[0]*eigvs_5,atol=atol_loc,rtol=rtol_use))
+    assert np.allclose(np.zeros(cov.shape),p_mat2_use,atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(np.dot(m_mat,eigvs_5),eigs_1[0]*eigvs_5,atol=atol_loc,rtol=rtol_use)
 
 def test_get_eig_metric_rand(fisher_params):
     cov = fisher_params.fisher_input.cov.copy()
@@ -573,10 +575,10 @@ def test_get_eig_metric_rand(fisher_params):
     m_mat = np.dot(cov,metric_mat_inv)
     eigs_3 = spl.eig(m_mat)
     #check matrix is positive semidefinite
-    assert(np.all(eigs_3[0]>0.))
-    assert(np.all(np.abs(np.imag(eigs_3[0]-1.))[::-1]<atol_loc))
+    assert np.all(eigs_3[0]>0.)
+    assert np.all(np.abs(np.imag(eigs_3[0]-1.))[::-1]<atol_loc)
     #check eigenvalues match
-    assert(np.allclose(np.sort(eigs_1[0]-1.),np.sort(np.real(eigs_3[0]-1.)),atol=atol_loc,rtol=rtol_use))
+    assert np.allclose(np.sort(eigs_1[0]-1.),np.sort(np.real(eigs_3[0]-1.)),atol=atol_loc,rtol=rtol_use)
 
     chol_metric = spl.cholesky(metric_mat,lower=True)
     chol_inv_metric = npl.pinv(chol_metric)
@@ -588,22 +590,22 @@ def test_get_eig_metric_rand(fisher_params):
     eigvs_5 = np.dot(chol_metric,eigs_1[1])
 
     #check eigenvalues work
-    assert(np.allclose(np.dot(m_mat,eigs_3[1]),eigs_3[0]*eigs_3[1],atol=atol_loc,rtol=rtol_use))
-    assert(np.allclose(np.dot(alt_mat,eigs_1[1]),eigs_1[0]*eigs_1[1],atol=atol_loc,rtol=rtol_use))
-    assert(np.allclose(np.identity(cov.shape[0]),np.dot(eigs_1[1].T,eigs_1[1]),atol=atol_loc,rtol=rtol_use))
+    assert np.allclose(np.dot(m_mat,eigs_3[1]),eigs_3[0]*eigs_3[1],atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(np.dot(alt_mat,eigs_1[1]),eigs_1[0]*eigs_1[1],atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(np.identity(cov.shape[0]),np.dot(eigs_1[1].T,eigs_1[1]),atol=atol_loc,rtol=rtol_use)
     p_mat0 = np.dot(eigs_3[1].T,np.dot(metric_mat_inv,eigs_3[1]))
     p_mat0_use = p_mat0-np.diag(np.diag(p_mat0))
-    assert(np.allclose(np.zeros(cov.shape),p_mat0_use,atol=atol_loc,rtol=rtol_use))
+    assert np.allclose(np.zeros(cov.shape),p_mat0_use,atol=atol_loc,rtol=rtol_use)
 
     #check cholesky transforms eigenvalues as expected
     p_mat1 = np.dot(eigvs_4.T,eigvs_4)
     p_mat1_use=p_mat1-np.diag(np.diag(p_mat1))
-    assert(np.allclose(np.zeros(cov.shape),p_mat1_use,atol=atol_loc,rtol=rtol_use))
-    assert(np.allclose(np.dot(alt_mat,eigvs_4),(eigs_3[0]*eigvs_4),atol=atol_loc,rtol=rtol_use))
+    assert np.allclose(np.zeros(cov.shape),p_mat1_use,atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(np.dot(alt_mat,eigvs_4),(eigs_3[0]*eigvs_4),atol=atol_loc,rtol=rtol_use)
     p_mat2 = np.dot(eigvs_5.T,np.dot(metric_mat_inv,eigvs_5))
     p_mat2_use=p_mat2-np.diag(np.diag(p_mat2))
-    assert(np.allclose(np.zeros(cov.shape),p_mat2_use,atol=atol_loc,rtol=rtol_use))
-    assert(np.allclose(np.dot(m_mat,eigvs_5),eigs_1[0]*eigvs_5,atol=atol_loc,rtol=rtol_use))
+    assert np.allclose(np.zeros(cov.shape),p_mat2_use,atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(np.dot(m_mat,eigvs_5),eigs_1[0]*eigvs_5,atol=atol_loc,rtol=rtol_use)
 
 if __name__=='__main__':
-        pytest.cmdline.main(['fisher_tests.py'])
+    pytest.cmdline.main(['fisher_tests.py'])

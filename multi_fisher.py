@@ -82,7 +82,7 @@ class MultiFisher(object):
 
             if self.needs_a:
                 print "MultiFisher: getting lw mit variance "
-                #TODO check if switching actually appropriate 
+                #TODO check if switching actually appropriate
                 self.lw_F_mit.switch_rep(fm.REP_CHOL_INV)
                 self.a_vals[1] = self.lw_F_mit.project_covar(self.project_lw_a).get_covar()
 
@@ -272,7 +272,7 @@ class MultiFisher(object):
         return result
 
     def get_a_lw(self):
-        """get (v.T).C_lw.v where v=\frac{\partial\bar{\delta}}{\delta_\alpha} for [no mitigation, with mitigation] lw covariance matrices"""
+        r"""get (v.T).C_lw.v where v=\frac{\partial\bar{\delta}}{\delta_\alpha} for [no mitigation, with mitigation] lw covariance matrices"""
         if self.needs_a:
             return self.a_vals
         else:

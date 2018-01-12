@@ -46,7 +46,7 @@ class FisherMatrix(object):
         if not initial_state==self.internal_state:
             self.switch_rep(initial_state)
         if not self.silent:
-            print("FisherMatrix "+str(id(self))+" created fisher matrix")
+            print "FisherMatrix "+str(id(self))+" created fisher matrix"
 
     def switch_rep(self,new_state):
         """Switches the internal representation of the fisher matrix to new_state
@@ -57,7 +57,7 @@ class FisherMatrix(object):
             print "FisherMatrix "+str(id(self))+": changing internal state from "+str(self.internal_state)+" to "+str(new_state)
         if old_state==new_state:
             if not self.silent:
-                print("FisherMatrix "+str(id(self))+": internal state "+str(self.internal_state)+" unchanged")
+                print "FisherMatrix "+str(id(self))+": internal state "+str(self.internal_state)+" unchanged"
         elif new_state == REP_CHOL:
             self.internal_mat = self.get_cov_cholesky(inplace=True,copy_output=False,internal=True)
         elif new_state == REP_CHOL_INV:
@@ -115,14 +115,14 @@ class FisherMatrix(object):
                     copy_output: whether to copy the output matrix, to be safe from mutating internal_mat later"""
         copy_safe = False
         if not self.silent:
-            print("FisherMatrix "+str(id(self))+": getting covariance")
+            print "FisherMatrix "+str(id(self))+": getting covariance"
         if self.internal_state==REP_COVAR: #or self.good_caches[REP_COVAR]:
             if not self.silent:
-                print("FisherMatrix "+str(id(self))+": covar retrieved from cache")
+                print "FisherMatrix "+str(id(self))+": covar retrieved from cache"
             result = self.internal_mat#self.covar_cache
         else:
             if not self.silent:
-                print("FisherMatrix "+str(id(self))+": covar cache miss")
+                print "FisherMatrix "+str(id(self))+": covar cache miss"
             copy_safe = True
             chol_cov =self.get_cov_cholesky(inplace=inplace,internal=internal,copy_output=False)
             #dlauum calculates L^TL but have LL^T cholesky convention, rot90s flip to correct convention
@@ -264,7 +264,7 @@ class FisherMatrix(object):
     def project_fisher(self,v1,destructive=False):
         """project using (v1.T).Fisher.v1"""
         result = self.contract_fisher(v1,v1,identical_inputs=True,return_fisher=False,destructive=destructive)
-        #assert(np.all(result==result.T))
+        #assert np.all(result==result.T)
         #symmetrize to avoid accumulating numerical discrepancies
         #TODO add option to not symmetrize, or don't do it for known safe internal states
         #if not (self.internal_state==REP_CHOL or self.internal_state==REP_CHOL_INV):

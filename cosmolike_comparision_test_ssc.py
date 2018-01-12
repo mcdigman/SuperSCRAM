@@ -1,3 +1,4 @@
+"""intended to provide comparison with cosmolike ssc term, currently broken"""
 import numpy as np
 from cosmopie import CosmoPie
 from scipy.integrate import cumtrapz
@@ -8,7 +9,7 @@ from sph_klim import SphBasisK
 from polygon_geo import PolygonGeo
 from sw_survey import SWSurvey
 from lw_survey import LWSurvey
-from Super_Survey import super_survey
+from Super_Survey import SuperSurvey
 
 if __name__ == '__main__':
     base_dir = './'
@@ -30,14 +31,14 @@ if __name__ == '__main__':
     amin_cosmo = 0.2
 
     len_params = defaults.lensing_params.copy()
-    len_params['smodel'] = 'custom_z' 
+    len_params['smodel'] = 'custom_z'
     len_params['n_gal'] = n_gal_cosmo
     len_params['sigma2_e'] = sigma_e_cosmo**2
 
     camb_params = defaults.camb_params
     camb_params['force_sigma8']=True
     k_in,P_in=camb_pow(defaults.cosmology_cosmolike,camb_params=camb_params)
-    C=CosmoPie(defaults.cosmology_cosmolike,P_lin=P_in,k=k_in,camb_params=camb_params,p_space='overwride')    
+    C=CosmoPie(defaults.cosmology_cosmolike,P_lin=P_in,k=k_in,camb_params=camb_params,p_space='overwride')
 
 
     n_s = sigma_e_cosmo**2/(2*n_gal_cosmo)
@@ -85,30 +86,30 @@ if __name__ == '__main__':
             itr_in = 0
             for i3 in xrange(tomo_bins_cosmo):
                 for i4 in xrange(i3,tomo_bins_cosmo):
-                    assert(np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i3,i4,i1,i2].T))
-                    assert(np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i1,i2,i4,i3].T))
-                    assert(np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i2,i1,i3,i4].T))
-                    assert(np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i2,i1,i4,i3].T))
-                    assert(np.all(cov_ssc_mat_cosmo[i1,i2,i3,i4]==cov_ssc_mat_cosmo[i3,i4,i1,i2].T))
-                    assert(np.all(cov_ssc_mat_cosmo[i1,i2,i3,i4]==cov_ssc_mat_cosmo[i1,i2,i4,i3].T))
-                    assert(np.all(cov_ssc_mat_cosmo[i1,i2,i3,i4]==cov_ssc_mat_cosmo[i2,i1,i3,i4].T))
-                    assert(np.all(cov_ssc_mat_cosmo[i1,i2,i3,i4]==cov_ssc_mat_cosmo[i2,i1,i4,i3].T))
+                    assert np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i3,i4,i1,i2].T)
+                    assert np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i1,i2,i4,i3].T)
+                    assert np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i2,i1,i3,i4].T)
+                    assert np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i2,i1,i4,i3].T)
+                    assert np.all(cov_ssc_mat_cosmo[i1,i2,i3,i4]==cov_ssc_mat_cosmo[i3,i4,i1,i2].T)
+                    assert np.all(cov_ssc_mat_cosmo[i1,i2,i3,i4]==cov_ssc_mat_cosmo[i1,i2,i4,i3].T)
+                    assert np.all(cov_ssc_mat_cosmo[i1,i2,i3,i4]==cov_ssc_mat_cosmo[i2,i1,i3,i4].T)
+                    assert np.all(cov_ssc_mat_cosmo[i1,i2,i3,i4]==cov_ssc_mat_cosmo[i2,i1,i4,i3].T)
                     cov_g_mat_cosmo_flat[itr_out:itr_out+nbins_cosmo,itr_in:itr_in+nbins_cosmo] = cov_g_mat_cosmo[i1,i2,i3,i4]
                     cov_ssc_mat_cosmo_flat[itr_out:itr_out+nbins_cosmo,itr_in:itr_in+nbins_cosmo] = cov_ssc_mat_cosmo[i1,i2,i3,i4]
-                    if not itr_in==itr_out:
+                    if itr_in!=itr_out:
                         cov_g_mat_cosmo_flat[itr_in:itr_in+nbins_cosmo,itr_out:itr_out+nbins_cosmo] = cov_g_mat_cosmo_flat[itr_out:itr_out+nbins_cosmo,itr_in:itr_in+nbins_cosmo].T
                         cov_ssc_mat_cosmo_flat[itr_in:itr_in+nbins_cosmo,itr_out:itr_out+nbins_cosmo] = cov_ssc_mat_cosmo_flat[itr_out:itr_out+nbins_cosmo,itr_in:itr_in+nbins_cosmo].T
                     itr_in+=nbins_cosmo
             itr_out+=nbins_cosmo
-    assert(np.all(cov_g_mat_cosmo_flat==cov_g_mat_cosmo_flat.T))
-    assert(np.all(cov_ssc_mat_cosmo_flat==cov_ssc_mat_cosmo_flat.T))
-                    #if i1<=i2 and i3<=i4 
+    assert np.all(cov_g_mat_cosmo_flat==cov_g_mat_cosmo_flat.T)
+    assert np.all(cov_ssc_mat_cosmo_flat==cov_ssc_mat_cosmo_flat.T)
+                    #if i1<=i2 and i3<=i4
 #                    cov_g_mat_cosmo[i1,i2,i3,i4] = np.zeros((nbins_cosmo,nbins_cosmo))
 #                    for l1 in xrange(nbins_cosmo):
 #                        for l2 in xrange(nbins_cosmo):
-                            
 
-    
+
+
     Cll_shear_shear_cosmo = np.zeros((tomo_bins_cosmo,tomo_bins_cosmo),dtype=object)
     itr = 0
     for i in xrange(tomo_bins_cosmo):
@@ -176,7 +177,7 @@ if __name__ == '__main__':
     phi1s[0] = phi0
     phi1s[-1] = phi0
     for itr in xrange(1,n_steps+1):
-                phi1s[itr] = phi0+itr*2.*np.pi/n_steps
+        phi1s[itr] = phi0+itr*2.*np.pi/n_steps
     phi1s = phi1s[::-1]
     phi2s = phi1s
     theta_in1 = theta0+0.1
@@ -215,5 +216,4 @@ if __name__ == '__main__':
     survey_3 = LWSurvey(geos,'lw_survey1',basis,C=C,ls = l_lw,params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params)
     surveys_lw=np.array([survey_3])
 
-    SS=super_survey(surveys_sw, surveys_lw,r_max,l_mids,n_zeros,k_in,basis,P_lin=P_in,C=C,get_a=False,do_unmitigated=True,do_mitigated=False)
-
+    SS=SuperSurvey(surveys_sw, surveys_lw,r_max,l_mids,n_zeros,k_in,basis,P_lin=P_in,C=C,get_a=False,do_unmitigated=True,do_mitigated=False)

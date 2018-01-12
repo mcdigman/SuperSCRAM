@@ -1,3 +1,5 @@
+"""test consistency of different ways of getting power spectrum"""
+#pylint: disable=W0621
 import numpy as np
 import matter_power_spectrum as mps
 import defaults
@@ -26,10 +28,10 @@ def test_vary_1_parameter(param_set,param_vary):
     eps = 0.01
 
     camb_params = defaults.camb_params.copy()
-    
+
     camb_params['force_sigma8'] = param_set[0]
     camb_params['leave_h'] = param_set[1]
-    
+
     cosmo_fid = defaults.cosmology.copy()
 
     if param_set[2]=='halofit':
@@ -37,7 +39,7 @@ def test_vary_1_parameter(param_set,param_vary):
     else:
         nonlinear_model = camb.model.NonLinear_none
 
-    if type(cosmo_fid[param_vary]) is float:
+    if isinstance(cosmo_fid[param_vary],float):
         cosmo_pert = cosmo_fid.copy()
         cosmo_pert[param_vary]*=(1.+eps)
 
@@ -52,8 +54,8 @@ def test_vary_1_parameter(param_set,param_vary):
         atol_power = np.max(P_res1)*atol_rel
         atol_k = np.max(k_pert)*atol_rel
 
-        assert(np.allclose(k_res2,k_pert,atol=atol_k,rtol=rtol))
-        assert(np.allclose(P_res1,P_res2,atol=atol_power,rtol=rtol))
+        assert np.allclose(k_res2,k_pert,atol=atol_k,rtol=rtol)
+        assert np.allclose(P_res1,P_res2,atol=atol_power,rtol=rtol)
 
 
 if __name__=='__main__':
@@ -115,8 +117,8 @@ if __name__=='__main__':
 
             mean_abs_err_lin = np.average(np.abs((P_res2-P_res1)/P_res2)[k_mask])
             print "mean absolute diff leave_h="+str(param[1])+" force_sigma8="+str(param[0])+" pmodel="+str(param[2])+": "+str(mean_abs_err_lin)
-            #assert(np.allclose(k_res2,k_fid,atol=atol_k,rtol=rtol))
-            #assert(np.allclose(P_res1,P_res2,atol=atol_power,rtol=rtol))
+            #assert np.allclose(k_res2,k_fid,atol=atol_k,rtol=rtol)
+            #assert np.allclose(P_res1,P_res2,atol=atol_power,rtol=rtol)
         #print "PASS: passed all assertions"
 #        do_jvp_comp=True
 #        if do_jvp_comp:

@@ -60,9 +60,9 @@ def test_power_derivative():
         halofit_bins[itr-1] =  np.average(rat_halofit[~np.isnan(rat_halofit)][mask_loc_hf])
         linear_bins[itr-1] =  np.average(rat_linear[~np.isnan(rat_linear)][mask_loc_lin])
         fpt_bins[itr-1] =  np.average(rat_fpt[~np.isnan(rat_fpt)][mask_loc_fpt])
-    assert(np.all(np.abs(halofit_bins-1.)<0.02))
-    assert(np.all(np.abs(linear_bins-1.)<0.02))
-    assert(np.all(np.abs(fpt_bins-1.)<0.02))
+    assert np.all(np.abs(halofit_bins-1.)<0.02)
+    assert np.all(np.abs(linear_bins-1.)<0.02)
+    assert np.all(np.abs(fpt_bins-1.)<0.02)
 
 #replicate chiang&wagner arxiv:1403.3411v2 figure 4-5
 #note that the mean averaged over 1 oscillation should match as should the phase of the oscillations,

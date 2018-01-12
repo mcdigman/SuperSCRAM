@@ -1,3 +1,4 @@
+"""provide ability to compute union of PolygonPixelGeos and use PolygonPixelGeos as masks"""
 import numpy as np
 from polygon_pixel_geo import PolygonPixelGeo
 
@@ -13,7 +14,7 @@ class PolygonPixelUnionGeo(PolygonPixelGeo):
         for itr1 in xrange(0,self.n_g):
             contain_pos = contain_pos | geos[itr1].contained
         for itr2 in xrange(0,self.n_m):
-            contain_mask = contain_mask | masks[itr1].sp_poly
+            contain_mask = contain_mask | masks[itr2].sp_poly
         union_mask = contain_pos*(not contain_mask)
 
         #self.union_pos = polys_pos[0]
@@ -49,7 +50,7 @@ class PolygonPixelUnionGeo(PolygonPixelGeo):
         #    self.mask_phi=None
         #    self.mask_theta=None
         #    self.mask_geo=None
-        
+
         #TODO PRIORITY actually use union_mask
         PolygonPixelGeo.__init__(self,geos[0].zs,geos[0].thetas,geos[0].phis,geos[0].theta_in,geos[0].phi_in,geos[0].C,geos[0].z_fine,geos[0]._l_max,geos[0].res_healpix,geos[0].overwride_precompute)
         #Geo.__init__(self,self.union_geo.zs,self.union_geo.C,self.union_geo.z_fine)

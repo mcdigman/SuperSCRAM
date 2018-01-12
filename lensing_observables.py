@@ -9,7 +9,7 @@ import lensing_weight as len_w
 import power_parameter_response as ppr
 class LensingPowerBase(object):
     def __init__(self,geo,ls,survey_id,C,cosmo_par_list,cosmo_par_epsilons,params=defaults.lensing_params,log_param_derivs=np.array([]),ps=np.array([]),nz_matcher=None):
-        """Shared object to generate and store things that will be needed my multiple LensingObservable objects, such as the lensing weight functions
+        r"""Shared object to generate and store things that will be needed my multiple LensingObservable objects, such as the lensing weight functions
             inputs:
                 geo: a Geo object for the geometry
                 ls: the set of l bins to compute the sw observables on
@@ -74,11 +74,11 @@ class LensingObservable(SWObservable):
         return sp.Cll_q_q(self.len_pow.C_pow,self.q1_pow,self.q2_pow).Cll()
 
     def get_dO_I_ddelta_bar(self):
-        """Get \frac{\partial{O_I}}{\partial\bar{\delta}(z)} as a function of the z grid, to be integrated by the long wavelength basis"""
+        r"""Get \frac{\partial{O_I}}{\partial\bar{\delta}(z)} as a function of the z grid, to be integrated by the long wavelength basis"""
         return sp.Cll_q_q(self.len_pow.dC_ddelta,self.q1_dC,self.q2_dC).Cll_integrand()
 
     def get_dO_I_dpars(self):
-        """Get \partial{O_I}\partial{\Theta_i} for the set of observables as set up in LensingPowerBase"""
+        r"""Get \partial{O_I}\partial{\Theta_i} for the set of observables as set up in LensingPowerBase"""
         dO_dpars = np.zeros((self.get_dimension(),self.len_pow.cosmo_par_list.size))
         for itr in xrange(0,dO_dpars.shape[1]):
             Cll_low = sp.Cll_q_q(self.len_pow.dC_dpars[itr,0],self.q1_dpars[itr,0],self.q2_dpars[itr,0]).Cll()

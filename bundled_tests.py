@@ -1,3 +1,4 @@
+"""bundles all the pytest calls for the code"""
 import pytest
 if __name__ == '__main__':
     pytest.cmdline.main(['algebra_tests.py'])

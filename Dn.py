@@ -24,7 +24,7 @@ class DNumberDensityObservable(LWObservable):
                 C: as CosmoPie object
                 nz_params1,nz_params2: parameters for the nz_matcher objects to get
         """
-        print("Dn: initializing")
+        print "Dn: initializing"
         min_mass = params['M_cut']
         self.variable_cut = params['variable_cut']
         LWObservable.__init__(self,geos,params,survey_id,C)
@@ -37,7 +37,7 @@ class DNumberDensityObservable(LWObservable):
 
         #there is a bug in spherical_geometry that causes overlap to fail if geometries are nested and 1 side is identical, handle this case unless they fix it
         try:
-            if isinstance(self.geo1,PolygonGeo) or isinstance(self.geo1,PolygonPixelGeo):
+            if isinstance(self.geo1,(PolygonGeo,PolygonPixelGeo)):
                 self.overlap_fraction = self.geo1.get_overlap_fraction(self.geo2)
             else:
                 warn('Dn: do not know how to compute overlap, assuming 0')

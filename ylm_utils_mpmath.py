@@ -2,28 +2,33 @@
 import numpy as np
 from mpmath import mp
 
+
 #TODO check what dps should be
 mp.dps = 200
 #TODO write test case to compare with non mpmath
 
-def reconstruct_from_alm(l_max,thetas,phis,alms):
-    n_tot = (l_max+1)**2
-    phis = mp.matrix(phis)
-    thetas = mp.matrix(thetas)
-
-    ls = np.zeros(n_tot)
-    ms = np.zeros(n_tot)
-
-    reconstructed = mp.zeros(thetas.rows,1)
-
+def get_lm_dict(l_max):
     lm_dict = {}
     itr = 0
+    n_tot = (l_max+1)**2
+    ls = np.zeros(n_tot,dtype=np.int)
+    ms = np.zeros(n_tot,dtype=np.int)
     for ll in xrange(0,l_max+1):
         for mm in xrange(-ll,ll+1):
             ms[itr] = mm
             ls[itr] = ll
             lm_dict[(ll,mm)] = itr
             itr+=1
+    return lm_dict,ls,ms
+
+def reconstruct_from_alm(l_max,thetas,phis,alms):
+    n_tot = (l_max+1)**2
+    phis = mp.matrix(phis)
+    thetas = mp.matrix(thetas)
+
+    reconstructed = mp.zeros(thetas.rows,1)
+
+    lm_dict,ls,ms = get_lm_dict(l_max)
 
     sin_theta = mp.matrix([mp.sin(val) for val in thetas])
     cos_theta = mp.matrix([mp.cos(val) for val in thetas])
@@ -55,8 +60,8 @@ def reconstruct_from_alm(l_max,thetas,phis,alms):
             else:
                 #Note: check condon shortley phase convention
                 for i in xrange(0,thetas.rows):
-                    reconstructed[i,:] =reconstructed[i,:]+((-1)**(mm)*mp.sqrt(2.)*alms[(ll,mm)]*prefactor*base[i,:]*cos_phi_m[mm,i]) 
-                    reconstructed[i,:] =reconstructed[i,:]+((-1)**(mm)*mp.sqrt(2.)*alms[(ll,mm)]*prefactor*base[i,:]*sin_phi_m[mm,i]) 
+                    reconstructed[i,:] =reconstructed[i,:]+((-1)**(mm)*mp.sqrt(2.)*alms[(ll,mm)]*prefactor*base[i,:]*cos_phi_m[mm,i])
+                    reconstructed[i,:] =reconstructed[i,:]+((-1)**(mm)*mp.sqrt(2.)*alms[(ll,mm)]*prefactor*base[i,:]*sin_phi_m[mm,i])
             if mm<=ll-2:
                 known_legendre.pop((ll-2,mm),None)
     return np.array(reconstructed.tolist(),dtype=np.double)[:,0]
@@ -70,7 +75,7 @@ def get_Y_r_dict(l_max,thetas,phis):
     return ydict
 
 def get_Y_r_dict_central(l_max):
-    Y_lms = {(0,0):1./np.sqrt(4.*np.pi)}    
+    Y_lms = {(0,0):1./np.sqrt(4.*np.pi)}
     factorials = mp.matrix([mp.factorial(val) for val in np.arange(0,2*l_max+1)])
     for ll in xrange(1,l_max+1):
         for mm in xrange(-ll,0):
@@ -91,18 +96,9 @@ def get_Y_r_table(l_max,thetas,phis):
     phis = mp.matrix(phis)
     thetas = mp.matrix(thetas)
 
-    ls = np.zeros(n_tot)
-    ms = np.zeros(n_tot)
     Y_lms = np.zeros((n_tot,thetas.rows))
 
-    lm_dict = {}
-    itr = 0
-    for ll in xrange(0,l_max+1):
-        for mm in xrange(-ll,ll+1):
-            ms[itr] = mm
-            ls[itr] = ll
-            lm_dict[(ll,mm)] = itr
-            itr+=1
+    lm_dict,ls,ms = get_lm_dict(l_max)
 
     sin_theta = mp.matrix([mp.sin(val) for val in thetas])
     cos_theta = mp.matrix([mp.cos(val) for val in thetas])
@@ -130,7 +126,7 @@ def get_Y_r_table(l_max,thetas,phis):
             base = known_legendre[(ll,mm)]
             if mm==0:
                 for i in xrange(0,thetas.rows):
-                    Y_lms[lm_dict[(ll,mm)]][i] = np.double(prefactor*base[i,:]) 
+                    Y_lms[lm_dict[(ll,mm)]][i] = np.double(prefactor*base[i,:])
             else:
                 for i in xrange(0,thetas.rows):
                     Y_lms[lm_dict[(ll,mm)]][i] = np.double(((-1)**(mm)*mp.sqrt(2.)*prefactor*base*cos_phi_m[mm]))

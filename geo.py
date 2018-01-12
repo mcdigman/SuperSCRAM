@@ -76,7 +76,7 @@ class Geo(object):
 
     #automatically cache alm. Don't explicitly memoize because other geos will precompute alm_table
     def a_lm(self,l,m):
-        """ returns \int d theta d phi \sin(theta) Y_lm(theta, phi) (the spherical harmonic decomposition a_lm for the window function)
+        r""" returns \int d theta d phi \sin(theta) Y_lm(theta, phi) (the spherical harmonic decomposition a_lm for the window function)
                 inputs:
                     l,m: indices for the spherical harmonics
         """

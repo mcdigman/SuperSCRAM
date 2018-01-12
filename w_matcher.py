@@ -1,3 +1,4 @@
+"""class to match 'effective' w and growth factors in order to emulate arbitrary w(z) behavior"""
 from warnings import warn
 from scipy.interpolate import InterpolatedUnivariateSpline,RectBivariateSpline
 from scipy.integrate import cumtrapz

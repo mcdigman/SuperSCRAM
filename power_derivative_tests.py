@@ -1,5 +1,6 @@
-"""test that the shear shear power spectrum derivatives have some expected functional dependencies,
+r"""test that the shear shear power spectrum derivatives have some expected functional dependencies,
 specifically \partial C^{ij}/\partial \bar{\delta}(zs) \propto 1/(width of zs bin)*z^i*C^{ij}, where z^i ~ average z of closer z bin"""
+#pylint: disable=W0621
 import numpy as np
 from shear_power import ShearPower,Cll_q_q
 from cosmopie import CosmoPie
@@ -68,8 +69,8 @@ def test_dz(util_set):
     results_norm1_0 = results1_0/results1_0[0]
     mean_abs_error1_test = np.average(np.abs(1.-results_norm1_test),axis=1)
     mean_abs_error1_0 = np.average(np.abs(1.-results_norm1_0),axis=1)
-    assert(np.all((mean_abs_error1_0[1::]/mean_abs_error1_test[1::])>10.))
-    assert(np.all(mean_abs_error1_test[1::]<0.03))
+    assert np.all((mean_abs_error1_0[1::]/mean_abs_error1_test[1::])>10.)
+    assert np.all(mean_abs_error1_test[1::]<0.03)
 
 def test_zavg(util_set):
     """test proportional to power spectrum and z average"""
@@ -94,11 +95,11 @@ def test_zavg(util_set):
     results_norm2_0 = results2_0/results2_0[0]
     mean_abs_error2_test = np.average(np.abs(1.-results_norm2_test),axis=1)
     mean_abs_error2_0 = np.average(np.abs(1.-results_norm2_0),axis=1)
-    assert(np.all((mean_abs_error2_0[1::]/mean_abs_error2_test[1::])>10.))
+    assert np.all((mean_abs_error2_0[1::]/mean_abs_error2_test[1::])>10.)
     results_norm3_0 = results3_0/results3_0[0]
     mean_abs_error3_0 = np.average(np.abs(1.-results_norm3_0),axis=1)
-    assert(np.all((mean_abs_error3_0[1::]/mean_abs_error2_test[1::])>10.))
-    assert(np.all(mean_abs_error2_test[1::]<0.01))
+    assert np.all((mean_abs_error3_0[1::]/mean_abs_error2_test[1::])>10.)
+    assert np.all(mean_abs_error2_test[1::]<0.01)
 
 #if __name__=='__main__':
 #    omega_s = 0.02

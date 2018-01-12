@@ -126,8 +126,8 @@ def camb_sigma8(cosmology,camb_params=None):
 #            res_b.power_spectra_from_transfer(inflation_params)
 #            k_c_alt, _, P_c_alt=res_c.get_matter_power_spectrum(minkh=camb_params['minkh'], maxkh=camb_params['maxkh'], npoints = camb_params['npoints'])
 #
-#            assert(np.all(P_b_alt==P_b))
-#            assert(np.all(P_c_alt==P_c))
+#            assert np.all(P_b_alt==P_b)
+#            assert np.all(P_c_alt==P_c)
 #
 #        cosmo_d = cosmo_a.copy()
 #        cosmo_d['w'] =-0.99
@@ -159,7 +159,7 @@ def camb_sigma8(cosmology,camb_params=None):
 #            P_dgrow=P_ds/P_ds[0]
 #
 #        import matplotlib.pyplot as plt
-#        #assert(np.all(P_dgrow==P_agrow))
+#        #assert np.all(P_dgrow==P_agrow)
 #        #plt.semilogx(kh_ds,1.-(P_dgrow/P_agrow).T)
 #        plt.semilogx(kh_as,(1.-P_arecs/P_as).T)
 #        #plt.semilogx(kh_as,(1.-P_drecs/P_ds).T)

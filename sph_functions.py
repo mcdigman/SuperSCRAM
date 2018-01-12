@@ -7,18 +7,14 @@
     J. E. McEwen (c) 2016
 '''
 
+from warnings import warn
 import numpy as np
 
 from scipy.misc import factorial2
 from scipy.special import sph_harm as Y_lm, jv
 
-#TODO maybe dont use the_mad_house
-from the_mad_house import e_message
-
-from warnings import warn
-
-eps =np.finfo(float).eps
-z_cut=1e-2
+#eps =np.finfo(float).eps
+Z_CUT=1e-2
 
 #data=np.loadtxt('data/spherical_bessel_zeros_360.dat')
 data=np.loadtxt('data/spherical_bessel_zeros_527.dat')
@@ -42,7 +38,6 @@ def sph_Bessel_down(n,z):
         j0_true=np.sin(z)/z
     # renormalize and return result
     return result*j0_true/j0
-#TODO don't like z_cut usage
 #print 'this is eps', eps
 #print 'check eps', 1+eps
 def sph_Bessel_array(n,z):
@@ -50,8 +45,8 @@ def sph_Bessel_array(n,z):
     result=np.zeros(z.size)
 
     # id for limiting cases
-    id1=np.where( z <= z_cut)[0]
-    id2=np.where( z > z_cut)[0]
+    id1=np.where( z <= Z_CUT)[0]
+    id2=np.where( z > Z_CUT)[0]
 
     if id1.size !=0:
         if 2*n+1>=301:
@@ -86,7 +81,7 @@ def sph_Bessel_array(n,z):
 
 def sph_Bessel(n,z):
     # limiting case for z near zero
-    if  z <= z_cut:
+    if  z <= Z_CUT:
         if 2*n+1>=301:
             warn('factorial2(2*n+1) will be too close to 0. for floating point precision, using 0.')
             return 0.
@@ -135,15 +130,6 @@ def j_n(n,z):
     else:
         return np.sqrt(np.pi/(2*z))*jv(n+0.5,z)
 
-    #if(z.size==1):
-    #    return np.sqrt(np.pi/(2*z))*jv(n+0.5,z)
-    #else:
-        #result=np.zeros_like(z)
-        #for i in xrange(z.size):
-        #    result[i]=np.sqrt(np.pi/(2*z[i]))*jv(n+0.5,z[i])
-    #    result=np.sqrt(np.pi/(2*z))*jv(n+0.5,z)
-    #    return result
-
 def dj_n(n,z):
 
     z=np.asarray(z)
@@ -173,26 +159,6 @@ def jn_zeros(l,n_zeros):
         return data[l,:n_zeros]
     else:
         raise IndexError('l is greater than the number of ls in the bessel functions lookup table,choose lower ceiling or expand the lookup table')
-#     print 'this is n', n
-#     # fixed minimum and maximum range for zero finding
-#     min=3; max=1e5
-#
-#     # tolerance
-#     tol=1e-15
-#     zeros=np.zeros(n_zeros)
-#
-#     def func(z):
-#         if z < np.pi:
-#             return np.infty
-#         return j_n(n,z)
-#
-#     def J_func(z):
-#         return dj_n(n,z)
-#
-#     for i in xrange(n_zeros):
-#         guess=1 + np.sqrt(2) + i*np.pi + n + n**(0.4)
-#
-#         zeros[i]=newton(func, guess,tol=tol)
 
 def dJ_n(n,z):
     # check this returns correct value for derivative of Big J_n(z)
@@ -203,8 +169,7 @@ def Y_r(l,m,theta,phi):
     # the scipy spherical harmonic inputs are ordered as
     # Y_lm(m,l,phi,theta)
     if np.abs(m) > l:
-        print e_message()
-        print('You must have |m| <=l for spherical harmonics.')
+        print 'You must have |m| <=l for spherical harmonics.'
         raise ValueError('Please check the function values you sent into Y_r in module sph_functions.py')
         #sys.exit()
 
@@ -241,27 +206,27 @@ def S_rr(l,m,theta,phi,k,r):
 
 #if __name__=="__main__":
 #
-#    print('check spherical Bessel against mathematica output')
-#    print('function values',j_n(0,2.))
-#    print('mathematica value', 0.454649)
-#    print('function values',j_n(1,2.))
-#    print('mathematica value', 0.435398)
-#    print('function values',j_n(2,2.))
-#    print('mathematica value', 0.198448)
-#    print('function values',j_n(3,2.))
-#    print('mathematica value', 0.0607221)
-#    print('function values',j_n(10,2.))
-#    print('mathematica value', 6.8253e-8)
-#    print('function values',j_n(50,101.5))
-#    print('mathematica value', -0.0100186)
+#    print 'check spherical Bessel against mathematica output'
+#    print 'function values',j_n(0,2.)
+#    print 'mathematica value', 0.454649
+#    print 'function values',j_n(1,2.)
+#    print 'mathematica value', 0.435398
+#    print 'function values',j_n(2,2.)
+#    print 'mathematica value', 0.198448
+#    print 'function values',j_n(3,2.)
+#    print 'mathematica value', 0.0607221
+#    print 'function values',j_n(10,2.)
+#    print 'mathematica value', 6.8253e-8
+#    print 'function values',j_n(50,101.5)
+#    print 'mathematica value', -0.0100186
 #
-#    print('check derivative of Bessel against keisan.casio.com')
-#    print('function values', dJ_n(0,1))
-#    print('true value', -0.4400505857449335159597)
-#    print('function values', dJ_n(3,11.5))
-#    print('true value', -0.0341759332779211515933)
-#    print('function values', dJ_n(5,3.145))
-#    print('true value', 0.0686374928139798052691)
+#    print 'check derivative of Bessel against keisan.casio.com'
+#    print 'function values', dJ_n(0,1)
+#    print 'true value', -0.4400505857449335159597
+#    print 'function values', dJ_n(3,11.5)
+#    print 'true value', -0.0341759332779211515933
+#    print 'function values', dJ_n(5,3.145)
+#    print 'true value', 0.0686374928139798052691
 #
 #    y=lambda phi : np.sin(phi)
 #    x=lambda phi : np.cos(phi)

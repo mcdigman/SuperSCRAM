@@ -1,10 +1,11 @@
+"""test class that appears obsolete"""
+#TODO delete from tracking if not used
 import numpy as np
 import shear_power as sp
 from geo import RectGeo
 import defaults
 from cosmopie import CosmoPie
 import matter_power_spectrum as mps
-#Appears obsolete
 if __name__=='__main__':
 
     #d=np.loadtxt('camb_m_pow_l.dat')
@@ -16,7 +17,7 @@ if __name__=='__main__':
     k = P.k
     C.k=k
     C.P_lin = P
-    
+
 
     Theta1=[np.pi/4.,5.*np.pi/16.]
     Phi1=[0.,np.pi/12.]
@@ -26,9 +27,9 @@ if __name__=='__main__':
     ls = np.arange(2,3000)
 
     geo1=RectGeo(zs,Theta1,Phi1,C,z_fine)
-    
+
     omega_s = geo1.angular_area()
-    
+
     z_fine = np.arange(0.1,2.0,0.01)
     len_params = defaults.lensing_params
     len_params['sigma'] = 0.1
@@ -42,8 +43,8 @@ if __name__=='__main__':
         rbin = geo1.rbins[i]
         q1_dC = sp.QShear(sp_delta,rbin[0],rbin[1])
         q1_pow = sp.QShear(sp_pow,rbin[0],rbin[1])
-        dc_ddelta = sp.Cll_q_q(sp_delta,q1_dC,q1_dC).Cll() 
-        c_pow = sp.Cll_q_q(sp_pow,q1_pow,q1_pow).Cll() 
+        dc_ddelta = sp.Cll_q_q(sp_delta,q1_dC,q1_dC).Cll()
+        c_pow = sp.Cll_q_q(sp_pow,q1_pow,q1_pow).Cll()
 
         print dc_ddelta
         ax.loglog(ls,dc_ddelta/c_pow/np.diff(geo1.zbins[i]))

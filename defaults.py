@@ -1,5 +1,6 @@
+"""provides some useful default values"""
 import numpy as np
-# default cosmology is Planck 2015 TT+lowP+lensing+ext (arxiv 1502.01589v3 page 32) 
+# default cosmology is Planck 2015 TT+lowP+lensing+ext (arxiv 1502.01589v3 page 32)
 #TODO set not derived paramters to none and derive
 cosmology={'Omegabh2' :0.02227,
                                 'Omegach2' :0.1184,
@@ -9,10 +10,10 @@ cosmology={'Omegabh2' :0.02227,
                                 'OmegaL'   : 0.6935,
                                 'OmegaLh2' : 0.319732,#calculated
                                 'Omegam'   : .3065,
-                                'H0'       : 67.90, 
-                                'sigma8'   : .8154, 
-                                'h'        :.6790,#calculated 
-                                'Omegak'   : 0.0, # check on this value 
+                                'H0'       : 67.90,
+                                'sigma8'   : .8154,
+                                'h'        :.6790,#calculated
+                                'Omegak'   : 0.0, # check on this value
                                 'Omegakh2' : 0.0,
                                 'Omegar'   : 0.0,
                                 'ns'       : 0.9681,
@@ -46,10 +47,10 @@ cosmology_cosmolike={'Omegabh2' :0.02227,
                                 'OmegaL'   : 0.685,
                                 'OmegaLh2'   : 0.310256,#calculdated
                                 'Omegam'   : .315,
-                                'H0'       : 67.3, 
-                                'sigma8'   : .829, 
-                                'h'        :.673, 
-                                'Omegak'   : 0.0, # check on this value 
+                                'H0'       : 67.3,
+                                'sigma8'   : .829,
+                                'h'        :.673,
+                                'Omegak'   : 0.0, # check on this value
                                 'Omegakh2' : 0.0,
                                 'Omegar'   : 0.0,
                                 'ns'       : 0.9603,
@@ -68,10 +69,10 @@ cosmology_chiang={'Omegabh2' :0.023,
                                 'OmegaL'   : 0.73,
                                 'OmegaLh2' : 0.3577,
                                 'Omegam'   : .27,
-                                'H0'       : 70., 
-                                'sigma8'   : .7913, 
-                                'h'        :0.7, 
-                                'Omegak'   : 0.0, # check on this value 
+                                'H0'       : 70.,
+                                'sigma8'   : .7913,
+                                'h'        :0.7,
+                                'Omegak'   : 0.0, # check on this value
                                 'Omegakh2' : 0.0,
                                 'Omegar'   : 0.0,
                                 'ns'       : 0.95,
@@ -89,10 +90,10 @@ cosmology_cosmosis={'Omegabh2' :0.049,
                                 'OmegaL'   : .641,
                                 'OmegaLh2' : 0.287745,
                                 'Omegam'   : .31,
-                                'H0'       : 67, 
-                                'sigma8'   : .81, 
-                                'h'        :.67, 
-                                'Omegak'   : 0.0, # check on this value 
+                                'H0'       : 67,
+                                'sigma8'   : .81,
+                                'h'        :.67,
+                                'Omegak'   : 0.0, # check on this value
                                 'Omegakh2' : 0.0,
                                 'Omegar'   : 0.0,
                                 'tau'      : None, # eventually fix to real cosmosis values
@@ -116,14 +117,14 @@ lensing_params = {  'z_resolution'    :0.002, #fine resolution
                     'z_max_dist'      :np.inf,
                     'zbar'            :0.1, #mean of gaussian source distribution
                     'sigma'           :0.4, #stdev of gaussian source distribution
-                    'epsilon'         :0.0001} #small parameter 
+                    'epsilon'         :0.0001} #small parameter
 sw_observable_list = np.array(['len_shear_shear'])
 sw_survey_params = {    'needs_lensing'     : True,
                         'cross_bins'        : True}
 dn_params = {   'M_cut'         : 10**12.5,
                 'variable_cut'  : True}#(12.5)}
 lw_observable_list = np.array(['d_number_density'])
-lw_survey_params = {    'cross_bins': False} 
+lw_survey_params = {    'cross_bins': False}
 basis_params = {    'allow_caching'         :True,
                     'n_bessel_oversample'   :100000,
                    # 'k_max'                 :10.,#TODO check

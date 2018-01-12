@@ -1,9 +1,10 @@
 """Class for handling a long wavelength survey, used for testing mitigation strategies"""
 
+import re
+
 from warnings import warn
 from Dn import DNumberDensityObservable
 
-import re
 import defaults
 
 import numpy as np
@@ -70,8 +71,6 @@ class LWSurvey(object):
         itr = 0
         for key in names:
             if re.match('^d_number_density',key):
-                #TODO this is a really bad way of handling parameters, bc it uses hard coded defaults
-                #names[key]['params']['n1_params']
                 params = names[key]
                 #TODO don't think actually needs both n1_params and n2_params anymore
                 observables[itr] = DNumberDensityObservable(self.geos,params['dn_params'],self.survey_id,self.C,self.basis,params['n1_params'],params['n2_params'])

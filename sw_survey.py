@@ -77,7 +77,7 @@ class SWSurvey(object):
         return O_I_array
 
     def get_dO_I_ddelta_bar_array(self):
-        """Get \frac{\partial O_I}{\partial\bar{\delta}} of the observables
+        r"""Get \frac{\partial O_I}{\partial\bar{\delta}} of the observables
             is a function of z, which must be integrated over"""
         dO_I_ddelta_bar_array = np.zeros((self.geo.z_fine.size,self.get_total_dimension()))
         itr = 0
@@ -88,7 +88,7 @@ class SWSurvey(object):
         return dO_I_ddelta_bar_array
 
     def get_dO_I_dpar_array(self):
-        """Get \frac{\partial O_I}{\partial\Theta_i} of the observables wrt cosmological parameters"""
+        r"""Get \frac{\partial O_I}{\partial\Theta_i} of the observables wrt cosmological parameters"""
         dO_I_dpar_array = np.zeros((self.get_total_dimension(),self.n_param))
         ds = self.get_dimension_list()
         itr = 0

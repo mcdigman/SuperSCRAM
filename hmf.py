@@ -383,7 +383,7 @@ class ST_hmf(object):
 #        Gs = C.G_norm(zs)
 #        #check normalized to unity (all dark matter is in some halo)
 #        f_norm_residual = trapz(hmf.f_sigma(hmf.mass_grid,Gs).T,np.log(hmf.sigma[:-1:]**-1),axis=1)
-#        #assert(np.allclose(np.zeros(Gs.size)+1.,norm_residual))
+#        #assert np.allclose(np.zeros(Gs.size)+1.,norm_residual)
 #        _,_,dndM = hmf.mass_func(hmf.mass_grid,Gs)
 #        n_avgs_alt = np.zeros(zs.size)
 #        bias_n_avgs_alt = np.zeros(zs.size)
@@ -396,18 +396,18 @@ class ST_hmf(object):
 #            dndM_G_alt[:,i] = hmf.dndM_G(hmf.mass_grid,Gs[i])
 #        dndM_G=hmf.dndM_G(hmf.mass_grid,Gs)
 #        #consistency checks for vector method
-#        assert(np.allclose(dndM_G,dndM_G_alt))
+#        assert np.allclose(dndM_G,dndM_G_alt)
 #        n_avgs = hmf.n_avg(m_z_in,zs)
-#        assert(np.allclose(n_avgs,n_avgs_alt))
+#        assert np.allclose(n_avgs,n_avgs_alt)
 #        bias_n_avgs = hmf.bias_n_avg(m_z_in,zs)
-#        assert(np.allclose(bias_n_avgs,bias_n_avgs_alt))
+#        assert np.allclose(bias_n_avgs,bias_n_avgs_alt)
 #        #check integrating dn/dM over all M actually gives n
-#        assert(np.allclose(trapz(dndM.T,hmf.mass_grid,axis=1),hmf.n_avg(np.zeros(zs.size)+hmf.mass_grid[0],zs)))
+#        assert np.allclose(trapz(dndM.T,hmf.mass_grid,axis=1),hmf.n_avg(np.zeros(zs.size)+hmf.mass_grid[0],zs))
 #        #not sure why, but this is true
-#        #assert(np.allclose(np.zeros(zs.size)+1.,np.trapz(hmf.f_sigma(hmf.mass_grid,Gs)*hmf.bias_G(hmf.mass_grid,Gs,hmf.bias_norm(Gs)),np.outer(hmf.nu_of_M(hmf.mass_grid),1./Gs**2),axis=0)*hmf.f_norm(Gs)))
+#        #assert np.allclose(np.zeros(zs.size)+1.,np.trapz(hmf.f_sigma(hmf.mass_grid,Gs)*hmf.bias_G(hmf.mass_grid,Gs,hmf.bias_norm(Gs)),np.outer(hmf.nu_of_M(hmf.mass_grid),1./Gs**2),axis=0)*hmf.f_norm(Gs))
 #        b_norm_residual = np.trapz(hmf.f_sigma(hmf.mass_grid,Gs)*hmf.bias_G(hmf.mass_grid,Gs,hmf.bias_norm(Gs)),np.outer(hmf.nu_of_M(hmf.mass_grid),1./Gs**2),axis=0)
 #        b_norm_residual_alt = np.trapz(hmf.f_sigma(hmf.mass_grid,Gs)*hmf.bias_G(hmf.mass_grid,Gs,1.),np.outer(hmf.nu_of_M(hmf.mass_grid),1./Gs**2),axis=0)
-#        #assert(np.allclose(np.zeros(zs.size)+1.,b_norm_residual))
+#        #assert np.allclose(np.zeros(zs.size)+1.,b_norm_residual)
 #
 #    do_plot_test2 = True
 #    if do_plot_test2:

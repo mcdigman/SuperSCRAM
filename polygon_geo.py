@@ -5,7 +5,9 @@ import spherical_geometry.vector as sgv
 from spherical_geometry.polygon import SphericalPolygon
 import spherical_geometry.great_circle_arc as gca
 #from polygon_pixel_geo import get_Y_r_dict
-from ylm_utils_mpmath import get_Y_r_dict_central 
+from ylm_utils_mpmath import get_Y_r_dict_central
+from ylm_utils import get_Y_r_dict
+from ylm_utils_mpmath import get_Y_r_dict as get_Y_r_dict4
 import alm_utils as au
 from geo import Geo
 import defaults
@@ -78,7 +80,7 @@ class PolygonGeo(Geo):
             self.betas[itr1] = np.arccos(cos_beta12) #angle between pa1 and pa2
             cross_12 = np.cross(pa2,pa1)
             sin_beta12 = np.linalg.norm(cross_12) #magnitude of cross product
-            assert(np.isclose(sin_beta12,np.sin(self.betas[itr1])))
+            assert np.isclose(sin_beta12,np.sin(self.betas[itr1]))
             self.betas_alt[itr1] = np.arcsin(sin_beta12)
             #TODO  don't use isclose here
             if np.isclose(self.betas[itr1],0.):
@@ -102,8 +104,8 @@ class PolygonGeo(Geo):
                 self.theta_alphas[itr1] = -np.arccos(self.z_hats[itr1,2])
                 y1 = np.cross(self.z_hats[itr1],pa1)
                 self.y_hats[itr1] = y1
-                assert(np.allclose(pa1*np.cos(self.betas[itr1])-y1*np.sin(self.betas[itr1]),pa2))
-                assert(np.allclose(np.cross(pa1,y1),self.z_hats[itr1]))
+                assert np.allclose(pa1*np.cos(self.betas[itr1])-y1*np.sin(self.betas[itr1]),pa2)
+                assert np.allclose(np.cross(pa1,y1),self.z_hats[itr1])
                 self.xps[itr1] = np.array([self.z_hats[itr1][1]*pa1[0]-self.z_hats[itr1][0]*pa1[1],self.z_hats[itr1][1]*y1[0]-self.z_hats[itr1][0]*y1[1],0.])
 
                 #self.gamma_alphas[itr1] = np.arctan2(self.z_hats[itr1,1],self.z_hats[itr1,0])-np.pi/2.
@@ -139,18 +141,31 @@ class PolygonGeo(Geo):
         d_alm_table1 = np.zeros(n_l,dtype=object)
         #Y_r(l,m,pi/2.,0.) has an analytic solution, use it
         Y_r_dict = get_Y_r_dict_central(np.max(ls))
+
 #for checking consistency of Y_r_dict2 and Y_r_dict
-#        Y_r_dict2 = get_Y_r_dict(np.max(ls),np.zeros(1)+np.pi/2.,np.zeros(1))
-#        keys1 = sorted(Y_r_dict.keys())
-#        keys2 = sorted(Y_r_dict2.keys())
-#        assert(keys1==keys1)
-#        n_k = len(keys1)
-#        vals1 = np.zeros(n_k)
-#        vals2 = np.zeros(n_k)
-#        for itr in xrange(0,n_k):
-#            vals1[itr] = Y_r_dict[keys1[itr]]
-#            vals2[itr] = Y_r_dict2[keys2[itr]]
-#        assert(np.allclose(vals1,vals2))
+        Y_r_dict2 = get_Y_r_dict(np.max(ls),np.zeros(1)+np.pi/2.,np.zeros(1))
+        #Y_r_dict3 = get_Y_r_dict3(np.max(ls),np.zeros(1)+np.pi/2.,np.zeros(1))
+        Y_r_dict4 = get_Y_r_dict4(np.max(ls),np.zeros(1)+np.pi/2.,np.zeros(1))
+        keys1 = sorted(Y_r_dict.keys())
+        keys2 = sorted(Y_r_dict2.keys())
+        #keys3 = sorted(Y_r_dict3.keys())
+        keys4 = sorted(Y_r_dict4.keys())
+        assert keys1==keys1
+        #assert keys1==keys3
+        assert keys1==keys4
+        n_k = len(keys1)
+        vals1 = np.zeros(n_k)
+        vals2 = np.zeros(n_k)
+        #vals3 = np.zeros(n_k)
+        vals4 = np.zeros(n_k)
+        for itr in xrange(0,n_k):
+            vals1[itr] = Y_r_dict[keys1[itr]]
+            vals2[itr] = Y_r_dict2[keys2[itr]]
+        #    vals3[itr] = Y_r_dict3[keys3[itr]]
+            vals4[itr] = Y_r_dict4[keys4[itr]]
+        assert np.allclose(vals1,vals2)
+        #assert np.allclose(vals1,vals3)
+        assert np.allclose(vals1,vals4)
 
         for l_itr in xrange(0,ls.size):
             ll=ls[l_itr]
@@ -178,8 +193,8 @@ class PolygonGeo(Geo):
                     #d_alm_table1[l_itr][ll+mm]*= 0.
                     #d_alm_table1[l_itr][ll-mm]*= 0.
             #if l_itr % 2 ==1:
-            #    print "zerocand",d_alm_table1[l_itr] 
-                #d_alm_table1[l_itr]=np.zeros((2*ll+1,self.n_v)) 
+            #    print "zerocand",d_alm_table1[l_itr]
+                #d_alm_table1[l_itr]=np.zeros((2*ll+1,self.n_v))
 
         d_alm_table2 = au.rot_alm_z(d_alm_table1,self.omega_alphas,ls)
         d_alm_table3 = au.rot_alm_x(d_alm_table2,self.theta_alphas,ls,n_double=self.n_double)
@@ -237,28 +252,12 @@ def get_poly(theta_vertices,phi_vertices,theta_in,phi_in):
     sp_poly = SphericalPolygon(bounding_xyz,inside=inside_xyz)
     return sp_poly
 
-def check_mutually_orthonormal(vectors):
-    fails = 0
-    for itr1 in xrange(0,vectors.shape[0]):
-        for itr2  in xrange(0,vectors.shape[0]):
-            prod =np.sum(vectors[itr1]*vectors[itr2],axis=1)
-            if itr1==itr2:
-                if not np.allclose(prod,np.zeros(vectors[itr1].shape[0])+1.):
-                    warn("normality failed on vector pair: "+str(itr1)+","+str(itr2))
-                    print prod
-                    fails+=1
-            else:
-                if not np.allclose(prod,np.zeros(vectors[itr1].shape[0])):
-                    warn("orthogonality failed on vector pair: "+str(itr1)+","+str(itr2))
-                    print prod
-                    fails+=1
-    return fails
 if __name__=='__main__':
     from cosmopie import CosmoPie
 
     poly_params = defaults.polygon_params.copy()
     poly_params['n_double'] = 85
-    l_max = 90
+    l_max_in = 50
     zs = np.array([0.01,1.01])
     z_fine = np.arange(0.01,1.05,0.01)
     C = CosmoPie(defaults.cosmology)
@@ -267,10 +266,10 @@ if __name__=='__main__':
     phi_in_wfirst = 7./180.*np.pi
     theta_in_wfirst = -35.*np.pi/180.+np.pi/2.
     print "main: begin constructing WFIRST PolygonGeo"
-    geo_wfirst = PolygonGeo(zs,thetas_wfirst,phis_wfirst,theta_in_wfirst,phi_in_wfirst,C,z_fine,l_max=l_max,poly_params=poly_params)
+    geo_wfirst = PolygonGeo(zs,thetas_wfirst,phis_wfirst,theta_in_wfirst,phi_in_wfirst,C,z_fine,l_max=l_max_in,poly_params=poly_params)
     #poly_params2 = poly_params.copy()
     #poly_params2['n_double']+=48
-    #geo_wfirst2 = PolygonGeo(zs,thetas_wfirst,phis_wfirst,theta_in_wfirst,phi_in_wfirst,C,z_fine,l_max=l_max,poly_params=poly_params2)
+    #geo_wfirst2 = PolygonGeo(zs,thetas_wfirst,phis_wfirst,theta_in_wfirst,phi_in_wfirst,C,z_fine,l_max=l_max_in,poly_params=poly_params2)
     #print np.max(np.abs(np.array(geo_wfirst.alm_table.values())-np.array(geo_wfirst2.alm_table.values()))/np.array(geo_wfirst2.alm_table.values()))
     import sys
     sys.exit()
@@ -292,8 +291,8 @@ if __name__=='__main__':
     thetas = np.array([-50.,-35.,-35.,-19.,-19.,-19.,-15.8,-15.8,-40.,-40.,-55.,-78.,-78.,-78.,-55.,-55.,-50.,-50.])*np.pi/180.+np.pi/2.
     phi_in = 7./180.*np.pi
     theta_in = -35.*np.pi/180.+np.pi/2.
-    poly_geo = PolygonGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,poly_params=poly_params)
-    
+    poly_geo = PolygonGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max_in,poly_params=poly_params)
+
     n_fill = 20
     theta_high = np.pi/2.+5.*np.pi/180.
     theta_low = np.pi/2.-65.*np.pi/180.
@@ -326,7 +325,7 @@ if __name__=='__main__':
     theta2r_high_fill = np.full(n_fill,5.)
     theta2r_low_fill =np.full(n_fill, -65.)
     phi2r_high_fill = np.linspace(180.-360.,180.-1.,n_fill)
-    phi2r_low_fill = phi2r_high_fill[::-1] 
+    phi2r_low_fill = phi2r_high_fill[::-1]
     theta2rs = np.hstack([theta2r_high_fill,theta2r_low_fill,theta2r_high_fill[0]])
     phi2rs = np.hstack([phi2r_high_fill,phi2r_low_fill,phi2r_high_fill[0]])
 
@@ -335,12 +334,12 @@ if __name__=='__main__':
     from astropy.coordinates import SkyCoord
     for itr in xrange(0,theta2rs.size):
         coord_gal = SkyCoord(phi2rs[itr], theta2rs[itr], frame='icrs', unit='deg')
-        theta2s[itr] = coord_gal.geocentrictrueecliptic.lat.rad+np.pi/2. 
+        theta2s[itr] = coord_gal.geocentrictrueecliptic.lat.rad+np.pi/2.
         phi2s[itr] = coord_gal.geocentrictrueecliptic.lon.rad
     theta_in2= SkyCoord(0.,0.,frame='icrs',unit='deg').geocentrictrueecliptic.lat.rad+np.pi/2.
     phi_in2 = SkyCoord(0.,0.,frame='icrs',unit='deg').geocentrictrueecliptic.lon.rad
-     
-    poly_geo2 = PolygonGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max=l_max,poly_params=poly_params)
+
+    poly_geo2 = PolygonGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max=l_max_in,poly_params=poly_params)
 
     thetar_high_fill = np.full(n_fill,20.)
     thetar_low_fill =np.full(n_fill, -20.)
@@ -353,14 +352,14 @@ if __name__=='__main__':
     phis_mask= np.zeros_like(thetars)
     for itr in xrange(0,thetars.size):
         coord_gal = SkyCoord(phirs[itr], thetars[itr], frame='galactic', unit='deg')
-        thetas_mask[itr] = coord_gal.geocentrictrueecliptic.lat.rad+np.pi/2. 
+        thetas_mask[itr] = coord_gal.geocentrictrueecliptic.lat.rad+np.pi/2.
         phis_mask[itr] = coord_gal.geocentrictrueecliptic.lon.rad
     theta_in_mask = SkyCoord(0.,0.,frame='galactic',unit='deg').geocentrictrueecliptic.lat.rad+np.pi/2.
     phi_in_mask = SkyCoord(0.,0.,frame='galactic',unit='deg').geocentrictrueecliptic.lon.rad
-    mask_geo = PolygonGeo(zs,thetas_mask,phis_mask,theta_in_mask,phi_in_mask,C,z_fine,l_max=l_max,poly_params=poly_params)
-    
+    mask_geo = PolygonGeo(zs,thetas_mask,phis_mask,theta_in_mask,phi_in_mask,C,z_fine,l_max=l_max_in,poly_params=poly_params)
+
     import polygon_union_geo as pug
-    union_geo = pug.PolygonUnionGeo(np.array([poly_geo2]),np.array([mask_geo],dtype=object)) 
+    union_geo = pug.PolygonUnionGeo(np.array([poly_geo2]),np.array([mask_geo],dtype=object))
 
     import matplotlib.pyplot as plt
     from mpl_toolkits.basemap import Basemap
@@ -386,15 +385,15 @@ if __name__=='__main__':
         from ylm_utils import reconstruct_from_alm
         from polygon_pixel_geo import PolygonPixelGeo
         import matplotlib.colors as colors
-        pp_geo2 = PolygonPixelGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max=l_max,res_healpix=6)
-        pp_geo = PolygonPixelGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,res_healpix=6)
-        pp_mask_geo = PolygonPixelGeo(zs,thetas_mask,phis_mask,theta_in_mask,phi_in_mask,C,z_fine,l_max=l_max,res_healpix=6)
+        pp_geo2 = PolygonPixelGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max=l_max_in,res_healpix=6)
+        pp_geo = PolygonPixelGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max_in,res_healpix=6)
+        pp_mask_geo = PolygonPixelGeo(zs,thetas_mask,phis_mask,theta_in_mask,phi_in_mask,C,z_fine,l_max=l_max_in,res_healpix=6)
         #mask = ((pp_geo2.contained*1.-pp_mask_geo.contained*1.)>0)
         from polygon_pixel_geo import get_healpix_pixelation,contains_points
         all_pixels = get_healpix_pixelation(res_choose=6)
         mask =  contains_points(all_pixels,union_geo.union_mask)
         #union_geo.union_mask.draw(m,color='red')
-        totals_poly = reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],union_geo.alm_table.copy())
+        totals_poly = reconstruct_from_alm(l_max_in,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],union_geo.alm_table.copy())
         print "mean squared reconstruction error/point = ",np.linalg.norm(totals_poly-mask)/mask.size
     #    m = Basemap(projection='moll',lon_0=0)
         lats = (pp_geo2.all_pixels[:,0]-np.pi/2.)*180/np.pi
@@ -431,6 +430,7 @@ if __name__=='__main__':
         plt.show()
     from astropy import units as u
     from astropy.coordinates import SkyCoord
+##############################################
 #if __name__=='__main__':
 #    from polygon_pixel_geo import PolygonPixelGeo,reconstruc_from_alm
 #    from geo import RectGeo
@@ -488,13 +488,13 @@ if __name__=='__main__':
 #
 #    t0 = time()
 #    poly_params = defaults.polygon_params.copy()
-#    poly_geo = PolygonGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,poly_params=poly_params)
+#    poly_geo = PolygonGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max_in,poly_params=poly_params)
 #    t1 = time()
 #    print "PolygonGeo initialized in time: "+str(t1-t0)
-#    pp_geo = PolygonPixelGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,res_healpix=res_choose)
+#    pp_geo = PolygonPixelGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max_in,res_healpix=res_choose)
 #    t2 = time()
 #    print "PolygonPixelGeo initialized at res "+str(res_choose)+" in time: "+str(t2-t1)
-#    pp_geo2 = PolygonPixelGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,res_healpix=res_choose2)
+#    pp_geo2 = PolygonPixelGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max_in,res_healpix=res_choose2)
 #    t3 = time()
 #    print "PolygonPixelGeo initialized at res "+str(res_choose2)+" in time: "+str(t3-t2)
 #    r_geo = RectGeo(zs,np.array([theta0,theta1]),np.array([phi0,phi1]),C,z_fine)
@@ -505,15 +505,15 @@ if __name__=='__main__':
 #
 #    my_table = poly_geo.alm_table.copy()
 #    #get RectGeo to cache the values in the table
-#    #for ll in xrange(0,l_max+1):
+#    #for ll in xrange(0,l_max_in+1):
 #    #    for mm in xrange(0,ll+1):
 #    #        r_geo.a_lm(ll,mm)
 #    #        if mm>0:
 #    #            r_geo.a_lm(ll,-mm)
 #    #r_alm_table = r_geo.alm_table
 #    #reconstruct at higher resolution to mitigate resolution effects in determining accuracy
-#    totals_pp= reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],pp_geo.alm_table)
-#    totals_poly = reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],my_table)
+#    totals_pp= reconstruct_from_alm(l_max_in,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],pp_geo.alm_table)
+#    totals_poly = reconstruct_from_alm(l_max_in,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],my_table)
 #    avg_diff = np.average(np.abs(totals_pp-totals_poly))
 #    print "mean absolute difference between pixel and exact geo reconstruction: "+str(avg_diff)
 #    poly_error = np.sqrt(np.average(np.abs(totals_poly-pp_geo2.contained*1.)**2))
@@ -523,7 +523,7 @@ if __name__=='__main__':
 #    #can be negative if res_choose2=res_choose due to pixelation effects
 #    print "improvement in rms reconstruction accuracy: "+str((pp_error-poly_error)/pp_error*100)+"%"
 #
-#    #totals_alm = reconstruct_from_alm(l_max,pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1],r_alm_table)
+#    #totals_alm = reconstruct_from_alm(l_max_in,pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1],r_alm_table)
 #    try_plot=True
 #    do_poly=True
 #    if try_plot:
@@ -558,4 +558,3 @@ if __name__=='__main__':
 #                ax.set_title("PolygonGeo reconstruction")
 #                pp_geo2.sp_poly.draw(m,color='red')
 #            plt.show()
-

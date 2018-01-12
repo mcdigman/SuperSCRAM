@@ -75,5 +75,3 @@ def dz_to_dchi(p_in,zs,chis,C,params):
     ps[-1] = p_in[-1]/(C.D_comov(2*zs[-1]-zs[-2])-chis[-1]) #patch for last value
     ps = ps*(zs<=z_max_dist)*(zs>=z_min_dist) #cutoff outside dist limits
     return ps/trapz2(ps,chis) #normalize galaxy probability distribution
-
-

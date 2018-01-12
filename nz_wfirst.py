@@ -115,7 +115,7 @@ if __name__ == '__main__':
     l_max = 25
     geo1 = PolygonPixelGeo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max,res_healpix = res_choose)
     n_run = 1
-    nz_params = defaults.nz_params_wfirst.copy()
+    nz_params = defaults.nz_params_wfirst_gal.copy()
     nz_params_candel = nz_params.copy()
     nz_params['data_source'] = 'data/H-5x140s.dat'
     nz_params['area_sterad'] =  0.040965*np.pi**2/180**2

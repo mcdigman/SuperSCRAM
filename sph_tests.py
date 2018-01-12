@@ -1,4 +1,5 @@
 """test some exact results for sph_klim, default x_grid_size is sufficiently converged to l tested if succeeds"""
+
 #Test numeric integral compared to mpmath arbitrary precision
 #Both the numeric and mpmath results should agree; they are both trustworthy, although the numerical method is still potentially more robust
 import numpy as np
@@ -46,9 +47,9 @@ def test_alm_match1():
         zero_max_diff = 0.
     print "n nonzero",alm_math1.size
     print "avg,max diff:",avg_diff,max_diff
-    assert(avg_diff<AVG_TOLERANCE)
-    assert(max_diff<MAX_TOLERANCE)
-    assert(zero_max_diff<ZERO_TOLERANCE)
+    assert avg_diff<AVG_TOLERANCE
+    assert max_diff<MAX_TOLERANCE
+    assert zero_max_diff<ZERO_TOLERANCE
 
 def test_rint_match_mpmath():
     """
@@ -112,12 +113,12 @@ def test_rint_match_mpmath():
     print "test_rint_match_mpmath: max diff tolerance, avg diff tolerance",MAX_TOLERANCE,AVG_TOLERANCE
     print "test_rint_match_mpmath: n values outside tolerance",bad_count
     if z_count>0:
-        assert(ZERO_TOLERANCE>zero_diff/z_count)
-        assert(ZERO_TOLERANCE>zero_diff2/z_count)
-    assert(MAX_TOLERANCE>diff_max)
-    assert(MAX_TOLERANCE>diff_max2)
-    assert(AVG_TOLERANCE>diff_tot/n_count)
-    assert(AVG_TOLERANCE>diff_tot2/n_count)
+        assert ZERO_TOLERANCE>zero_diff/z_count
+        assert ZERO_TOLERANCE>zero_diff2/z_count
+    assert MAX_TOLERANCE>diff_max
+    assert MAX_TOLERANCE>diff_max2
+    assert AVG_TOLERANCE>diff_tot/n_count
+    assert AVG_TOLERANCE>diff_tot2/n_count
     print "test_rint_match_mpmath: finished testing numeric r integral agreement with exact (arbitrary precision) mpmath solution"
 
 #Test scipy exact solution vs numeric integration
@@ -162,9 +163,9 @@ def test_rint_match_mpmath():
 #        print "test_rint_match_scipy: max diff tolerance, avg diff tolerance",MAX_TOLERANCE,AVG_TOLERANCE
 #        print "test_rint_match_scipy: n values outside tolerance",bad_count
 #        if z_count>0:
-#            assert(ZERO_TOLERANCE>zero_diff/z_count)
-#        assert(MAX_TOLERANCE>diff_max)
-#        assert(AVG_TOLERANCE>diff_tot/n_count)
+#            assert ZERO_TOLERANCE>zero_diff/z_count
+#        assert MAX_TOLERANCE>diff_max
+#        assert AVG_TOLERANCE>diff_tot/n_count
 #        print "test_rint_match_scipy: finished testing numeric r integral agreement with exact (floating point precision) scipy solution"
 
 if __name__=='__main__':

@@ -1,3 +1,4 @@
+"""provides implementations/wrappers of some fast algebra utilities"""
 from warnings import warn
 import numpy as np
 import scipy.linalg as spl
@@ -107,7 +108,7 @@ def cholesky_contract(A,vec1,vec2,cholesky_given=False,identical_inputs=False,lo
 def cholesky_inplace(A,inplace=True,fatal_errors=False,lower=True,clean=True):
 
     try_inplace = inplace
-    #assert(np.all(A==A.T))
+    #assert np.all(A==A.T)
     #dpotrf will still work on C contiguous arrays but will silently fail to do them in place regardless of overwrite_a, so raise a warning or error here
     #using order='F' when creating the array or A.copy('F') when copying ensures fortran contiguous arrays.
     if (not A.flags['F_CONTIGUOUS']) and try_inplace:

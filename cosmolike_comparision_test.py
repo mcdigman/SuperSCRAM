@@ -1,11 +1,12 @@
+"""compares gaussian covariance with cosmolike"""
 import numpy as np
 from cosmopie import CosmoPie
 from scipy.integrate import cumtrapz
+import scipy.special as spp
 from shear_power import ShearPower
 from shear_power import Cll_q_q
 import defaults
 from lensing_weight import QShear
-import scipy.special as spp
 import matter_power_spectrum as mps
 
 if __name__ == '__main__':
@@ -81,30 +82,30 @@ if __name__ == '__main__':
             itr_in = 0
             for i3 in xrange(tomo_bins_cosmo):
                 for i4 in xrange(i3,tomo_bins_cosmo):
-                    assert(np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i3,i4,i1,i2].T))
-                    assert(np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i1,i2,i4,i3].T))
-                    assert(np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i2,i1,i3,i4].T))
-                    assert(np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i2,i1,i4,i3].T))
-                    assert(np.all(cov_ssc_mat_cosmo[i1,i2,i3,i4]==cov_ssc_mat_cosmo[i3,i4,i1,i2].T))
-                    assert(np.all(cov_ssc_mat_cosmo[i1,i2,i3,i4]==cov_ssc_mat_cosmo[i1,i2,i4,i3].T))
-                    assert(np.all(cov_ssc_mat_cosmo[i1,i2,i3,i4]==cov_ssc_mat_cosmo[i2,i1,i3,i4].T))
-                    assert(np.all(cov_ssc_mat_cosmo[i1,i2,i3,i4]==cov_ssc_mat_cosmo[i2,i1,i4,i3].T))
+                    assert np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i3,i4,i1,i2].T)
+                    assert np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i1,i2,i4,i3].T)
+                    assert np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i2,i1,i3,i4].T)
+                    assert np.all(cov_g_mat_cosmo[i1,i2,i3,i4]==cov_g_mat_cosmo[i2,i1,i4,i3].T)
+                    assert np.all(cov_ssc_mat_cosmo[i1,i2,i3,i4]==cov_ssc_mat_cosmo[i3,i4,i1,i2].T)
+                    assert np.all(cov_ssc_mat_cosmo[i1,i2,i3,i4]==cov_ssc_mat_cosmo[i1,i2,i4,i3].T)
+                    assert np.all(cov_ssc_mat_cosmo[i1,i2,i3,i4]==cov_ssc_mat_cosmo[i2,i1,i3,i4].T)
+                    assert np.all(cov_ssc_mat_cosmo[i1,i2,i3,i4]==cov_ssc_mat_cosmo[i2,i1,i4,i3].T)
                     cov_g_mat_cosmo_flat[itr_out:itr_out+nbins_cosmo,itr_in:itr_in+nbins_cosmo] = cov_g_mat_cosmo[i1,i2,i3,i4]
                     cov_ssc_mat_cosmo_flat[itr_out:itr_out+nbins_cosmo,itr_in:itr_in+nbins_cosmo] = cov_ssc_mat_cosmo[i1,i2,i3,i4]
-                    if not itr_in==itr_out:
+                    if itr_in!=itr_out:
                         cov_g_mat_cosmo_flat[itr_in:itr_in+nbins_cosmo,itr_out:itr_out+nbins_cosmo] = cov_g_mat_cosmo_flat[itr_out:itr_out+nbins_cosmo,itr_in:itr_in+nbins_cosmo].T
                         cov_ssc_mat_cosmo_flat[itr_in:itr_in+nbins_cosmo,itr_out:itr_out+nbins_cosmo] = cov_ssc_mat_cosmo_flat[itr_out:itr_out+nbins_cosmo,itr_in:itr_in+nbins_cosmo].T
                     itr_in+=nbins_cosmo
             itr_out+=nbins_cosmo
-    assert(np.all(cov_g_mat_cosmo_flat==cov_g_mat_cosmo_flat.T))
-    assert(np.all(cov_ssc_mat_cosmo_flat==cov_ssc_mat_cosmo_flat.T))
-                    #if i1<=i2 and i3<=i4 
+    assert np.all(cov_g_mat_cosmo_flat==cov_g_mat_cosmo_flat.T)
+    assert np.all(cov_ssc_mat_cosmo_flat==cov_ssc_mat_cosmo_flat.T)
+                    #if i1<=i2 and i3<=i4
 #                    cov_g_mat_cosmo[i1,i2,i3,i4] = np.zeros((nbins_cosmo,nbins_cosmo))
 #                    for l1 in xrange(nbins_cosmo):
 #                        for l2 in xrange(nbins_cosmo):
-                            
 
-    
+
+
     Cll_shear_shear_cosmo = np.zeros((tomo_bins_cosmo,tomo_bins_cosmo),dtype=object)
     itr = 0
     for i in xrange(tomo_bins_cosmo):
@@ -133,7 +134,7 @@ if __name__ == '__main__':
     chi_bins = np.zeros((tomo_bins_cosmo,2))
     z_fine[0] +=0.00001
     for i in xrange(0,tomo_bins_cosmo):
-       z_bin_starts[i] = np.min(z_fine[cum_n_z>=1./tomo_bins_cosmo*i])
+        z_bin_starts[i] = np.min(z_fine[cum_n_z>=1./tomo_bins_cosmo*i])
 
     for i in xrange(0,tomo_bins_cosmo):
         if i==tomo_bins_cosmo-1:
@@ -151,10 +152,10 @@ if __name__ == '__main__':
     C.P_lin = P_in
 
     len_params = defaults.lensing_params.copy()
-    len_params['smodel'] = 'custom_z' 
+    len_params['smodel'] = 'custom_z'
     len_params['n_gal'] = n_gal_cosmo
     len_params['sigma2_e'] = sigma_e_cosmo**2
-    
+
     sp = ShearPower(C,z_fine,l_mids,fsky_cosmo,pmodel='halofit',mode='power',ps=n_z,params=len_params)
     qs = np.zeros(tomo_bins_cosmo,dtype=object)
     for i in xrange(qs.size):
@@ -165,7 +166,7 @@ if __name__ == '__main__':
         for j in xrange(qs.size):
             Cll_shear_shear[i,j] = Cll_q_q(sp,qs[i],qs[j]).Cll()
             ratio_means[i,j] = np.average(Cll_shear_shear[i,j]/Cll_shear_shear_cosmo[i,j])
-            assert(np.allclose(Cll_shear_shear[i,j],Cll_shear_shear_cosmo[i,j],rtol=RTOL,atol=ATOL))
+            assert np.allclose(Cll_shear_shear[i,j],Cll_shear_shear_cosmo[i,j],rtol=RTOL,atol=ATOL)
     #print ratio_means
     print np.average(ratio_means)
 
@@ -198,18 +199,18 @@ if __name__ == '__main__':
                     #    cov_ssc_mat_flat[itr_in:itr_in+nbins_cosmo,itr_out:itr_out+nbins_cosmo] = cov_ssc_mat_flat[itr_out:itr_out+nbins_cosmo,itr_in:itr_in+nbins_cosmo].T
                     itr_in+=nbins_cosmo
             itr_out+=nbins_cosmo
-    assert(np.all(cov_g_mat_flat==cov_g_mat_flat.T))
-    assert(np.allclose(cov_g_mat_flat,cov_g_mat_cosmo_flat,atol=ATOL,rtol=RTOL))
-    assert(np.abs(1.-np.average(ratio_means))<0.01)
-    #assert(np.all(cov_ssc_mat_flat==cov_ssc_mat_flat.T))
-   
+    assert np.all(cov_g_mat_flat==cov_g_mat_flat.T)
+    assert np.allclose(cov_g_mat_flat,cov_g_mat_cosmo_flat,atol=ATOL,rtol=RTOL)
+    assert np.abs(1.-np.average(ratio_means))<0.01
+    #assert np.all(cov_ssc_mat_flat==cov_ssc_mat_flat.T)
+
 #    cov_g_mat = np.zeros((tomo_bins_cosmo,tomo_bins_cosmo,tomo_bins_cosmo,tomo_bins_cosmo),dtype=object)
 #    cov_g_rat_means = np.zeros_like(cov_g_mat)
-#    for z1 in xrange(0,tomo_bins_cosmo): 
+#    for z1 in xrange(0,tomo_bins_cosmo):
 #        print "z1 adj trap",z1,n_s/trapz(sp.ps*(sp.chis>=chi_bins[z1,0])*(sp.chis<=chi_bins[z1,1])*1.,sp.chis),trapz(sp.ps*(sp.chis>=chi_bins[z1,0])*(sp.chis<=chi_bins[z1,1])*1.,sp.chis)
-#        for z2 in xrange(0,tomo_bins_cosmo): 
-#            for z3 in xrange(0,tomo_bins_cosmo): 
-#                for z4 in xrange(0,tomo_bins_cosmo): 
+#        for z2 in xrange(0,tomo_bins_cosmo):
+#            for z3 in xrange(0,tomo_bins_cosmo):
+#                for z4 in xrange(0,tomo_bins_cosmo):
 #                    ns = np.array([0.,0.,0.,0.])
 #                    if z1==z3:
 #                        ns[0] = n_s#/trapz(sp.ps*(sp.chis>=chi_bins[z1,0])*(sp.chis<=chi_bins[z1,1])*1.,sp.chis)
@@ -219,13 +220,13 @@ if __name__ == '__main__':
 #                        ns[2] = n_s#/trapz(sp.ps*(sp.chis>=chi_bins[z2,0])*(sp.chis<=chi_bins[z2,1])*1.,sp.chis)
 #                    if z2==z3:
 #                        ns[3] = n_s#/trapz(sp.ps*(sp.chis>=chi_bins[z2,0])*(sp.chis<=chi_bins[z2,1])*1.,sp.chis)
-#                    
+#
 #                    cov_g_mat[z1,z2,z3,z4] = np.diagflat(sp.cov_g_diag(np.array([qs[z1],qs[z2],qs[z3],qs[z4]]),ns,delta_ls=dls,ls=l_mids))
 #                    if not isinstance(cov_g_mat_cosmo[z1,z2,z3,z4],int):
 #                        if z1==0 and z2==0 and ((z3==3 and z4 ==0) or (z3 ==0 and z4==3)):
 #                            print np.diag(cov_g_mat[z1,z2,z3,z4])/np.diag(cov_g_mat_cosmo[z1,z2,z3,z4])
 #                        cov_g_rat_means[z1,z2,z3,z4] = np.average(np.diag(cov_g_mat[z1,z2,z3,z4])/np.diag(cov_g_mat_cosmo[z1,z2,z3,z4]))
-#                    else: 
+#                    else:
 #                        print "conf",z1,z2,z3,z4
 ##                 if not isinstance(cov_g_mat_cosmo[z1,z2,z4,z3],int):
 ##                        cov_g_rat_means[z1,z2,z4,z3] = np.average(np.diag(cov_g_mat[z1,z2,z3,z4])/np.diag(cov_g_mat_cosmo[z1,z2,z4,z3]))
@@ -255,6 +256,5 @@ if __name__ == '__main__':
         #ax.loglog(l_mids,np.diag(cov_g_mat_cosmo[bin1,bin2,bin3,bin4]))
         #ax.loglog(l_mids,Cll_shear_shear[bin1,bin2])
         #ax.loglog(l_mids,Cll_shear_shear_cosmo[bin1,bin2])
-        #print(Cll_shear_shear[bin1,bin2]/Cll_shear_shear_cosmo[bin1,bin2])
+        #print Cll_shear_shear[bin1,bin2]/Cll_shear_shear_cosmo[bin1,bin2]
         plt.show()
-

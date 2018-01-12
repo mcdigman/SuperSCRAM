@@ -50,10 +50,10 @@ def rot_alm_x(d_alm_table_in,angles,ls,n_double=defaults.polygon_params['n_doubl
         #print ll
         if debug:
             #E_l matrices should be antisymmetric
-            assert(np.all(el_mat_complex==-el_mat_complex.conjugate().T))
-            assert(np.all(el_mat_real==-el_mat_real.T))
+            assert np.all(el_mat_complex==-el_mat_complex.conjugate().T)
+            assert np.all(el_mat_real==-el_mat_real.T)
             #check m_mat is actually unitary
-            assert(np.allclose(np.identity(m_mat.shape[0]),np.dot(np.conjugate(m_mat.T),m_mat)))
+            assert np.allclose(np.identity(m_mat.shape[0]),np.dot(np.conjugate(m_mat.T),m_mat))
             #TODO add assertion  for correct sparseness structure
         #print ll
 

@@ -1,3 +1,4 @@
+"""provide ability to compute union of PolygonGeos and use PolygonGeos as masks"""
 from polygon_geo import PolygonGeo
 import numpy as np
 import spherical_geometry.vector as sgv
@@ -14,7 +15,7 @@ class PolygonUnionGeo(Geo):
         for itr1 in xrange(0,self.n_g):
             polys_pos[itr1] = geos[itr1].sp_poly
         for itr2 in xrange(0,self.n_m):
-            polys_mask[itr1] = masks[itr1].sp_poly
+            polys_mask[itr2] = masks[itr2].sp_poly
 
         self.union_pos = polys_pos[0]
         for itr1 in xrange(1,self.n_g):
@@ -49,9 +50,9 @@ class PolygonUnionGeo(Geo):
             self.mask_phi=None
             self.mask_theta=None
             self.mask_geo=None
-        
 
-        
+
+
         Geo.__init__(self,self.union_geo.zs,self.union_geo.C,self.union_geo.z_fine)
         self.alm_table = {(0,0):self.angular_area()/np.sqrt(4.*np.pi)}
         self._l_max = 0
@@ -79,10 +80,10 @@ class PolygonUnionGeo(Geo):
         self._l_max = l_max
 
     def a_lm(self,l,m):
-        if l>self.l_max:
+        if l>self._l_max:
             print "PolygonUnionGeo: l value "+str(l)+" exceeds maximum precomputed l "+str(self._l_max)+",expanding table"
             self.expand_alm_table(l)
         alm = self.alm_table.get((l,m))
         if alm is None:
             raise RuntimeError('PolygonGeo: a_lm generation failed for unknown reason at l='+str(l)+',m='+str(m))
-            return alm
+        return alm

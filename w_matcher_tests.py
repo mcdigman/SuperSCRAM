@@ -1,3 +1,5 @@
+"""tests of WMatcher class"""
+#pylint: disable=W0621
 from scipy.interpolate import InterpolatedUnivariateSpline
 
 import defaults
@@ -73,21 +75,21 @@ def test_const_match(w0_test,cosmo_input):
     error_c_1 = np.linalg.norm(w_c-C_match_c.w_interp(a_grid))/w_c.size
     error_c_2 = np.linalg.norm(w_use_int-w_c)/a_grid.size
     #should usually do more like 1.e-12 or better if no grid issues
-    assert(error_a_1<1.e-8)
-    assert(error_a_2<1.e-8)
-    assert(error_b_1<1.e-8)
-    assert(error_b_2<1.e-8)
-    assert(error_c_1<1.e-8)
-    assert(error_c_2<1.e-8)
-    assert(np.allclose(w_a,C_match_a.w_interp(a_grid)))
-    assert(np.allclose(w_b,C_match_b.w_interp(a_grid)))
-    assert(np.allclose(w_c,C_match_c.w_interp(a_grid)))
-    assert(np.allclose(w_a,w_use_int))
-    assert(np.allclose(w_b,w_use_int))
-    assert(np.allclose(w_c,w_use_int))
-    assert(np.allclose(mult_a,mult_b))
-    assert(np.allclose(mult_a,mult_c))
-    assert(np.allclose(mult_b,mult_c))
+    assert error_a_1<2.e-8
+    assert error_a_2<1.e-8
+    assert error_b_1<1.e-8
+    assert error_b_2<1.e-8
+    assert error_c_1<1.e-8
+    assert error_c_2<1.e-8
+    assert np.allclose(w_a,C_match_a.w_interp(a_grid))
+    assert np.allclose(w_b,C_match_b.w_interp(a_grid))
+    assert np.allclose(w_c,C_match_c.w_interp(a_grid))
+    assert np.allclose(w_a,w_use_int)
+    assert np.allclose(w_b,w_use_int)
+    assert np.allclose(w_c,w_use_int)
+    assert np.allclose(mult_a,mult_b)
+    assert np.allclose(mult_a,mult_c)
+    assert np.allclose(mult_b,mult_c)
 
 def test_jdem_w0wa_match(w0_test,wa_test,cosmo_input):
     cosmo_start = cosmo_input[0]
@@ -119,9 +121,9 @@ def test_jdem_w0wa_match(w0_test,wa_test,cosmo_input):
     mult_jdem = wm.match_growth(C_match_jdem,zs,w_jdem)
 
     error_w0wa_jdem = np.linalg.norm(w_w0wa-w_jdem)/w_jdem.size
-    error_mult_w0wa_jdem = np.linalg.norm(w_w0wa-w_jdem)/w_jdem.size
-    assert(error_w0wa_jdem<4.e-4)
-    assert(error_mult_w0wa_jdem<4.e-4)
+    error_mult_w0wa_jdem = np.linalg.norm(mult_w0wa-mult_jdem)/w_jdem.size
+    assert error_w0wa_jdem<4.e-4
+    assert error_mult_w0wa_jdem<1.e-3
     #icurrent agreement ~0.0627 is reasonable given imperfect approximation of w0wa
     #depends on setting of default value for jdem at end
 
@@ -165,8 +167,8 @@ def do_casarini_match_test(cosmo_input):
     mse_w_a = np.linalg.norm((ws_a-ws_a_interp)/ws_a_interp)/ws_a_interp.size
     mse_w_b = np.linalg.norm((ws_b-ws_b_interp)/ws_b_interp)/ws_b_interp.size
 
-    assert(mse_w_a>7.e-3)
-    assert(mse_w_b>7.e-3)
+    assert mse_w_a>7.e-3
+    assert mse_w_b>7.e-3
 
     pow_mults_a = wm.match_growth(C_match_a,zs,ws_a)
     pow_mults_b = wm.match_growth(C_match_b,zs,ws_b)
@@ -179,11 +181,11 @@ def do_casarini_match_test(cosmo_input):
 
     sigma_a = np.sqrt(pow_mults_a)*0.83
     sigma_b = np.sqrt(pow_mults_b)*0.83
-    
+
     mse_sigma_a=np.linalg.norm((sigma_a-sigma_a_interp)/sigma_a_interp)/sigma_a_interp.size
     mse_sigma_b=np.linalg.norm((sigma_b-sigma_b_interp)/sigma_b_interp)/sigma_b_interp.size
-    assert(mse_sigma_a)
-    assert(mse_sigma_b)
+    assert mse_sigma_a
+    assert mse_sigma_b
 
 if __name__=='__main__':
     do_test_battery = True
@@ -208,7 +210,7 @@ if __name__=='__main__':
         if do_plots:
             import matplotlib.pyplot as plt
 
-            
+
 
         if do_convergence_test_w0wa:
             cosmo_match_w0wa = cosmo_start.copy()
@@ -216,12 +218,12 @@ if __name__=='__main__':
             cosmo_match_w0wa['w0'] = -1.0
             cosmo_match_w0wa['wa'] = 0.5
             cosmo_match_w0wa['w'] = -1.0+0.1*0.5
-            
-            params_1 = params.copy() 
+
+            params_1 = params.copy()
             params_1['w_step'] = 0.01
-            params_2 = params.copy() 
+            params_2 = params.copy()
             params_2['w_step'] = 0.001
-            params_3 = params.copy() 
+            params_3 = params.copy()
             params_3['a_step'] = params['a_step']/10.
 
             C_match_w0wa = cp.CosmoPie(cosmology=cosmo_match_w0wa)
@@ -253,11 +255,11 @@ if __name__=='__main__':
                 cosmo_match_jdem['ws36_'+str(i)] = -1.
             cosmo_match_jdem['ws36_'+str(1)] = -1.5
 
-            params_1 = params.copy() 
+            params_1 = params.copy()
             params_1['w_step'] = 0.01
-            params_2 = params.copy() 
+            params_2 = params.copy()
             params_2['w_step'] = 0.005
-            params_3 = params.copy() 
+            params_3 = params.copy()
             params_3['a_step'] = params_1['a_step']/10.
 
 
@@ -346,7 +348,7 @@ if __name__=='__main__':
 
             sigma_a = np.sqrt(pow_mults_a)*0.83
             sigma_b = np.sqrt(pow_mults_b)*0.83
-            
+
             mse_sigma_a=np.linalg.norm((sigma_a-sigma_a_interp)/sigma_a_interp)/sigma_a_interp.size
             mse_sigma_b=np.linalg.norm((sigma_b-sigma_b_interp)/sigma_b_interp)/sigma_b_interp.size
             print "mse sigma a/point: "+str(mse_sigma_a)

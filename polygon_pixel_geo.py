@@ -3,20 +3,19 @@ from warnings import warn
 from math import isnan
 
 from geo import PixelGeo
+from polygon_geo import get_poly
 
 import numpy as np
 from numpy.core.umath_tests import inner1d
 
 from astropy.io import fits
 import spherical_geometry.vector as sgv
-from spherical_geometry.polygon import SphericalPolygon
+#from spherical_geometry.polygon import SphericalPolygon
 
+from ylm_utils import get_a_lm_table
 
 import defaults
-import scipy as sp
 
-#TODO consider using sp_poly area for angular_area()
-#TODO consider smoothing to get area precisely correct
 class PolygonPixelGeo(PixelGeo):
     def __init__(self,zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max,res_healpix=defaults.polygon_params['res_healpix'],overwride_precompute=False):
         """get a healpix pixelated spherical polygon geo"""
@@ -27,7 +26,7 @@ class PolygonPixelGeo(PixelGeo):
         self.C = C
         self.z_fine = z_fine
         self.res_healpix = res_healpix
-        self.overwride_precompute = overwride_precompute 
+        self.overwride_precompute = overwride_precompute
         all_pixels = get_healpix_pixelation(res_choose=res_healpix)
         self.sp_poly = get_poly(thetas,phis,theta_in,phi_in)
         if isnan(self.sp_poly.area()):
@@ -95,63 +94,63 @@ class PolygonPixelGeo(PixelGeo):
                 a_lms[(ll,mm)] = self.a_lm(ll,mm)
                 itr+=1
         return a_lms,ls,ms
+
     #TODO check numerical stability
     def get_a_lm_table(self,l_max):
-        if l_max>85:
-            raise ValueError('cannot use scipy precision for getting alm for l>85 because 171! is too large')
-        n_tot = (l_max+1)**2
-        pixel_area = self.pixels[0,2]
+        return get_a_lm_table(l_max,self.pixels[:,0],self.pixels[:,1],self.pixels[0,2]) 
 
-        ls = np.zeros(n_tot)
-        ms = np.zeros(n_tot)
-        a_lms = {}
-
-        lm_dict = {}
-        itr = 0
-        for ll in xrange(0,l_max+1):
-            for mm in xrange(-ll,ll+1):
-                ms[itr] = mm
-                ls[itr] = ll
-                lm_dict[(ll,mm)] = itr
-                itr+=1
-
-        cos_theta = np.cos(self.pixels[:,0])
-        sin_theta = np.sin(self.pixels[:,0])
-        abs_sin_theta = np.abs(sin_theta)
-
-
-        sin_phi_m = np.zeros((l_max+1,self.n_pix))
-        cos_phi_m = np.zeros((l_max+1,self.n_pix))
-        for mm in xrange(0,l_max+1):
-            sin_phi_m[mm] = np.sin(mm*self.pixels[:,1])
-            cos_phi_m[mm] = np.cos(mm*self.pixels[:,1])
-
-        factorials = sp.misc.factorial(np.arange(0,2*l_max+1))
-
-        known_legendre = {(0,0):(np.zeros(self.n_pix)+1.),(1,0):cos_theta,(1,1):-abs_sin_theta}
-
-        for ll in xrange(0,l_max+1):
-            if ll>=2:
-                known_legendre[(ll,ll-1)] = (2.*ll-1.)*cos_theta*known_legendre[(ll-1,ll-1)]
-                known_legendre[(ll,ll)] = -(2.*ll-1.)*abs_sin_theta*known_legendre[(ll-1,ll-1)]
-            for mm in xrange(0,ll+1):
-                if mm<=ll-2:
-                    known_legendre[(ll,mm)] = ((2.*ll-1.)/(ll-mm)*cos_theta*known_legendre[(ll-1,mm)]-(ll+mm-1.)/(ll-mm)*known_legendre[(ll-2,mm)])
-
-                prefactor = np.sqrt((2.*ll+1.)/(4.*np.pi)*factorials[ll-mm]/factorials[ll+mm])*pixel_area
-                #no sin theta because first order integrator
-                base = known_legendre[(ll,mm)]
-                if mm==0:
-                    a_lms[(ll,mm)] = prefactor*np.sum(base)
-                else:
-                    #Note: check condon shortley phase convention
-
-                    a_lms[(ll,mm)] = (-1)**(mm)*np.sqrt(2.)*prefactor*np.sum(base*cos_phi_m[mm])
-                    a_lms[(ll,-mm)] = (-1)**(mm)*np.sqrt(2.)*prefactor*np.sum(base*sin_phi_m[mm])
-                if mm<=ll-2:
-                    known_legendre.pop((ll-2,mm),None)
-
-        return a_lms,ls,ms,lm_dict
+#    def get_a_lm_table(self,l_max):
+#        if l_max>85:
+#            raise ValueError('cannot use scipy precision for getting alm for l>85 because 171! is too large')
+#        n_tot = (l_max+1)**2
+#        pixel_area = self.pixels[0,2]
+#
+#        ls = np.zeros(n_tot)
+#        ms = np.zeros(n_tot)
+#        a_lms = {}
+#        ### verbatim in 5 locations
+#        #TODO merge this known_legendre logic into ylm_utils
+#        ###identical to 39 in ylm_utils
+#        #TODO n_t for testing only
+#        n_t = self.n_pix 
+#
+#        lm_dict,ls,ms = get_lm_dict(l_max)
+#
+#        cos_theta = np.cos(self.pixels[:,0])
+#        sin_theta = np.sin(self.pixels[:,0])
+#        abs_sin_theta = np.abs(sin_theta)
+#
+#
+#        sin_phi_m = np.zeros((l_max+1,n_t))
+#        cos_phi_m = np.zeros((l_max+1,n_t))
+#        for mm in xrange(0,l_max+1):
+#            sin_phi_m[mm] = np.sin(mm*self.pixels[:,1])
+#            cos_phi_m[mm] = np.cos(mm*self.pixels[:,1])
+#
+#        factorials = sp.misc.factorial(np.arange(0,2*l_max+1))
+#
+#        known_legendre = {(0,0):(np.zeros(n_t)+1.),(1,0):cos_theta,(1,1):-abs_sin_theta}
+#        for ll in xrange(0,l_max+1):
+#            if ll>=2:
+#                known_legendre[(ll,ll-1)] = (2.*ll-1.)*cos_theta*known_legendre[(ll-1,ll-1)]
+#                known_legendre[(ll,ll)] = -(2.*ll-1.)*abs_sin_theta*known_legendre[(ll-1,ll-1)]
+#            for mm in xrange(0,ll+1):
+#                if mm<=ll-2:
+#                    known_legendre[(ll,mm)] = ((2.*ll-1.)/(ll-mm)*cos_theta*known_legendre[(ll-1,mm)]-(ll+mm-1.)/(ll-mm)*known_legendre[(ll-2,mm)])
+#                prefactor = np.sqrt((2.*ll+1.)/(4.*np.pi)*factorials[ll-mm]/factorials[ll+mm])
+#                base = known_legendre[(ll,mm)]
+#                #no sin theta because first order integrator
+#                if mm==0:
+#                    a_lms[(ll,mm)] = pixel_area*prefactor*np.sum(base)
+#                else:
+#                    #Note: check condon shortley phase convention
+#
+#                    a_lms[(ll,mm)] = (-1)**(mm)*np.sqrt(2.)*pixel_area*prefactor*np.sum(base*cos_phi_m[mm])
+#                    a_lms[(ll,-mm)] = (-1)**(mm)*np.sqrt(2.)*pixel_area*prefactor*np.sum(base*sin_phi_m[mm])
+#                if mm<=ll-2:
+#                    known_legendre.pop((ll-2,mm),None)
+#
+#        return a_lms,ls,ms,lm_dict
 
 
     #TODO make robust
@@ -160,135 +159,6 @@ class PolygonPixelGeo(PixelGeo):
         #result2 = self.sp_poly.overlap(geo2.sp_poly)
         #print "PolygonPixelGeo: my overlap prediction="+str(result)+" spherical_geometry prediction="+str(result2)
         return result
-
-
-#may be some loss of precision; fails to identify possible exact 0s
-#def reconstruct_from_alm(l_max,thetas,phis,alms):
-#    n_tot = (l_max+1)**2
-#
-#    ls = np.zeros(n_tot)
-#    ms = np.zeros(n_tot)
-#    reconstructed = np.zeros(thetas.size)
-#
-#    lm_dict = {}
-#    itr = 0
-#    for ll in xrange(0,l_max+1):
-#        for mm in xrange(-ll,ll+1):
-#            ms[itr] = mm
-#            ls[itr] = ll
-#            lm_dict[(ll,mm)] = itr
-#            itr+=1
-#
-#    cos_theta = np.cos(thetas)
-#    sin_theta = np.sin(thetas)
-#    abs_sin_theta = np.abs(sin_theta)
-#
-#
-#    sin_phi_m = np.zeros((l_max+1,thetas.size))
-#    cos_phi_m = np.zeros((l_max+1,thetas.size))
-#    for mm in xrange(0,l_max+1):
-#        sin_phi_m[mm] = np.sin(mm*phis)
-#        cos_phi_m[mm] = np.cos(mm*phis)
-#
-#    factorials = sp.misc.factorial(np.arange(0,2*l_max+1))
-#
-#    known_legendre = {(0,0):(np.zeros(thetas.size)+1.),(1,0):cos_theta,(1,1):-abs_sin_theta}
-#
-#    for ll in xrange(0,l_max+1):
-#        if ll>=2:
-#            known_legendre[(ll,ll-1)] = (2.*ll-1.)*cos_theta*known_legendre[(ll-1,ll-1)]
-#            known_legendre[(ll,ll)] = -(2.*ll-1.)*abs_sin_theta*known_legendre[(ll-1,ll-1)]
-#        for mm in xrange(0,ll+1):
-#            if mm<=ll-2:
-#                known_legendre[(ll,mm)] = ((2.*ll-1.)/(ll-mm)*cos_theta*known_legendre[(ll-1,mm)]-(ll+mm-1.)/(ll-mm)*known_legendre[(ll-2,mm)])
-#
-#            prefactor = np.sqrt((2.*ll+1.)/(4.*np.pi)*factorials[ll-mm]/factorials[ll+mm])
-#            base = known_legendre[(ll,mm)]
-#            if mm==0:
-#                reconstructed += prefactor*alms[(ll,mm)]*base
-#            else:
-#                #Note: check condon shortley phase convention
-#                reconstructed+= (-1)**(mm)*np.sqrt(2.)*alms[(ll,mm)]*prefactor*base*cos_phi_m[mm]
-#                reconstructed+= (-1)**(mm)*np.sqrt(2.)*alms[(ll,-mm)]*prefactor*base*sin_phi_m[mm]
-#        if mm<=ll-2:
-#            known_legendre.pop((ll-2,mm),None)
-#
-#    return reconstructed
-
-#TODO split this stuff into another file
-#alternate way of computing Y_r from the way in sph_functions
-#def Y_r_2(ll,mm,theta,phi,known_legendre):
-#    prefactor = np.sqrt((2.*ll+1.)/(4.*np.pi)*sp.misc.factorial(ll-np.abs(mm))/sp.misc.factorial(ll+np.abs(mm)))
-#    base = (prefactor*(-1)**mm)*known_legendre[(ll,np.abs(mm))]
-#    if mm==0:
-#        return base
-#    elif mm>0:
-#        return base*np.sqrt(2.)*np.cos(mm*phi)
-#    else:
-#        return base*np.sqrt(2.)*np.sin(np.abs(mm)*phi)
-#
-#def get_Y_r_dict(l_max,thetas,phis):
-#    ytable,ls,ms = get_Y_r_table(l_max,thetas,phis)
-#    ydict = {}
-#    for itr in xrange(0,ls.size):
-#        ydict[(ls[itr],ms[itr])] = ytable[itr]
-#    return ydict
-#def get_Y_r_table(l_max,thetas,phis):
-#    n_tot = (l_max+1)**2
-#
-#    ls = np.zeros(n_tot)
-#    ms = np.zeros(n_tot)
-#    Y_lms = np.zeros((n_tot,thetas.size))
-#
-#    lm_dict = {}
-#    itr = 0
-#    for ll in xrange(0,l_max+1):
-#        for mm in xrange(-ll,ll+1):
-#            ms[itr] = mm
-#            ls[itr] = ll
-#            lm_dict[(ll,mm)] = itr
-#            itr+=1
-#
-#    cos_theta = np.cos(thetas)
-#    sin_theta = np.sin(thetas)
-#    abs_sin_theta = np.abs(sin_theta)
-#
-#
-#    sin_phi_m = np.zeros((l_max+1,thetas.size))
-#    cos_phi_m = np.zeros((l_max+1,thetas.size))
-#    for mm in xrange(0,l_max+1):
-#        sin_phi_m[mm] = np.sin(mm*phis)
-#        cos_phi_m[mm] = np.cos(mm*phis)
-#
-#        factorials = sp.misc.factorial(np.arange(0,2*l_max+1))
-#
-#    known_legendre = {(0,0):(np.zeros(thetas.size)+1.),(1,0):cos_theta,(1,1):-abs_sin_theta}
-#
-#    for ll in xrange(0,l_max+1):
-#        if ll>=2:
-#            known_legendre[(ll,ll-1)] = (2.*ll-1.)*cos_theta*known_legendre[(ll-1,ll-1)]
-#            known_legendre[(ll,ll)] = -(2.*ll-1.)*abs_sin_theta*known_legendre[(ll-1,ll-1)]
-#            #print ll,abs_sin_theta,known_legendre[(ll,ll)],known_legendre[(ll-1,ll-1)],known_legendre[(ll-1,ll-2)]
-#        for mm in xrange(0,ll+1):
-#            if mm<=ll-2:
-#                known_legendre[(ll,mm)] = ((2.*ll-1.)/(ll-mm)*cos_theta*known_legendre[(ll-1,mm)]-(ll+mm-1.)/(ll-mm)*known_legendre[(ll-2,mm)])
-#            prefactor = np.sqrt((2.*ll+1.)/(4.*np.pi)*factorials[ll-mm]/factorials[ll+mm])
-#            #if mm==ll:
-#            #    print prefactor
-#            base = known_legendre[(ll,mm)]
-#            if mm==0:
-#                Y_lms[lm_dict[(ll,mm)]] = prefactor*base
-#            else:
-#                #Note: check condon shortley phase convention
-#
-#                Y_lms[lm_dict[(ll,mm)]] = (-1)**(mm)*np.sqrt(2.)*prefactor*base*cos_phi_m[mm]
-#                Y_lms[lm_dict[(ll,-mm)]] = (-1)**(mm)*np.sqrt(2.)*prefactor*base*sin_phi_m[mm]
-#            if mm<=ll-2:
-#                known_legendre.pop((ll-2,mm),None)
-#
-#
-#    return Y_lms,ls,ms
-
 
 
 #can safely resolve up to lmax~2*nside (although can keep going with loss of precision until lmax=3*nside-1), so if lmax=100,need nside~50
@@ -312,21 +182,6 @@ def get_healpix_pixelation(res_choose=6):
 
     return pixels
 
-
-
-#Note these are spherical polygons so all the sides are great circles (not lines of constant theta!)
-#So area will differ from integral if assuming constant theta
-#vertices must have same first and last coordinate so polygon is closed
-#last point is arbitrary point inside because otherwise 2 polygons possible.
-#Behavior may be unpredictable if the inside point is very close to an edge or vertex.
-def get_poly(theta_vertices,phi_vertices,theta_in,phi_in):
-    bounding_theta = theta_vertices-np.pi/2. #to radec
-    bounding_phi = phi_vertices
-    bounding_xyz = np.asarray(sgv.radec_to_vector(bounding_phi,bounding_theta,degrees=False)).T
-    inside_xyz = np.asarray(sgv.radec_to_vector(phi_in,theta_in-np.pi/2.,degrees=False))
-
-    sp_poly = SphericalPolygon(bounding_xyz,inside=inside_xyz)
-    return sp_poly
 
 #Pixels is a pixelation (ie what get_healpix_pixelation returns) and sp_poly is a spherical polygon, ie from get_poly
 def is_contained(pixels,sp_poly):
@@ -364,8 +219,7 @@ def contains_intersect(vertex1,vertex2,inside_point,test_points):
     sign3 = np.sign(inner1d(np.cross(cxd,inside_point),T))
     sign4 = np.sign(inner1d(np.cross(test_points,cxd),T))
     return (sign1==sign2) & (sign1==sign3) & (sign1==sign4)
-#PLAN: explicitly implement Y_r both ways for testing purposes
-#FIX: make a_lm theta, phi pole actually at 0
+
 #if __name__=='__main__':
 #    from geo import PixelGeo,RectGeo
 #    from time import time

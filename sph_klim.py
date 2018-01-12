@@ -1,3 +1,4 @@
+"""Basis and covariances for long wavelength fluctuations"""
 from time import time
 from scipy.special import jv
 from scipy.integrate import quad,odeint
@@ -190,7 +191,7 @@ class SphBasisK(LWBasis):
             return fm.FisherMatrix(self.get_covar_array(),input_type=fm.REP_COVAR,initial_state=initial_state,silent=True)
 
     def get_variance(self,geo,k_cut_in=None):
-        """get the variance  (v.T).C_lw.v where v=\frac{\partial\bar{\delta}}{\delta_\alpha} in the given geometry"""
+        r"""get the variance  (v.T).C_lw.v where v=\frac{\partial\bar{\delta}}{\delta_\alpha} in the given geometry"""
         v = np.array([self.D_delta_bar_D_delta_alpha(geo,tomography=True)[0]]).T
         variance = 0.
 
@@ -223,7 +224,7 @@ class SphBasisK(LWBasis):
 
     #get the partial derivatives of an sw observable wrt the basis given an integrand with elements at each r_fine i.e.  \frac{\partial O_i}{\partial \bar(\delta)(r_{fine})}
     def D_O_I_D_delta_alpha(self,geo,integrand,force_recompute = False,use_r=True,range_spec=None):
-        """Get \frac{\partial O^I}{\partial \delta_\alpha} for an observable.
+        r"""Get \frac{\partial O^I}{\partial \delta_\alpha} for an observable.
             inputs:
                 geo: a Geo object for the geometry
                 integrand: the observable as a function of geo.r_fine, which must be integrated over
@@ -257,7 +258,7 @@ class SphBasisK(LWBasis):
     #Cacheing is potentially dangerous if the geo changes, so it should not be allowed to. #TODO add cache_good flag to geo
     #Note that this function will cache alm and R_int internally as needed regardless of cache_alm or allow_caching, but it won't save the results for future function calls if caching is prohibited
     def D_delta_bar_D_delta_alpha(self,geo,force_recompute = False,tomography=True):
-        """Calculate \frac{\partial\bar{\delta}}{\partial\delta_\alpha}
+        r"""Calculate \frac{\partial\bar{\delta}}{\partial\delta_\alpha}
             inputs:
                 geo: an input Geo object for the geometry
                 tomography: if True use tomographic (coarse) bins, otherwise use resolution (fine) bins for r integrals
@@ -314,7 +315,7 @@ class SphBasisK(LWBasis):
 #                    r_part2[i] = R_int(rbins[i],kk,ll)*norm[i]
                 r_part = (self.rints[ll](rbins[:,1]*kk)-self.rints[ll](rbins[:,0]*kk))/kk**3*norm
 #                atol_loc = np.max(r_part)*1e-5
-#                assert(np.allclose(r_part,r_part2,atol=atol_loc,rtol=1e-5))
+#                assert np.allclose(r_part,r_part2,atol=atol_loc,rtol=1e-5)
 #                if not np.allclose(r_part,r_part2,atol=atol_loc,rtol=1e-3):
 #                    print r_part/r_part2
 #                    r_grid3 = np.linspace(0.,self.r_max,self.params['x_grid_size'])
@@ -337,7 +338,7 @@ class SphBasisK(LWBasis):
         return result
 
 def R_int(r_range,k,ll):
-    """ returns \int R_n(rk_alpha) r2 dr
+    r""" returns \int R_n(rk_alpha) r2 dr
         inputs:
             r_range: [min r, max r] r range to integrate over
             k: k_alpha, zero of bessel function
@@ -353,7 +354,7 @@ def R_int(r_range,k,ll):
 
 #I_alpha checked
 def I_alpha(k_alpha,k,r_max,l_alpha):
-    """return the integral \int_0^r_{max} dr r^2 j_{\l_alpha}(k_\alpha r)j_{l_\alpha}(k r)
+    r"""return the integral \int_0^r_{max} dr r^2 j_{\l_alpha}(k_\alpha r)j_{l_\alpha}(k r)
     needed to calculate long wavelength covariance matrix."""
     a=k_alpha*r_max
     b=k*r_max

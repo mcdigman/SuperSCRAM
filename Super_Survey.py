@@ -1,29 +1,18 @@
+"""class for manipulating and plotting the Super Sample term"""
 from time import time
-from warnings import warn
 
 import numpy as np
 
-from polygon_pixel_geo import PolygonPixelGeo
-from polygon_geo import PolygonGeo
-from sph_klim import SphBasisK
-from geo import RectGeo
-from sw_survey import SWSurvey
-from lw_survey import LWSurvey
 
 import defaults
-import fisher_matrix as fm
-import prior_fisher
-import matter_power_spectrum as mps
 import multi_fisher as mf
-import cosmopie as cp
-import algebra_utils as au
 #TODO maybe make possible to serialize/pickle or at least provide a standardized way of storing run information
 #TODO examine possibile platform dependence bug with ruby
-class SuperSurvey:
-    ''' This class holds and returns information for all surveys
-    '''
+class SuperSurvey(object):
+    """ This class holds and returns information for all surveys
+    """
     def __init__(self, surveys_sw, surveys_lw, basis,C,get_a=False,do_mitigated=True,do_unmitigated=True):
-        """master class for mitigation analysis
+        r"""master class for mitigation analysis
             inputs:
                 surveys_sw: an array of SWSurveys
                 surveys_lw: an array of LWSurveys (different mitigations)
@@ -58,7 +47,7 @@ class SuperSurvey:
         for i in xrange(self.N_surveys_lw):
             self.N_O_a=self.N_O_a + surveys_lw[i].get_N_O_a()
 
-        print('SuperSurvey: there are '+str(self.N_O_I)+' short wavelength and '+str(self.N_O_a)+' long wavelength observables')
+        print 'SuperSurvey: there are '+str(self.N_O_I)+' short wavelength and '+str(self.N_O_a)+' long wavelength observables'
 
         #TODO support multiple sw surveys with MultiFisher
         de_prior_params = defaults.prior_fisher_params
@@ -120,9 +109,9 @@ class SuperSurvey:
         print "alignment of most contaminated direction before mitigation and most improved direction: "+str(np.dot(self.eig_set[1,0][1][:,-1],self.eig_set_ssc[1,1][1][:,0]))
         print "alignment of second most contaminated direction before and second most contaminated direction after mitigation: "+str(np.dot(self.eig_set[1,0][1][:,-2],self.eig_set[1,1][1][:,-2]))
         print "alignment of second most contaminated direction before mitigation and second most improved direction: "+str(np.dot(self.eig_set[1,0][1][:,-2],self.eig_set_ssc[1,1][1][:,1]))
-        
 
-                
+
+
         print "----------------------------------------------------"
         print "----------------------------------------------------"
 
@@ -146,9 +135,9 @@ class SuperSurvey:
             opacity_set = np.full(c_extra.size,1.)#np.array([1.0,1.0,1.0])
             cov_set = c_extra
             label_set = np.full(c_extra.shape[0],'extra')
-        box_widths = np.array([0.015,0.005,0.0005,0.005,0.1,0.05])*3.
+        #box_widths = np.array([0.015,0.005,0.0005,0.005,0.1,0.05])*3.
         #cov_set = np.array([SS.covs_params[1],SS.covs_params[0],SS.covs_g_pars[0]])
-        make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',self.surveys_sw[0].cosmo_par_list,self.C,dchi2=dchi2,include_diag=include_diag)
+        make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',self.surveys_sw[0].cosmo_par_list,dchi2=dchi2,include_diag=include_diag)
 
 
 def get_ellipse_specs(covs,dchi2=2.3):
@@ -171,8 +160,8 @@ def get_ellipse_specs(covs,dchi2=2.3):
     return width1s,width2s,angles,areas
 
 
-def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_par_list,C,dchi2,adaptive_mult=1.05,include_diag=True):
-    formatted_labels = {"ns":"$n_s$","Omegamh2":"$\Omega_m h^2$","OmegaLh2":"$\Omega_\phi h^2$","Omegabh2":"$\Omega_b h^2$","LogAs":"$ln(A_s)$","As":"$A_s$","sigma8":"$\sigma_8$","w0":"$w_0$","wa":"$w_a$","w":"w","Omegam":"$\Omega_m$","OmegaL":"$\Omega_\phi$","Omegab":"$\Omega_b$","h":"h","H0":"H_0","Omegach2":"$\Omega_c h^2$","Omegac":"$\Omega_c$"}
+def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_par_list,dchi2,adaptive_mult=1.05,include_diag=True):
+    formatted_labels = {"ns":"$n_s$","Omegamh2":r"$\Omega_m h^2$","OmegaLh2":r"$\Omega_\phi h^2$","Omegabh2":r"$\Omega_b h^2$","LogAs":"$ln(A_s)$","As":"$A_s$","sigma8":r"$\sigma_8$","w0":"$w_0$","wa":"$w_a$","w":"w","Omegam":r"$\Omega_m$","OmegaL":r"$\Omega_\phi$","Omegab":r"$\Omega_b$","h":"h","H0":"H_0","Omegach2":r"$\Omega_c h^2$","Omegac":r"$\Omega_c$"}
     import matplotlib.pyplot as plt
     import matplotlib.ticker as ticker
     from matplotlib.patches import Ellipse
@@ -192,9 +181,10 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
     area_set = np.zeros((n_c,n_p,n_p))
     for itr3 in xrange(0,n_c):
         width1_set[itr3],width2_set[itr3],angle_set[itr3],area_set[itr3] = get_ellipse_specs(cov_set[itr3],dchi2=dchi2)
-    if not(type(box_widths) is np.ndarray) and box_widths == "adaptive":
+    if not isinstance(box_widths,np.ndarray) and box_widths == "adaptive":
         box_widths = np.zeros(n_p)
         for itr3 in xrange(0,n_c):
+            #TODO make sigmas more selectable don't hardcode the 3
             box_widths = np.max(np.array([box_widths,3.*np.sqrt(np.diag(cov_set[itr3]))]),axis=0)
         box_widths*=adaptive_mult
 
@@ -264,9 +254,9 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
                 ax.xaxis.set_major_formatter(formatter)
                 ax.set_xlim(-xbox_width/2.,xbox_width/2.)
 
-            
+
             if itr1 <= itr2:
-                if itr1==itr2: 
+                if itr1==itr2:
                     ytickspacing = (ybox_width)*tickrange/nticks
                     yticks = np.arange(ybox_width/2.-tickrange/2*ybox_width,ybox_width/2.+tickrange/2*ybox_width+0.01*ytickspacing,ytickspacing)
                 else:
@@ -327,6 +317,18 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
 
 
 if __name__=="__main__":
+    from polygon_pixel_geo import PolygonPixelGeo
+    from polygon_geo import PolygonGeo
+    from sph_klim import SphBasisK
+    from geo import RectGeo
+    from sw_survey import SWSurvey
+    from lw_survey import LWSurvey
+    from warnings import warn
+#    import fisher_matrix as fm
+    import prior_fisher
+    import matter_power_spectrum as mps
+    import cosmopie as cp
+    import algebra_utils as au
     t1 = time()
     #TODO make sure input z cannot exceed z_max in geo
     z_max=1.35
@@ -479,7 +481,7 @@ if __name__=="__main__":
     #nz_params['area_sterad'] =  0.040965*np.pi**2/180**2
     #nz_params['smooth_sigma'] = 0.01
     #nz_params['n_right_extend'] = 16
-        
+
     from nz_wfirst import NZWFirst
     nz_matcher = NZWFirst(nz_params)
     loc_lens_params['n_gal'] = au.trapz2(nz_matcher.get_dN_dzdOmega(geo1.z_fine),geo1.z_fine)*geo1.angular_area()
@@ -613,7 +615,7 @@ if __name__=="__main__":
 
     ellipse_plot=False
     if ellipse_plot:
-#        make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',cosmo_par_list,C,dchi2=dchi2)
+#        make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',cosmo_par_list,dchi2=dchi2)
         SS.make_standard_ellipse_plot()
 
 

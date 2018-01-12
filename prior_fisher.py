@@ -110,55 +110,55 @@ if __name__=='__main__':
     param_1 = defaults.prior_fisher_params.copy()
     param_1['row_strip']=np.array([3,5,6,7])
     fisher_mat=read_prior_fisher(params=param_1)
-    assert(fisher_mat.shape==(45,45))
-    assert(np.all(fisher_mat==fisher_mat.T))
+    assert fisher_mat.shape==(45,45)
+    assert np.all(fisher_mat==fisher_mat.T)
     fisher_strip = fix_elements(fisher_mat,param_1)
-    assert(fisher_strip.shape==(41,41))
+    assert fisher_strip.shape==(41,41)
     param_2 = defaults.prior_fisher_params.copy()
     param_2['row_strip']=np.array([5,6,7])
     param_3 = defaults.prior_fisher_params.copy()
     param_3['row_strip']=np.array([3])
     fisher_strip_567 = fix_elements(fisher_mat,params=param_2)
     fisher_strip_3567 = fix_elements(fisher_strip_567,params=param_3)
-    assert(np.all(fisher_strip_3567==fisher_strip))
+    assert np.all(fisher_strip_3567==fisher_strip)
     #check stripping worked as expected
-    assert(np.all(fisher_strip==fisher_strip.T))
-    assert(np.all(fisher_strip_567==fisher_strip_567.T))
+    assert np.all(fisher_strip==fisher_strip.T)
+    assert np.all(fisher_strip_567==fisher_strip_567.T)
     n_r = 5
     n_c = 3
     n_skip = 0
-    assert(np.all(fisher_strip_567[0:n_r-n_skip,0:n_r-n_skip]==fisher_mat[0:n_r-n_skip,0:n_r-n_skip]))
-    assert(np.all(fisher_strip_567[0:n_r-n_skip,n_r::]==fisher_mat[0:n_r-n_skip,n_r+n_c::]))
-    assert(np.all(fisher_strip_567[n_r::,n_r::]==fisher_mat[n_r+n_c::,n_r+n_c::]))
+    assert np.all(fisher_strip_567[0:n_r-n_skip,0:n_r-n_skip]==fisher_mat[0:n_r-n_skip,0:n_r-n_skip])
+    assert np.all(fisher_strip_567[0:n_r-n_skip,n_r::]==fisher_mat[0:n_r-n_skip,n_r+n_c::])
+    assert np.all(fisher_strip_567[n_r::,n_r::]==fisher_mat[n_r+n_c::,n_r+n_c::])
 
     n_r = 3
     n_c = 1
     n_skip = 0
-    assert(np.all(fisher_strip_3567[0:n_r-n_skip,0:n_r-n_skip]==fisher_strip_567[0:n_r-n_skip,0:n_r-n_skip]))
-    assert(np.all(fisher_strip_3567[0:n_r-n_skip,n_r::]==fisher_strip_567[0:n_r-n_skip,n_r+n_c::]))
-    assert(np.all(fisher_strip_3567[n_r::,n_r::]==fisher_strip_567[n_r+n_c::,n_r+n_c::]))
+    assert np.all(fisher_strip_3567[0:n_r-n_skip,0:n_r-n_skip]==fisher_strip_567[0:n_r-n_skip,0:n_r-n_skip])
+    assert np.all(fisher_strip_3567[0:n_r-n_skip,n_r::]==fisher_strip_567[0:n_r-n_skip,n_r+n_c::])
+    assert np.all(fisher_strip_3567[n_r::,n_r::]==fisher_strip_567[n_r+n_c::,n_r+n_c::])
 
     fisher_project,project_mat = project_w0(fisher_strip,params=param_1,return_project=True)
-    assert(fisher_project.shape==(6,6))
+    assert fisher_project.shape==(6,6)
     #projection matrix must be idempotent, have determinant 0, trace=dimension of subspace projected 2,all eigenvalues 0 or 1
-    assert(np.all(np.dot(project_mat,project_mat)==project_mat))
-    assert(np.linalg.det(project_mat)==0.)
-    assert(np.trace(project_mat)==6)
+    assert np.all(np.dot(project_mat,project_mat)==project_mat)
+    assert np.linalg.det(project_mat)==0.
+    assert np.trace(project_mat)==6
     project_eig = np.linalg.eig(project_mat)[0]
-    assert(np.all((project_eig==0) | (project_eig==1)))
+    assert np.all((project_eig==0) | (project_eig==1))
 
     fisher_project2,project_mat2 = project_w0(fisher_mat,params=param_1,return_project=True)
-    assert(np.all(np.dot(project_mat2,project_mat2)==project_mat2))
-    assert(np.linalg.det(project_mat2)==0.)
-    assert(np.trace(project_mat2)==10)
+    assert np.all(np.dot(project_mat2,project_mat2)==project_mat2)
+    assert np.linalg.det(project_mat2)==0.
+    assert np.trace(project_mat2)==10
     project_eig2 = np.linalg.eig(project_mat2)[0]
-    assert(np.all((project_eig2==0) | (project_eig2==1)))
+    assert np.all((project_eig2==0) | (project_eig2==1))
 
     fisher_strip2 = fix_elements(fisher_project2)
-    assert(np.all(fisher_strip2==fisher_project))
+    assert np.all(fisher_strip2==fisher_project)
 
     fisher_project3= get_w0_projected(params=param_1)
-    assert(np.all(fisher_project3==fisher_project))
+    assert np.all(fisher_project3==fisher_project)
     import matplotlib.pyplot as plt
     plt.imshow(np.log(np.abs(fisher_project)))
     plt.show()

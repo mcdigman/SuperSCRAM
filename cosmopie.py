@@ -347,10 +347,10 @@ class CosmoPie(object):
         return (1+z)**2*self.D_A(z)
 
     def DV(self,z):
-        """ comoving volume element, with out the d\Omega
+        r""" comoving volume element, with out the d\Omega
          dV/dz"""
         return self.DH*(1+z)**2*self.D_A(z)**2/self.Ez(z)
-
+    #TODO remove if not used
     def look_back(self,z):
         """Joe's function not used currently"""
         f1=3.086e19  # conversion  Mpc to km
@@ -442,7 +442,7 @@ class CosmoPie(object):
         return self.sigma_r(z,R)
 
     def sigma_r(self,z,R):
-        """ returns RMS power on scale R
+        r""" returns RMS power on scale R
          sigma^2(R)= \int dlogk/(2 np.pi^2) W^2 P(k) k^3
          user needs to adjust for growth factor upon return """
         if self.P_lin is None:
@@ -629,15 +629,15 @@ def add_derived_pars(cosmo_old,p_space=None):
 #        C=CosmoPie(cosmology=defaults.cosmology)
 #        z=3.5
 #        z=.1
-#        print('Comoving distance',C.D_comov(z))
-#        print('Angular diameter distance',C.D_A(z))
-#        print('Luminosity distance', C.D_L(z))
-#        print('Growth factor', C.G(z))
-#        print('Growth factor for really small z',C.G(1e-10))
+#        print 'Comoving distance',C.D_comov(z)
+#        print 'Angular diameter distance',C.D_A(z)
+#        print 'Luminosity distance', C.D_L(z)
+#        print 'Growth factor', C.G(z)
+#        print 'Growth factor for really small z',C.G(1e-10)
 #        z=0.0
-#        print('logrithmic growth factor', C.log_growth(z))
-#        print('compare logrithmic growth factor to approxiamtion', C.Omegam**(-.6), C.Omegam)
-#        print('critical overdensity ',C.delta_c(0)  )
+#        print 'logrithmic growth factor', C.log_growth(z)
+#        print 'compare logrithmic growth factor to approxiamtion', C.Omegam**(-.6), C.Omegam
+#        print 'critical overdensity ',C.delta_c(0)
 #
 #        z=np.linspace(0,5,80)
 #        D1=np.zeros(80)

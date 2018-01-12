@@ -1,3 +1,4 @@
+"""demonstration case for wfirst embeded in lsst footprint to mitigate covariance"""
 import numpy as np
 
 from time import time
@@ -83,11 +84,11 @@ if __name__=='__main__':
     #list of comsological parameters that will need to be varied
     if cosmo['de_model']=='w0wa':
         cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w0','wa'])
-        cosmo_par_string = ["$n_s$","$\Omega_m h^2$","$\Omega_{de} h^2$","$ln(A_s)$","$w_0$","$w_a$"]
+        cosmo_par_string = ["$n_s$",r"$\Omega_m h^2$",r"$\Omega_{de} h^2$","$ln(A_s)$","$w_0$","$w_a$"]
         cosmo_par_epsilons = np.array([0.002,0.0005,0.0001,0.0005,0.1,0.01,0.07])
     elif cosmo['de_model']=='constant_w':
         cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w'])
-        cosmo_par_string = ["$n_s$","$\Omega_m h^2$","$\Omega_{de} h^2$","$ln(A_s)$","$w_0$"]
+        cosmo_par_string = ["$n_s$",r"$\Omega_m h^2$",r"$\Omega_{de} h^2$","$ln(A_s)$","$w_0$"]
         cosmo_par_epsilons = np.array([0.002,0.0005,0.0001,0.0005,0.1,0.01])
     else:
         raise ValueError('unrecognized de_model '+str(cosmo['de_model']))
@@ -253,8 +254,8 @@ c_rot_eig_g = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[0][2].get_covar(),of_n
 #f_rot_eig_g = np.linalg.inv(c_rot_eig_g)
 #f_rot_eig_g = (f_rot_eig_g+f_rot_eig_g.T)/2.
 
-#assert(np.allclose(np.diagonal(c_rot_eig_no_mit/c_rot_eig_g),SS.eig_set[1][0][0]))
-#assert(np.allclose(np.diagonal(c_rot_eig_mit/c_rot_eig_g),SS.eig_set[1][1][0]))
+#assert np.allclose(np.diagonal(c_rot_eig_no_mit/c_rot_eig_g),SS.eig_set[1][0][0])
+#assert np.allclose(np.diagonal(c_rot_eig_mit/c_rot_eig_g),SS.eig_set[1][1][0])
 
 #f_rot_eig_mit2 = np.dot(rot_of_mit,np.dot(SS.f_set[1][2].get_fisher(),rot_of_mit.T))
 #f_rot_eig_mit2 = (f_rot_eig_mit2+f_rot_eig_mit2.T)/2.
@@ -263,7 +264,7 @@ c_rot_eig_g = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[0][2].get_covar(),of_n
 
 #m_mat = np.dot(chol_g_inv,np.dot(SS.f_set[1][2].get_fisher(),chol_g_inv.T))f
 from Super_Survey import make_ellipse_plot
-#make_ellipse_plot(np.array([c_rot_eig_g[-2:,-2:],c_rot_eig_no_mit[-2:,-2:],c_rot_eig_mit[-2:,-2:]]),np.array([[0,1,0],[1,0,0],[0,0,1]]),np.array([1.,1.,1.]),np.array(['g','no mit','mit']),np.array([0.0002,0.0025]),np.array(['p2','p1']),C,dchi2,adaptive_mult=1.05)
-#make_ellipse_plot(np.array([c_rot_eig_g,c_rot_eig_no_mit,c_rot_eig_mit]),np.array([[0,1,0],[1,0,0],[0,0,1]]),np.array([1.,1.,1.]),np.array(['g','no mit','mit']),np.array([5.,5.,5.,5.,5.,5.,5.,]),np.array(['p7','p6','p5','p4','p3','p2','p1']),C,dchi2,adaptive_mult=1.05)
-#make_ellipse_plot(np.array([c_rot_eig_g[-2:,-2:],c_rot_eig_no_mit[-2:,-2:],c_rot_eig_mit[-2:,-2:]]),np.array([[0,1,0],[1,0,0],[0,0,1]]),np.array([1.,1.,1.]),np.array(['g','no mit','mit']),np.array([5.,5.]),np.array(['p2','p1']),C,dchi2,adaptive_mult=1.05)
-make_ellipse_plot(np.array([c_rot_eig_g[-2:,-2:],c_rot_eig_no_mit[-2:,-2:],c_rot_eig_mit[-2:,-2:]]),np.array([[0,1,0],[1,0,0],[0,0,1]]),np.array([1.,1.,1.]),np.array(['g','no mit','mit']),np.array([5.,5.]),np.array(['p2','p1']),C,dchi2,adaptive_mult=1.05,include_diag=False)
+#make_ellipse_plot(np.array([c_rot_eig_g[-2:,-2:],c_rot_eig_no_mit[-2:,-2:],c_rot_eig_mit[-2:,-2:]]),np.array([[0,1,0],[1,0,0],[0,0,1]]),np.array([1.,1.,1.]),np.array(['g','no mit','mit']),np.array([0.0002,0.0025]),np.array(['p2','p1']),dchi2,adaptive_mult=1.05)
+#make_ellipse_plot(np.array([c_rot_eig_g,c_rot_eig_no_mit,c_rot_eig_mit]),np.array([[0,1,0],[1,0,0],[0,0,1]]),np.array([1.,1.,1.]),np.array(['g','no mit','mit']),np.array([5.,5.,5.,5.,5.,5.,5.,]),np.array(['p7','p6','p5','p4','p3','p2','p1']),dchi2,adaptive_mult=1.05)
+#make_ellipse_plot(np.array([c_rot_eig_g[-2:,-2:],c_rot_eig_no_mit[-2:,-2:],c_rot_eig_mit[-2:,-2:]]),np.array([[0,1,0],[1,0,0],[0,0,1]]),np.array([1.,1.,1.]),np.array(['g','no mit','mit']),np.array([5.,5.]),np.array(['p2','p1']),dchi2,adaptive_mult=1.05)
+make_ellipse_plot(np.array([c_rot_eig_g[-2:,-2:],c_rot_eig_no_mit[-2:,-2:],c_rot_eig_mit[-2:,-2:]]),np.array([[0,1,0],[1,0,0],[0,0,1]]),np.array([1.,1.,1.]),np.array(['g','no mit','mit']),np.array([5.,5.]),np.array(['p2','p1']),dchi2,adaptive_mult=1.05,include_diag=False)
