@@ -6,8 +6,8 @@ from spherical_geometry.polygon import SphericalPolygon
 import spherical_geometry.great_circle_arc as gca
 #from polygon_pixel_geo import get_Y_r_dict
 from ylm_utils_mpmath import get_Y_r_dict_central
-from ylm_utils import get_Y_r_dict
-from ylm_utils_mpmath import get_Y_r_dict as get_Y_r_dict4
+#from ylm_utils import get_Y_r_dict
+#from ylm_utils_mpmath import get_Y_r_dict as get_Y_r_dict4
 import alm_utils as au
 from geo import Geo
 import defaults
@@ -143,30 +143,30 @@ class PolygonGeo(Geo):
         Y_r_dict = get_Y_r_dict_central(np.max(ls))
 
 #for checking consistency of Y_r_dict2 and Y_r_dict
-        Y_r_dict2 = get_Y_r_dict(np.max(ls),np.zeros(1)+np.pi/2.,np.zeros(1))
-        #Y_r_dict3 = get_Y_r_dict3(np.max(ls),np.zeros(1)+np.pi/2.,np.zeros(1))
-        Y_r_dict4 = get_Y_r_dict4(np.max(ls),np.zeros(1)+np.pi/2.,np.zeros(1))
-        keys1 = sorted(Y_r_dict.keys())
-        keys2 = sorted(Y_r_dict2.keys())
-        #keys3 = sorted(Y_r_dict3.keys())
-        keys4 = sorted(Y_r_dict4.keys())
-        assert keys1==keys1
-        #assert keys1==keys3
-        assert keys1==keys4
-        n_k = len(keys1)
-        vals1 = np.zeros(n_k)
-        vals2 = np.zeros(n_k)
-        #vals3 = np.zeros(n_k)
-        vals4 = np.zeros(n_k)
-        for itr in xrange(0,n_k):
-            vals1[itr] = Y_r_dict[keys1[itr]]
-            vals2[itr] = Y_r_dict2[keys2[itr]]
-        #    vals3[itr] = Y_r_dict3[keys3[itr]]
-            vals4[itr] = Y_r_dict4[keys4[itr]]
-        assert np.allclose(vals1,vals2)
-        #assert np.allclose(vals1,vals3)
-        assert np.allclose(vals1,vals4)
-
+#        Y_r_dict2 = get_Y_r_dict(np.max(ls),np.zeros(1)+np.pi/2.,np.zeros(1))
+#        #Y_r_dict3 = get_Y_r_dict3(np.max(ls),np.zeros(1)+np.pi/2.,np.zeros(1))
+#        Y_r_dict4 = get_Y_r_dict4(np.max(ls),np.zeros(1)+np.pi/2.,np.zeros(1))
+#        keys1 = sorted(Y_r_dict.keys())
+#        keys2 = sorted(Y_r_dict2.keys())
+#        #keys3 = sorted(Y_r_dict3.keys())
+#        keys4 = sorted(Y_r_dict4.keys())
+#        assert keys1==keys1
+#        #assert keys1==keys3
+#        assert keys1==keys4
+#        n_k = len(keys1)
+#        vals1 = np.zeros(n_k)
+#        vals2 = np.zeros(n_k)
+#        #vals3 = np.zeros(n_k)
+#        vals4 = np.zeros(n_k)
+#        for itr in xrange(0,n_k):
+#            vals1[itr] = Y_r_dict[keys1[itr]]
+#            vals2[itr] = Y_r_dict2[keys2[itr]]
+#        #    vals3[itr] = Y_r_dict3[keys3[itr]]
+#            vals4[itr] = Y_r_dict4[keys4[itr]]
+#        assert np.allclose(vals1,vals2)
+#        #assert np.allclose(vals1,vals3)
+#        assert np.allclose(vals1,vals4)
+#####
         for l_itr in xrange(0,ls.size):
             ll=ls[l_itr]
             d_alm_table1[l_itr] = np.zeros((2*ll+1,self.n_v))

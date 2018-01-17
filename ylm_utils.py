@@ -152,17 +152,17 @@ def _alm_function(ll,mm,base,prefactor,cos_phi_m,sin_phi_m,args):
         args['a_lms'][(ll,-mm)] = (-1)**(mm)*np.sqrt(2.)*args['pixel_area']*prefactor*np.sum(base*sin_phi_m[mm])
 
 #alternate way of computing Y_r from the way in sph_functions
-def Y_r_2(ll,mm,theta,phi,known_legendre):
-    if (ll+np.abs(mm))>170:
-        raise ValueError('Scipy factorial will fail for n>170 because 171!>2^1024, need to use arbitrary precision or implement asymptotic form')
-    prefactor = np.sqrt((2.*ll+1.)/(4.*np.pi)*sp.misc.factorial(ll-np.abs(mm))/sp.misc.factorial(ll+np.abs(mm)))
-    base = (prefactor*(-1)**mm)*known_legendre[(ll,np.abs(mm))]
-    if mm==0:
-        return base
-    elif mm>0:
-        return base*np.sqrt(2.)*np.cos(mm*phi)
-    else:
-        return base*np.sqrt(2.)*np.sin(np.abs(mm)*phi)
+#def Y_r_2(ll,mm,theta,phi,known_legendre):
+#    if (ll+np.abs(mm))>170:
+#        raise ValueError('Scipy factorial will fail for n>170 because 171!>2^1024, need to use arbitrary precision or implement asymptotic form')
+#    prefactor = np.sqrt((2.*ll+1.)/(4.*np.pi)*sp.misc.factorial(ll-np.abs(mm))/sp.misc.factorial(ll+np.abs(mm)))
+#    base = (prefactor*(-1)**mm)*known_legendre[(ll,np.abs(mm))]
+#    if mm==0:
+#        return base
+#    elif mm>0:
+#        return base*np.sqrt(2.)*np.cos(mm*phi)
+#    else:
+#        return base*np.sqrt(2.)*np.sin(np.abs(mm)*phi)
 
 def get_Y_r_dict(l_max,thetas,phis):
     ytable,ls,ms = get_Y_r_table(l_max,thetas,phis)
@@ -188,14 +188,16 @@ def get_Y_r_dict_central(l_max):
     Y_lms = {(0,0):1./np.sqrt(4.*np.pi)}
     factorials = sp.misc.factorial(np.arange(0,2*l_max+1))
     for ll in xrange(1,l_max+1):
-        for mm in xrange(-l_max,0):
+        #check for range bug elsewhere
+        for mm in xrange(-ll,0):
             Y_lms[(ll,mm)] = 0.
         for nn in xrange(0,np.int(ll/2.)+1):
             Y_lms[(ll,ll-2*nn-1)] = 0.
             if 2*nn==ll:
-                Y_lms[(ll,ll-2*nn)] = (-1)**(nn+ll)*np.sqrt((2.*ll+1.)/(4.*np.pi)*(factorials[2*nn]/factorials[2*ll-2*nn]))*2**-ll*(factorials[(2*ll-2*nn)]/factorials[ll-nn]*1./factorials[nn])
+                #TODO was (-1)**(nn+ll) changed to match Y_r_dict check if correct
+                Y_lms[(ll,ll-2*nn)] = (-1)**(nn)*np.sqrt((2.*ll+1.)/(4.*np.pi)*(factorials[2*nn]/factorials[2*ll-2*nn]))*2**-ll*(factorials[(2*ll-2*nn)]/factorials[ll-nn]*1./factorials[nn])
             else:
-                Y_lms[(ll,ll-2*nn)] = (-1)**(nn+ll)*np.sqrt((2.*ll+1.)/(2.*np.pi)*(factorials[2*nn]/factorials[2*ll-2*nn]))*2**-ll*(factorials[(2*ll-2*nn)]/factorials[ll-nn]*1./factorials[nn])
+                Y_lms[(ll,ll-2*nn)] = (-1)**(nn)*np.sqrt((2.*ll+1.)/(2.*np.pi)*(factorials[2*nn]/factorials[2*ll-2*nn]))*2**-ll*(factorials[(2*ll-2*nn)]/factorials[ll-nn]*1./factorials[nn])
 
             if not np.isfinite(Y_lms[(ll,ll-2*nn)]):
                 raise ValueError('result not finite at l='+str(ll)+' m='+str(ll-2*nn)+' try decreasing l_max')

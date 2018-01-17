@@ -183,7 +183,7 @@ def Y_r(l,m,theta,phi):
         #    result=0
         #return result
     if m<0:
-        result =1j/np.sqrt(2)*(Y_lm(m,l,phi,theta) - (-1)**m*Y_lm(-m,l,phi,theta))
+        result =1j/np.sqrt(2)*(Y_lm(m,l,phi,theta) - (-1)**np.abs(m)*Y_lm(-m,l,phi,theta))
         #TODO check if eps check is done correctly
         result = np.real(result)
         #result[np.abs(result)<eps] = 0.

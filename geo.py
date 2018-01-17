@@ -128,6 +128,7 @@ class RectGeo(Geo):
 
 #same pixels at every redshift.
 class PixelGeo(Geo):
+    """generic pixelated geometry"""
     def __init__(self,zs,pixels,C,z_fine):
         """pixelated geomtery
             inputs:
@@ -148,6 +149,7 @@ class PixelGeo(Geo):
             total+=function(self.pixels[i,0],self.pixels[i,1])*self.pixels[i,2] #f(theta,phi)*A
         return total
 
+    #TODO should probably just use PolygonPixelGeo method
     def a_lm(self,l,m):
         """vectorized a_lm computation relies on vector Y_r"""
         alm = self.alm_table.get((l,m))
