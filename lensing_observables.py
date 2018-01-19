@@ -8,18 +8,18 @@ import shear_power as sp
 import lensing_weight as len_w
 import power_parameter_response as ppr
 class LensingPowerBase(object):
+    """Shared object to generate and store things that will be needed my multiple LensingObservable objects, such as the lensing weight functions"""
     def __init__(self,geo,ls,survey_id,C,cosmo_par_list,cosmo_par_epsilons,params=defaults.lensing_params,log_param_derivs=np.array([]),ps=np.array([]),nz_matcher=None):
-        r"""Shared object to generate and store things that will be needed my multiple LensingObservable objects, such as the lensing weight functions
-            inputs:
-                geo: a Geo object for the geometry
-                ls: the set of l bins to compute the sw observables on
-                survey_id: an identifier for the SWSurvey this object is associated with
-                cosmo_par_list: a list of the names of cosmological parameters to compute \partial{O_I}\partial{\Theta_i} with respect to
-                cosmo_par_epsilons: array of epsilons to use when calculating partial derivatives specified by cosmo_par_list
-                log_param_derivs: a boolean array with dimension matching cosmo_par_list, will do \partial{O_I}\partial{ln(\Theta_i)} for any True element. Optional.
-                ps: an in input lensing source distribution. Optional.
-                params: parameters
-                nz_matcher: an NZMatcher object
+        r"""inputs:
+            geo: a Geo object for the geometry
+            ls: the set of l bins to compute the sw observables on
+            survey_id: an identifier for the SWSurvey this object is associated with
+            cosmo_par_list: a list of the names of cosmological parameters to compute \partial{O_I}\partial{\Theta_i} with respect to
+            cosmo_par_epsilons: array of epsilons to use when calculating partial derivatives specified by cosmo_par_list
+            log_param_derivs: a boolean array with dimension matching cosmo_par_list, will do \partial{O_I}\partial{ln(\Theta_i)} for any True element. Optional.
+            ps: an in input lensing source distribution. Optional.
+            params: parameters
+            nz_matcher: an NZMatcher object
         """
         self.C=C
         self.geo = geo
@@ -44,12 +44,12 @@ class LensingPowerBase(object):
 
 #TODO observables should know their name
 class LensingObservable(SWObservable):
+    """Generic lensing observable, subclass only need to define a function handle self.len_handle for which obserable to use"""
     def __init__(self,len_pow,r1,r2,q1_handle,q2_handle):
-        """Generic lensing observable, subclass only need to define a function handle self.len_handle for which obserable to use
-            inputs:
-                len_pow: a LensingPowerBase object
-                r1,r2: [min r, max r] for the lensing weights to integrate over
-                q1_handle,q2_handle: function handles for QWeight objects, ie len_w.QShear
+        """inputs:
+            len_pow: a LensingPowerBase object
+            r1,r2: [min r, max r] for the lensing weights to integrate over
+            q1_handle,q2_handle: function handles for QWeight objects, ie len_w.QShear
         """
         self.len_pow = len_pow
         self.r1 = r1
@@ -87,11 +87,13 @@ class LensingObservable(SWObservable):
         return dO_dpars
 
 class ShearShearLensingObservable(LensingObservable):
+    """Shear shear lensing signal LensingObservable"""
     def __init__(self,len_pow,r1,r2):
-        """Shear shear lensing signal LensingObservable"""
+        """See LensingObservable"""
         LensingObservable.__init__(self,len_pow,r1,r2,len_w.QShear,len_w.QShear)
 
 class GalaxyGalaxyLensingObservable(LensingObservable):
+    """Galaxy galaxy lensing signal LensingObservable"""
     def __init__(self,len_pow,r1,r2):
-        """Galaxy galaxy lensing signal LensingObservable"""
+        """See LensingObservable"""
         LensingObservable.__init__(self,len_pow,r1,r2,len_w.QNum,len_w.QNum)

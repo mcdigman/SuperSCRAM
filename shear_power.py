@@ -2,6 +2,7 @@
 Handles lensing observable power spectrum
 """
 from warnings import warn
+import numpy as np
 from scipy.interpolate import interp1d,InterpolatedUnivariateSpline,RectBivariateSpline
 
 from power_response import dp_ddelta
@@ -9,16 +10,14 @@ from lensing_weight import QShear,QMag,QNum,QK
 from lensing_source_distribution import get_source_distribution
 from algebra_utils import trapz2
 
-import numpy as np
 import defaults
 
-#TODO create derivative class than can change whole cosmology
 #TODO check integral boundaries ok
 #TODO remove explicit cosmosis pmodel
 class ShearPower(object):
+    """handles lensing power spectra"""
     def __init__(self,C,zs,ls,omega_s,pmodel='halofit',ps=np.array([]),params=defaults.lensing_params,mode='power',nz_matcher=None):
         """
-            Handles lensing power spectra
             inputs:
                 C: CosmoPie object
                 zs: z grid
@@ -144,10 +143,10 @@ class ShearPower(object):
         ns[2] = ns_in[2]/trapz2((1.*(self.chis>=qs[1].chi_min)*(self.chis<=qs[1].chi_max)*self.ps),self.chis)
         ns[3] = ns_in[3]/trapz2((1.*(self.chis>=qs[1].chi_min)*(self.chis<=qs[1].chi_max)*self.ps),self.chis)
 
-        c_ac = Cll_q_q(self,qs[0],qs[2],rs[0]).Cll()#*np.sqrt(4.*np.pi)
-        c_bd = Cll_q_q(self,qs[1],qs[3],rs[1]).Cll()#*np.sqrt(4.*np.pi)
-        c_ad = Cll_q_q(self,qs[0],qs[3],rs[2]).Cll()#*np.sqrt(4.*np.pi)
-        c_bc = Cll_q_q(self,qs[1],qs[2],rs[3]).Cll()#*np.sqrt(4.*np.pi)
+        c_ac = Cll_q_q(self,qs[0],qs[2],rs[0]).Cll()
+        c_bd = Cll_q_q(self,qs[1],qs[3],rs[1]).Cll()
+        c_ad = Cll_q_q(self,qs[0],qs[3],rs[2]).Cll()
+        c_bc = Cll_q_q(self,qs[1],qs[2],rs[3]).Cll()
         cov_diag = 1./(self.omega_s*(2.*self.ls+1.)*delta_ls)*((c_ac+ns[0])*(c_bd+ns[2])+(c_ad+ns[1])*(c_bc+ns[3]))
         #(C13*C24+ C13*N24+N13*C24 + C14*C23+C14*N23+N14*C23+N13*N24+N14*N23)
         return cov_diag
@@ -169,9 +168,9 @@ class ShearPower(object):
 #        return tans
 
 class Cll_q_q(object):
+    """class for a generic lensing power spectrum"""
     def __init__(self,sp,q1s,q2s,corr_param=1.):
         """
-        class for a generic lensing power spectrum
             inputs:
                 sp: a ShearPower object
                 q1s: a QWeight object
@@ -193,43 +192,53 @@ class Cll_q_q(object):
         return self.integrand
 
 class Cll_sh_sh(Cll_q_q):
+    """Shear shear lensing power spectrum"""
     def __init__(self,sp,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
-        """Shear shear lensing power spectrum"""
+        """ sp: ShearPower object
+            chi_max1,chi_min1,chi_max2,chi_min2: maximum and minimum comoving distance for 1st and second window function
+        """
         Cll_q_q.__init__(self,sp,QShear(sp,chi_max=chi_max1,chi_min=chi_min1),QShear(sp,chi_max=chi_max2,chi_min=chi_min2))
 
 class Cll_g_g(Cll_q_q):
+    """Galaxy Galaxy lensing power spectrum"""
     def __init__(self,sp,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
-        """Galaxy Galaxy lensing power spectrum"""
+        "see Cll_sh_sh"""
         Cll_q_q.__init__(self,sp,QNum(sp,chi_max=chi_max1,chi_min=chi_min1),QNum(sp,chi_max=chi_max2,chi_min=chi_min2))
 
 class Cll_mag_mag(Cll_q_q):
+    """Magnification magnification lensing power spectrum"""
     def __init__(self,sp,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
-        """Magnification magnification lensing power spectrum"""
+        "see Cll_sh_sh"""
         Cll_q_q.__init__(self,sp,QMag(sp,chi_max=chi_max1,chi_min=chi_min1),QMag(sp,chi_max=chi_max2,chi_min=chi_min2))
 
 class Cll_k_k(Cll_q_q):
+    """Convergence convergence lensing power spectrum"""
     def __init__(self,sp,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
-        """Convergence convergence lensing power spectrum"""
+        "see Cll_sh_sh"""
         Cll_q_q.__init__(self,sp,QK(sp,chi_max=chi_max1,chi_min=chi_min1),QK(sp,chi_max=chi_max2,chi_min=chi_min2))
 
 class Cll_k_g(Cll_q_q):
+    """Convergence galaxy lensing power spectrum"""
     def __init__(self,sp,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
-        """Convergence galaxy lensing power spectrum"""
+        "see Cll_sh_sh"""
         Cll_q_q.__init__(self,sp,QK(sp,chi_max=chi_max1,chi_min=chi_min1),QNum(sp,chi_max=chi_max2,chi_min=chi_min2))
 
 class Cll_sh_mag(Cll_q_q):
+    """Shear magnification lensing power spectrum"""
     def __init__(self,sp,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
-        """Shear magnification lensing power spectrum"""
+        "see Cll_sh_sh"""
         Cll_q_q.__init__(self,sp,QShear(sp,chi_max=chi_max1,chi_min=chi_min1),QMag(sp,chi_max=chi_max2,chi_min=chi_min2))
 
 class Cll_mag_g(Cll_q_q):
+    """Magnification galaxy lensing power spectrum"""
     def __init__(self,sp,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
-        """Magnification galaxy lensing power spectrum"""
+        "see Cll_sh_sh"""
         Cll_q_q.__init__(self,sp,QMag(sp,chi_max=chi_max1,chi_min=chi_min1),QNum(sp,chi_max=chi_max2,chi_min=chi_min2))
 
 class Cll_sh_g(Cll_q_q):
+    """Shear galaxy lensing power spectrum"""
     def __init__(self,sp,chi_max1=np.inf,chi_max2=np.inf,chi_min1=0.,chi_min2=0.):
-        """Shear galaxy lensing power spectrum"""
+        "see Cll_sh_sh"""
         Cll_q_q.__init__(self,sp,QShear(sp,chi_max=chi_max1,chi_min=chi_min1),QNum(sp,chi_max=chi_max2,chi_min=chi_min2),corr_param=sp.r_corr())
 
 

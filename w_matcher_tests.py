@@ -1,27 +1,29 @@
 """tests of WMatcher class"""
 #pylint: disable=W0621
 from scipy.interpolate import InterpolatedUnivariateSpline
+import numpy as np
+import pytest
 
 import defaults
-
 import cosmopie as cp
-import numpy as np
 from w_matcher import WMatcher
-import pytest
 
 #insert a random test to better test grid effects
 w0_list = [-0.8,np.random.uniform(-1.,-0.8),-1.0,np.random.uniform(-1.2,-1.),-1.2]
 @pytest.fixture(params=w0_list)
 def w0_test(request):
+    """get w0 for test"""
     return request.param
 
 wa_list = [-0.5,np.random.uniform(0.,-0.5),0.,np.random.uniform(0.,0.5),0.5]
 @pytest.fixture(params=wa_list)
 def wa_test(request):
+    """get wa for test"""
     return request.param
 
 @pytest.fixture()
 def cosmo_input():
+    """get cosmology for test"""
     cosmo_start = defaults.cosmology.copy()
     cosmo_start['w'] = -1
     cosmo_start['de_model']='constant_w'
@@ -33,8 +35,9 @@ def cosmo_input():
     zs = 1./a_grid-1.
 
     return [cosmo_start,C_start,params,wm,a_grid,zs]
-#TODO also check pow_mult consistency
+
 def test_const_match(w0_test,cosmo_input):
+    """test w_matcher gets constant w cosmology correct"""
     cosmo_start = cosmo_input[0]
     wm = cosmo_input[3]
     a_grid = cosmo_input[4]
@@ -92,6 +95,7 @@ def test_const_match(w0_test,cosmo_input):
     assert np.allclose(mult_b,mult_c)
 
 def test_jdem_w0wa_match(w0_test,wa_test,cosmo_input):
+    """check w_matcher gets w0wa cosmology compatible with binned w(z) cosmology"""
     cosmo_start = cosmo_input[0]
     wm = cosmo_input[3]
     zs = cosmo_input[5]
@@ -128,6 +132,7 @@ def test_jdem_w0wa_match(w0_test,wa_test,cosmo_input):
     #depends on setting of default value for jdem at end
 
 def do_casarini_match_test(cosmo_input):
+    """check code matches results extracted from a figure"""
     cosmo_start = cosmo_input[0]
     wm = cosmo_input[3]
     zs = cosmo_input[5]
@@ -209,8 +214,6 @@ if __name__=='__main__':
 
         if do_plots:
             import matplotlib.pyplot as plt
-
-
 
         if do_convergence_test_w0wa:
             cosmo_match_w0wa = cosmo_start.copy()

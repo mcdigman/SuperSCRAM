@@ -3,14 +3,11 @@
     spherical Bessel functions
     the zeros of the Bessel functions
     the real spherical harmonics
-    the derivatives of the Bessel function
     J. E. McEwen (c) 2016
 '''
 
-from warnings import warn
 import numpy as np
 
-from scipy.misc import factorial2
 from scipy.special import sph_harm as Y_lm, jv
 
 #eps =np.finfo(float).eps
@@ -21,97 +18,11 @@ data=np.loadtxt('data/spherical_bessel_zeros_527.dat')
 data[data<0.] = np.inf
 
 l_max_zeros = data.shape[0]-1
-def sph_Bessel_down(n,z):
-    n_start=n + int(np.sqrt(n*40)/2.)
-
-    j2=0
-    j1=1
-
-    for i in xrange(n_start,-1,-1):
-    # for loop until n=0, so that you can renormalize
-        j0=(2*i+3)/z*j1 - j2
-        j2=j1
-        j1=j0
-        if i==n:
-            result=j0
-
-        j0_true=np.sin(z)/z
-    # renormalize and return result
-    return result*j0_true/j0
-#print 'this is eps', eps
-#print 'check eps', 1+eps
-def sph_Bessel_array(n,z):
-    z=np.asarray(z, dtype=float)
-    result=np.zeros(z.size)
-
-    # id for limiting cases
-    id1=np.where( z <= Z_CUT)[0]
-    id2=np.where( z > Z_CUT)[0]
-
-    if id1.size !=0:
-        if 2*n+1>=301:
-            warn('factorial2(2*n+1) will be too close to 0. for floating point precision, using 0.')
-            result[id1] = 0.
-        else:
-            result[id1]= z[id1]**n/factorial2(2*n+1, exact=True)
-    if n==0:
-        result[id2]=np.sin(z[id2])/z[id2]
-    if n==1:
-        result[id2]=np.sin(z[id2])/z[id2]**2 - np.cos(z[id2])/z[id2]
-    if n==2:
-        result[id2]=(3/z[id2]**3 -1/z[id2])*np.sin(z[id2]) -3/z[id2]**2*np.cos(z[id2])
-    if n >2:
-
-        if n > np.real(z):
-            return sph_Bessel_down(n,z)
-
-        else:
-            j0=np.sin(z[id2])/z[id2]
-            j1=np.sin(z[id2])/z[id2]**2 - np.cos(z[id2])/z[id2]
-
-            j=np.zeros(id2.size)
-            for i in xrange(1,n):
-                j=(2*i+1)/z[id2]*j1-j0
-                j0=j1
-                j1=j
-
-            result[id2]=j
-
-        return result
-
-def sph_Bessel(n,z):
-    # limiting case for z near zero
-    if  z <= Z_CUT:
-        if 2*n+1>=301:
-            warn('factorial2(2*n+1) will be too close to 0. for floating point precision, using 0.')
-            return 0.
-        else:
-            return z**n/factorial2(2*n+1, exact=True)
-    if n==0:
-        return np.sin(z)/z
-    if n==1:
-        return np.sin(z)/z**2 - np.cos(z)/z
-    if n==2:
-        return (3/z**3 -1/z)*np.sin(z) -3/z**2*np.cos(z)
-    if n >2:
-
-        if n > np.real(z):
-            return sph_Bessel_down(n,z)
-
-        else :
-        # do upward recursion
-            j0=np.sin(z)/z
-            j1=np.sin(z)/z**2 - np.cos(z)/z
-
-            for i in xrange(1,n):
-                j=(2*i+1)/z*j1-j0
-                j0=j1
-                j1=j
-            return j
 
 #TODO make sure array size logic is consistent
-#TODO support vector n
+#TODO check if warning necessary at high n
 def j_n(n,z):
+    """spherical bessel function n for array of z values"""
     z = np.asarray(z)
     #j_n is well defined if z is zero, must avoid dividing by zero
     if np.any(z==0.):
@@ -130,51 +41,25 @@ def j_n(n,z):
     else:
         return np.sqrt(np.pi/(2*z))*jv(n+0.5,z)
 
-def dj_n(n,z):
 
-    z=np.asarray(z)
-
-    if z.size==1:
-        a=j_n(n,z)
-        b=j_n(n+1,z)
-        c=j_n(n-1,z)
-        return (c-b)/2. -a/2./z
-
-    else:
-        a=j_n(n,z)
-        b=j_n(n+1,z)
-        c=j_n(n-1,z)
-        return (c-b)/2. -a/2./z
-
-#return all zeros in a row smaller than a cut
 
 def jn_zeros_cut(l,q_lim):
+    """return all spherical bessel function zeros for an l value smaller than a cut value q_lim"""
     if l<=l_max_zeros:
         return data[l,data[l]<q_lim]
     else:
         raise IndexError('l is greater than the number of ls in the bessel functions lookup table,choose lower ceiling or expand the lookup table')
 
-def jn_zeros(l,n_zeros):
-    if l<=l_max_zeros:
-        return data[l,:n_zeros]
-    else:
-        raise IndexError('l is greater than the number of ls in the bessel functions lookup table,choose lower ceiling or expand the lookup table')
-
-def dJ_n(n,z):
-    # check this returns correct value for derivative of Big J_n(z)
-    return (n/z)*jv(n,z)-jv(n+1,z)
-
 def Y_r(l,m,theta,phi):
-    # real spherical harmonics, using scipy spherical harmonic functions
-    # the scipy spherical harmonic inputs are ordered as
-    # Y_lm(m,l,phi,theta)
+    """ real spherical harmonics, using scipy spherical harmonic functions
+        the scipy spherical harmonic inputs are ordered as
+        Y_lm(m,l,phi,theta)
+    """
     if np.abs(m) > l:
         print 'You must have |m| <=l for spherical harmonics.'
         raise ValueError('Please check the function values you sent into Y_r in module sph_functions.py')
         #sys.exit()
 
-    if m==0.0:
-        return np.real(Y_lm(m,l,phi,theta))
         #if np.real(result) < eps:
         #    result =0
         #return result
@@ -185,24 +70,20 @@ def Y_r(l,m,theta,phi):
     if m<0:
         result =1j/np.sqrt(2)*(Y_lm(m,l,phi,theta) - (-1)**np.abs(m)*Y_lm(-m,l,phi,theta))
         #TODO check if eps check is done correctly
-        result = np.real(result)
         #result[np.abs(result)<eps] = 0.
         #if np.absolute(np.real(result)) < eps:
         #    result=0
         #return np.sqrt(2)*(-1)**m*np.imag(Y_lm(m,l,phi,theta))
-        return result
-    if m>0:
+        return np.real(result)
+    elif m>0:
         result =1/np.sqrt(2)*(Y_lm(-m,l,phi,theta)  + (-1)**m*Y_lm(m,l,phi,theta))
-        result = np.real(result)
+        return np.real(result)
+    else:
+        return np.real(Y_lm(m,l,phi,theta))
         #result[np.abs(result)<eps] = 0.
         #return np.sqrt(2)*(-1)**m*np.real(Y_lm(m,l,phi,theta))
         #if np.absolute(np.real(result)) < eps:
         #    result=0
-        return result
-
-#Daniel added - radial part of tidal force
-def S_rr(l,m,theta,phi,k,r):
-    return (Y_r(l,m,theta,phi)/4.) * (2*j_n(l,k*r) - j_n(l+2,k*r) - j_n(l-2,k*r))
 
 #if __name__=="__main__":
 #

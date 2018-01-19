@@ -201,19 +201,16 @@ class HalofitPk(object):
 
 
     def D2_L(self,rk,z):
-        # the linear power spectrum
+        """ the linear power spectrum"""
         if not isinstance(z,np.ndarray):
             return self.C.G_norm(z)**2*self.p_interp(rk)
         else:
             return np.outer(self.p_interp(rk),self.C.G_norm(z)**2)
-    #def D2_L(self,rk,z):
-    #   rk=np.asarray(rk)
-    #   return self.C.G_norm(z)**2*self.p_cdm(rk)
 
     #old way,obsolete
     def p_cdm(self,rk):
-        # unormalized power spectrum
-        # cf Annu. Rev. Astron. Astrophys. 1994. 32: 319-70
+        """ unormalized power spectrum
+            cf Annu. Rev. Astron. Astrophys. 1994. 32: 319-70"""
         rk = np.asarray(rk)
         p_index = 1.
         rkeff=0.172+0.011*np.log(self.gams/0.36)*np.log(self.gams/0.36)
@@ -384,84 +381,9 @@ class HalofitPk(object):
 
     #TODO use or eliminate as obsolete
     def P_NL(self,k,z,return_components = False):
+        """Nonlinear power spectrum"""
         if return_components:
             pnl,pq,ph,plin=self.D2_NL(k,z,return_components)
             return pnl/k**3*(2*np.pi**2), pq, ph, plin/k**3*(2*np.pi**2)
         else:
             return self.D2_NL(k,return_components)/k**3*(2*np.pi**2)
-
-
-
-#if __name__=="__main__":
-#
-#                import cosmopie as cp
-#                cosmology={'Omegabh2' :0.02230,
-#                                 'Omegach2' :0.1188,
-#                                    'Omegamh2' : 0.14170,
-#                                 'OmegaL'   : .6911,
-#                                 'Omegam'   : .3089,
-#                                 'H0'       : 67.74,
-#                                 'sigma8'   : .8159,
-#                                 'h'        :.6774,
-#                                 'Omegak'   : 0.0, # check on this value
-#                                 'Omegar'   : 0.0 # check this value too
-#                                 }
-#
-#                h=.6774
-#                d1=np.loadtxt('camb_m_pow_l.dat')
-#                d2=np.loadtxt('Pk_Planck15.dat')
-#                k2=d2[:,0]; P2=d2[:,1]
-#                k=d1[:,0]; P1=d1[:,1]
-#
-#                #k=np.logspace(-2,2,500)
-#                CP=cp.CosmoPie(cosmology=defaults.cosmology)
-#                CP.k = k_lin
-#                do_k_fix_test=True
-#                if do_k_fix_test:
-#                    from camb_power import camb_pow
-#                    camb_params=defaults.camb_params.copy()
-#                    camb_params['maxkh']=10.
-#                    camb_params['maxk']=10.
-#                    k_lin,P_lin = camb_pow(defaults.cosmology,camb_params=camb_params)
-#                    params1 = defaults.halofit_params.copy()
-#                    params1['k_fix']=10000.
-#                    params2=params1.copy()
-#                    params2['k_fix']=500. #results look good at least to 500, probably can get away with lower k_fix
-#
-#                    hf1=HalofitPk(CP,P_lin,halofit_params=params1)
-#                    P_nl_1=hf1.D2_NL(k_lin,0.)*np.pi**2*2/k_lin**3
-#                    hf2=HalofitPk(CP,P_lin,halofit_params=params2)
-#                    P_nl_2=hf2.D2_NL(k_lin,0.)*np.pi**2*2/k_lin**3
-#
-#                    print "avg deviation:",np.average(np.abs((P_nl_2)/(P_nl_1)-1.))
-#                    print "max deviation:",np.max(np.abs((P_nl_2)/(P_nl_1)-1.))
-#
-#
-#
-#                do_time_test=False
-#                if do_time_test:
-#                    for itr in xrange(0,5000):
-#                        HF2=HalofitPk(CP,P2)
-#
-#                do_plot_test=False
-#                if do_plot_test:
-#                    HF=HalofitPk(CP,P1)
-#                    Plin=HF.D2_L(k,0.)*np.pi**2*2/k**3
-#                    P=HF.D2_NL(k,0.)*np.pi**2*2/k**3
-#
-#
-#                    import matplotlib.pyplot as plt
-#
-#                    ax=plt.subplot(111)
-#                    ax.set_xscale('log')
-#                    ax.set_yscale('log')
-#                    ax.set_xlim(1e-3,100)
-#
-#                    ax.plot(k,P, label='halofit')
-#                    ax.plot(k,Plin, label='linear')
-#                    ax.plot(k,P1, label='class ')
-#                    ax.plot(k2,HF2.D2_NL(k2,0.)*np.pi**2*2/k2**3, '--')
-#
-#                    plt.legend(loc=1)
-#                    plt.grid()
-#                  #  plt.show()

@@ -3,9 +3,9 @@ Abstract class for a short wavelength observable
 """
 
 class SWObservable(object):
+    """short wavelength observable abstract class"""
     def __init__(self,survey_id,dim=0):
         """
-            short wavelength observable abstract class
             inputs:
                 survey_id: an id for the survey this observable is associated with
                 dim: the number of dimensions for this observable, optional if subclass overrides get_dimension

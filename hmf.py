@@ -4,18 +4,25 @@
 
 from scipy.interpolate import interp1d,RectBivariateSpline,InterpolatedUnivariateSpline
 from scipy.integrate import cumtrapz
-from algebra_utils import trapz2
-
 import numpy as np
+from algebra_utils import trapz2
 
 import defaults
 
 
 #TODO determine if useful to add    arXiv:astro-ph/9907024 functionality
 class ST_hmf(object):
+    """Sheth Tormen Halo Mass Function"""
     def __init__(self,C, delta_bar=None,params=defaults.hmf_params):
-
-        self.A=0.3222; self.a=0.707; self.p=0.3
+        """ C: a CosmoPie
+            delta_bar: mean density fluctuation
+            params:
+                log10_min_mass,log10_max_mass: log10(minimum/maximum mass to go to)
+                n_grid: number of grid points for mass
+        """
+        self.A=0.3222
+        self.a=0.707
+        self.p=0.3
 
         self.params = params
         # log 10 of the minimum and maximum halo mass
@@ -75,11 +82,9 @@ class ST_hmf(object):
             self.f_norm_grid = self.f_norm(self.G_grid)
             self.f_norm_cache = InterpolatedUnivariateSpline(self.G_grid[::-1],self.f_norm_grid[::-1],k=3,ext=2)
 
-    #NOTE most of these methods would benefit from caching their results for a grid of G and mass, if time becomes a problem
-
-    #get normalization factor to ensure all mass is in a halo
-    #accepts either a numpy array or a scalar input for G
     def f_norm(self,G):
+        """ get normalization factor to ensure all mass is in a halo
+            accepts either a numpy array or a scalar input for G"""
         if isinstance(G,np.ndarray):
             nu=np.outer(self.nu_array,1./G**2)
             sigma_inv=np.outer(1./self.sigma,1./G**2)
@@ -90,9 +95,9 @@ class ST_hmf(object):
         norm=trapz2(f,np.log(sigma_inv))
         return norm
 
-    #gets the normalization for bias b(r) for Sheth-Tormen mass function
-    #supports numpy array or scalar for G
     def bias_norm(self,G):
+        """ gets the normalization for bias b(r) for Sheth-Tormen mass function
+            supports numpy array or scalar for G"""
         if isinstance(G,np.ndarray):
             nu=np.outer(self.nu_array,1./G**2)
         else:
@@ -103,20 +108,20 @@ class ST_hmf(object):
         norm=trapz2(f*bias,nu)
         return norm
 
-    #return bias as a function of a numpy matrix nu
     def bias_nu(self,nu):
+        """return bias as a function of a numpy matrix nu"""
         return 1. + (self.a*nu-1.)/self.delta_c + 2.*self.p/(self.delta_c*(1.+(self.a*nu)**self.p))
 
-    #return f as a function of a numpy matrix nu
     def f_nu(self,nu):
+        """return f as a function of a numpy matrix nu"""
         return self.A*np.sqrt(2.*self.a/np.pi)*(1. + (1./self.a/nu)**self.p)*np.sqrt(nu)*np.exp(-self.a*nu/2.)
 
 
-    #gets Sheth-Tormen mass function normalized so all mass is in a halo
-    #implements equation 7 in arXiv:astro-ph/0005260
-    #both M and G can be numpy arrays
     def f_sigma(self,M,G,norm_in=None):
-        #renormalizing for input mass range is optional
+        """ gets Sheth-Tormen mass function normalized so all mass is in a halo
+            implements equation 7 in arXiv:astro-ph/0005260
+            both M and G can be numpy arrays
+            renormalizing for input mass range is optional"""
         if norm_in is None and self.f_norm_overwride:
             norm=self.f_norm_cache(G)
         else:
@@ -134,10 +139,10 @@ class ST_hmf(object):
         else:
             return f
 
-    #get Sheth-Tormen mass function
-    #implements equation 3 in   arXiv:astro-ph/0607150
-    #supports M and G to be numpy arrays or scalars
     def mass_func(self,M,G):
+        """ get Sheth-Tormen mass function
+            implements equation 3 in   arXiv:astro-ph/0607150
+            supports M and G to be numpy arrays or scalars"""
         f=self.f_sigma(M,G)
         sigma=self.sigma_of_M(M)
         dsigma_dM=self.dsigma_dM_of_M(M)
@@ -149,31 +154,31 @@ class ST_hmf(object):
         return sigma,f,mf
 
 
-    #gets Sheth-Tormen dn/dM as a function of G
-    #both M and G can be numpy arrays or scalars
     def dndM_G(self,M,G):
+        """ gets Sheth-Tormen dn/dM as a function of G
+            both M and G can be numpy arrays or scalars"""
         _,_,mf=self.mass_func(M,G)
         return mf
 
-    #gets Sheth-Tormen dn/dM as a function of z
-    #both M and z can be numpy arrays or scalars
     def dndM(self,M,z):
+        """ gets Sheth-Tormen dn/dM as a function of z
+            both M and z can be numpy arrays or scalars"""
         G=self.Growth(z)
         _,_,mf=self.mass_func(M,G)
         return mf
 
     def M_star(self):
+        """get M(nu=1.0)"""
         return self.M_of_nu(1.0)
 
-    #get Sheth-Tormen bias as a function of z
     def bias(self,M,z,norm_in=None):
+        """get Sheth-Tormen bias as a function of z"""
         G=self.Growth(z)
         self.bias_G(M,G,norm_in=norm_in)
 
-    #get bias as a function of G
-    #implements arXiv:astro-ph/9901122 eq 12
-    #TODO add more bias calculation options
     def bias_G(self,M,G,norm_in=None):
+        """get bias as a function of G
+        implements arXiv:astro-ph/9901122 eq 12"""
         if norm_in is None and self.b_norm_overwride:
             norm=self.b_norm_cache(G)
         else:
@@ -189,11 +194,11 @@ class ST_hmf(object):
         else:
             return bias
 
-    #get b(z)n(z) for Sheth Tormen mass function
-    #min_mass can be a function of z or a constant
-    #if min_mass is a function of z it should be an array of the same size as z
-    #z can be scalar or an array
     def bias_n_avg(self,min_mass,z):
+        """ get b(z)n(z) for Sheth Tormen mass function
+            min_mass can be a function of z or a constant
+            if min_mass is a function of z it should be an array of the same size as z
+            z can be scalar or an array"""
         if isinstance(min_mass,np.ndarray):
             if not min_mass.size == z.size:
                 raise ValueError('min_mass and z must be the same size')
@@ -228,11 +233,11 @@ class ST_hmf(object):
 
             return trapz2(b_array*mf,mass)
 
-    #M is lower cutoff mass
-    #min_mass can be a function of z or a constant
-    #if min_mass is a function of z it should be an array of the same size as z
-    #z can be scalar or an array
     def n_avg(self,min_mass,z):
+        """ M is lower cutoff mass
+            min_mass can be a function of z or a constant
+            if min_mass is a function of z it should be an array of the same size as z
+            z can be scalar or an array"""
         if isinstance(min_mass,np.ndarray) and isinstance(z,np.ndarray):
             if not min_mass.size == z.size:
                 raise ValueError('min_mass and z must be the same size')

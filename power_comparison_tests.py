@@ -1,28 +1,31 @@
 """test consistency of different ways of getting power spectrum"""
 #pylint: disable=W0621
 import numpy as np
-import matter_power_spectrum as mps
-import defaults
-from scipy.interpolate import InterpolatedUnivariateSpline
-from camb_power import camb_pow
-import camb
-import cosmopie as cp
 import pytest
+from scipy.interpolate import InterpolatedUnivariateSpline
+import camb
+
+import defaults
+from camb_power import camb_pow
+import matter_power_spectrum as mps
+import cosmopie as cp
 
 #test h independence of code, self consistent handling of h
 #note my code does not recover the low k dependence of the transfer functions on z
 test_list = [[False,False,'halofit'],[False,True,'linear'],[False,True,'halofit']]
 @pytest.fixture(params=test_list)
 def param_set(request):
+    """choose params from test_list"""
     return request.param
 
-#run over all possible params, including unused ones/params that should not matter for robustness
 vary_list = defaults.cosmology.keys()
 @pytest.fixture(params=vary_list)
 def param_vary(request):
+    """iterate over all possible params, including unused ones/params that should not matter for robustness"""
     return request.param
 
 def test_vary_1_parameter(param_set,param_vary):
+    """test variation of parameters for halofit and linear match expectations from camb"""
     atol_rel=1.e-8
     rtol = 3.e-3
     eps = 0.01

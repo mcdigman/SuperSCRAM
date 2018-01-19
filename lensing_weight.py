@@ -5,9 +5,9 @@ import numpy as np
 from algebra_utils import trapz2
 
 class QWeight(object):
+    """abstract class for weight function"""
     def __init__(self,chis,qs,chi_min=0.,chi_max=np.inf):
-        """abstract class for weight function
-            inputs:
+        """ inputs:
                 chis: an array of comoving distances
                 qs: the weight function at each comoving distance
                 chi_min: the minimum comoving distance to use in integrations
@@ -19,11 +19,12 @@ class QWeight(object):
         self.qs = qs
 
 class QShear(QWeight):
+    """weight function for a shear observable as in ie arXiv:1302.2401v2"""
     def __init__(self,sp,chi_min=0.,chi_max=np.inf,mult=1.):
-        """weight function for a shear observable as in ie arXiv:1302.2401v2
-            inputs:
+        """ inputs:
                 sp: a ShearPower object
                 mult: a constant multiplier for the weight function
+                chi_min,chi_max: minimum and maximum comoving distances
         """
         qs = 3./2.*(sp.C.H0/sp.C.c)**2*sp.C.Omegam*sp.chi_As/sp.sc_as*self.gs(sp,chi_max=chi_max,chi_min=chi_min)*mult
         QWeight.__init__(self,sp.chis,qs,chi_min=chi_min,chi_max=chi_max)
@@ -49,19 +50,22 @@ class QShear(QWeight):
         return g_vals
 
 class QMag(QShear):
+    """weight function for magnification, just shear weight function*2 now"""
     def __init__(self,sp,chi_max=np.inf,chi_min=0.):
-        """weight function for magnification, just shear weight function*2 now"""
+        """see QShear"""
         QShear.__init__(self,sp,chi_max=chi_max,chi_min=chi_min,mult=2.)
 
 
 class QK(QShear):
+    """weight function for convergence, just shear weight function now"""
     def __init__(self,sp,chi_max=np.inf,chi_min=0.):
-        """weight function for convergence, just shear weight function now"""
+        """see QShear"""
         QShear.__init__(self,sp,chi_max=chi_max,chi_min=chi_min,mult=1.)
 
 class QNum(QWeight):
     """weight function for galaxy lensing, as in ie arXiv:1302.2401v2"""
     def __init__(self,sp,chi_max=np.inf,chi_min=0.):
+        """see QShear"""
         q = np.zeros((sp.n_z,sp.n_l))
         self.b = self.bias(sp)
         for i in xrange(0,sp.n_z):

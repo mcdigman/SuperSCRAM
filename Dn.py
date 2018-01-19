@@ -2,27 +2,27 @@
 between two survey geometries, as described in the paper"""
 
 from warnings import warn
+import numpy as np
+
 from hmf import ST_hmf
 from nz_candel import NZCandel
-from nz_lsst import NZLSST
 from lw_observable import LWObservable
 from algebra_utils import trapz2
 from polygon_geo import PolygonGeo
 from polygon_pixel_geo import PolygonPixelGeo
 
-import numpy as np
 import fisher_matrix as fm
 
 class DNumberDensityObservable(LWObservable):
+    """An observable for the difference in galaxy number density between two bins"""
     def __init__(self,geos,params,survey_id, C,basis,nz_params1,nz_params2):
-        """
-            An observable for the difference in galaxy number density between two bins
-            inputs:
+        """ inputs:
                 geos: a numpy array of Geo objects
                 params: a dict of parameters
                 survey_id: an id for the associated LWSurvey
                 C: as CosmoPie object
                 nz_params1,nz_params2: parameters for the nz_matcher objects to get
+                    nz_params as needed by NZCandel
         """
         print "Dn: initializing"
         min_mass = params['M_cut']
@@ -51,7 +51,8 @@ class DNumberDensityObservable(LWObservable):
 
         self.mf=ST_hmf(self.C)
         self.nzc_1 = NZCandel(self.nz_params1)
-        self.nzc_2 = NZLSST(self.nzc_1.z_grid,self.nz_params2)
+        #self.nzc_2 = NZLSST(self.nzc_1.z_grid,self.nz_params2)
+        self.nzc_2 = NZCandel(self.nz_params2)
         self.n_bins = self.geo1.fine_indices.shape[0]
         if not self.n_bins==self.geo2.fine_indices.shape[0]:
             warn("size of geo1 "+str(self.n_bins)+" incompatible with size of geo2 "+str(self.geo2.fine_indices.shape[0]))

@@ -3,11 +3,11 @@
 #Test numeric integral compared to mpmath arbitrary precision
 #Both the numeric and mpmath results should agree; they are both trustworthy, although the numerical method is still potentially more robust
 import numpy as np
-from geo import RectGeo
-#import unittest
 import pytest
-import sph_klim as sph
 import mpmath
+
+from geo import RectGeo
+import sph_klim as sph
 from sph_functions import jn_zeros_cut
 from cosmopie import CosmoPie
 import defaults

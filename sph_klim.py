@@ -20,11 +20,10 @@ eps=np.finfo(float).eps
 
 #TODO test analytic result for power law power spectrum
 class SphBasisK(LWBasis):
+    """ get the long wavelength basis with spherical bessel functions described in the paper
+        basis modes are selected by the k value of the bessel function zero, which approximates order of importance"""
     def __init__(self,r_max,C,k_cut=2.0,l_ceil=100,params=defaults.basis_params):#,geometry,CosmoPie):
-
-        """ get the long wavelength basis with spherical bessel functions described in the paper
-            basis modes are selected by the k value of the bessel function zero, which approximates order of importance
-            inputs:
+        """ inputs:
                 r_max: the maximum radius of the sector
                 C: CosmoPie object
                 k_cut: cutoff k value for mode selection
@@ -121,7 +120,7 @@ class SphBasisK(LWBasis):
                     #TODO convergence test
                     #note: this integrand is highly oscillatory, and some integration methods may produce inaccurate results,
                     #especially for off diagonal elements. Tightly sampled trapezoidal rule is at least stable, be careful switching to anything else
-                    self.C_compact[ll][b,d]=coeff*trapz2(integrand1/((k**2-kk[b]**2)*(k**2-kk[d]**2)),dx=self.dk,given_dx=True) #check coefficient
+                    self.C_compact[ll][b,d]=coeff*trapz2(integrand1/((k**2-kk[b]**2)*(k**2-kk[d]**2)),dx=self.dk) #check coefficient
                     self.C_compact[ll][d,b]=self.C_compact[ll][b,d]
 
         print "sph_klim: finished calculating covars"
@@ -146,39 +145,41 @@ class SphBasisK(LWBasis):
         return self.n_l
 
     def get_covar_array(self):
+        """get the covariance matrix for the basis as an array"""
         result = np.zeros((self.C_id.shape[0],self.C_id.shape[0]),order='F')
         itr_ll = 0
         for ll in xrange(0,self.n_l):
             n_k = self.C_compact[ll].shape[0]
-            for m_itr in xrange(0,2*ll+1):
+            for _m_itr in xrange(0,2*ll+1):
                 result[itr_ll:itr_ll+n_k,itr_ll:itr_ll+n_k]=self.C_compact[ll]
                 itr_ll+=n_k
         return result
 
     def get_fisher_array(self):
+        """get the fisher matrix for the basis as an array"""
         result = np.zeros((self.C_id.shape[0],self.C_id.shape[0]),order='F')
         itr_ll = 0
         for ll in xrange(0,self.n_l):
             n_k = self.C_compact[ll].shape[0]
             res = spl.solve(self.C_compact[ll],np.identity(n_k),sym_pos=True,lower=True,check_finite=False,overwrite_b=True)
             res = (res+res.T)/2.
-            for m_itr in xrange(0,2*ll+1):
+            for _m_itr in xrange(0,2*ll+1):
                 result[itr_ll:itr_ll+n_k,itr_ll:itr_ll+n_k] = res
                 itr_ll+=n_k
         return result
 
     def get_cov_cholesky_array(self):
+        """get cholesky decomposition of covariance matrix as an array"""
         result = np.zeros((self.C_id.shape[0],self.C_id.shape[0]),order='F')
         itr_ll = 0
         for ll in xrange(0,self.n_l):
             n_k = self.C_compact[ll].shape[0]
             res = cholesky_inplace(self.C_compact[ll],inplace=False,lower=True)
-            for m_itr in xrange(0,2*ll+1):
+            for _m_itr in xrange(0,2*ll+1):
                 result[itr_ll:itr_ll+n_k,itr_ll:itr_ll+n_k]=res
                 itr_ll+=n_k
         return result
 
-    #TODO storing packed representation of self.C_alpha_beta and generating the FisherMatrix object here would be more memory efficient, safer so does not mutate self.C_alpha_beta
     def get_fisher(self,initial_state=fm.REP_COVAR):
         """Get FisherMatrix object for the covariance matrix computed by the basis."""
         if initial_state==fm.REP_FISHER:
@@ -211,7 +212,7 @@ class SphBasisK(LWBasis):
                     break
             #if n_break == 0:
             #    continue
-            for m_itr in xrange(0,2*ll+1):
+            for _m_itr in xrange(0,2*ll+1):
                 variance+=np.dot(v[itr_ll:itr_ll+n_break].T,np.dot(res[0:n_break,0:n_break],v[itr_ll:itr_ll+n_break]))
                 itr_ll+=n_k
             res = None
@@ -239,7 +240,7 @@ class SphBasisK(LWBasis):
             x = geo.r_fine
         else:
             x = geo.z_fine
-        #allow a restriction to the range of r_fine or z_fine,TODO check if can default
+        #allow a restriction to the range of r_fine or z_fine
         if range_spec is not None:
             x = x[range_spec]
             d_delta_bar = d_delta_bar[range_spec,:]
@@ -247,10 +248,10 @@ class SphBasisK(LWBasis):
         dx1s = (np.diff(x)*d_delta_bar[1::].T)/2.
         dx2s = (np.diff(x)*d_delta_bar[:-1:].T)/2.
         for ll in xrange(0, integrand.shape[1]):
-            #TODO can be sped up if dx is constant
+            #note can be sped up if dx is constant
             #note this is just the trapezoidal rule with d_delta_bar absorbed into dx for a minor speedup
             result[:,ll] = (np.dot(dx2s,integrand[:-1:,ll])+np.dot(dx1s,integrand[1::,ll]))
-            #result[:,ll] = trapz2((d_delta_bar.T*integrand[:,ll]).T,dx=dxs,given_dx=True)
+            #result[:,ll] = trapz2((d_delta_bar.T*integrand[:,ll]).T,dx=dxs)
         print "sph_klim: got D_O_I_D_delta_alpha"
         return result
 
@@ -305,7 +306,6 @@ class SphBasisK(LWBasis):
             ll=int(self.C_id[itr,0])
             kk=self.C_id[itr,1]
             mm=int(self.C_id[itr,2])
-            #TODO just precompute the r_parts
             if (kk,ll) in r_cache:
                 r_part = r_cache[(kk,ll)]
             else:
@@ -345,10 +345,10 @@ def R_int(r_range,k,ll):
             ll: index of bessel function to use"""
     # I am using the spherical Bessel function for R_n, but that might change
     #TODO change name of j_n to sph_j_n or something
-    def integrand(r):
+    def _integrand(r):
         return r**2*j_n(ll,r*k)
     #TODO can be done with trapz
-    I = quad(integrand,r_range[0],r_range[1],epsabs=10e-20,epsrel=1e-10)[0]
+    I = quad(_integrand,r_range[0],r_range[1],epsabs=10e-20,epsrel=1e-10)[0]
     #TODO check if eps logic needed
     return I
 

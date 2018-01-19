@@ -3,16 +3,16 @@
 import re
 
 from warnings import warn
+import numpy as np
 from Dn import DNumberDensityObservable
 
 import defaults
 
-import numpy as np
 #TODO no good reason to use defaults at all here
 class LWSurvey(object):
+    """handle getting long wavelength observables and their fisher matrices for mitigation"""
     def __init__(self,geos,survey_id,basis,C,params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,param_list=None):
-        """handle getting long wavelength observables and their fisher matrices for mitigation
-            inputs:
+        """ inputs:
                 geos: an array of Geo objects, fo the survey windows of different long wavelength surveys
                 survey_id: an id for the survey
                 basis: an LWBasis object

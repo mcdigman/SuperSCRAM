@@ -13,9 +13,9 @@ from sph_functions import Y_r
 #Most of the behavior should be defined in subclasses
 
 class Geo(object):
+    """Abstract class for a survey geometry"""
     def __init__(self,z_coarse,C,z_fine):
-        """Abstract class for a survey geometry
-            inputs:
+        """    inputs:
                 z_coarse: tomographic bins for the survey
                 C: a CosmoPie object
                 z_fine: fine slices (resolution bins) for the survey
@@ -63,6 +63,7 @@ class Geo(object):
 
         #for caching a_lm
         self.alm_table = {}
+
     #TODO: consider making specific to a tomography bin (or just let subclasses do that?)
     def surface_integral(self,function):
         """integrate function over the surface of the geo (interpretation of the meaning of the "surface" is up to the subclass)
@@ -82,14 +83,15 @@ class Geo(object):
         """
         alm = self.alm_table.get((l,m))
         if alm is None:
-            def integrand(phi,theta):
+            def _integrand(phi,theta):
                 return Y_r(l,m,theta,phi)
-            alm = self.surface_integral(integrand)
+            alm = self.surface_integral(_integrand)
             self.alm_table[(l,m)] = alm
 
         return alm
 
     def get_alm_array(self,l_max):
+        """get a(l,m) as an array up to l_max"""
         ls = np.zeros((l_max+1)**2,dtype=int)
         ms = np.zeros((1+l_max)**2,dtype=int)
         alms = np.zeros((1+l_max)**2)
@@ -104,9 +106,9 @@ class Geo(object):
 
 
 class RectGeo(Geo):
+    """implements a geometry of rectangles on the surface of a sphere, constant latitude and longitude sides"""
     def __init__(self,zs,Theta,Phi,C,z_fine):
-        """implements a geometry of rectangles on the surface of a sphere, constant latitude and longitude sides
-            inputs:
+        """ inputs:
                 zs: the tomographic zs
                 Theta,phi: coordinates of the vertices
                 z_fine: the resolution z slices
@@ -118,9 +120,9 @@ class RectGeo(Geo):
 
     def surface_integral(self,function):
         """do the integral with quadrature over a function(phi,theta)"""
-        def integrand(phi,theta):
+        def _integrand(phi,theta):
             return function(phi,theta)*np.sin(theta)
-        I=dblquad(integrand,self.Theta[0],self.Theta[1], lambda phi: self.Phi[0], lambda phi: self.Phi[1])[0]
+        I=dblquad(_integrand,self.Theta[0],self.Theta[1], lambda phi: self.Phi[0], lambda phi: self.Phi[1])[0]
         #if (np.absolute(I) <= self.eps):
         #    return 0.0
         #else:

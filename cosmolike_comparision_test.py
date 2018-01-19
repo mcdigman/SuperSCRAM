@@ -1,8 +1,8 @@
 """compares gaussian covariance with cosmolike"""
 import numpy as np
-from cosmopie import CosmoPie
 from scipy.integrate import cumtrapz
 import scipy.special as spp
+from cosmopie import CosmoPie
 from shear_power import ShearPower
 from shear_power import Cll_q_q
 import defaults

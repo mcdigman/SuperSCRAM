@@ -5,11 +5,12 @@ from warnings import warn
 
 
 import copy
+import numpy as np
+
 import prior_fisher
 import defaults
 
 import fisher_matrix as fm
-import numpy as np
 
 
 f_spec_mit={'lw_base':True,'lw_mit':True,'sw_g':True,'sw_ng':True,'par_prior':True}
@@ -27,6 +28,7 @@ f_return_sw_par = {'lw':False,'sw':True,'par':True}
 f_return_sw = {'lw':False,'sw':True,'par':False}
 f_return_lw = {'lw':True,'sw':False,'par':False}
 class MultiFisher(object):
+    """master class for managing fisher matrix manipulations between bases"""
     def __init__(self,basis,sw_survey,lw_surveys, prior_params=defaults.prior_fisher_params,needs_a=False,do_mit=True):
         """
         master class for managing fisher matrix manipulations between bases
@@ -124,17 +126,20 @@ class MultiFisher(object):
 #        self.par_tot_no_mit_no_prior = self.sw_tot_no_mit.project_fisher(self.sw_to_par_array)
 #        self.par_tot_mit_no_prior = self.sw_tot_mit.project_fisher(self.sw_to_par_array)
 
+        #TODO replace with FisherPrior
         #get prior fisher matrix
-        if self.sw_survey.C.de_model=='w0wa':
-            self.fisher_priors = fm.FisherMatrix(prior_fisher.get_w0wa_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
-        elif self.sw_survey.C.de_model=='constant_w':
-            self.fisher_priors = fm.FisherMatrix(prior_fisher.get_w0_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
-        elif self.sw_survey.C.de_model=='jdem':
-            self.fisher_priors = fm.FisherMatrix(prior_fisher.get_jdem_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
-        else:
-            warn('unknown prior parametrization: '+str(self.sw_survey.C.de_model)+' will not use priors for de')
-            #TODO should just be matrix of zeros
-            self.fisher_priors = fm.FisherMatrix(prior_fisher.get_no_de_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
+        self.fisher_prior_obj = prior_fisher.FisherPrior(self.sw_survey.C.de_model,self.prior_params)
+        self.fisher_priors = self.fisher_prior_obj.get_fisher()
+        #if self.sw_survey.C.de_model=='w0wa':
+        #    self.fisher_priors = fm.FisherMatrix(prior_fisher.get_w0wa_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
+        #elif self.sw_survey.C.de_model=='constant_w':
+        #    self.fisher_priors = fm.FisherMatrix(prior_fisher.get_w0_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
+        #elif self.sw_survey.C.de_model=='jdem':
+        #    self.fisher_priors = fm.FisherMatrix(prior_fisher.get_jdem_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
+        #else:
+        #    warn('unknown prior parametrization: '+str(self.sw_survey.C.de_model)+' will not use priors for de')
+        #    #TODO should just be matrix of zeros
+        #    self.fisher_priors = fm.FisherMatrix(prior_fisher.get_no_de_projected(params=self.prior_params), input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER,silent=True)
 
 
 

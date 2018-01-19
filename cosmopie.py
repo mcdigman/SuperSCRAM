@@ -6,11 +6,11 @@
 """
 
 from warnings import warn
-from scipy.integrate import quad,odeint
+from scipy.integrate import odeint
 from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
-from algebra_utils import trapz2
-
 import numpy as np
+
+from algebra_utils import trapz2
 import matter_power_spectrum as mps
 
 import defaults
@@ -19,6 +19,7 @@ import camb_power
 eps=np.finfo(float).eps
 
 class CosmoPie(object):
+    """stores and calculates various parameters for a cosmology"""
     #TODO convergence test a grid values
     #TODO reduce possibility of circular reference to MatterPower
     def __init__(self,cosmology=defaults.cosmology, P_lin=None, k=None,p_space=defaults.cosmopie_params['p_space'],needs_power=False,camb_params=None,a_step=0.001,G_in=None,G_safe=False,silent=False):
@@ -229,10 +230,10 @@ class CosmoPie(object):
 #            d_multiplier = -1./self.a_grid**2*(self.Omegar_z(self.z_grid)+3./2.*(1.-self.w_interp(self.z_grid))*self.OmegaL_z(self.z_grid)+2*self.Omegak_z(self.z_grid))
             #TODO check splines
 
-            def dp_mult_interp(a):
+            def _dp_mult_interp(a):
                 z = 1./a-1.
                 return -1./a*(7./2.*self.Omegam_z(z)+3*self.Omegar_z(z)+(7./2.-3./2.*self.w_interp(z))*self.OmegaL_z(z)+4.*self.Omegak_z(z))
-            def d_mult_interp(a):
+            def _d_mult_interp(a):
                 z = 1./a-1.
                 return -1./a**2*(self.Omegar_z(z)+3./2.*(1.-self.w_interp(z))*self.OmegaL_z(z)+2*self.Omegak_z(z))
 #            dp_mult_interp = InterpolatedUnivariateSpline(self.a_grid[::-1],dp_multiplier[::-1])
@@ -240,7 +241,7 @@ class CosmoPie(object):
 #            self.dp_mult_interp = dp_mult_interp
 #            self.d_mult_interp = d_mult_interp
             d_ics = np.array([1.,0.])
-            d_args = (np.array([d_mult_interp,dp_mult_interp]),)
+            d_args = (np.array([_d_mult_interp,_dp_mult_interp]),)
             def _d_evolve_eqs(ys,a,g_args):
                 yps = np.zeros(2)
                 yps[0]=ys[1]
@@ -264,12 +265,16 @@ class CosmoPie(object):
 
 
     def de_mult_const(self,z):
+        """multiplier for de term if w constant"""
         return (z+1.)**(3.*(1.+self.cosmology['w']))
     def de_w_const(self,z):
+        """w function for de term if w constant"""
         return np.full_like(z,self.cosmology['w'])
     def de_mult_w0wa(self,z):
+        """multiplier for de term if w0wa"""
         return np.exp(-3.*self.cosmology['wa']*z/(1.+z))*(1.+z)**(3.*(1.+self.cosmology['w0']+self.cosmology['wa']))
     def de_w_w0wa(self,z):
+        """w(z) for de term if w0wa"""
         return self.cosmology['w0']+(1.-1./(1.+z))*self.cosmology['wa']
 
     def Ez(self,z):
@@ -326,17 +331,14 @@ class CosmoPie(object):
 
     def D_comov_T(self,z):
         """Transverse comoving distance"""
-        if self.Omegak==0:
-            return self.D_comov(z)
-
         if self.Omegak > 0:
             sq=np.sqrt(self.Omegak)
             return self.DH/sq*np.sinh(sq*self.D_comov(z)/self.DH)
-
-        if self.Omegak < 0:
+        elif self.Omegak < 0:
             sq=np.sqrt(self.Omegak)
             return self.DH/sq*np.sin(sq*self.D_comov(z)/self.DH)
-
+        else:
+            return self.D_comov(z)
 
     def D_A(self,z):
         """angular diameter distance"""
@@ -350,33 +352,9 @@ class CosmoPie(object):
         r""" comoving volume element, with out the d\Omega
          dV/dz"""
         return self.DH*(1+z)**2*self.D_A(z)**2/self.Ez(z)
-    #TODO remove if not used
-    def look_back(self,z):
-        """Joe's function not used currently"""
-        f1=3.086e19  # conversion  Mpc to km
-        f2=3.154e7   # conversion seconds to years
-        I = lambda z : 1/self.Ez(z)/(1+z)
-        return self.tH*quad(I,0,z)[0]*f1/f2
     # -----------------------------------------------------------------------------
-
     # Growth functions
     # -----------------------------------------------------------------------------
-#         def G(self,z):
-#                 # linear Growth factor (Eqn. 7.77 in Dodelson)
-#                 # 1 + z = 1/a
-#                 # G = 5/2 Omega_m H(z)/H_0 \int_0^a da'/(a'H(a')/H_0)^3
-#                 # Omega_m=Omega_m_z/a^3/H(z)^2
-#                 a=1/float(1+z)
-#                 def Integrand(ap):
-#                     zp=1/float(ap)-1
-#
-#                     denominator=float((ap*self.H(zp))**3)
-#
-#                     return 1/denominator
-#
-#                 return 5/2.*self.Omegam_z(z)*a**2*self.H(z)**3*quad(Integrand,1e-5,a)[0]
-#                 #return 5/2.*self.Omegam_z(z)*a**2*self.H(z)**3*romberg(Integrand,eps,a)
-
     def G(self,z):
         """Linear growth factor"""
         return self.G_p(z)
@@ -394,7 +372,6 @@ class CosmoPie(object):
         return -3/2.*self.Omegam/a**3*self.H0**2/self.H(z)**2 + 1/self.H(z)**2/a**2/self.G_norm(z)
 
     # ----------------------------------------------------------------------------
-
     # halo and matter stuff
     # -----------------------------------------------------------------------------
     def delta_c(self,z):
@@ -623,44 +600,3 @@ def add_derived_pars(cosmo_old,p_space=None):
 
     cosmo_new['p_space'] = p_space
     return cosmo_new
-
-
-#if __name__=="__main__":
-#        C=CosmoPie(cosmology=defaults.cosmology)
-#        z=3.5
-#        z=.1
-#        print 'Comoving distance',C.D_comov(z)
-#        print 'Angular diameter distance',C.D_A(z)
-#        print 'Luminosity distance', C.D_L(z)
-#        print 'Growth factor', C.G(z)
-#        print 'Growth factor for really small z',C.G(1e-10)
-#        z=0.0
-#        print 'logrithmic growth factor', C.log_growth(z)
-#        print 'compare logrithmic growth factor to approxiamtion', C.Omegam**(-.6), C.Omegam
-#        print 'critical overdensity ',C.delta_c(0)
-#
-#        z=np.linspace(0,5,80)
-#        D1=np.zeros(80)
-#        D2=np.zeros(80)
-#        D3=np.zeros(80)
-#        for i in xrange(80):
-#                D1[i]=C.D_A(z[i])/C.DH
-#                D2[i]=C.D_L(z[i])/C.DH
-#                D3[i]=C.DV(z[i])/C.DH
-#
-#        import matplotlib.pyplot as plt
-#
-#        ax=plt.subplot(121)
-#        ax.set_xlabel(r'$z$', size=20)
-#
-#        ax.plot(z, D1, label='Angular Diameter distance [Mpc]')
-#        #ax.plot(z, D2, label='Luminosity distance [Mpc]')
-#        plt.grid()
-#
-#        ax=plt.subplot(122)
-#        ax.set_ylim(0,1)
-#        ax.plot(z, D3/C.DH**3, label='Angular Diameter distance [Mpc]')
-#        #ax.plot(z, D2, label='Luminosity distance [Mpc]')
-#        plt.grid()
-#
-#        plt.show()

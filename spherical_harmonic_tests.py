@@ -13,7 +13,9 @@ RTOL_USE = 1e-13
 
 
 class ThetaPhiList(object):
+    """get lists of thetas and phis"""
     def __init__(self,key):
+        """key: and index"""
         self.key = key
         if key==1:
             n_side = 8
@@ -40,6 +42,7 @@ class ThetaPhiList(object):
 
 @pytest.fixture(params=[1,2,3])
 def theta_phis(request):
+    """iterate over ThetaPhiList objects"""
     return ThetaPhiList(request.param)
 
 class ALMList(object):
@@ -63,9 +66,11 @@ class ALMList(object):
 
 @pytest.fixture(params=[1,2])
 def alms(request):
+    """iterate over ALMList possibilities"""
     return ALMList(request.param)
 
 def test_alm_recontruct(alms,theta_phis):
+    """test that reconstruct_from_alm matches with and without mpmath"""
     if theta_phis.key!=2:
         alm_dict = alms.alm_dict.copy()
         thetas = theta_phis.thetas.copy()
@@ -73,12 +78,10 @@ def test_alm_recontruct(alms,theta_phis):
         l_max = alms.l_max
         alm1 = ylmu.reconstruct_from_alm(l_max,thetas,phis,alm_dict)
         alm2 = ylmu_mp.reconstruct_from_alm(l_max,thetas,phis,alm_dict)
-        #alm3 = ylmu_mp.reconstruct_from_alm(l_max,thetas,phis,alm_dict)
         assert np.allclose(alm1,alm2,atol=ATOL_USE,rtol=RTOL_USE)
-        #assert np.allclose(alm2,alm3,atol=ATOL_USE,rtol=RTOL_USE)
-        #assert np.allclose(alm1,alm3,atol=ATOL_USE,rtol=RTOL_USE)
 
 def test_Y_R_agreement_table_direct(theta_phis):
+    """test that Y_r matches ylm_utils table and from complex harmonics"""
     thetas = theta_phis.thetas.copy()
     phis = theta_phis.phis.copy()
     l_max = theta_phis.l_max
@@ -89,6 +92,7 @@ def test_Y_R_agreement_table_direct(theta_phis):
     assert np.allclose(Y_r_1s,Y_r_2s,atol=ATOL_USE,rtol=RTOL_USE)
 
 def test_Y_R_agreement_mp_table_direct(theta_phis):
+    """test that Y_r matches ylm_utils_mpmath table and from complex harmonics"""
     thetas = theta_phis.thetas.copy()
     phis = theta_phis.phis.copy()
     l_max = theta_phis.l_max
@@ -99,6 +103,7 @@ def test_Y_R_agreement_mp_table_direct(theta_phis):
     assert np.allclose(Y_r_1s,Y_r_2s,atol=ATOL_USE,rtol=RTOL_USE)
 
 def test_Y_R_agreement_mp_table_table(theta_phis):
+    """test that Y_r matches ylm_utils table and ylm_utils_mpmath table"""
     thetas = theta_phis.thetas.copy()
     phis = theta_phis.phis.copy()
     l_max = theta_phis.l_max

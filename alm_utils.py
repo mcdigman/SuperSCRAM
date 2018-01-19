@@ -61,7 +61,7 @@ def rot_alm_x(d_alm_table_in,angles,ls,n_double=defaults.polygon_params['n_doubl
             epsilon = angles[itr]/2.**n_double
             el_mat = epsilon*el_mat_real.copy()
             #use angle doubling fomula to get to correct angle
-            for itr2 in xrange(0,n_double):
+            for _itr2 in xrange(0,n_double):
                 el_mat = 2.*el_mat+np.dot(el_mat,el_mat)
             ######Walled
 #            for itr3 in xrange(1,3):

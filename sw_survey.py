@@ -1,28 +1,29 @@
 """
 Handle a short wavelength survey
 """
-
-import numpy as np
-import defaults
 import re
 from warnings import warn
+
+import numpy as np
+
+import defaults
 import lensing_observables as lo
 from sw_cov_mat import SWCovMat
 #TODO evaluate if param_list as used by LWSurvey more elegant
 class SWSurvey(object):
+    """Short wavelength survey: manage short wavelength observables and get their non SSC covariances and derivatives"""
     def __init__(self,geo,survey_id,C,ls = np.array([]),cosmo_par_list=np.array([],dtype=object),cosmo_par_epsilons=np.array([]),params=defaults.sw_survey_params,observable_list=defaults.sw_observable_list,len_params=defaults.lensing_params,ps=np.array([]),nz_matcher=None):
-        """Short wavelength survey: manage short wavelength observables and get their non SSC covariances and derivatives
-                inputs:
-                    geo: a Geo object
-                    survey_id: some identifier for the survey
-                    C: a CosmoPie object
-                    ls: short wavelength ls to use
-                    cosmo_par_list: list of cosmological parameters that should be varied
-                    cosmo_par_epsilons: amount to vary cosmological paramters by when getting partial derivatives
-                    params, len_params: parameters
-                    observable_list: list of observable names to get
-                    ps: lensing source distribution. optional
-                    nz_matcher: NZMatcher object. optional
+        """ inputs:
+                geo: a Geo object
+                survey_id: some identifier for the survey
+                C: a CosmoPie object
+                ls: short wavelength ls to use
+                cosmo_par_list: list of cosmological parameters that should be varied
+                cosmo_par_epsilons: amount to vary cosmological paramters by when getting partial derivatives
+                params, len_params: parameters
+                observable_list: list of observable names to get
+                ps: lensing source distribution. optional
+                nz_matcher: NZMatcher object. optional
         """
 
         print "sw_survey: began initializing survey: "+str(survey_id)

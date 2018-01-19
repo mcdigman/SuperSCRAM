@@ -3,13 +3,14 @@ import numpy as np
 from nz_matcher import NZMatcher
 
 class NZLSST(NZMatcher):
+    """match the number density defined in the LSST whitepaper"""
     def __init__(self,z_grid, params):
-        """match the number density defined in the LSST whitepaper,
-            inputs:
+        """ inputs:
                 z_grid:a numpy array of zs
-                params: a dict of params"""
+                params:
+                    i_cut: limiting i band magnitude
+        """
         self.params = params
-        #self.z0 = self.params['z0']
         self.i_cut = self.params['i_cut']
         self.z0 = 0.0417*self.i_cut-0.744
         self.p_z = 1./(2.*self.z0)*(z_grid/self.z0)**2.*np.exp(-z_grid/self.z0)

@@ -18,6 +18,7 @@ REP_COVAR = 3
 #things to watch out for: the output matrix may mutate if it was the internal matrix
 
 class FisherMatrix(object):
+    """General Fisher matrix object for fisher matrix and covariance manipulations"""
     def __init__(self,input_matrix,input_type,initial_state = None,fix_input=False,silent=True,triangle_clean=False):
         """create a fisher matrix object
             input_matrix: an input matrix
@@ -417,6 +418,7 @@ class FisherMatrix(object):
             return result
 
     def get_correlation_matrix(self):
+        """get the correlation matrix corresponding to the fisher matrix"""
         return np.corrcoef(self.get_covar(copy_output=False,internal=False))
 
     #TODO actually gets eigensystem with u

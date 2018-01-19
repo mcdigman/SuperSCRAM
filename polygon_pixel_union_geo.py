@@ -3,7 +3,11 @@ import numpy as np
 from polygon_pixel_geo import PolygonPixelGeo
 
 class PolygonPixelUnionGeo(PolygonPixelGeo):
+    """geo for union between several PolygonPixelGeo or masks"""
     def __init__(self,geos,masks):
+        """ geos: an array of PolygonPixelGeos to combine
+            masks: an array of PolygonPixelGeos to block out
+        """
         self.geos = geos
         self.n_g = geos.size
         self.n_m = masks.size
@@ -52,7 +56,7 @@ class PolygonPixelUnionGeo(PolygonPixelGeo):
         #    self.mask_geo=None
 
         #TODO PRIORITY actually use union_mask
-        PolygonPixelGeo.__init__(self,geos[0].zs,geos[0].thetas,geos[0].phis,geos[0].theta_in,geos[0].phi_in,geos[0].C,geos[0].z_fine,geos[0]._l_max,geos[0].res_healpix,geos[0].overwride_precompute)
+        PolygonPixelGeo.__init__(self,geos[0].zs,geos[0].thetas,geos[0].phis,geos[0].theta_in,geos[0].phi_in,geos[0].C,geos[0].z_fine,geos[0]._l_max,geos[0].res_healpix)
         #Geo.__init__(self,self.union_geo.zs,self.union_geo.C,self.union_geo.z_fine)
         #self.alm_table = {(0,0):self.angular_area()/np.sqrt(4.*np.pi)}
         #self._l_max = 0

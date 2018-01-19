@@ -3,13 +3,13 @@ long wavelength observable abstract class
 Methods must be implemented
 """
 class LWObservable(object):
+    """abstract class for lw obserables."""
     def __init__(self,geos,params,survey_id,C):
-        """abstract class for lw obserables.
-            inputs:
-                geos: a numpy array of geos
-                params: a dictionary of params
-                survey_id: an id from the associated LWSurvey
-                C: a CosmoPie object"""
+        """inputs:
+            geos: a numpy array of geos
+            params: a dictionary of params
+            survey_id: an id from the associated LWSurvey
+            C: a CosmoPie object"""
         self.geos = geos
         self.C = C
         self.params = params

@@ -2,6 +2,7 @@
 #pylint: disable=W0621,duplicate-code
 from warnings import warn
 import numpy as np
+import pytest
 #from polygon_pixel_geo import PolygonPixelGeo,reconstruct_from_alm
 from polygon_pixel_geo import PolygonPixelGeo
 from ylm_utils import reconstruct_from_alm
@@ -9,9 +10,9 @@ from geo import RectGeo
 import defaults
 from cosmopie import CosmoPie
 import polygon_geo as pg
-import pytest
 
 def check_mutually_orthonormal(vectors):
+    """checks whether a set of vectors are mutually orthonormal"""
     fails = 0
     for itr1 in xrange(0,vectors.shape[0]):
         for itr2  in xrange(0,vectors.shape[0]):
@@ -29,10 +30,12 @@ def check_mutually_orthonormal(vectors):
     return fails
 
 class GeoTestSet(object):
+    """class wrapping a testing geometry"""
     def __init__(self,params):
-        #some setup to make an actual geo
+        """some setup to make an actual geo"""
         d=np.loadtxt('camb_m_pow_l.dat')
-        k=d[:,0]; P=d[:,1]
+        k=d[:,0]
+        P=d[:,1]
         self.C=CosmoPie(k=k,P_lin=P,cosmology=defaults.cosmology)
         self.zs=np.array([.01,1.01])
         self.z_fine = np.arange(defaults.lensing_params['z_min_integral'],np.max(self.zs),defaults.lensing_params['z_resolution'])
@@ -48,6 +51,7 @@ class GeoTestSet(object):
         self.params = params
 
 def get_param_set(indices):
+    """iterate through sets of parameters"""
     test_type = indices[0]
     param_index = indices[1]
     if test_type == 0:
@@ -154,9 +158,11 @@ for itr_ind in xrange(0,6):
 
 @pytest.fixture(params=index_sets,scope="module")
 def geo_input(request):
+    """Create the testing object"""
     return GeoTestSet(get_param_set(request.param))
 
 def test_alm_rect_agreement(geo_input):
+    """tests geo matches RectGeo if it should"""
     if geo_input.params['do_RectGeo']:
         #relatively low tolerance for differences because both should be nearly exact
         #main source of error is angle doubling formula, increasing number of doublings would decrease error
@@ -167,6 +173,7 @@ def test_alm_rect_agreement(geo_input):
         assert np.allclose(alm_array_poly,alm_array_rect,atol=ABS_TOL,rtol=REL_TOL)
 
 def test_alm_pp_agreement1(geo_input):
+    """Test for differences between PolygonGeo and PolygonPixelGeo"""
     if geo_input.params['do_pp_geo1']:
         #relatively high tolerance for differences because PolygonGeo is intended to be more accurate than PolygonPixelGeo
         ABS_TOL = 10**-2
@@ -176,6 +183,7 @@ def test_alm_pp_agreement1(geo_input):
         assert np.allclose(alm_array_poly,alm_array_pp2,atol=ABS_TOL,rtol=REL_TOL)
 
 def test_alm_pp_agreement2(geo_input):
+    """Test for differences between PolygonGeo and PolygonPixelGeo"""
     if geo_input.params['do_pp_geo2']:
         #relatively high tolerance for differences because PolygonGeo is intended to be more accurate than PolygonPixelGeo
         ABS_TOL = 10**-2
@@ -184,9 +192,9 @@ def test_alm_pp_agreement2(geo_input):
         alm_array_pp1 = geo_input.pp_geo1.get_alm_array(geo_input.params['l_max_poly'])[0]
         assert np.allclose(alm_array_poly,alm_array_pp1,atol=ABS_TOL,rtol=REL_TOL)
 
-#test coarse reconstruction agreement
-#note tolerance should really depend on l max
 def test_absolute_reconstruction1(geo_input):
+    """test coarse reconstruction agreement
+        note tolerance should really depend on l max"""
     MSE_TOL = 10**-1
     if geo_input.params['do_pp_geo1']:
         pp_geo1 = geo_input.pp_geo1
@@ -195,9 +203,9 @@ def test_absolute_reconstruction1(geo_input):
         mse = np.sqrt(np.average(abs_error**2))
         assert MSE_TOL>mse
 
-#test fine reconstruction improves on PolygonPixelGeo
-#also test PolygonPixelGeo error while we're at it
 def test_absolute_improvement2(geo_input):
+    """ test fine reconstruction improves on PolygonPixelGeo
+        also test PolygonPixelGeo error while we're at it"""
     MSE_TOL = 10**-1
     if geo_input.params['do_pp_geo2']:
         pp_geo2 = geo_input.pp_geo2
@@ -212,9 +220,8 @@ def test_absolute_improvement2(geo_input):
         assert MSE_TOL>mse_pp1
         assert mse_pp1>mse_poly
 
-#do a bunch of tests to make sure rotations are working as expected
-#do a bunch of tests to make sure rotations are working as expected
 def test_rotational_suite(geo_input):
+    """do a bunch of tests to make sure rotations are working as expected"""
     poly_geo = geo_input.poly_geo
 
     nt = poly_geo.n_v
@@ -358,14 +365,17 @@ def test_rotational_suite(geo_input):
     assert np.allclose(y2_g,y2_g_alt)
     assert np.allclose(z2_g,z2_g_alt)
 
-    #alm_rats0 = np.zeros(l_max+1)
-
-
 if __name__=='__main__':
     #pytest.cmdline.main(['polygon_geo_tests.py'])
     do_plot = True
+    do_rect=False
+
     if do_plot:
         params = get_param_set(np.array([0,0]))
+        params['l_max_poly'] = 80
+        params['res_choose1'] = 6
+        params['res_choose2'] = 6
+        params['do_RectGeo'] = do_rect
         gts = GeoTestSet(params)
         l_max = params['l_max_poly']
         res_choose = params['res_choose1']
@@ -377,23 +387,29 @@ if __name__=='__main__':
         nt = poly_geo.n_v
 
         my_table = poly_geo.alm_table.copy()
-        #get RectGeo to cache the values in the table
-        for ll in xrange(0,l_max+1):
-            for mm in xrange(0,ll+1):
-                gts.r_geo.a_lm(ll,mm)
-                if mm>0:
-                    gts.r_geo.a_lm(ll,-mm)
+        if do_rect:
+            #get RectGeo to cache the values in the table
+            for ll in xrange(0,l_max+1):
+                for mm in xrange(0,ll+1):
+                    gts.r_geo.a_lm(ll,mm)
+                    if mm>0:
+                        gts.r_geo.a_lm(ll,-mm)
         #r_alm_table = r_geo.alm_table
         #reconstruct at higher resolution to mitigate resolution effects in determining accuracy
-        totals_pp= reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],gts.r_geo.alm_table)
         totals_poly = reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],my_table)
-        avg_diff = np.average(np.abs(totals_pp-totals_poly))
-        print "mean absolute difference between pixel and exact geo reconstruction: "+str(avg_diff)
+
         poly_error = np.sqrt(np.average(np.abs(totals_poly-pp_geo2.contained*1.)**2))
-        pp_error = np.sqrt(np.average(np.abs(totals_pp-pp_geo2.contained*1.)**2))
         print "rms reconstruction error of exact geo: "+str(poly_error)
-        print "rms reconstruction error of pixel geo at res "+str(res_choose)+": "+str(pp_error)
-        print "improvement in rms reconstruction accuracy: "+str((pp_error-poly_error)/pp_error*100)+"%"
+        if do_rect:
+            totals_pp= reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],gts.r_geo.alm_table)
+            avg_diff = np.average(np.abs(totals_pp-totals_poly))
+            print "mean absolute difference between pixel and exact geo reconstruction: "+str(avg_diff)
+            pp_error = np.sqrt(np.average(np.abs(totals_pp-pp_geo2.contained*1.)**2))
+            print "rms reconstruction error of pixel geo at res "+str(res_choose)+": "+str(pp_error)
+            print "improvement in rms reconstruction accuracy: "+str((pp_error-poly_error)/pp_error*100)+"%"
+        else:
+            #could do more useful other comparision like to PolygonPixelGeo
+            totals_pp = totals_poly
 
         #totals_alm = reconstruct_from_alm(l_max,pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1],r_alm_table)
         try_plot=True

@@ -1,9 +1,10 @@
 """demonstration case for wfirst embeded in lsst footprint to mitigate covariance"""
-import numpy as np
-
 from time import time
 
-from Super_Survey import SuperSurvey
+import numpy as np
+
+
+from Super_Survey import SuperSurvey,make_ellipse_plot
 from lw_survey import LWSurvey
 from sw_survey import SWSurvey
 from cosmopie import CosmoPie
@@ -83,6 +84,7 @@ if __name__=='__main__':
     #create the short wavelength survey (SWSurvey) object
     #list of comsological parameters that will need to be varied
     if cosmo['de_model']=='w0wa':
+        #TODO PRIORITY if using priors enforce cosmo_par_list ordered correctly, handle priors correcly
         cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w0','wa'])
         cosmo_par_string = ["$n_s$",r"$\Omega_m h^2$",r"$\Omega_{de} h^2$","$ln(A_s)$","$w_0$","$w_a$"]
         cosmo_par_epsilons = np.array([0.002,0.0005,0.0001,0.0005,0.1,0.01,0.07])
@@ -117,8 +119,8 @@ if __name__=='__main__':
     z_max = zs[-1]+0.001
     r_max = C.D_comov(z_max)
     #k_cut is the maximum k balue for the bessel function zeros that define the basis
-    x_cut = 70.
-    #x_cut = 40.
+    #x_cut = 70.
+    x_cut = 30.
     #x_cut = 10.
     k_cut = x_cut/r_max
     #l_max caps maximum l regardless of k
@@ -263,7 +265,6 @@ c_rot_eig_g = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[0][2].get_covar(),of_n
 #c_rot_eig_mit2 = (c_rot_eig_mit2+c_rot_eig_mit2.T)/2.
 
 #m_mat = np.dot(chol_g_inv,np.dot(SS.f_set[1][2].get_fisher(),chol_g_inv.T))f
-from Super_Survey import make_ellipse_plot
 #make_ellipse_plot(np.array([c_rot_eig_g[-2:,-2:],c_rot_eig_no_mit[-2:,-2:],c_rot_eig_mit[-2:,-2:]]),np.array([[0,1,0],[1,0,0],[0,0,1]]),np.array([1.,1.,1.]),np.array(['g','no mit','mit']),np.array([0.0002,0.0025]),np.array(['p2','p1']),dchi2,adaptive_mult=1.05)
 #make_ellipse_plot(np.array([c_rot_eig_g,c_rot_eig_no_mit,c_rot_eig_mit]),np.array([[0,1,0],[1,0,0],[0,0,1]]),np.array([1.,1.,1.]),np.array(['g','no mit','mit']),np.array([5.,5.,5.,5.,5.,5.,5.,]),np.array(['p7','p6','p5','p4','p3','p2','p1']),dchi2,adaptive_mult=1.05)
 #make_ellipse_plot(np.array([c_rot_eig_g[-2:,-2:],c_rot_eig_no_mit[-2:,-2:],c_rot_eig_mit[-2:,-2:]]),np.array([[0,1,0],[1,0,0],[0,0,1]]),np.array([1.,1.,1.]),np.array(['g','no mit','mit']),np.array([5.,5.]),np.array(['p2','p1']),dchi2,adaptive_mult=1.05)

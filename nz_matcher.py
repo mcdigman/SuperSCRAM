@@ -2,11 +2,12 @@
 by abundance matching a cutoff mass M to the halo mass function"""
 
 import numpy as np
-import algebra_utils as au
-
 from scipy.interpolate import interp1d
 from scipy.integrate import cumtrapz
+import algebra_utils as au
+
 class NZMatcher(object):
+    """master class for matching n(z) distributions"""
     def __init__(self,z_grid,dN_dz):
         """make a n(z) matching object
                 inputs:
@@ -36,7 +37,6 @@ class NZMatcher(object):
                 mf: a ST_hmf object
                 geo: a Geo object
         """
-        #mass = mf.mass_grid[mf.mass_grid >= M]
         mass = mf.mass_grid
         nz = self.get_nz(geo)
         m_cuts = np.zeros(geo.z_fine.size)
@@ -47,18 +47,30 @@ class NZMatcher(object):
         for itr in xrange(0,geo.z_fine.size):
             dn = dns[:,itr]
             n_avgs = np.hstack((-(cumtrapz(dn[::-1],mass[::-1]))[::-1],0.))
-            #n_avg_interp = interp1d(n_avgs,mass)
-            #m_cuts[itr] = n_avg_interp(nz[itr])
-            # n_avgs = np.trapz(dn,mass)-(cumtrapz(dn,mass))
             n_avg_index = np.argmin(n_avgs >= nz[itr]) #TODO check edge cases
-            #print nz[itr]
-            #print n_avgs
             #TODO only need 1 interpolating function
             if n_avg_index == 0:
                 m_cuts[itr] = mass[n_avg_index]
             else:
                 m_interp = interp1d(n_avgs[n_avg_index-1:n_avg_index+1],mass[n_avg_index-1:n_avg_index+1])(nz[itr])
-                #print mass[n_avg_index-1],mass[n_avg_index],m_interp,m_interp/mass[n_avg_index]
-                m_cuts[itr] = m_interp#+(nz[itr]-n_avgs[n_avg_index-1])*(mass[n_avg_index]-mass[n_avg_index-1])/(n_avgs[n_avg_index]-n_avgs[n_avg_index-1])
-        #print mass
+                m_cuts[itr] = m_interp
         return m_cuts
+
+def get_gaussian_smoothed_dN_dz(z_grid,zs_chosen,params,normalize):
+    """ apply gaussian smoothing width smooth_sigma to get number density over z_grid
+        with galaxies at locations specified by zs_chosen,
+        mirror boundary at z=0 if mirror_boundary=True,
+        if normalize=True then normalize so density integrates to total number of galaxies
+        (in limit as maximum z_grid is much larger than maximum zs_chosen normalizing should have no effect)"""
+    dN_dz = np.zeros(z_grid.size)
+    sigma=params['smooth_sigma']
+    for itr in xrange(0,zs_chosen.size):
+        if params['mirror_boundary']:
+            dN_dz += np.exp(-(z_grid-zs_chosen[itr])**2/(2.*sigma**2))+np.exp(-(z_grid+zs_chosen[itr])**2/(2.*sigma**2))
+        else:
+            dN_dz += np.exp(-(z_grid-zs_chosen[itr])**2/(2.*sigma**2))
+
+    dN_dz = dN_dz/(sigma*np.sqrt(2.*np.pi))
+    if normalize:
+        dN_dz = zs_chosen.size*dN_dz/(au.trapz2(dN_dz,dx=params['z_resolution'])*params['area_sterad'])
+    return dN_dz

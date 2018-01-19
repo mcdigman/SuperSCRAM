@@ -13,12 +13,12 @@ from geo import Geo
 import defaults
 #get an exact spherical polygon geo
 class PolygonGeo(Geo):
+    """create a spherical polygon defined by clockwise vertices"""
     #TODO check order of thetas,phis
     #vertices should be specified such that the clockwise oriented contour contains the area
     #theta_in and phi_in do not actually determine the inside, but are necessary for now if generating intersects with SphericalPolygon
     def __init__(self,zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max,poly_params=defaults.polygon_params):
-        """create a spherical polygon defined by vertices
-                inputs:
+        """     inputs:
                     zs: the tomographic z bins
                     thetas,phis: an array of theta values for the edges in radians, last value should be first for closure, edges will be clockwise
                     theta_in,phi_in: a theta and phi known to be outside, needed for finding intersect for now
@@ -134,6 +134,7 @@ class PolygonGeo(Geo):
 
     #TODO test: probably bug somehow is giving float to get_Y_r_dict
     def expand_alm_table(self,l_max):
+        """expand the table of alms out to specified l_max"""
         ls = np.arange(np.int(self._l_max)+1,np.int(l_max)+1)
         n_l = ls.size
         if n_l==0:
@@ -211,6 +212,7 @@ class PolygonGeo(Geo):
         self._l_max = l_max
 
     def a_lm(self,l,m):
+        """get a(l,m) for the geometry"""
 
         if l>self._l_max:
             print "PolygonGeo: l value "+str(l)+" exceeds maximum precomputed l "+str(self._l_max)+",expanding table"
@@ -224,6 +226,7 @@ class PolygonGeo(Geo):
     #TODO make robust for type of poly2
     #TODO avoid relying on SphericalPolygon
     def get_overlap_fraction(self,geo2):
+        """get the overlap fraction between this geometry and another SphericalPolygon"""
         #there is a bug in spherical_geometry that causes overlap to fail if geometries are nested and 1 side is identical, handle this case unless they fix it
         try:
             result = self.sp_poly.overlap(geo2.sp_poly)
@@ -244,6 +247,7 @@ class PolygonGeo(Geo):
 #last point is arbitrary point inside because otherwise 2 polygons possible.
 #Behavior may be unpredictable if the inside point is very close to an edge or vertex.
 def get_poly(theta_vertices,phi_vertices,theta_in,phi_in):
+    """get the SphericalPolygon object for the geometry"""
     bounding_theta = theta_vertices-np.pi/2. #to radec
     bounding_phi = phi_vertices
     bounding_xyz = np.asarray(sgv.radec_to_vector(bounding_phi,bounding_theta,degrees=False)).T

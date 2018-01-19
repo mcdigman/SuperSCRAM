@@ -1,12 +1,14 @@
 """provide ability to compute union of PolygonGeos and use PolygonGeos as masks"""
-from polygon_geo import PolygonGeo
 import numpy as np
 import spherical_geometry.vector as sgv
 
+from polygon_geo import PolygonGeo
 from geo import Geo
 
 class PolygonUnionGeo(Geo):
+    """get the geo represented by the union of geos minus anything covered by masks, all PolygonGeo objects"""
     def __init__(self,geos,masks):
+        """geo,masks:    an array of PolygonGeo objects"""
         self.geos = geos
         self.n_g = geos.size
         self.n_m = masks.size
@@ -63,12 +65,15 @@ class PolygonUnionGeo(Geo):
         #        intersect_polys[itr1,itr2] = geos[itr1].sp_poly.intersection(geos[itr2].sp_poly.intersection)
 
     def angular_area(self):
+        """get angular area"""
         #TODO include mask
         if self.mask_geo is not None:
             return self.union_geo.angular_area()-self.mask_geo.angular_area()
         else:
             return self.union_geo.angular_area()
+
     def expand_alm_table(self,l_max):
+        """expand the internal alm table out to l_max"""
         self.union_geo.expand_alm_table(l_max)
         self.mask_geo.expand_alm_table(l_max)
         ls = np.arange(np.int(self._l_max)+1,np.int(l_max)+1)
@@ -80,6 +85,7 @@ class PolygonUnionGeo(Geo):
         self._l_max = l_max
 
     def a_lm(self,l,m):
+        """get a(l,m) for the geometry"""
         if l>self._l_max:
             print "PolygonUnionGeo: l value "+str(l)+" exceeds maximum precomputed l "+str(self._l_max)+",expanding table"
             self.expand_alm_table(l)

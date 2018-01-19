@@ -2,10 +2,10 @@
 MatterPower class handles and wrap all matter power spectra related functionality
 """
 from warnings import warn
-from camb_power import camb_pow
-from scipy.interpolate import RectBivariateSpline,InterpolatedUnivariateSpline
-
 import numpy as np
+from scipy.interpolate import RectBivariateSpline,InterpolatedUnivariateSpline
+from camb_power import camb_pow
+
 import FASTPTcode.FASTPT as FASTPT
 import cosmopie as cp
 
@@ -16,6 +16,7 @@ import w_matcher
 #TODO clean up
 #TODO treat w0 and w consistently
 class MatterPower(object):
+    """A generic matter power spectrum which can provide different types of linear or nonlinear (halofit, FAST-PT) power spectra as needed"""
     def __init__(self,C_in,P_lin=None,k_in=None,matter_power_params=defaults.matter_power_params,camb_params=None,wmatcher_params=defaults.wmatcher_params,halofit_params=defaults.halofit_params,fpt_params=defaults.fpt_params,wm_in=None,wm_safe=False,P_fid=None,camb_safe=False,de_perturbative=False):
         """Generate matter power spectrum for input cosmology
         linear power spectrum use camb, nonlinear can use halofit or FAST-PT

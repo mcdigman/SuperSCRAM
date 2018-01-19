@@ -2,8 +2,6 @@
 from warnings import warn
 from math import isnan
 
-from geo import PixelGeo
-from polygon_geo import get_poly
 
 import numpy as np
 from numpy.core.umath_tests import inner1d
@@ -12,13 +10,26 @@ from astropy.io import fits
 import spherical_geometry.vector as sgv
 #from spherical_geometry.polygon import SphericalPolygon
 
-from ylm_utils import get_a_lm_table
+from geo import PixelGeo
+from polygon_geo import get_poly
+
+import ylm_utils as ylmu
 
 import defaults
 
 class PolygonPixelGeo(PixelGeo):
-    def __init__(self,zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max,res_healpix=defaults.polygon_params['res_healpix'],overwride_precompute=False):
-        """get a healpix pixelated spherical polygon geo"""
+    """healpix pixelated spherical polygon geo"""
+    def __init__(self,zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max,res_healpix=defaults.polygon_params['res_healpix']):
+        """create a spherical polygon defined by vertices
+                inputs:
+                    zs: the tomographic z bins
+                    thetas,phis: an array of theta values for the edges in radians, last value should be first for closure, edges will be clockwise
+                    theta_in,phi_in: a theta and phi known to be outside, needed for finding intersect for now
+                    C: a CosmoPie object
+                    z_fine: the resolution z slices
+                    l_max: the maximum l to compute the alm table to
+                    res_healpix: 4 to 9, healpix resolution to use
+        """
         self.thetas = thetas
         self.phis = phis
         self.theta_in = theta_in
@@ -26,7 +37,6 @@ class PolygonPixelGeo(PixelGeo):
         self.C = C
         self.z_fine = z_fine
         self.res_healpix = res_healpix
-        self.overwride_precompute = overwride_precompute
         all_pixels = get_healpix_pixelation(res_choose=res_healpix)
         self.sp_poly = get_poly(thetas,phis,theta_in,phi_in)
         if isnan(self.sp_poly.area()):
@@ -48,13 +58,8 @@ class PolygonPixelGeo(PixelGeo):
         #set a00 to value from pixels for consistency, not angle defect even though angle defect is more accurate
         self.alm_table[(0,0)] = calc_area/np.sqrt(4.*np.pi)
         #precompute a table of alms
-        #allow overwriding precompute for testing, should not really do this otherwise
-        if not overwride_precompute:
-            self.alm_table,_,_,self.alm_dict = self.get_a_lm_table(l_max)
-            self._l_max = l_max
-        else:
-            self.alm_table = {}
-            self._l_max = 0
+        self.alm_table,_,_,self.alm_dict = self.get_a_lm_table(l_max)
+        self._l_max = l_max
 
 
     def a_lm(self,l,m):
@@ -79,82 +84,30 @@ class PolygonPixelGeo(PixelGeo):
     #third try with 16348 pixels l_max =100 takes 0.9288-1.047ss
     #fourth try (precompute some stuff), 16348 pixels l_max=100 takes 0.271s
     #fourth try l_max=50 takes 0.0691s, total ~2800x speed up over 1st try
-    def get_a_lm_below_l_max(self,l_max):
-        a_lms = {}
-        ls = np.zeros((l_max+1)**2)
-        ms = np.zeros((l_max+1)**2)
-
-        itr = 0
-
-        for ll in xrange(0,l_max+1):
-            for mm in xrange(-ll,ll+1):
-                #first try takes ~0.618 sec/iteration for 290 pixel region=> 2.1*10**-3 sec/(iteration pixel), much too slow
-                ls[itr] = ll
-                ms[itr] = mm
-                a_lms[(ll,mm)] = self.a_lm(ll,mm)
-                itr+=1
-        return a_lms,ls,ms
+#    def get_a_lm_below_l_max(self,l_max):
+#        a_lms = {}
+#        ls = np.zeros((l_max+1)**2)
+#        ms = np.zeros((l_max+1)**2)
+#
+#        itr = 0
+#
+#        for ll in xrange(0,l_max+1):
+#            for mm in xrange(-ll,ll+1):
+#                #first try takes ~0.618 sec/iteration for 290 pixel region=> 2.1*10**-3 sec/(iteration pixel), much too slow
+#                ls[itr] = ll
+#                ms[itr] = mm
+#                a_lms[(ll,mm)] = self.a_lm(ll,mm)
+#                itr+=1
+#        return a_lms,ls,ms
 
     #TODO check numerical stability
     def get_a_lm_table(self,l_max):
-        return get_a_lm_table(l_max,self.pixels[:,0],self.pixels[:,1],self.pixels[0,2]) 
-
-#    def get_a_lm_table(self,l_max):
-#        if l_max>85:
-#            raise ValueError('cannot use scipy precision for getting alm for l>85 because 171! is too large')
-#        n_tot = (l_max+1)**2
-#        pixel_area = self.pixels[0,2]
-#
-#        ls = np.zeros(n_tot)
-#        ms = np.zeros(n_tot)
-#        a_lms = {}
-#        ### verbatim in 5 locations
-#        #TODO merge this known_legendre logic into ylm_utils
-#        ###identical to 39 in ylm_utils
-#        #TODO n_t for testing only
-#        n_t = self.n_pix 
-#
-#        lm_dict,ls,ms = get_lm_dict(l_max)
-#
-#        cos_theta = np.cos(self.pixels[:,0])
-#        sin_theta = np.sin(self.pixels[:,0])
-#        abs_sin_theta = np.abs(sin_theta)
-#
-#
-#        sin_phi_m = np.zeros((l_max+1,n_t))
-#        cos_phi_m = np.zeros((l_max+1,n_t))
-#        for mm in xrange(0,l_max+1):
-#            sin_phi_m[mm] = np.sin(mm*self.pixels[:,1])
-#            cos_phi_m[mm] = np.cos(mm*self.pixels[:,1])
-#
-#        factorials = sp.misc.factorial(np.arange(0,2*l_max+1))
-#
-#        known_legendre = {(0,0):(np.zeros(n_t)+1.),(1,0):cos_theta,(1,1):-abs_sin_theta}
-#        for ll in xrange(0,l_max+1):
-#            if ll>=2:
-#                known_legendre[(ll,ll-1)] = (2.*ll-1.)*cos_theta*known_legendre[(ll-1,ll-1)]
-#                known_legendre[(ll,ll)] = -(2.*ll-1.)*abs_sin_theta*known_legendre[(ll-1,ll-1)]
-#            for mm in xrange(0,ll+1):
-#                if mm<=ll-2:
-#                    known_legendre[(ll,mm)] = ((2.*ll-1.)/(ll-mm)*cos_theta*known_legendre[(ll-1,mm)]-(ll+mm-1.)/(ll-mm)*known_legendre[(ll-2,mm)])
-#                prefactor = np.sqrt((2.*ll+1.)/(4.*np.pi)*factorials[ll-mm]/factorials[ll+mm])
-#                base = known_legendre[(ll,mm)]
-#                #no sin theta because first order integrator
-#                if mm==0:
-#                    a_lms[(ll,mm)] = pixel_area*prefactor*np.sum(base)
-#                else:
-#                    #Note: check condon shortley phase convention
-#
-#                    a_lms[(ll,mm)] = (-1)**(mm)*np.sqrt(2.)*pixel_area*prefactor*np.sum(base*cos_phi_m[mm])
-#                    a_lms[(ll,-mm)] = (-1)**(mm)*np.sqrt(2.)*pixel_area*prefactor*np.sum(base*sin_phi_m[mm])
-#                if mm<=ll-2:
-#                    known_legendre.pop((ll-2,mm),None)
-#
-#        return a_lms,ls,ms,lm_dict
-
+        """get table of a(l,m) below l_max"""
+        return ylmu.get_a_lm_table(l_max,self.pixels[:,0],self.pixels[:,1],self.pixels[0,2])
 
     #TODO make robust
     def get_overlap_fraction(self,geo2):
+        """get overlap fraction between this geometry and another PolygonPixelGeo"""
         result = np.sum(self.contained*geo2.contained)*1./np.sum(self.contained)
         #result2 = self.sp_poly.overlap(geo2.sp_poly)
         #print "PolygonPixelGeo: my overlap prediction="+str(result)+" spherical_geometry prediction="+str(result2)
@@ -169,6 +122,7 @@ class PolygonPixelGeo(PixelGeo):
 #res = 7 takes ~3.37 sec
 #res = 6 takes ~0.688 sec
 def get_healpix_pixelation(res_choose=6):
+    """get healpix pixels for a selected resolution res_choose from 4 to 9"""
     pixel_info = np.loadtxt('data/pixel_info.dat')
     area = pixel_info[res_choose,4]
     #tables from https://lambda.gsfc.nasa.gov/toolbox/tb_pixelcoords.cfm#pixelinfo
@@ -183,8 +137,8 @@ def get_healpix_pixelation(res_choose=6):
     return pixels
 
 
-#Pixels is a pixelation (ie what get_healpix_pixelation returns) and sp_poly is a spherical polygon, ie from get_poly
 def is_contained(pixels,sp_poly):
+    """Pixels is a pixelation (ie what get_healpix_pixelation returns) and sp_poly is a spherical polygon, ie from get_poly"""
     #xyz vals for the pixels
     xyz_vals = sgv.radec_to_vector(pixels[:,1],pixels[:,0]-np.pi/2.,degrees=False)
     contained = np.zeros(pixels.shape[0],dtype=bool)
@@ -193,8 +147,8 @@ def is_contained(pixels,sp_poly):
         contained[i]= sp_poly.contains_point([xyz_vals[0][i],xyz_vals[1][i],xyz_vals[2][i]])
     return contained
 
-#contains procedure adapted from spherical_geometry but pixels can be a vector
 def contains_points(pixels,sp_poly):
+    """contains procedure adapted from spherical_geometry but pixels can be a vector so faster"""
     xyz_vals = np.array(sgv.radec_to_vector(pixels[:,1],pixels[:,0]-np.pi/2.,degrees=False)).T
     intersects = np.zeros(pixels.shape[0],dtype=int)
     bounding_xyz = sp_poly._polygons[0]._points
@@ -206,9 +160,9 @@ def contains_points(pixels,sp_poly):
         intersects+= contains_intersect(bounding_xyz[itr], bounding_xyz[itr+1], inside_xyz, xyz_vals)
     return np.mod(intersects,2)==0
 
-#adapted from spherical_geometry.great_circle_arc.intersects, but much faster for our purposes
-#may behave unpredicatably if one of the points is exactly on an edge
 def contains_intersect(vertex1,vertex2,inside_point,test_points):
+    """adapted from spherical_geometry.great_circle_arc.intersects, but much faster for our purposes
+    may behave unpredicatably if one of the points is exactly on an edge"""
     cxd = np.cross(inside_point,test_points)
     axb = np.cross(vertex1,vertex2)
     #T doesn't need to be normalized because we only want signs

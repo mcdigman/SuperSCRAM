@@ -1,8 +1,8 @@
 """Some tests of projected observables"""
 import unittest
-import cosmopie as cp
 import numpy as np
 from scipy.interpolate import interp1d
+import cosmopie as cp
 import shear_power as sp
 import defaults
 import matter_power_spectrum as mps
@@ -10,10 +10,11 @@ import matter_power_spectrum as mps
 #class TestCosmosisAgreement():
 
 class TestCosmosisAgreement1(unittest.TestCase):
-    #test agreement with modified cosmosis demo 15 results
-    #assuming gaussian matter distribution with sigma=0.4 and average z=1
-    #will use power spectrum grid directly from cosmosis
+    """test agreement with modified cosmosis demo 15 results
+    assuming gaussian matter distribution with sigma=0.4 and average z=1
+    will use power spectrum grid directly from cosmosis"""
     def test_cosmosis_match(self):
+        """test function"""
         TOLERANCE_MAX = 0.1
         TOLERANCE_MEAN = 0.05
         camb_params = defaults.camb_params.copy()
@@ -94,10 +95,11 @@ class TestCosmosisAgreement1(unittest.TestCase):
 #            plt.show()
 
 class TestCosmosisHalofitAgreement1(unittest.TestCase):
-    #test agreement with modified cosmosis demo 15 results
-    #assuming gaussian matter distribution with sigma=0.4 and average z=1
-    #use halofit power spectrum grid
+    """test agreement with modified cosmosis demo 15 results
+    assuming gaussian matter distribution with sigma=0.4 and average z=1
+    use halofit power spectrum grid"""
     def test_cosmosis_match(self):
+        """test function"""
         TOLERANCE_MAX = 0.2
         TOLERANCE_MEAN = 0.2
         cp_params = defaults.cosmopie_params

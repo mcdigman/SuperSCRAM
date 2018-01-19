@@ -5,8 +5,15 @@ import defaults
 from algebra_utils import trapz2
 
 class SourceDistribution(object):
+    """generic input source distribution class"""
     def __init__(self,ps,zs,chis,C,params=defaults.lensing_params):
-        """generic input source distribution class"""
+        """ inputs:
+                ps: probability density of sources
+                zs: z grid of sources
+                chis: comoving distances corresponding to zs
+                C: CosmoPie object
+                params: parameters as needed
+        """
         self.ps = ps
         self.zs = zs
         self.chis = chis
@@ -14,9 +21,9 @@ class SourceDistribution(object):
         self.params=params
 
 class GaussianZSource(SourceDistribution):
+    """gaussian source distribution in z space"""
     def __init__(self,zs,chis,C,zbar=1.0,sigma=0.4,params=defaults.lensing_params):
-        """gaussian source distribution in z space
-            inputs:
+        """inputs:
                 zbar: mean z of sources
                 sigma: width of source distribution
         """
@@ -25,23 +32,25 @@ class GaussianZSource(SourceDistribution):
         SourceDistribution.__init__(self,ps,zs,chis,C,params)
 
 class ConstantZSource(SourceDistribution):
+    """constant source distribution"""
     def __init__(self,zs,chis,C,params=defaults.lensing_params):
-        """constant source distribution"""
+        """see SourceDistribution"""
         ps = np.zeros(zs.size)+1.
         ps = dz_to_dchi(ps,zs,chis,C,params)
         SourceDistribution.__init__(self,ps,zs,chis,C,params)
 
 class CosmoLikeZSource(SourceDistribution):
+    """source distribution from cosmolike paper""";
     def __init__(self,zs,chis,C,alpha=1.24,beta=1.01,z0=0.51,params=defaults.lensing_params):
-        """source distribution from cosmolike paper
-        cosmolike uses alpha=1.3, beta=1.5, z0=0.56"""
+        """cosmolike uses alpha=1.3, beta=1.5, z0=0.56"""
         ps = zs**alpha*np.exp(-(zs/z0)**beta)
         ps = dz_to_dchi(ps,zs,chis,C,params)
         SourceDistribution.__init__(self,ps,zs,chis,C,params)
 
 class NZMatcherZSource(SourceDistribution):
+    """source distribution using an NZMatcher object"""
     def __init__(self,zs,chis,C,nz_match,params=defaults.lensing_params):
-        """source distribution using an NZMatcher object"""
+        """nz_match: an NZMatcher object"""
         ps = nz_match.get_dN_dzdOmega(zs)
         ps = dz_to_dchi(ps,zs,chis,C,params)
         SourceDistribution.__init__(self,ps,zs,chis,C,params)

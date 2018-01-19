@@ -64,11 +64,12 @@ def test_power_derivative():
     assert np.all(np.abs(linear_bins-1.)<0.02)
     assert np.all(np.abs(fpt_bins-1.)<0.02)
 
-#replicate chiang&wagner arxiv:1403.3411v2 figure 4-5
-#note that the mean averaged over 1 oscillation should match as should the phase of the oscillations,
-#but the amplitude of the oscillations does not match because we are not convolving with a window function
 class PowerDerivativeComparison1(object):
+    """replicate chiang&wagner arxiv:1403.3411v2 figure 4-5
+    note that the mean averaged over 1 oscillation should match as should the phase of the oscillations,
+    but the amplitude of the oscillations does not match because we are not convolving with a window function"""
     def __init__(self):
+        """ do power derivative comparison"""
         camb_params = defaults.camb_params.copy()
         camb_params['force_sigma8']=True
         camb_params['leave_h'] = False

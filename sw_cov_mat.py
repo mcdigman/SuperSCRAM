@@ -6,8 +6,12 @@ import numpy as np
 import lensing_observables as lo
 
 class SWCovMat(object):
+    """Object to handle retrieving the non SSC short wavelength covariance matrices"""
     def __init__(self,O_I_1,O_I_2,debug=False,silent=False):
-        """Object to handle retrieving the non SSC short wavelength covariance matrices"""
+        """ O_I_1,O_I_2: SWObservable objects
+            debug: do debugging checks
+            silent: whether to print messages
+        """
         self.gaussian_covar = 0.
         self.dimension = 0
         if isinstance(O_I_1,lo.LensingObservable) and isinstance(O_I_2,lo.LensingObservable):
@@ -28,14 +32,14 @@ class SWCovMat(object):
                 r2_2 = O_I_2.r2
 
                 ns = np.zeros(4)
-                #TODO check ns, maybe should use isclose?
-                if np.all(r1_1 == r2_1):
+                #TODO check ns
+                if np.allclose(r1_1, r2_1):
                     ns[0] = sh_pow1.get_n_shape(class_a,class_c)
-                if np.all(r1_1 == r2_2):
+                if np.allclose(r1_1, r2_2):
                     ns[1] = sh_pow1.get_n_shape(class_a,class_d)
-                if np.all(r1_2 == r2_2):
+                if np.allclose(r1_2 , r2_2):
                     ns[2] = sh_pow1.get_n_shape(class_b,class_d)
-                if np.all(r1_2 == r2_1):
+                if np.allclose(r1_2 , r2_1):
                     ns[3] = sh_pow1.get_n_shape(class_b,class_c)
                 #ns = np.zeros(4)
                 #ns[0:2] =
