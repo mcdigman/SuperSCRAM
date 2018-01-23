@@ -17,8 +17,7 @@ class TestCosmosisAgreement1(unittest.TestCase):
         """test function"""
         TOLERANCE_MAX = 0.1
         TOLERANCE_MEAN = 0.05
-        camb_params = defaults.camb_params.copy()
-        C=cp.CosmoPie(cosmology=defaults.cosmology_cosmosis,camb_params=camb_params,p_space='overwride')
+        C=cp.CosmoPie(cosmology=defaults.cosmology_cosmosis,p_space='overwride')
         k_in = np.loadtxt('test_inputs/proj_2/k_h.txt')*C.h
         C.k=k_in
         zs = np.loadtxt('test_inputs/proj_2/z.txt')
@@ -31,7 +30,7 @@ class TestCosmosisAgreement1(unittest.TestCase):
         params['zbar']=1.0
         params['sigma']=0.4
         params['smodel']='gaussian'
-        sp1 = sp.ShearPower(C,zs,ls,omega_s=omega_s, pmodel='cosmosis',mode='power',params=params)
+        sp1 = sp.ShearPower(C,zs,ls,omega_s,params, pmodel='cosmosis',mode='power')
 
         sh_pow1 = sp.Cll_sh_sh(sp1).Cll()
         sh_pow1_gg = sp.Cll_g_g(sp1).Cll()
@@ -104,17 +103,18 @@ class TestCosmosisHalofitAgreement1(unittest.TestCase):
         TOLERANCE_MEAN = 0.2
         cp_params = defaults.cosmopie_params
         cp_params['p_space'] = 'overwride'
-        camb_params = defaults.camb_params.copy()
-        camb_params['maxkh']=1e5
-        camb_params['kmax']=100.
-        camb_params['npoints']=1000
-        C=cp.CosmoPie(cosmology=defaults.cosmology_cosmosis,p_space='overwride',camb_params=camb_params)
+        power_params = defaults.power_params.copy()
+        power_params.camb['force_sigma8'] = True
+        power_params.camb['maxkh']=1e5
+        power_params.camb['kmax']=100.
+        power_params.camb['npoints']=1000
+        C=cp.CosmoPie(cosmology=defaults.cosmology_cosmosis,p_space='overwride')
         #d = np.loadtxt('test_inputs/proj_1/camb_m_pow_l.dat')
         #d = np.loadtxt('test_inputs/proj_1/p_k_lin.dat')
         #k_in = d[:,0]
         #P_in = d[:,1]
         #k_in,P_in = camb_pow(defaults.cosmology_cosmosis)
-        P_in = mps.MatterPower(C,camb_params=camb_params)
+        P_in = mps.MatterPower(C,power_params)
         k_in = P_in.k
         C.k=k_in
         C.P_lin = P_in
@@ -127,13 +127,13 @@ class TestCosmosisHalofitAgreement1(unittest.TestCase):
         params['zbar']=1.0
         params['sigma']=0.40
         params['smodel']='gaussian'
-        sp1 = sp.ShearPower(C,zs,ls,omega_s=omega_s,pmodel='cosmosis',mode='power',params=params)
+        sp1 = sp.ShearPower(C,zs,ls,omega_s,params,pmodel='cosmosis',mode='power')
         sh_pow1 = sp.Cll_sh_sh(sp1).Cll()
         sh_pow1_gg = sp.Cll_g_g(sp1).Cll()
         sh_pow1_sg = sp.Cll_sh_g(sp1).Cll()
         sh_pow1_mm = sp.Cll_mag_mag(sp1).Cll()
 
-        sp2 = sp.ShearPower(C,zs,ls,omega_s=omega_s,pmodel='halofit',mode='power',params=params)
+        sp2 = sp.ShearPower(C,zs,ls,omega_s,params,pmodel='halofit',mode='power')
         sh_pow2 = sp.Cll_sh_sh(sp2).Cll()
         sh_pow2_gg = sp.Cll_g_g(sp2).Cll()
         sh_pow2_sg = sp.Cll_sh_g(sp2).Cll()

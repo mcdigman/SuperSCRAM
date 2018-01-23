@@ -51,7 +51,7 @@ class SuperSurvey(object):
 
         #TODO support multiple sw surveys with MultiFisher
         de_prior_params = defaults.prior_fisher_params
-        self.multi_f = mf.MultiFisher(basis,surveys_sw[0],surveys_lw,prior_params=de_prior_params,needs_a=self.get_a,do_mit=self.do_mitigated)
+        self.multi_f = mf.MultiFisher(basis,surveys_sw[0],surveys_lw,de_prior_params,needs_a=self.get_a,do_mit=self.do_mitigated)
 
         self.f_set_nopriors = self.multi_f.get_fisher_set(include_priors=False)
         self.f_set = self.multi_f.get_fisher_set(include_priors=True)
@@ -351,13 +351,14 @@ if __name__=="__main__":
         for i in xrange(0,36):
             cosmo_fid['ws36_'+str(i)] = cosmo_fid['w']
 
-    C=cp.CosmoPie(cosmology=cosmo_fid,p_space='jdem',camb_params=camb_params)
-    #C=cp.CosmoPie(cosmology=defaults.cosmology,p_space='basic',needs_power=True)
+    C=cp.CosmoPie(cosmology=cosmo_fid,p_space='jdem')
+    #C=cp.CosmoPie(cosmology=defaults.cosmology,p_space='basic')
     #k,P=C.get_P_lin()
-    P=mps.MatterPower(C,camb_params=camb_params)
+    power_params = defaults.power_params.copy()
+    power_params.camb = camb_params
+    P=mps.MatterPower(C,power_params)
     k=P.k
-    C.P_lin=P
-    C.k=k
+    C.set_power(P)
     #TODO check comoving distance is working
     r_max=C.D_comov(z_max)
     print 'this is r max and l_max', r_max , l_max
@@ -431,11 +432,11 @@ if __name__=="__main__":
     use_poly2=True
     if use_poly:
         if use_poly2:
-            geo1 = PolygonGeo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
-            geo2 = PolygonGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
+            geo1 = PolygonGeo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max,defaults.polygon_params)
+            geo2 = PolygonGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max,defaults.polygon_params)
         else:
-            geo1 = PolygonPixelGeo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max=l_max,res_healpix=res_choose)
-            geo2 = PolygonPixelGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max=l_max,res_healpix=res_choose)
+            geo1 = PolygonPixelGeo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max,res_healpix=res_choose)
+            geo2 = PolygonPixelGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max,res_healpix=res_choose)
     else:
         geo1=RectGeo(zs,Theta1,Phi1,C,z_fine)
         geo2=RectGeo(zs,Theta2,Phi2,C,z_fine)
@@ -486,11 +487,11 @@ if __name__=="__main__":
     nz_matcher = NZWFirst(nz_params)
     loc_lens_params['n_gal'] = au.trapz2(nz_matcher.get_dN_dzdOmega(geo1.z_fine),geo1.z_fine)*geo1.angular_area()
     loc_lens_params['smodel'] = 'nzmatcher'
-    survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,cosmo_par_list = cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,len_params=loc_lens_params,nz_matcher=nz_matcher)
-    #survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=loc_lens_params)
+    survey_1 = SWSurvey(geo1,'survey1',C,l_sw,defaults.sw_survey_params,observable_list = defaults.sw_observable_list,cosmo_par_list = cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,len_params=loc_lens_params,nz_matcher=nz_matcher)
+    #survey_2 = SWSurvey(geo1,'survey2',C,l_sw,defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=loc_lens_params)
 
-    #survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = np.array([]),len_params=loc_lens_params)
-    #survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_sw,params=lenless_defaults,observable_list = np.array([]),cosmo_par_list = np.array([],dtype=object),cosmo_par_epsilons=np.array([]),len_params=loc_lens_params,param_priors=param_priors)
+    #survey_1 = SWSurvey(geo1,'survey1',C,l_sw,defaults.sw_survey_params,observable_list = np.array([]),len_params=loc_lens_params)
+    #survey_2 = SWSurvey(geo1,'survey2',C,l_sw,lenless_defaults,observable_list = np.array([]),cosmo_par_list = np.array([],dtype=object),cosmo_par_epsilons=np.array([]),len_params=loc_lens_params,param_priors=param_priors)
 
     surveys_sw=np.array([survey_1])
 
@@ -507,10 +508,10 @@ if __name__=="__main__":
     #k_cut = 0.0214
     #k_cut = 0.03
 
-    basis=SphBasisK(r_max,C,k_cut,l_ceil=100)
+    basis=SphBasisK(r_max,C,k_cut,defaults.basis_params,l_ceil=100)
     lw_param_list = defaults.lw_param_list.copy()
     lw_observable_list = defaults.lw_observable_list.copy()
-    survey_3 = LWSurvey(geos,'lw_survey1',basis,C=C,params=defaults.lw_survey_params,observable_list=lw_observable_list,param_list = lw_param_list)
+    survey_3 = LWSurvey(geos,'lw_survey1',basis,C,defaults.lw_survey_params,observable_list=lw_observable_list,param_list = lw_param_list)
     surveys_lw=np.array([survey_3])
 
 
@@ -590,7 +591,7 @@ if __name__=="__main__":
     if get_hold_mats:
         no_prior_hold = SS.f_set[0][2].get_fisher()
         if C.de_model == 'jdem':
-            no_prior_project = prior_fisher.project_w0wa(no_prior_hold)
+            no_prior_project = prior_fisher.project_w0wa(no_prior_hold,defaults.prior_fisher_params,prior_fisher.JDEM_LABELS)
 
     print 'main: r diffs',np.diff(geo1.rs)
     print 'main: theta width',(geo1.rs[1]+geo1.rs[0])/2.*(Theta1[1]-Theta1[0])

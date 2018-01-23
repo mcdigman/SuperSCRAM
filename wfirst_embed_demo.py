@@ -24,12 +24,17 @@ if __name__=='__main__':
     cosmo['de_model'] = 'w0wa'
     cosmo['wa'] = 0.
     cosmo['w0'] = -1.
+    cosmo['w'] = -1.
     p_space = 'jdem'
     camb_params = defaults.camb_params.copy()
     camb_params['force_sigma8'] = False
+    fpt_params = defaults.fpt_params.copy()
+    wmatcher_params = defaults.wmatcher_params.copy()
+    halofit_params = defaults.halofit_params.copy()
+    matter_power_params = defaults.matter_power_params.copy()
+    hf_params = defaults.halofit_params.copy()
     poly_params = defaults.polygon_params.copy()
     lensing_params = defaults.lensing_params.copy()
-    wmatcher_params = defaults.wmatcher_params.copy()
     nz_params_wfirst_lens = defaults.nz_params_wfirst_lens.copy()
     sw_survey_params=defaults.sw_survey_params.copy()
     lw_survey_params=defaults.lw_survey_params.copy()
@@ -37,17 +42,20 @@ if __name__=='__main__':
     #TODO don't use defaults for setting up the core demo
     lw_observable_list = defaults.lw_observable_list
     dn_params = defaults.dn_params.copy()
+    mf_params = defaults.hmf_params.copy()
     n_params_wfirst = defaults.nz_params_wfirst_gal.copy()
-    lw_param_list = np.array([{'dn_params':dn_params,'n1_params':n_params_wfirst,'n2_params':n_params_wfirst}])
+    power_params = defaults.power_params.copy()
+    lw_param_list = np.array([{'dn_params':dn_params,'n1_params':n_params_wfirst,'n2_params':n_params_wfirst,'mf_params':mf_params}])
     #wmatcher_params['w_step']=0.05
+    basis_params = defaults.basis_params.copy()
 
     #creat a CosmoPie object to manage the cosmology details
     print "main: begin constructing CosmoPie"
-    C = CosmoPie(cosmo,camb_params=camb_params,p_space=p_space)
+    C = CosmoPie(cosmo,p_space=p_space)
 
     #get the matter power spectrum and give it to the CosmoPie
     print "main: begin constructing MatterPower"
-    P = MatterPower(C,camb_params=camb_params,wmatcher_params=wmatcher_params)
+    P = MatterPower(C,power_params)
     C.set_power(P)
 
     #create the WFIRST geometry
@@ -65,7 +73,7 @@ if __name__=='__main__':
     phi_in_wfirst = 7./180.*np.pi
     theta_in_wfirst = -35.*np.pi/180.+np.pi/2.
     print "main: begin constructing WFIRST PolygonGeo"
-    geo_wfirst = PolygonGeo(zs,thetas_wfirst,phis_wfirst,theta_in_wfirst,phi_in_wfirst,C,z_fine,l_max=l_max,poly_params=poly_params)
+    geo_wfirst = PolygonGeo(zs,thetas_wfirst,phis_wfirst,theta_in_wfirst,phi_in_wfirst,C,z_fine,l_max,poly_params)
 
     #create the LSST geometry (for our purposes, a 20000 square degree survey encompassing the wfirst survey)
     #use the same redshift bin structure as for WFIRST because we only want LSST for galaxy counts, not lensing
@@ -79,7 +87,7 @@ if __name__=='__main__':
     phi_in_lsst = 0.
 
     print "main: begin constructing LSST PolygonGeo"
-    geo_lsst = PolygonGeo(zs,thetas_lsst,phis_lsst,theta_in_lsst,phi_in_lsst,C,z_fine,l_max=l_max,poly_params=poly_params)
+    geo_lsst = PolygonGeo(zs,thetas_lsst,phis_lsst,theta_in_lsst,phi_in_lsst,C,z_fine,l_max,poly_params)
 
     #create the short wavelength survey (SWSurvey) object
     #list of comsological parameters that will need to be varied
@@ -111,7 +119,7 @@ if __name__=='__main__':
     l_sw = np.logspace(np.log(30),np.log(5000),base=np.exp(1.),num=40)
     #create the actual sw survey
     print "main: begin constructing SWSurvey for wfirst"
-    sw_survey_wfirst = SWSurvey(geo_wfirst,'wfirst',C=C,ls=l_sw,params=sw_survey_params,observable_list = sw_observable_list,cosmo_par_list = cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,len_params=lensing_params,nz_matcher=nz_wfirst_lens)
+    sw_survey_wfirst = SWSurvey(geo_wfirst,'wfirst',C,l_sw,sw_survey_params,observable_list = sw_observable_list,cosmo_par_list = cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,len_params=lensing_params,nz_matcher=nz_wfirst_lens)
     surveys_sw=np.array([sw_survey_wfirst])
 
     #create the lw basis
@@ -125,13 +133,13 @@ if __name__=='__main__':
     k_cut = x_cut/r_max
     #l_max caps maximum l regardless of k
     print "main: begin constructing basis for long wavelength fluctuations"
-    basis = SphBasisK(r_max,C,k_cut,l_ceil=l_max)
+    basis = SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_max)
 
     #create the lw survey
     geos = np.array([geo_wfirst,geo_lsst],dtype=object)
     print "main: begin constructing LWSurvey for mitigation"
     #TODO control cut out here
-    survey_lw = LWSurvey(geos,'combined_survey',basis,C=C,params=lw_survey_params,observable_list=lw_observable_list,param_list=lw_param_list)
+    survey_lw = LWSurvey(geos,'combined_survey',basis,C,lw_survey_params,observable_list=lw_observable_list,param_list=lw_param_list)
     surveys_lw=np.array([survey_lw])
 
     #create the SuperSurvey with mitigation

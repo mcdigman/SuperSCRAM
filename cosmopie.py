@@ -7,28 +7,26 @@
 
 from warnings import warn
 from scipy.integrate import odeint
-from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
+from scipy.interpolate import InterpolatedUnivariateSpline
 import numpy as np
 
 from algebra_utils import trapz2
-import matter_power_spectrum as mps
 
 import defaults
-import camb_power
+from dark_energy_model import DarkEnergyConstant,DarkEnergyW0Wa,DarkEnergyJDEM
 
 eps=np.finfo(float).eps
-
+#TODO ensure safe sigma8
 class CosmoPie(object):
     """stores and calculates various parameters for a cosmology"""
     #TODO convergence test a grid values
     #TODO reduce possibility of circular reference to MatterPower
-    def __init__(self,cosmology=defaults.cosmology, P_lin=None, k=None,p_space=defaults.cosmopie_params['p_space'],needs_power=False,camb_params=None,a_step=0.001,G_in=None,G_safe=False,silent=False):
+    def __init__(self,cosmology, P_lin=None, k=None,p_space=defaults.cosmopie_params['p_space'],a_step=0.001,G_in=None,G_safe=False,silent=False):
         """
         Set up for cosmological parameters in input cosmology.
         Inputs:
         cosmology: a dictionary of cosmological parameters,
         P_lin: a MatterPower object. Optional.
-        needs_power: If True and input P_lin is None, call camb to get MatterPower.
         p_space: The cosmological parameter space. available options listed in P_SPACES.
         G_in: Function to get linear growth factor. Optional.
         G_safe: If True and G_in is not None, use G_in instead of solving differential equation.
@@ -55,7 +53,6 @@ class CosmoPie(object):
         self.Omegam   = self.cosmology['Omegam']
         self.ns =self.cosmology['ns']
         self.H0       = self.cosmology['H0']
-        #self.sigma8   = self.cosmology['sigma8']
         self.h        = self.cosmology['h']
         self.Omegak   = self.cosmology['Omegak']
         self.Omegar   = self.cosmology['Omegar']
@@ -70,129 +67,16 @@ class CosmoPie(object):
             self.cosmology['w']=-1
 
         if self.de_model=='constant_w':
-            #self.de_mult = InterpolatedUnivariateSpline(z_de,(z_de+1.)**(3.*(1.+self.cosmology['w'])),k=1,ext=2)
-            self.de_mult = self.de_mult_const
-            #ws = np.zeros(z_de.size)+self.cosmology['w']
-            #self.w_interp = InterpolatedUnivariateSpline(z_de,ws,k=1,ext=2)
-            self.w_interp = self.de_w_const
+            self.de_object = DarkEnergyConstant(self.cosmology['w'])
         elif self.de_model=='w0wa':
             #Chevallier-Polarski-Linder model, solution can be found in ie arXiv:1605.01475
-            #self.de_mult=InterpolatedUnivariateSpline(z_de,np.exp(-3.*self.cosmology['wa']*z_de/(1.+z_de))*(1.+z_de)**(3.*(1.+self.cosmology['w0']+self.cosmology['wa'])),k=1,ext=2)
-            self.de_mult = self.de_mult_w0wa
-            #ws = self.cosmology['w0']+(1.-1./(1.+z_de))*self.cosmology['wa']
-            #self.w_interp = InterpolatedUnivariateSpline(z_de,ws,k=1,ext=2)
-            self.w_interp = self.de_w_w0wa
-#        elif self.de_model=='grid_w':
-#            #TODO storing grid in cosmology dangerous, make this work if anything actually uses it
+            self.de_object = DarkEnergyW0Wa(self.cosmology['w0'],self.cosmology['wa'])
 #            #cf ie https://ned.ipac.caltech.edu/level5/March08/Frieman/Frieman2.html#note1, arXiv:1605.01475
-#            z_de = self.cosmology['zs_de']
-#            de_integrand = (1.+self.cosmology['ws'])/(1.+z_de)
-#            de_exponent = cumtrapz(de_integrand,z_de,initial=0.)
-#            if z_de[0]<0:
-#                itr_first = np.where(z_de>=0.)[0][0]
-#                val_0 = z_de[itr_first-1]-z_de[itr_first-1]*(de_mults_in[itr_first]-de_mults_in[itr_first-1])/(z_de[itr_first-1]-z_de[itr_first])
-#                de_exponent-=val_0
-#            de_mults_in = np.exp(3.*de_exponent)
-#            #self.de_mult = InterpolatedUnivariateSpline(self.cosmology['zs_de'],de_mults_in,k=2,ext=2) #k=2 so smooths some, check if this is a good idea.
-#            self.w_interp = InterpolatedUnivariateSpline(self.cosmology['zs_de'],self.cosmology['ws'],k=2,ext=2)
         elif self.de_model=='jdem':
-            #piecewise constant approximation over 36 values with z=0.025 spacing
-
-            #z grid for dark energy interpolation
-            a_de = np.arange(1.,a_step,-a_step)
-            z_de = 1./a_de-1.
-            z_de[0] = 0. #enforce to avoid numeric precision issue
-
             ws_in = np.array([self.cosmology['ws36_'+str(i)] for i in range(0,36)])
-            zs_max = 0.025*np.arange(1,37)/(1-0.025*np.arange(1,37))
-            zs_min = 0.025*np.arange(0,36)/(1-0.025*np.arange(0,36))
-            #default to value of w over edge
-            #TODO enforce consistent use of default w, ie defaulting so at higher z just use last z given
-            ws = np.full(z_de.size,self.cosmology['w'])
-            itr = 0
-            for i in xrange(0,z_de.size):
-                if z_de[i]>=zs_max[itr]:
-                    itr+=1
-                    if itr>=zs_max.size:
-                        break
-                if z_de[i]>=zs_min[itr] and z_de[i]<zs_max[itr]:
-                    ws[i] = ws_in[itr]
-
-            self.w_interp_jdem = interp1d(z_de,ws)
-            def de_w_jdem(z):
-                z = np.asanyarray(z)
-                if not (np.any(z>=9.) or np.any(z<0)):
-                    result = self.w_interp_jdem(z)
-                else:
-                    result = np.zeros_like(z)
-                    result[z>=9.] = self.cosmology['w']
-                    result[z<0.] = self.cosmology['w']
-                    result[(z>=0.)*(z<9.)] = self.w_interp_jdem(z[(z>=0.)*(z<9.)])
-                return result
-            #self.w_interp = InterpolatedUnivariateSpline(z_de,ws,k=1,ext=2)
-            self.w_interp = de_w_jdem
-            #self.w_interp = self.w_interp_jdem
-            def de_exp_const_w(z,w):
-                return np.log((z+1.)**(3.*(1.+w)))/3.
-            de_step = de_exp_const_w(zs_max,ws_in)-de_exp_const_w(zs_min,ws_in)
-            de_step_sum = np.full(de_step.size+1,0.)
-            de_step_sum[1::] += np.cumsum(de_step)
-           #def de_mult_jdem2(z):
-           #    for i in xrange(0,z)
-            de_exponent_true = de_exp_const_w(z_de,ws)
-            for itr in xrange(0,36):
-                de_exponent_true[(zs_min[itr]<=z_de)*(z_de<zs_max[itr])]+=de_step_sum[itr]-de_exp_const_w(zs_min[itr],ws_in[itr])
-            de_exponent_true[z_de>=zs_max[-1]]+=de_step_sum[-1]-de_exp_const_w(zs_max[-1],self.cosmology['w'])
-            self.de_true_interp = InterpolatedUnivariateSpline(z_de,np.exp(3.*de_exponent_true),k=3,ext=2)
- #           self.de_true_interp = interp1d(z_de,np.exp(3.*de_exponent_true))
-            def de_mult_jdem(z):
-                z = np.asanyarray(z)
-                if not (np.any(z<0) or np.any(z>=9.)):
-                    return self.de_true_interp(z)
-                result = np.zeros_like(z)
-                result[z<0.] = (z[z<0.]+1.)**(3.*(1.+self.cosmology['w']))
-                result[(z>=0.)*(z<9.)] = self.de_true_interp(z[(z>=0.)*(z<9.)])
-                result[z>=9.] = np.exp(3.*(de_exp_const_w(z[z>=9.],self.cosmology['w'])-de_exp_const_w(9.,self.cosmology['w'])+np.log(self.de_true_interp(9.))/3.))
-                return result
- #           de_integrand = (1.+ws)/(1.+z_de)
- #           #self.de_integrand_interp = InterpolatedUnivariateSpline(z_de,de_integrand,k=3,ext=2)
- #           #value of exponent should be 0 at z=0, correct for z_de values <0
- #           #TODO do this integral piecewise exactly
- #           de_exponent = cumtrapz(de_integrand,z_de,initial=0.)
- #           de_exponent -= de_exponent[a_extra_de*2]
-
- #           self.de_exponent_jdem_interp =  InterpolatedUnivariateSpline(z_de,de_exponent,k=1)
- #           #extrapolate using constant
- #           def de_exponent_jdem(z):
- #               z = np.asanyarray(z)
- #               result = np.zeros_like(z)
- #               result[z<0.] = (z[z<0.]+1.)**(3.*(1.+self.cosmology['w']))
- #               result[z>=9.] = self.de_exponent_jdem_interp(9.)+np.log((z[z>=9.]+1.)**(3.*(1.+self.cosmology['w'])))/3.-np.log((9.+1.)**(3.*(1.+self.cosmology['w'])))/3.
- #               result[(0.<=z)*(z<9.)] = self.de_exponent_jdem_interp(z[(0<=z)*(z<9.)])
- #               return result
- #           def de_mult_jdem(z):
- #               z = np.asanyarray(z)
- #               return np.exp(3.*de_exponent_jdem(z))
-
-
- #           de_mults_in = np.exp(3.*de_exponent)
- #           de_mults_in+=1.-de_mults_in[a_extra_de*2]
- #           if z_de[0]<0:
- #               itr_first = np.where(z_de>=0.)[0][0]
- #               val_0 = z_de[itr_first-1]-z_de[itr_first-1]*(de_mults_in[itr_first]-de_mults_in[itr_first-1])/(z_de[itr_first-1]-z_de[itr_first])
- #               de_mults_in =de_mults_in-val_0
-            #self.de_mult = integ_funct
-            #TODO function instead of spline would be better
- #           self.de_mult = InterpolatedUnivariateSpline(z_de,de_mults_in,k=1) #smoothing may help differential equations
- #           self.de_mult_true = self.de_true_interp
- #           self.de_mult = de_mult_jdem
-            #self.de_mult=de_mult_jdem
-            self.de_mult = de_mult_jdem
- #           self.de_mult = self.de_true_interp
+            self.de_object = DarkEnergyJDEM(ws_in,a_step,self.cosmology['w'])
         else:
             raise ValueError('unrecognized dark energy model \''+str(self.de_model)+'\'')
-
-        self.camb_params = camb_params
 
 
         # solar mass
@@ -214,7 +98,6 @@ class CosmoPie(object):
         #curvature
         self.K = -self.Omegak*(self.H0/self.c)**2
 
-
         #precompute the normalization factor from the differential equation
         self.a_step=a_step
         self.G_safe=G_safe
@@ -222,24 +105,15 @@ class CosmoPie(object):
         a_min=a_step
         a_max=1.
         self.a_grid = np.arange(a_max,a_min-a_step/10.,-a_step)
-        #self.a_grid2 = np.arange(a_min,a_max,a_step)[::-1]
         self.z_grid = 1./self.a_grid-1.
 
         if not G_safe:
-#            dp_multiplier = -1./self.a_grid*(7./2.*self.Omegam_z(self.z_grid)+3*self.Omegar_z(self.z_grid)+(7./2.-3./2.*self.w_interp(self.z_grid))*self.OmegaL_z(self.z_grid)+4.*self.Omegak_z(self.z_grid))
-#            d_multiplier = -1./self.a_grid**2*(self.Omegar_z(self.z_grid)+3./2.*(1.-self.w_interp(self.z_grid))*self.OmegaL_z(self.z_grid)+2*self.Omegak_z(self.z_grid))
-            #TODO check splines
-
             def _dp_mult_interp(a):
                 z = 1./a-1.
-                return -1./a*(7./2.*self.Omegam_z(z)+3*self.Omegar_z(z)+(7./2.-3./2.*self.w_interp(z))*self.OmegaL_z(z)+4.*self.Omegak_z(z))
+                return -1./a*(7./2.*self.Omegam_z(z)+3*self.Omegar_z(z)+(7./2.-3./2.*self.de_object.w_of_z(z))*self.OmegaL_z(z)+4.*self.Omegak_z(z))
             def _d_mult_interp(a):
                 z = 1./a-1.
-                return -1./a**2*(self.Omegar_z(z)+3./2.*(1.-self.w_interp(z))*self.OmegaL_z(z)+2*self.Omegak_z(z))
-#            dp_mult_interp = InterpolatedUnivariateSpline(self.a_grid[::-1],dp_multiplier[::-1])
-#            d_mult_interp = InterpolatedUnivariateSpline(self.a_grid[::-1],d_multiplier[::-1])
-#            self.dp_mult_interp = dp_mult_interp
-#            self.d_mult_interp = d_mult_interp
+                return -1./a**2*(self.Omegar_z(z)+3./2.*(1.-self.de_object.w_of_z(z))*self.OmegaL_z(z)+2*self.Omegak_z(z))
             d_ics = np.array([1.,0.])
             d_args = (np.array([_d_mult_interp,_dp_mult_interp]),)
             def _d_evolve_eqs(ys,a,g_args):
@@ -253,29 +127,11 @@ class CosmoPie(object):
         else:
             self.G_p=G_in
 
-        if (P_lin is None or k is None) and needs_power:
-            self.P_lin = mps.MatterPower(self,camb_params=self.camb_params)
-            self.k=self.P_lin.k
-        else:
-            self.P_lin=P_lin
-            self.k=k
+        self.P_lin=P_lin
+        self.k=k
 
         if not silent:
             print "cosmopie "+str(id(self))+": finished initialization"
-
-
-    def de_mult_const(self,z):
-        """multiplier for de term if w constant"""
-        return (z+1.)**(3.*(1.+self.cosmology['w']))
-    def de_w_const(self,z):
-        """w function for de term if w constant"""
-        return np.full_like(z,self.cosmology['w'])
-    def de_mult_w0wa(self,z):
-        """multiplier for de term if w0wa"""
-        return np.exp(-3.*self.cosmology['wa']*z/(1.+z))*(1.+z)**(3.*(1.+self.cosmology['w0']+self.cosmology['wa']))
-    def de_w_w0wa(self,z):
-        """w(z) for de term if w0wa"""
-        return self.cosmology['w0']+(1.-1./(1.+z))*self.cosmology['wa']
 
     def Ez(self,z):
         """
@@ -283,7 +139,7 @@ class CosmoPie(object):
         """
         zp1=z + 1
         #need to use interpolating function for a dependence of OmegaL term because could be time dependent if w is not constant
-        return np.sqrt(self.Omegam*zp1**3 + self.Omegar*zp1**4 + self.Omegak*zp1**2 + self.OmegaL*self.de_mult(z))
+        return np.sqrt(self.Omegam*zp1**3 + self.Omegar*zp1**4 + self.Omegak*zp1**2 + self.OmegaL*self.de_object.de_mult(z))
 
     def H(self,z):
         """
@@ -296,7 +152,7 @@ class CosmoPie(object):
         Derivative of H with respect to a
         """
         #TODO check this if anything actually uses it
-        return -(1+z)*self.H0/2.*(3.*self.Omegam_z(z)+4.*self.Omegar_z(z)+2.*self.Omegak_z(z)+3.*(1.+self.w_interp(z))*self.OmegaL_z(z))
+        return -(1+z)*self.H0/2.*(3.*self.Omegam_z(z)+4.*self.Omegar_z(z)+2.*self.Omegak_z(z)+3.*(1.+self.de_object.w_of_z(z))*self.OmegaL_z(z))
 
     # distances, volumes, and time
     # -----------------------------------------------------------------------------
@@ -423,18 +279,17 @@ class CosmoPie(object):
          sigma^2(R)= \int dlogk/(2 np.pi^2) W^2 P(k) k^3
          user needs to adjust for growth factor upon return """
         if self.P_lin is None:
-            raise ValueError('You need to provide a linear power spectrum and k to get sigma valeus')
-        if self.k is None:
-            raise ValueError('You need to provide a linear power spectrum and k to get sigma valeus')
+            raise ValueError('You need to provide a linear power spectrum through set_power to get sigma valeus')
+
         if isinstance(R,np.ndarray):
-            kr = np.outer(self.k,R)
+            kr = np.outer(self.P_lin.k,R)
         else:
-            kr = self.k*R
+            kr = self.P_lin.k*R
         W=3.0*(np.sin(kr)/kr**3-np.cos(kr)/kr**2)
         #P=self.G_norm(z)**2*self.P_lin
         #TODO should be z dependence?
         P=self.P_lin.get_matter_power(np.array([0.]),pmodel='linear')[:,0]
-        I=trapz2(((W*W).T*P*self.k**3).T,np.log(self.k)).T/2./np.pi**2
+        I=trapz2(((W*W).T*P*self.P_lin.k**3).T,np.log(self.P_lin.k)).T/2./np.pi**2
 
         return np.sqrt(I)
 
@@ -450,7 +305,7 @@ class CosmoPie(object):
 
     def OmegaL_z(self,z):
         """dark energy density as function of redshift, considers variable w(z)"""
-        return self.OmegaL*self.de_mult(z)/self.Ez(z)**2
+        return self.OmegaL*self.de_object.de_mult(z)/self.Ez(z)**2
 
     def Omegak_z(self,z):
         """curvature density as a function of redshift"""
@@ -473,7 +328,7 @@ class CosmoPie(object):
 
     def get_P_lin(self):
         """Get stored linear power spectrum"""
-        return self.k, self.P_lin
+        return self.P_lin.k, self.P_lin
 
     #use this instead of storing sigma8 because isn't simple analytic formula
     def get_sigma8(self):
@@ -481,8 +336,8 @@ class CosmoPie(object):
         if 'sigma8' in P_SPACES[self.p_space]:
             return self.cosmology['sigma8']
         elif self.P_lin is None:
-            warn('CosmoPie should use MatterPower to get camb computed sigma8')
-            return camb_power.camb_sigma8(self.cosmology,self.camb_params)
+            raise ValueError('CosmoPie needs to have a MatterPower object through set_power to get camb computed sigma8')
+            #return camb_power.camb_sigma8(self.cosmology,self.camb_params)
         else:
             return self.P_lin.get_sigma8_eff(np.array([0.]))[0]
 
@@ -524,10 +379,11 @@ def strip_cosmology(cosmo_old,p_space,overwride=[]):
         for key in cosmo_old:
             if key not in P_SPACES[p_space] and key not in overwride:
                 cosmo_new.pop(key,None)
-        #TODO consider better defaults
+
         for req in P_SPACES[p_space]:
             if req not in cosmo_new:
-                cosmo_new[req] = defaults.cosmology_jdem[req]
+                raise ValueError('cosmology is missing required argument '+str(req))
+        #        cosmo_new[req] = defaults.cosmology_jdem[req]
 
     else:
         raise ValueError('unrecognized p_space \''+str(p_space)+'\'')

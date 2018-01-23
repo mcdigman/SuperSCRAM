@@ -23,10 +23,12 @@ if __name__ == '__main__':
     camb_params['minkh']=1.1e-4
     camb_params['maxkh']=100.
     camb_params['kmax']=1.
+    power_params = defaults.power_params.copy()
+    power_params.camb=camb_params
 
     RTOL = 3.*10**-2
     ATOL = 10**-10
-    C=CosmoPie(defaults.cosmology_cosmolike,camb_params=camb_params)
+    C=CosmoPie(defaults.cosmology_cosmolike)
     lmin_cosmo = 20
     lmax_cosmo = 5000
     nbins_cosmo = 20
@@ -145,8 +147,8 @@ if __name__ == '__main__':
 
     #d=np.loadtxt('camb_m_pow_l.dat')
     #k_in=d[:,0]; P_in=d[:,1]
-    #k_in,P_in=camb_pow(defaults.cosmology_cosmolike,camb_params=camb_params)
-    P_in = mps.MatterPower(C,camb_params=camb_params)
+    #k_in,P_in=camb_pow(defaults.cosmology_cosmolike,camb_params)
+    P_in = mps.MatterPower(C,power_params)
     k_in =P_in.k
     C.k = k_in
     C.P_lin = P_in
@@ -156,7 +158,7 @@ if __name__ == '__main__':
     len_params['n_gal'] = n_gal_cosmo
     len_params['sigma2_e'] = sigma_e_cosmo**2
 
-    sp = ShearPower(C,z_fine,l_mids,fsky_cosmo,pmodel='halofit',mode='power',ps=n_z,params=len_params)
+    sp = ShearPower(C,z_fine,l_mids,fsky_cosmo,len_params,pmodel='halofit',mode='power',ps=n_z)
     qs = np.zeros(tomo_bins_cosmo,dtype=object)
     for i in xrange(qs.size):
         qs[i] = QShear(sp,chi_bins[i,0],chi_bins[i,1])

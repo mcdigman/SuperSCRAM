@@ -34,6 +34,7 @@ def test_vary_1_parameter(param_set,param_vary):
 
     camb_params['force_sigma8'] = param_set[0]
     camb_params['leave_h'] = param_set[1]
+    power_params.camb=camb_params
 
     cosmo_fid = defaults.cosmology.copy()
 
@@ -46,8 +47,8 @@ def test_vary_1_parameter(param_set,param_vary):
         cosmo_pert = cosmo_fid.copy()
         cosmo_pert[param_vary]*=(1.+eps)
 
-        C_pert = cp.CosmoPie(cosmo_pert,camb_params=camb_params,p_space='jdem')
-        P_pert = mps.MatterPower(C_pert,camb_params=camb_params)
+        C_pert = cp.CosmoPie(cosmo_pert,p_space='jdem')
+        P_pert = mps.MatterPower(C_pert,power_params)
         k_pert = P_pert.k
         C_pert.k = k_pert
 
@@ -87,10 +88,12 @@ if __name__=='__main__':
             camb_params['npoints'] = 3000
             camb_params['kmax'] = 2.
             camb_params['maxkh'] =2.
+            power_params = defaults.power_params.copy()
+            power_params.camb=camb_params
             #camb_params['minkh'] =1e-3
 
-            C_fid = cp.CosmoPie(cosmo_fid,camb_params=camb_params,p_space='jdem')
-            P_fid = mps.MatterPower(C_fid,camb_params=camb_params)
+            C_fid = cp.CosmoPie(cosmo_fid,p_space='jdem')
+            P_fid = mps.MatterPower(C_fid,power_params)
             k_fid = P_fid.k
             C_fid.P_lin = P_fid
             P_lin1 = P_fid.get_matter_power(np.array([0.]),pmodel='linear')[:,0]

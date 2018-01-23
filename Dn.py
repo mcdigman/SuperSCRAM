@@ -15,7 +15,7 @@ import fisher_matrix as fm
 
 class DNumberDensityObservable(LWObservable):
     """An observable for the difference in galaxy number density between two bins"""
-    def __init__(self,geos,params,survey_id, C,basis,nz_params1,nz_params2):
+    def __init__(self,geos,params,survey_id, C,basis,nz_params1,nz_params2,mf_params):
         """ inputs:
                 geos: a numpy array of Geo objects
                 params: a dict of parameters
@@ -23,6 +23,7 @@ class DNumberDensityObservable(LWObservable):
                 C: as CosmoPie object
                 nz_params1,nz_params2: parameters for the nz_matcher objects to get
                     nz_params as needed by NZCandel
+                mf_params: params needed by ST_hmf
         """
         print "Dn: initializing"
         min_mass = params['M_cut']
@@ -49,7 +50,7 @@ class DNumberDensityObservable(LWObservable):
             else:
                 self.overlap_fraction = self.geo2.angular_area()/self.geo1.angular_area()
 
-        self.mf=ST_hmf(self.C)
+        self.mf=ST_hmf(self.C,params=mf_params)
         self.nzc_1 = NZCandel(self.nz_params1)
         #self.nzc_2 = NZLSST(self.nzc_1.z_grid,self.nz_params2)
         self.nzc_2 = NZCandel(self.nz_params2)
@@ -150,37 +151,3 @@ class DNumberDensityObservable(LWObservable):
     def get_perturbing_vector(self):
         """get decomposition of fisher matrix as F=v^Tv"""
         return np.dot( np.sqrt(self.Nab_i),self.vs)
-
-
-#if __name__=="__main__":
-#    print 'hello'
-#
-#    from defaults import cosmology
-#    from cosmopie import CosmoPie
-#    d=np.loadtxt('Pk_Planck15.dat')
-#    k=d[:,0]; P=d[:,1]
-#
-#    Omega_s1=18000
-#    z_bins1=np.array([.1,.2,.3])
-#    N1=np.array([1e6, 5*1e7])
-#
-#
-#    S1={'name':'LSST', 'sky_frac': Omega_s1, 'z_bins': z_bins1, 'N': N1}
-#
-#    Omega_s2=18000/2.
-#    z_bins2=np.array([.1,.2,.35,.5])
-#    N2=np.array([1e7, 5*1e7])
-#
-#    S2={'name':'WFIRST', 'sky_frac': Omega_s2, 'z_bins': z_bins2, 'N': N2}
-#
-#    n_obs_dict=[S1, S2]
-#
-#    cp=CosmoPie(cosmology, k=k, P_lin=P)
-#    r_max=cp.D_comov(4)
-#    l_alpha=np.array([1,2,3,4,5])
-#    n_zeros=3
-#
-#    from sph_klim import SphBasisK
-#    geo=SphBasisK(r_max,l_alpha,n_zeros,k,P)
-#    #TODO write demo
-#    #O=DO_n(n_obs_dict,1e15,cp,geo)

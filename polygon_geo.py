@@ -2,7 +2,6 @@
 from warnings import warn
 import numpy as np
 import spherical_geometry.vector as sgv
-from spherical_geometry.polygon import SphericalPolygon
 import spherical_geometry.great_circle_arc as gca
 #from polygon_pixel_geo import get_Y_r_dict
 from ylm_utils_mpmath import get_Y_r_dict_central
@@ -10,14 +9,14 @@ from ylm_utils_mpmath import get_Y_r_dict_central
 #from ylm_utils_mpmath import get_Y_r_dict as get_Y_r_dict4
 import alm_utils as au
 from geo import Geo
-import defaults
+from polygon_utils import get_poly
 #get an exact spherical polygon geo
 class PolygonGeo(Geo):
     """create a spherical polygon defined by clockwise vertices"""
     #TODO check order of thetas,phis
     #vertices should be specified such that the clockwise oriented contour contains the area
     #theta_in and phi_in do not actually determine the inside, but are necessary for now if generating intersects with SphericalPolygon
-    def __init__(self,zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max,poly_params=defaults.polygon_params):
+    def __init__(self,zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max,poly_params):
         """     inputs:
                     zs: the tomographic z bins
                     thetas,phis: an array of theta values for the edges in radians, last value should be first for closure, edges will be clockwise
@@ -241,23 +240,24 @@ class PolygonGeo(Geo):
     def surface_integral(self,function):
         raise  NotImplementedError, "Implement this if anything actually needs it"
 
-#Note these are spherical polygons so all the sides are great circles (not lines of constant theta!)
-#So area will differ from integral if assuming constant theta
-#vertices must have same first and last coordinate so polygon is closed
-#last point is arbitrary point inside because otherwise 2 polygons possible.
-#Behavior may be unpredictable if the inside point is very close to an edge or vertex.
-def get_poly(theta_vertices,phi_vertices,theta_in,phi_in):
-    """get the SphericalPolygon object for the geometry"""
-    bounding_theta = theta_vertices-np.pi/2. #to radec
-    bounding_phi = phi_vertices
-    bounding_xyz = np.asarray(sgv.radec_to_vector(bounding_phi,bounding_theta,degrees=False)).T
-    inside_xyz = np.asarray(sgv.radec_to_vector(phi_in,theta_in-np.pi/2.,degrees=False))
-
-    sp_poly = SphericalPolygon(bounding_xyz,inside=inside_xyz)
-    return sp_poly
+##Note these are spherical polygons so all the sides are great circles (not lines of constant theta!)
+##So area will differ from integral if assuming constant theta
+##vertices must have same first and last coordinate so polygon is closed
+##last point is arbitrary point inside because otherwise 2 polygons possible.
+##Behavior may be unpredictable if the inside point is very close to an edge or vertex.
+#def get_poly(theta_vertices,phi_vertices,theta_in,phi_in):
+#    """get the SphericalPolygon object for the geometry"""
+#    bounding_theta = theta_vertices-np.pi/2. #to radec
+#    bounding_phi = phi_vertices
+#    bounding_xyz = np.asarray(sgv.radec_to_vector(bounding_phi,bounding_theta,degrees=False)).T
+#    inside_xyz = np.asarray(sgv.radec_to_vector(phi_in,theta_in-np.pi/2.,degrees=False))
+#
+#    sp_poly = SphericalPolygon(bounding_xyz,inside=inside_xyz)
+#    return sp_poly
 
 if __name__=='__main__':
     from cosmopie import CosmoPie
+    import defaults
 
     poly_params = defaults.polygon_params.copy()
     poly_params['n_double'] = 85
@@ -270,10 +270,10 @@ if __name__=='__main__':
     phi_in_wfirst = 7./180.*np.pi
     theta_in_wfirst = -35.*np.pi/180.+np.pi/2.
     print "main: begin constructing WFIRST PolygonGeo"
-    geo_wfirst = PolygonGeo(zs,thetas_wfirst,phis_wfirst,theta_in_wfirst,phi_in_wfirst,C,z_fine,l_max=l_max_in,poly_params=poly_params)
+    geo_wfirst = PolygonGeo(zs,thetas_wfirst,phis_wfirst,theta_in_wfirst,phi_in_wfirst,C,z_fine,l_max_in,poly_params)
     #poly_params2 = poly_params.copy()
     #poly_params2['n_double']+=48
-    #geo_wfirst2 = PolygonGeo(zs,thetas_wfirst,phis_wfirst,theta_in_wfirst,phi_in_wfirst,C,z_fine,l_max=l_max_in,poly_params=poly_params2)
+    #geo_wfirst2 = PolygonGeo(zs,thetas_wfirst,phis_wfirst,theta_in_wfirst,phi_in_wfirst,C,z_fine,l_max_in,poly_params2)
     #print np.max(np.abs(np.array(geo_wfirst.alm_table.values())-np.array(geo_wfirst2.alm_table.values()))/np.array(geo_wfirst2.alm_table.values()))
     import sys
     sys.exit()
@@ -295,7 +295,7 @@ if __name__=='__main__':
     thetas = np.array([-50.,-35.,-35.,-19.,-19.,-19.,-15.8,-15.8,-40.,-40.,-55.,-78.,-78.,-78.,-55.,-55.,-50.,-50.])*np.pi/180.+np.pi/2.
     phi_in = 7./180.*np.pi
     theta_in = -35.*np.pi/180.+np.pi/2.
-    poly_geo = PolygonGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max_in,poly_params=poly_params)
+    poly_geo = PolygonGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max_in,poly_params)
 
     n_fill = 20
     theta_high = np.pi/2.+5.*np.pi/180.
@@ -343,7 +343,7 @@ if __name__=='__main__':
     theta_in2= SkyCoord(0.,0.,frame='icrs',unit='deg').geocentrictrueecliptic.lat.rad+np.pi/2.
     phi_in2 = SkyCoord(0.,0.,frame='icrs',unit='deg').geocentrictrueecliptic.lon.rad
 
-    poly_geo2 = PolygonGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max=l_max_in,poly_params=poly_params)
+    poly_geo2 = PolygonGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max_in,poly_params)
 
     thetar_high_fill = np.full(n_fill,20.)
     thetar_low_fill =np.full(n_fill, -20.)
@@ -360,7 +360,7 @@ if __name__=='__main__':
         phis_mask[itr] = coord_gal.geocentrictrueecliptic.lon.rad
     theta_in_mask = SkyCoord(0.,0.,frame='galactic',unit='deg').geocentrictrueecliptic.lat.rad+np.pi/2.
     phi_in_mask = SkyCoord(0.,0.,frame='galactic',unit='deg').geocentrictrueecliptic.lon.rad
-    mask_geo = PolygonGeo(zs,thetas_mask,phis_mask,theta_in_mask,phi_in_mask,C,z_fine,l_max=l_max_in,poly_params=poly_params)
+    mask_geo = PolygonGeo(zs,thetas_mask,phis_mask,theta_in_mask,phi_in_mask,C,z_fine,l_max_in,poly_params)
 
     import polygon_union_geo as pug
     union_geo = pug.PolygonUnionGeo(np.array([poly_geo2]),np.array([mask_geo],dtype=object))
@@ -485,17 +485,17 @@ if __name__=='__main__':
 #    #some setup to make an actual geo
 #    d=np.loadtxt('camb_m_pow_l.dat')
 #    k=d[:,0]; P=d[:,1]
-#    C=CosmoPie(k=k,P_lin=P,cosmology=defaults.cosmology)
+#    C=CosmoPie(cosmology=defaults.cosmology,k=k,P_lin=P)
 #    zs=np.array([.01,1.01])
 #    z_fine = np.arange(defaults.lensing_params['z_min_integral'],np.max(zs),defaults.lensing_params['z_resolution'])
 #
 #
 #    t0 = time()
 #    poly_params = defaults.polygon_params.copy()
-#    poly_geo = PolygonGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max_in,poly_params=poly_params)
+#    poly_geo = PolygonGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max_in,poly_params)
 #    t1 = time()
 #    print "PolygonGeo initialized in time: "+str(t1-t0)
-#    pp_geo = PolygonPixelGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max_in,res_healpix=res_choose)
+#    pp_geo = PolygonPixelGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,_max_in,res_healpix=res_choose)
 #    t2 = time()
 #    print "PolygonPixelGeo initialized at res "+str(res_choose)+" in time: "+str(t2-t1)
 #    pp_geo2 = PolygonPixelGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max_in,res_healpix=res_choose2)

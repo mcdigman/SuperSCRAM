@@ -5,11 +5,10 @@ from scipy.interpolate import InterpolatedUnivariateSpline,RectBivariateSpline
 from scipy.integrate import cumtrapz
 import numpy as np
 
-import defaults
 import cosmopie as cp
 class WMatcher(object):
     """matcher object for emulating arbitrary w(z) with effective constant w and growth factor"""
-    def __init__(self,C_fid,wmatcher_params=defaults.wmatcher_params):
+    def __init__(self,C_fid,wmatcher_params):
         """ C_fid: the fiducial CosmoPie, w(z) irrelevant because it will be ignored
             wmatcher_params:
                 w_step: resolution of w grid
@@ -19,6 +18,8 @@ class WMatcher(object):
                 a_min: minimum a to consider
                 a_max: maximum a to consider
         """
+        #appears only use of C_fid to extract cosmology
+        #CosmoPie appears to be used to extract G_norm,G, and Ez
         self.C_fid = C_fid
         self.cosmo_fid = C_fid.cosmology.copy()
         self.cosmo_fid['w']=-1.
@@ -46,7 +47,7 @@ class WMatcher(object):
         for i in xrange(0,self.n_w):
             self.cosmos[i] = self.cosmo_fid.copy()
             self.cosmos[i]['w'] = self.ws[i]
-            C_i = cp.CosmoPie(cosmology=self.cosmos[i],silent=True,needs_power=False)
+            C_i = cp.CosmoPie(cosmology=self.cosmos[i],silent=True)
             E_as = C_i.Ez(self.zs)
             #TODO check initial 0 on this integral is right
             self.integ_Es[i] = cumtrapz(1./(self.a_s**2*E_as)[::-1],self.a_s[::-1],initial=0.)
@@ -65,8 +66,10 @@ class WMatcher(object):
         self.integ_E_interp = RectBivariateSpline(self.ws,self.a_s[::-1],self.integ_Es,kx=2,ky=2)
 
     #accurate to within numerical precision
-    def match_w(self,C_in,z_match):
-        """match effective constant w as in casarini paper"""
+    #TODO could reduce reliance on padding
+    def match_w(self,C_in,z_match,n_pad=3):
+        """ match effective constant w as in casarini paper
+            require some padding so can get very accurate interpolation results, 2 works 3 is better"""
         z_match=np.asanyarray(z_match)
         a_match = 1./(1.+z_match)
         E_in = C_in.Ez(self.zs)
@@ -77,9 +80,8 @@ class WMatcher(object):
         for itr in xrange(0,z_match.size):
             iE_vals = self.integ_E_interp(self.ws,a_match[itr]).T[0]-integ_E_targets[itr]
             iG = np.argmax(iE_vals<=0.)
-            #require some padding so can get very accurate interpolation results
-            if iG-2>=0 and iG+2<self.ws.size:
-                w_grid1[itr] = InterpolatedUnivariateSpline(iE_vals[iG-2:iG+2][::-1],self.ws[iG-2:iG+2:][::-1],k=2)(0.)
+            if iG-n_pad>=0 and iG+n_pad<self.ws.size:
+                w_grid1[itr] = InterpolatedUnivariateSpline(iE_vals[iG-n_pad:iG+n_pad][::-1],self.ws[iG-n_pad:iG+n_pad:][::-1],k=2*n_pad-1,ext=2)(0.)
             else:
                 warn("w is too close to edge of range, using nearest neighbor w, consider expanding w range")
                 w_grid1[itr] = self.ws[iG]
@@ -91,7 +93,6 @@ class WMatcher(object):
         G_norm_ins = C_in.G_norm(z_in)
         n_z_in = z_in.size
         pow_mult = np.zeros(n_z_in)
-        #G_norm_fid = self.C_fid.G_norm(z_in)
         #TODO vectorize correctly
         for itr in xrange(0,n_z_in):
             pow_mult[itr]=(G_norm_ins[itr]/(self.G_interp(w_in[itr],a_in[itr])/self.G_interp(w_in[itr],1.)))**2

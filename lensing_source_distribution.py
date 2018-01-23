@@ -1,12 +1,11 @@
 """Provides various lensing source distributions"""
 #TODO handle photo z uncertainties
 import numpy as np
-import defaults
 from algebra_utils import trapz2
 
 class SourceDistribution(object):
     """generic input source distribution class"""
-    def __init__(self,ps,zs,chis,C,params=defaults.lensing_params):
+    def __init__(self,ps,zs,chis,C,params):
         """ inputs:
                 ps: probability density of sources
                 zs: z grid of sources
@@ -22,7 +21,7 @@ class SourceDistribution(object):
 
 class GaussianZSource(SourceDistribution):
     """gaussian source distribution in z space"""
-    def __init__(self,zs,chis,C,zbar=1.0,sigma=0.4,params=defaults.lensing_params):
+    def __init__(self,zs,chis,C,params,zbar=1.0,sigma=0.4):
         """inputs:
                 zbar: mean z of sources
                 sigma: width of source distribution
@@ -33,7 +32,7 @@ class GaussianZSource(SourceDistribution):
 
 class ConstantZSource(SourceDistribution):
     """constant source distribution"""
-    def __init__(self,zs,chis,C,params=defaults.lensing_params):
+    def __init__(self,zs,chis,C,params):
         """see SourceDistribution"""
         ps = np.zeros(zs.size)+1.
         ps = dz_to_dchi(ps,zs,chis,C,params)
@@ -41,7 +40,7 @@ class ConstantZSource(SourceDistribution):
 
 class CosmoLikeZSource(SourceDistribution):
     """source distribution from cosmolike paper""";
-    def __init__(self,zs,chis,C,alpha=1.24,beta=1.01,z0=0.51,params=defaults.lensing_params):
+    def __init__(self,zs,chis,C,params,alpha=1.24,beta=1.01,z0=0.51):
         """cosmolike uses alpha=1.3, beta=1.5, z0=0.56"""
         ps = zs**alpha*np.exp(-(zs/z0)**beta)
         ps = dz_to_dchi(ps,zs,chis,C,params)
@@ -49,16 +48,16 @@ class CosmoLikeZSource(SourceDistribution):
 
 class NZMatcherZSource(SourceDistribution):
     """source distribution using an NZMatcher object"""
-    def __init__(self,zs,chis,C,nz_match,params=defaults.lensing_params):
+    def __init__(self,zs,chis,C,params,nz_match):
         """nz_match: an NZMatcher object"""
         ps = nz_match.get_dN_dzdOmega(zs)
         ps = dz_to_dchi(ps,zs,chis,C,params)
         SourceDistribution.__init__(self,ps,zs,chis,C,params)
 
-def get_source_distribution(smodel,zs,chis,C,params=defaults.lensing_params,ps=np.array([]),nz_matcher=None):
+def get_source_distribution(smodel,zs,chis,C,params,ps=np.array([]),nz_matcher=None):
     """generate a source distribution from among the list of available source distributions"""
     if smodel == 'gaussian':
-        dist = GaussianZSource(zs,chis,C,zbar=params['zbar'],sigma=params['sigma'])
+        dist = GaussianZSource(zs,chis,C,params,zbar=params['zbar'],sigma=params['sigma'])
     elif smodel == 'constant':
         dist = ConstantZSource(zs,chis,C,params)
     elif smodel == 'cosmolike':
@@ -69,7 +68,7 @@ def get_source_distribution(smodel,zs,chis,C,params=defaults.lensing_params,ps=n
         else:
             raise ValueError('input zs.size='+str(zs.size)+'and ps.size='+str(ps.size)+' do not match')
     elif smodel=='nzmatcher':
-        dist = NZMatcherZSource(zs,chis,C,nz_matcher,params)
+        dist = NZMatcherZSource(zs,chis,C,params,nz_matcher)
     else:
         raise ValueError('invalid smodel value\''+str(smodel)+'\'')
     return dist

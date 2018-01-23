@@ -15,8 +15,8 @@ def util_set():
     omega_s = 0.02
     ls = np.arange(2,3000)
     camb_params = defaults.camb_params.copy()
-    C = CosmoPie(defaults.cosmology,camb_params=camb_params)
-    P_in = mps.MatterPower(C,camb_params=camb_params)
+    C = CosmoPie(defaults.cosmology)
+    P_in = mps.MatterPower(C,camb_params)
     k_in = P_in.k
     C.P_lin = P_in
     C.k = k_in
@@ -28,9 +28,9 @@ def util_set():
     z_test_res1 = 0.001
     zs_test1 = np.arange(len_params['z_min_integral'],len_params['z_max_integral'],z_test_res1)
 
-    dC_ddelta1 = ShearPower(C,zs_test1,ls,omega_s=omega_s,pmodel=len_params['pmodel_dO_ddelta'],mode='dc_ddelta')
+    dC_ddelta1 = ShearPower(C,zs_test1,ls,omega_s,len_params,pmodel=len_params['pmodel_dO_ddelta'],mode='dc_ddelta')
 
-    sp1 = ShearPower(C,zs_test1,ls,omega_s=omega_s,pmodel=len_params['pmodel_O'],mode='power')
+    sp1 = ShearPower(C,zs_test1,ls,omega_s,len_params,pmodel=len_params['pmodel_O'],mode='power')
 
 
     z_min1 = 0.8

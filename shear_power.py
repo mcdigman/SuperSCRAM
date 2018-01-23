@@ -10,13 +10,11 @@ from lensing_weight import QShear,QMag,QNum,QK
 from lensing_source_distribution import get_source_distribution
 from algebra_utils import trapz2
 
-import defaults
-
 #TODO check integral boundaries ok
 #TODO remove explicit cosmosis pmodel
 class ShearPower(object):
     """handles lensing power spectra"""
-    def __init__(self,C,zs,ls,omega_s,pmodel='halofit',ps=np.array([]),params=defaults.lensing_params,mode='power',nz_matcher=None):
+    def __init__(self,C,zs,ls,omega_s,params,pmodel='halofit',ps=np.array([]),mode='power',nz_matcher=None):
         """
             inputs:
                 C: CosmoPie object
@@ -121,11 +119,11 @@ class ShearPower(object):
 
     #take as an array of qs, ns, and rs instead of the matrices themselves
     #ns is [n_ac,n_ad,n_bd,n_bc]
-    def cov_g_diag(self,qs,ns_in=[0.,0.,0.,0.],rs=np.full(4,1.),delta_ls=None,ls=None):
+    def cov_g_diag(self,qs,ns_in,rs=np.full(4,1.),delta_ls=None,ls=None):
         """Get diagonal elements of gaussian covariance between observables
             inputs:
                 qs: a list of 4 QWeight objects [q1,q2,q3,q4]
-                ns_in: an input list of shape noise [n13,n24,n14,n23]
+                ns_in: an input list of shape noise [n13,n24,n14,n23] [0.,0.,0.,0.] if no noise
                 rs: correlation parameters, [r13,r24,r14,r23]. Optional.
                 ls: array of ls to use if not default. Optional.
                 delta_ls: array of differences of ls. Optional
@@ -276,92 +274,3 @@ class Cll_sh_g(Cll_q_q):
 #            integrand2[i] = -1./(sp.ls+0.5)**2*(term1+term2)*integrand1[i]
 #        self.integrand=integrand1+integrand2
 #        self.chis=sp.chis
-
-
-#if __name__=='__main__':
-#
-#        C=cp.CosmoPie(cosmology=defaults.cosmology,p_space='jdem')
-##       d = np.loadtxt('Pk_Planck15.dat')
-#        #d = np.loadtxt('camb_m_pow_l.dat')
-#        #k_in = np.logspace(-5,2,200,base=10)
-#        #k_in = d[:,0]
-#    #    k_in = np.loadtxt('test_inputs/proj_1/k_h.txt')
-##        k_in = np.logspace(-4,5,5000,base=10)
-##       zs = np.logspace(-2,np.log10(3),50,base=10)
-#        zs = np.arange(0.1,1.0,0.1)
-#       # zs = np.loadtxt('test_inputs/proj_1/z.txt')
-#       # zs[0] = 10**-3
-#        #zs = np.arange(0.005,2,0.0005)
-#        #ls = np.unique(np.logspace(0,4,3000,dtype=int))*1.0
-#        ls = np.arange(1,5000)
-#        epsilon = 0.0001
-#        #ls = np.loadtxt('test_inputs/proj_1/ell.txt')
-#
-#        #ls = np.logspace(np.log10(2),np.log10(10000),3000,base=10)
-##       ls = revd[:,0]
-#        #t1 = time()
-#        #cosmo_a = defaults.cosmology.copy()
-#        #k_a = d[:,0]
-#        #P_a = d[:,1]
-#        #k_a,P_a = cpow.camb_pow(C.cosmology)
-#        P_a = mps.MatterPower(C)
-#        C.P_lin=P_a
-#        k_a = P_a.k
-#        C.k = k_a
-#       # P_a = hf.HalofitPk(C=C).D2_L(k_a,0)
-#        omega_s=np.pi/(3.*np.sqrt(2.))
-#
-#
-#        import matplotlib.pyplot as plt
-#        do_power_response1 = False
-#        do_power_response2 = True
-#        do_power_response3 = False
-#
-#        if do_power_response1:
-#            ax = plt.subplot(111)
-#            zbar = np.array([0.1,1.0])
-#            dcalt1,p1a = dp_ddelta(P_a,zbar,C,pmodel='linear')
-#            dcalt2,p2a = dp_ddelta(P_a,zbar,C,pmodel='halofit')
-#            dcalt3,p3a = dp_ddelta(P_a,zbar,C,pmodel='fastpt')
-#
-#            ax.set_xlabel('l',size=20)
-#            plt.title('gaussian source with $\sigma=0.4$ centered at $z=1.0$')
-#            ax.set_ylabel('|$\\frac{\partial ln(P(k))}{\partial \\bar{\delta}}$|')
-#            ax.plot(k_a,abs(dcalt1/p1a))
-#            ax.plot(k_a,abs(dcalt2/p2a))
-#            ax.plot(k_a,abs(dcalt3/p3a))
-#            plt.xlim([0.,0.4])
-#            plt.ylim([1.2,3.2])
-#            ax.legend(['Linear','Halofit','1 loop fpt'],loc=3)
-#            plt.grid()
-#            plt.show()
-#        if do_power_response2:
-#            ax = plt.subplot(111)
-#            #sp_dch2 = ShearPower(C,zs,ls,omega_s,pmodel='halofit',param_vary='Omegamh2',mode='dc_dpar')
-#            #sp1 = ShearPower(C,zs,ls,omega_s,pmodel='halofit',param_vary='Omegamh2',mode='power')
-#            chi_min = C.D_comov(0.)
-#            chi_max = C.D_comov(0.9)
-#            #dc_ss_dch2 = Cll_sh_sh(sp_dch2,chi_max,chi_max,chi_min,chi_min).Cll()
-#            #q1 = QShear(sp1,chi_min,chi_max)
-#            #ax.loglog(ls,np.abs(dc_ss_dch2))
-#            plt.show()
-#        if do_power_response3:
-#            ax = plt.subplot(111)
-#            #sp_dmh2 = ShearPower(C,zs,ls,omega_s,pmodel='halofit',param_vary='Omegamh2',mode='dc_dpar')
-#            #sp_dbh2 = ShearPower(C,zs,ls,omega_s,pmodel='halofit',param_vary='Omegabh2',mode='dc_dpar')
-#            #sp_dlh2 = ShearPower(C,zs,ls,omega_s,pmodel='halofit',param_vary='OmegaLh2',mode='dc_dpar')
-#            #sp_dns = ShearPower(C,zs,ls,omega_s,pmodel='halofit',param_vary='ns',mode='dc_dpar')
-#            #sp_dLogAs = ShearPower(C,zs,ls,omega_s,pmodel='halofit',param_vary='LogAs',mode='dc_dpar')
-#            #dc_ss_dmh2 = Cll_sh_sh(sp_dmh2).Cll()
-#            #dc_ss_dbh2 = Cll_sh_sh(sp_dbh2).Cll()
-#            #dc_ss_dlh2 = Cll_sh_sh(sp_dlh2).Cll()
-#            #dc_ss_dns = Cll_sh_sh(sp_dns).Cll()
-#            #dc_ss_dLogAs = Cll_sh_sh(sp_dLogAs).Cll()
-#            #ax.loglog(ls,np.abs(dc_ss_dmh2))
-#            #ax.loglog(ls,np.abs(dc_ss_dbh2))
-#            #ax.loglog(ls,np.abs(dc_ss_dlh2))
-#            #ax.loglog(ls,np.abs(dc_ss_dns))
-#            #ax.loglog(ls,np.abs(dc_ss_dLogAs))
-#            #dc_ss_dLogAs is nearly identical to dc_ss_dlh2, chris says it is not surprising unless possibly if they are exactly identical
-#            #they do look to be approximately numericaly identical
-#            plt.show()

@@ -5,6 +5,7 @@ from polygon_geo import PolygonGeo
 from cosmopie import CosmoPie
 import defaults
 from sph_klim import SphBasisK
+import matter_power_spectrum as mps
 
 if __name__ == '__main__':
     time0 = time()
@@ -17,6 +18,8 @@ if __name__ == '__main__':
                     'return_sigma8':False
                   }
     print "main: building cosmology"
+    power_params = defaults.power_params.copy()
+    power_params.camb = camb_params
     cosmo_use = defaults.cosmology.copy()
     cosmo_use['h'] = 0.6774
     cosmo_use['Omegabh2'] = 0.02230
@@ -30,7 +33,9 @@ if __name__ == '__main__':
     cosmo_use['OmegaLh2'] = 0.7*0.6774**2
     cosmo_use['Omegakh2'] = 0.
     cosmo_use['LogAs'] = np.log(2.142e-9)
-    C = CosmoPie(defaults.cosmology.copy(),p_space='jdem',camb_params=camb_params,needs_power=True)
+    C = CosmoPie(defaults.cosmology.copy(),p_space='jdem')
+    P_lin = mps.MatterPower(C,power_params)
+    C.set_power(P_lin)
 
     #x_cut = 527.
     #l_max = 515
@@ -155,12 +160,12 @@ if __name__ == '__main__':
     print "main: building geometries"
     polygon_params = defaults.polygon_params
     polygon_params['n_double'] = 30
-    geo1 = PolygonGeo(z_coarse,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
+    geo1 = PolygonGeo(z_coarse,thetas,phis,theta_in,phi_in,C,z_fine,l_max,defaults.polygon_params)
     print 'main: r diffs',np.diff(geo1.rs)
     print 'main: theta width',(geo1.rs[1]+geo1.rs[0])/2.*(theta1-theta0)
     #print 'main: phi width',(geo1.rs[1]+geo1.rs[0])/2.*(phi1-phi0)*np.sin((theta1+theta0)/2)
     print 'main: phi width',(geo1.rs[1]+geo1.rs[0])/2.*(phi1-phi0)
-#    geo2 = PolygonGeo(z_coarse,thetas,phis+phi1,theta_in,phi_in+phi1,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
+#    geo2 = PolygonGeo(z_coarse,thetas,phis+phi1,theta_in,phi_in+phi1,C,z_fine,l_max,defaults.polygon_params)
 #    #geo1 = RectGeo(z_coarse,np.array([theta0,theta1]),np.array([phi0,phi1]),C,z_fine)
 #    #geo2 = RectGeo(z_coarse,np.array([theta0,theta1]),np.array([phi0,phi1])+phi1,C,z_fine)
 
@@ -175,7 +180,7 @@ if __name__ == '__main__':
     n_basis = np.zeros(k_tests.size)
     variances = np.zeros(k_tests.size)
 
-    basis = SphBasisK(r_max,C,k_cut,l_ceil=l_max,params=basis_params)
+    basis = SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_max)
 
     for i in xrange(0,k_tests.size):
         print "r_max,k_cut",r_max,k_tests[i]
@@ -200,7 +205,7 @@ if __name__ == '__main__':
 #    loc_lens_params['pmodel_dO_ddelta'] = 'halofit'
 #    loc_lens_params['pmodel_dO_dpar'] = 'halofit'
 #
-#    sw_survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_sw,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,cosmo_par_list = cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,len_params=loc_lens_params)
+#    sw_survey_1 = SWSurvey(geo1,'survey1',C,l_sw,defaults.sw_survey_params,observable_list = defaults.sw_observable_list,cosmo_par_list = cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,len_params=loc_lens_params)
 #    surveys_sw = np.array([sw_survey_1])
 
 #    do_mit = False

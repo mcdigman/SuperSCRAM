@@ -3,13 +3,12 @@ Contains lensing observable classes and functions
 """
 import numpy as np
 from sw_observable import SWObservable
-import defaults
 import shear_power as sp
 import lensing_weight as len_w
 import power_parameter_response as ppr
 class LensingPowerBase(object):
     """Shared object to generate and store things that will be needed my multiple LensingObservable objects, such as the lensing weight functions"""
-    def __init__(self,geo,ls,survey_id,C,cosmo_par_list,cosmo_par_epsilons,params=defaults.lensing_params,log_param_derivs=np.array([]),ps=np.array([]),nz_matcher=None):
+    def __init__(self,geo,ls,survey_id,C,cosmo_par_list,cosmo_par_epsilons,params,log_param_derivs=np.array([]),ps=np.array([]),nz_matcher=None):
         r"""inputs:
             geo: a Geo object for the geometry
             ls: the set of l bins to compute the sw observables on
@@ -32,15 +31,15 @@ class LensingPowerBase(object):
 
         #omega_s = self.geo.angular_area()/(4.*np.pi**2)
         omega_s = self.geo.angular_area()/(4.*np.pi)#removed square
-        self.C_pow = sp.ShearPower(C,self.geo.z_fine,ls,omega_s=omega_s,pmodel=params['pmodel_O'],mode='power',params=params,ps=ps,nz_matcher=self.nz_matcher)
-        self.dC_ddelta = sp.ShearPower(C,self.geo.z_fine,ls,omega_s=omega_s,pmodel=params['pmodel_dO_ddelta'],mode='dc_ddelta',params=params,ps=ps,nz_matcher=self.nz_matcher)
+        self.C_pow = sp.ShearPower(C,self.geo.z_fine,ls,omega_s,params,pmodel=params['pmodel_O'],mode='power',ps=ps,nz_matcher=self.nz_matcher)
+        self.dC_ddelta = sp.ShearPower(C,self.geo.z_fine,ls,omega_s,params,pmodel=params['pmodel_dO_ddelta'],mode='dc_ddelta',ps=ps,nz_matcher=self.nz_matcher)
 
         self.dC_dpars = np.zeros((cosmo_par_list.size,2),dtype=object)
         self.Cs_pert = ppr.get_perturbed_cosmopies(C,cosmo_par_list,cosmo_par_epsilons,log_param_derivs)
 
         for i in xrange(0,cosmo_par_list.size):
-            self.dC_dpars[i,0] = sp.ShearPower(self.Cs_pert[i,0],self.geo.z_fine,ls,omega_s=omega_s,pmodel=params['pmodel_O'],mode='power',params=params,nz_matcher=self.nz_matcher)
-            self.dC_dpars[i,1] = sp.ShearPower(self.Cs_pert[i,1],self.geo.z_fine,ls,omega_s=omega_s,pmodel=params['pmodel_O'],mode='power',params=params,nz_matcher=self.nz_matcher)
+            self.dC_dpars[i,0] = sp.ShearPower(self.Cs_pert[i,0],self.geo.z_fine,ls,omega_s,params,pmodel=params['pmodel_O'],mode='power',nz_matcher=self.nz_matcher)
+            self.dC_dpars[i,1] = sp.ShearPower(self.Cs_pert[i,1],self.geo.z_fine,ls,omega_s,params,pmodel=params['pmodel_O'],mode='power',nz_matcher=self.nz_matcher)
 
 #TODO observables should know their name
 class LensingObservable(SWObservable):

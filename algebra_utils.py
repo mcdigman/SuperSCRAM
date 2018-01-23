@@ -3,7 +3,7 @@ from warnings import warn
 import numpy as np
 import scipy.linalg as spl
 
-DEBUG = True
+DEBUG = False
 #TODO: In the long run, some of these functions would benefit from some low level optimizations, like doing cholesky decompositions
 #and inverses in place (or even lower level, like storing two cholesky decompositions in the same matrix and just masking the one we don't need when doing any given operation),
 #because the memory consumption of these matrices is the code's primary performance bottleneck.

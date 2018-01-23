@@ -1,5 +1,6 @@
 """provides some useful default values"""
 import numpy as np
+from param_manager import PowerParamManager
 # default cosmology is Planck 2015 TT+lowP+lensing+ext (arxiv 1502.01589v3 page 32)
 #TODO set not derived paramters to none and derive
 cosmology={ 'Omegabh2' :0.02227,
@@ -183,7 +184,7 @@ camb_params = { 'npoints':1000,
                 'maxkh':10., #1e5
                 'kmax':10.0,#20 #may need to be higher for some purposes,like 100, but makes things slower
                 'leave_h':False,
-                'force_sigma8':True,
+                'force_sigma8':False,
                 'return_sigma8':False
               }
 dp_params = {   'use_k3p':False,
@@ -201,8 +202,6 @@ prior_fisher_params ={  'row_strip'     :np.array([3,5,6,7]),
 halofit_params = {  'r_max':6,#5
                     'r_min':0.05,#0.05
                     'r_step':0.01,
-                    #   'c_threshold':0.001, #0.001
-                    #   'cutoff':True,
                     'max_extend':10,
                     'extrap_wint':True,#
                     'k_fix'     :500, #require integral in wint to go up this far if extrapolating
@@ -230,4 +229,6 @@ matter_power_params = { 'needs_halofit'  :True,
                         'a_step' : 0.05,
                         'nonlinear_model':'halofit'
                       }
-lw_param_list = lw_param_list = np.array([{'dn_params':dn_params,'n1_params':nz_params_wfirst_gal,'n2_params':nz_params_wfirst_gal}])
+lw_param_list = np.array([{'dn_params':dn_params,'n1_params':nz_params_wfirst_gal,'n2_params':nz_params_wfirst_gal}])
+
+power_params = PowerParamManager(matter_power_params,wmatcher_params,halofit_params,camb_params,fpt_params)

@@ -6,13 +6,12 @@ from warnings import warn
 
 import numpy as np
 
-import defaults
 import lensing_observables as lo
 from sw_cov_mat import SWCovMat
 #TODO evaluate if param_list as used by LWSurvey more elegant
 class SWSurvey(object):
     """Short wavelength survey: manage short wavelength observables and get their non SSC covariances and derivatives"""
-    def __init__(self,geo,survey_id,C,ls = np.array([]),cosmo_par_list=np.array([],dtype=object),cosmo_par_epsilons=np.array([]),params=defaults.sw_survey_params,observable_list=defaults.sw_observable_list,len_params=defaults.lensing_params,ps=np.array([]),nz_matcher=None):
+    def __init__(self,geo,survey_id,C,ls,params,cosmo_par_list=None,cosmo_par_epsilons=None,observable_list=None,len_params=None,ps=None,nz_matcher=None):
         """ inputs:
                 geo: a Geo object
                 survey_id: some identifier for the survey
@@ -36,7 +35,7 @@ class SWSurvey(object):
         self.cosmo_par_list = cosmo_par_list
         self.nz_matcher=nz_matcher
         if self.needs_lensing:
-            self.len_pow = lo.LensingPowerBase(self.geo,self.ls,survey_id,C=C,params=len_params,cosmo_par_list=cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,ps=ps,nz_matcher=self.nz_matcher)
+            self.len_pow = lo.LensingPowerBase(self.geo,self.ls,survey_id,C,cosmo_par_list,cosmo_par_epsilons,len_params,ps=ps,nz_matcher=self.nz_matcher)
             self.len_params = len_params
         else:
             self.len_pow = None
@@ -143,7 +142,7 @@ class SWSurvey(object):
             itr+=1
         return observables
 
-def generate_observable_names(geo,observable_list,cross_bins=defaults.sw_survey_params['cross_bins']):
+def generate_observable_names(geo,observable_list,cross_bins):
     """generate a list of full observable names for each tomographic bin in the geometry
         short names start with len_ if they are lensing related, then the rest of the name
         for example len_shear_shear is a shear shear lensing power spectrum
@@ -173,29 +172,3 @@ def generate_observable_names(geo,observable_list,cross_bins=defaults.sw_survey_
         else:
             warn('observable name \'',name,'\' unrecognized, ignoring')
     return names
-
-#if __name__=='__main__':
-#    from geo import RectGeo
-#    import matter_power_spectrum as mps
-#    Theta = [np.pi/4.,np.pi/2.]
-#    Phi = [0,np.pi/3.]
-#    #d=np.loadtxt('camb_m_pow_l.dat')
-#    #k=d[:,0]; P=d[:,1]
-#    C=cp.CosmoPie(cosmology=defaults.cosmology)
-#    P = mps.MatterPower(C)
-#    C.P_lin = P
-#    C.k = P.k
-#    zs = np.array([0.1,0.8])
-#    z_fine = np.arange(0.01,np.max(zs),0.01)
-#    ls = np.arange(2,500)
-#    geo = RectGeo(zs,Theta,Phi,C,z_fine)
-#    sw_survey = SWSurvey(geo,'survey1',C,ls)
-#    O_I_array = sw_survey.get_O_I_array()
-#    dO_I_ddelta_bar_list = sw_survey.get_dO_I_ddelta_bar_list()
-#    import matplotlib.pyplot as plt
-#    ax  = plt.subplot(111)
-#    ax.loglog(ls,O_I_array[0:ls])
-#    ax.loglog(ls,dO_I_ddelta_bar_list[0])
-#    plt.xlabel('ls')
-#    plt.legend(['O_I','dO_I_ddelta_bar'])
-#    plt.show()

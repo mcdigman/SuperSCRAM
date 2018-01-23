@@ -5,7 +5,6 @@ from scipy.interpolate import interp1d
 from scipy.integrate import cumtrapz
 from numpy.core.umath_tests import inner1d
 import numpy as np
-import defaults
 #p_h = np.loadtxt('camb_m_pow_l.dat')#
 #p_interp = interp1d(p_h[:,0],p_h[:,1]*p_h[:,0]**3/(2*np.pi**2))
 
@@ -26,8 +25,16 @@ class HalofitPk(object):
                     }
 
     """
-    def __init__(self,C,p_lin,halofit_params=defaults.halofit_params):
-        """take an input linear power spectrum at z=0, D2_l and D2_nl will output power spectrum at desired redshit"""
+    def __init__(self,C,p_lin,halofit_params,leave_h):
+        """take an input linear power spectrum at z=0, D2_l and D2_nl will output power spectrum at desired redshift
+            halofit_params:
+                    k_fix: upper limit k
+                    min_kh_nonlinear: minimum kh for nonlinear effects to set in
+                    smooth_width: use gaussian smoothing between camb and halofit in low k limit, width of smoothing
+                    r_min,r_max,r_step: min/max/step for r grid
+                    max_extend: maximum steps to extend allocated range by
+                    extrap_wint: whether to extrapolate like ns-4 on high end of power spectrum
+                    leave_h: whetehr the input power spectrum includes h or not"""
 
         self.C = C
         k_in = self.C.k
@@ -37,7 +44,8 @@ class HalofitPk(object):
         self.k_fix = self.params['k_fix']
         self.linear_cutoff = self.params['min_kh_nonlinear']
         self.smooth_width=self.params['smooth_width']
-        if not self.C.camb_params['leave_h']:
+        self.leave_h = leave_h
+        if not self.leave_h:
             self.linear_cutoff = self.linear_cutoff*self.C.cosmology['h']
         #extrapolated internal power spectrum to avoid spurious dependence on input k_max
         k_max_in = np.max(k_in)
@@ -320,7 +328,7 @@ class HalofitPk(object):
         if w_overwride:
             w=fixed_w
         else:
-            w=self.C.w_interp(z) #not sure if z dependent w is appropriate in halofit, possible answer in https://arxiv.org/pdf/0911.2454.pdf
+            w=self.C.de_object.w_of_z(z) #not sure if z dependent w is appropriate in halofit, possible answer in https://arxiv.org/pdf/0911.2454.pdf
        # #cf Bird, Viel, Haehnelt 2011 for extragam explanation (cosmosis)
         #extragam = 0.3159-0.0765*rn-0.8350*rncur
 

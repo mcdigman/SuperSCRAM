@@ -11,7 +11,7 @@ import defaults
 #TODO no good reason to use defaults at all here
 class LWSurvey(object):
     """handle getting long wavelength observables and their fisher matrices for mitigation"""
-    def __init__(self,geos,survey_id,basis,C,params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,param_list=None):
+    def __init__(self,geos,survey_id,basis,C,params,observable_list=defaults.lw_observable_list,param_list=None):
         """ inputs:
                 geos: an array of Geo objects, fo the survey windows of different long wavelength surveys
                 survey_id: an id for the survey
@@ -73,7 +73,7 @@ class LWSurvey(object):
             if re.match('^d_number_density',key):
                 params = names[key]
                 #TODO don't think actually needs both n1_params and n2_params anymore
-                observables[itr] = DNumberDensityObservable(self.geos,params['dn_params'],self.survey_id,self.C,self.basis,params['n1_params'],params['n2_params'])
+                observables[itr] = DNumberDensityObservable(self.geos,params['dn_params'],self.survey_id,self.C,self.basis,params['n1_params'],params['n2_params'],params['mf_params'])
             else:
                 warn('unrecognized or unprocessable observable: \'',key,'\', skipping')
                 observables[itr] = None
@@ -92,39 +92,3 @@ def generate_observable_names(observable_list,param_list):
         else:
             warn('observable name \'',name,'\' unrecognized, ignoring')
     return names
-
-#if __name__=='__main__':
-#    from geo import RectGeo
-#    import sph_klim
-#    Theta1 = [np.pi/4.,np.pi/2.]
-#    Phi1 = [0,np.pi/3.]
-#    Theta2 = [np.pi/4.,np.pi/2.]
-#    Phi2 = [np.pi/3.,2.*np.pi/3.]
-#    d=np.loadtxt('camb_m_pow_l.dat')
-#    k=d[:,0]; P=d[:,1]
-#    C=cp.CosmoPie(k=k,P_lin=P)
-#    zs = np.array([0.1,0.8])
-#    ls = np.arange(2,500)
-#    geo1 = RectGeo(zs,Theta1,Phi1,C)
-#    geo2 = RectGeo(zs,Theta2,Phi2,C)
-#    k_cut = 0.005
-#    l_ceil = 100
-#    r_max = 4000.
-#    basis = sph_klim.SphBasisK(r_max,C,k_cut,l_ceil)
-#    geos = np.array([geo1,geo2])
-#    lw_survey = LWSurvey(geos,'survey1',basis,ls,C=C)
-#    dO_a_ddelta_bar_list = lw_survey.get_dO_a_ddelta_bar_list()
-#    import matplotlib.pyplot as plt
-#    ax  = plt.subplot(111)
-#    fisher = basis.get_fisher()
-#    T = lw_survey.get_ddelta_bar_ddelta_alpha_list()[0][0]
-#    a1 = fisher.project_covar(T)
-#    print a1
-#    lw_survey.fisher_accumulate(fisher)
-#    a2 = fisher.project_covar(T)
-#    print a2
-#    #ax.loglog(np.diag(fisher.get_fisher()))
-#    #ax.loglog(dO_a_ddelta_bar_list[0])
-#    #plt.xlabel('ls')
-#    #plt.legend(['dO_I_ddelta_bar'])
-#    #plt.show()

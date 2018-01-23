@@ -2,8 +2,9 @@
 #pylint: disable=W0621
 import pytest
 import numpy as np
-import defaults
-from prior_fisher import fix_elements,read_prior_fisher,project_w0,project_w0wa,PriorFisher,JDEM_LABELS
+#import defaults
+#from prior_fisher import fix_elements,read_prior_fisher,project_w0,project_w0wa,PriorFisher,JDEM_LABELS
+from prior_fisher import PriorFisher,JDEM_LABELS
 EIG_SMALL = 1e-7
 class PriorFisherTest(object):
     """class for managing test PriorFisher objects"""
@@ -73,7 +74,7 @@ def test_strip(prior_fisher):
 def test_de(prior_fisher):
     """test projecting de"""
     stripped = prior_fisher.fisher_prior.stripped_mat.copy()
-    params = prior_fisher.fisher_prior.params.copy()
+#    params = prior_fisher.fisher_prior.params.copy()
     stripped_labels = prior_fisher.fisher_prior.stripped_labels.copy()
     processed_labels = prior_fisher.fisher_prior.processed_labels.copy()
     processed = prior_fisher.fisher_prior.processed_mat.copy()

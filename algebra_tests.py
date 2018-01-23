@@ -8,7 +8,7 @@ import pytest
 import algebra_utils as au
 from algebra_utils import cholesky_inplace,get_inv_cholesky,ch_inv,invert_triangular,get_mat_from_inv_cholesky,cholesky_inv_contract,get_cholesky_inv,cholesky_contract,check_is_cholesky,check_is_cholesky_inv,trapz2
 au.DEBUG=True
-
+#TODO add testing for inplace and clean parameters
 def get_test_mat(key):
     """get a test mat for the numerical key key"""
     if key==1:

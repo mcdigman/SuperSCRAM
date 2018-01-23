@@ -8,15 +8,15 @@ import matter_power_spectrum as mps
 
 def test_power_derivative():
     """test that the power derivatives agree with chiang&wagner arxiv:1403.3411v2 figure 4-5"""
-    camb_params = defaults.camb_params.copy()
-    camb_params['force_sigma8']=True
-    camb_params['leave_h'] = False
-    C=cp.CosmoPie(cosmology=defaults.cosmology_chiang,p_space='basic',camb_params=camb_params)
+    power_params = defaults.power_params.copy()
+    power_params.camb['force_sigma8']=True
+    power_params.camb['leave_h'] = False
+    C=cp.CosmoPie(cosmology=defaults.cosmology_chiang,p_space='basic')
     #d = np.loadtxt('camb_m_pow_l.dat')
     #k_in = d[:,0]
     epsilon = 0.00001
     #k_a,P_a = cpow.camb_pow(cosmo_a)
-    P_a = mps.MatterPower(C,camb_params=camb_params)
+    P_a = mps.MatterPower(C,power_params)
     k_a = P_a.k
     C.k=k_a
     k_a_h = P_a.k/C.cosmology['h']
@@ -70,15 +70,16 @@ class PowerDerivativeComparison1(object):
     but the amplitude of the oscillations does not match because we are not convolving with a window function"""
     def __init__(self):
         """ do power derivative comparison"""
-        camb_params = defaults.camb_params.copy()
-        camb_params['force_sigma8']=True
-        camb_params['leave_h'] = False
-        C=cp.CosmoPie(cosmology=defaults.cosmology_chiang,p_space='basic',camb_params=camb_params)
+        #camb_params = defaults.camb_params.copy()
+        power_params = defaults.power_params.copy()
+        power_params.camb['force_sigma8']=True
+        power_params.camb['leave_h'] = False
+        C=cp.CosmoPie(cosmology=defaults.cosmology_chiang,p_space='basic')
         #d = np.loadtxt('camb_m_pow_l.dat')
         #k_in = d[:,0]
         epsilon = 0.00001
         #k_a,P_a = cpow.camb_pow(cosmo_a)
-        P_a = mps.MatterPower(C,camb_params=camb_params)
+        P_a = mps.MatterPower(C,power_params)
         k_a = P_a.k
         C.k=k_a
         k_a_h = P_a.k/C.cosmology['h']

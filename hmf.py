@@ -7,13 +7,10 @@ from scipy.integrate import cumtrapz
 import numpy as np
 from algebra_utils import trapz2
 
-import defaults
-
-
-#TODO determine if useful to add    arXiv:astro-ph/9907024 functionality
+#TODO determine if useful to add arXiv:astro-ph/9907024 functionality
 class ST_hmf(object):
     """Sheth Tormen Halo Mass Function"""
-    def __init__(self,C, delta_bar=None,params=defaults.hmf_params):
+    def __init__(self,C,params,delta_bar=None):
         """ C: a CosmoPie
             delta_bar: mean density fluctuation
             params:

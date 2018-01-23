@@ -11,6 +11,7 @@ import sph_klim as sph
 from sph_functions import jn_zeros_cut
 from cosmopie import CosmoPie
 import defaults
+import matter_power_spectrum as mps
 
 def test_alm_match1():
     """Test that alm matches an exact answer retrieved from mathematica"""
@@ -29,7 +30,7 @@ def test_alm_match1():
     Phi=[0,np.pi/3.+np.sqrt(2.)/100.]
 
 
-    C=CosmoPie()
+    C=CosmoPie(cosmology=defaults.cosmology)
     geo1 = RectGeo(zs,Theta,Phi,C,z_fine)
 
     alm_py = np.zeros_like(alm_math)
@@ -82,8 +83,10 @@ def test_rint_match_mpmath():
     n_count = 0
     z_count = 0
     bad_count = 0
-    C=CosmoPie(defaults.cosmology,camb_params=defaults.camb_params,needs_power=True)
-    basis = sph.SphBasisK(r_max,C,k_cut)
+    C=CosmoPie(defaults.cosmology)
+    P_lin = mps.MatterPower(C,defaults.power_params.copy())
+    C.set_power(P_lin)
+    basis = sph.SphBasisK(r_max,C,k_cut,defaults.basis_params)
     for ll in ls:
         ks = jn_zeros_cut(ll,k_cut*r_max)/r_max
         ll_m = mpmath.mpf(ll)

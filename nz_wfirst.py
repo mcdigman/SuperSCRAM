@@ -44,8 +44,8 @@ if __name__ == '__main__':
     import matter_power_spectrum as mps
     #d = np.loadtxt('camb_m_pow_l.dat')
     #k = d[:,0]; P = d[:,1]
-    C = CosmoPie(cosmology=defaults.cosmology,camb_params=defaults.camb_params)
-    P = mps.MatterPower(C,camb_params=defaults.camb_params)
+    C = CosmoPie(cosmology=defaults.cosmology)
+    P = mps.MatterPower(C,defaults.power_params)
     C.P_lin = P
     C.k = C.P_lin.k
     theta0 = 0.*np.pi/16.
@@ -65,6 +65,7 @@ if __name__ == '__main__':
     l_max = 25
     geo1 = PolygonPixelGeo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max,res_healpix = res_choose)
     n_run = 1
+    mf_params = defaults.hmf_params.copy()
     nz_params = defaults.nz_params_wfirst_gal.copy()
     nz_params_candel = nz_params.copy()
     nz_params['data_source'] = 'data/H-5x140s.dat'
@@ -80,7 +81,7 @@ if __name__ == '__main__':
     ts[0] = time()
     for i in xrange(0,n_run):
         nzc = NZWFirst(nz_params)
-        mf = hmf.ST_hmf(C)
+        mf = hmf.ST_hmf(C,mf_params)
         t1 = time()
         dN_dz_res = nzc.get_dN_dzdOmega(z_fine)
         t2 = time()

@@ -12,7 +12,6 @@ from lw_basis import LWBasis
 from algebra_utils import trapz2,cholesky_inplace
 
 import fisher_matrix as fm
-import defaults
 
 # the smallest value
 eps=np.finfo(float).eps
@@ -22,7 +21,7 @@ eps=np.finfo(float).eps
 class SphBasisK(LWBasis):
     """ get the long wavelength basis with spherical bessel functions described in the paper
         basis modes are selected by the k value of the bessel function zero, which approximates order of importance"""
-    def __init__(self,r_max,C,k_cut=2.0,l_ceil=100,params=defaults.basis_params):#,geometry,CosmoPie):
+    def __init__(self,r_max,C,k_cut,params,l_ceil=100):#,geometry,CosmoPie):
         """ inputs:
                 r_max: the maximum radius of the sector
                 C: CosmoPie object
@@ -35,7 +34,7 @@ class SphBasisK(LWBasis):
         #TODO check correct power spectrum
         self.r_max = r_max
         P_lin_in=self.C.P_lin.get_matter_power(np.array([0.]),pmodel='linear')[:,0]
-        camb_params2 = self.C.camb_params.copy()
+        camb_params2 = self.C.P_lin.camb_params.copy()
         camb_params2['npoints'] = params['n_bessel_oversample']
         #P_lin_in,k_in = camb_pow(self.C.cosmology,camb_params=camb_params2)
         k_in = self.C.k
@@ -378,7 +377,7 @@ def norm_factor(ka,la,r_max):
 #
 #
 #    from cosmopie import CosmoPie
-#    C=CosmoPie(k=k,P_lin=P)
+#    C=CosmoPie(cosmology=defaults.cosmology,k=k,P_lin=P)
 #
 #    geometry=geo.RectGeo(zs,Theta,Phi,C,z_fine)
 #
@@ -386,7 +385,7 @@ def norm_factor(ka,la,r_max):
 #
 #    k_cut = 0.010
 #    l_ceil = 100
-#    R=SphBasisK(r_max,C,k_cut,l_ceil)
+#    R=SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_ceil)
 #    print R.C_size
 #
 #    r_min=C.D_comov(.1)

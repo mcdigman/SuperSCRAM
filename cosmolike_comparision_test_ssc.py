@@ -38,7 +38,7 @@ if __name__ == '__main__':
     camb_params = defaults.camb_params
     camb_params['force_sigma8']=True
     k_in,P_in=camb_pow(defaults.cosmology_cosmolike,camb_params=camb_params)
-    C=CosmoPie(defaults.cosmology_cosmolike,P_lin=P_in,k=k_in,camb_params=camb_params,p_space='overwride')
+    C=CosmoPie(defaults.cosmology_cosmolike,P_lin=P_in,k=k_in,p_space='overwride')
 
 
     n_s = sigma_e_cosmo**2/(2*n_gal_cosmo)
@@ -189,14 +189,14 @@ if __name__ == '__main__':
     #d=np.loadtxt('camb_m_pow_l.dat')
     #k_in=d[:,0]; P_in=d[:,1]
     l_max = 50
-    geo1 = PolygonGeo(zs,theta1s,phi1s,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
-    geo2 = PolygonGeo(zs,theta2s,phi2s,C,z_fine,l_max=l_max,poly_params=defaults.polygon_params)
+    geo1 = PolygonGeo(zs,theta1s,phi1s,C,z_fine,l_max,defaults.polygon_params)
+    geo2 = PolygonGeo(zs,theta2s,phi2s,C,z_fine,l_max,defaults.polygon_params)
 
     lenless_defaults = defaults.sw_survey_params.copy()
     lenless_defaults['needs_lensing'] = False
 
-    survey_1 = SWSurvey(geo1,'survey1',C=C,ls=l_mids,params=defaults.sw_survey_params,observable_list = defaults.sw_observable_list,cosmo_param_list = np.array([],dtype=object),cosmo_param_epsilons=np.array([]),len_params=len_params,ps=n_z)
-    survey_2 = SWSurvey(geo1,'survey2',C=C,ls=l_mids,params=lenless_defaults,observable_list = np.array([]),cosmo_param_list = np.array([],dtype=object),cosmo_param_epsilons=np.array([]),len_params=len_params,ps=n_z)
+    survey_1 = SWSurvey(geo1,'survey1',C,l_mids,defaults.sw_survey_params,observable_list = defaults.sw_observable_list,cosmo_param_list = np.array([],dtype=object),cosmo_param_epsilons=np.array([]),len_params=len_params,ps=n_z)
+    survey_2 = SWSurvey(geo1,'survey2',C,l_mids,lenless_defaults,observable_list = np.array([]),cosmo_param_list = np.array([],dtype=object),cosmo_param_epsilons=np.array([]),len_params=len_params,ps=n_z)
 
 
 
@@ -211,7 +211,7 @@ if __name__ == '__main__':
     k_cut = 0.009
     n_zeros=49
 
-    basis=SphBasisK(r_max,C,k_cut,l_ceil=100)
+    basis=SphBasisK(r_max,C,k_cut,defaults.basis_params,l_ceil=100)
 
     survey_3 = LWSurvey(geos,'lw_survey1',basis,C=C,ls = l_lw,params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params)
     surveys_lw=np.array([survey_3])
