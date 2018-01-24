@@ -41,7 +41,7 @@ def dp_ddelta(P_a,zbar,C,pmodel='linear',epsilon=0.0001):
             pza = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=1.)[:,0]
             pzb = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=(1.+epsilon/C.get_sigma8())**2)[:,0]
             pzc = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=(1.-epsilon/C.get_sigma8())**2)[:,0]
-            dpdk =(InterpolatedUnivariateSpline(k_a,pza,ext=2,k=2).derivative(1))(k_a)
+            dpdk = (InterpolatedUnivariateSpline(k_a,pza,ext=2,k=2).derivative(1))(k_a)
             dp = 13./21.*C.get_sigma8()*(pzb-pzc)/(2.*epsilon)+pza-1./3.*k_a*dpdk
             #dp = 13./21.*C.get_sigma8()*(pzb-pza)/(epsilon)+pza-1./3.*k_a*dpdk
     elif pmodel=='fastpt':
@@ -51,8 +51,8 @@ def dp_ddelta(P_a,zbar,C,pmodel='linear',epsilon=0.0001):
             dp = 47./21.*pza-1./3.*(k_a*(dpdk.T)).T+26./21.*one_loop
         else:
             pza,one_loop = P_a.get_matter_power(zbar,pmodel='fastpt',get_one_loop=True)
-            pza=pza[:,0]
-            one_loop=one_loop[:,0]
+            pza = pza[:,0]
+            one_loop = one_loop[:,0]
             dpdk = (InterpolatedUnivariateSpline(k_a,pza,ext=2,k=2).derivative(1))(k_a)
             dp = 47./21.*pza-1./3.*k_a*dpdk+26./21.*one_loop
     else:

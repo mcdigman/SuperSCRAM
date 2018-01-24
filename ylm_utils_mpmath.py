@@ -113,5 +113,5 @@ def get_Y_r_table(l_max,thetas,phis):
                 multiplier = (-1)**(mm)*np.sqrt(2.)*np.double(prefactor*base)
                 Y_lms[lm_dict[(ll, mm)]] = multiplier*cos_phi_m[mm]
                 Y_lms[lm_dict[(ll,-mm)]] = multiplier*sin_phi_m[mm]
-                multiplier=None
+                multiplier = None
     return Y_lms,ls,ms

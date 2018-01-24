@@ -50,10 +50,10 @@ class PolygonPixelUnionGeo(PolygonPixelGeo):
         #    self.mask_geo = PolygonGeo(geos[0].zs,self.mask_theta,self.mask_phi,in_dec+np.pi/2.,in_ra,geos[0].C,geos[0].z_fine,geos[0].l_max,geos[0].poly_params)
         #else:
         #    self.union_mask = None
-        #    self.mask_xyz=None
-        #    self.mask_phi=None
-        #    self.mask_theta=None
-        #    self.mask_geo=None
+        #    self.mask_xyz = None
+        #    self.mask_phi = None
+        #    self.mask_theta = None
+        #    self.mask_geo = None
 
         #TODO PRIORITY actually use union_mask
         PolygonPixelGeo.__init__(self,geos[0].zs,geos[0].thetas,geos[0].phis,geos[0].theta_in,geos[0].phi_in,geos[0].C,geos[0].z_fine,geos[0]._l_max,geos[0].res_healpix)

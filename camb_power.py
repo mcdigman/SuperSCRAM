@@ -45,9 +45,9 @@ def camb_pow(cosmology,zbar=0.,camb_params=None,nonlinear_model=camb.model.NonLi
         sigma8 = cosmology['sigma8']
         pk[0] = pk[0]*sigma8**2/results.get_sigma8()**2
     elif camb_params['return_sigma8']:
-        sigma8=results.get_sigma8()[0]
+        sigma8 = results.get_sigma8()[0]
     else:
-        sigma8=None
+        sigma8 = None
 
     pars.set_dark_energy() #reset defaults
 
@@ -84,7 +84,7 @@ def camb_sigma8(cosmology,camb_params=None):
         warn('cannot compute sigma8 reliably without input As')
         pars.InitPower.set_params(ns=cosmology['ns'])
     pars.set_dark_energy(cosmology['w']) #re-set defaults
-    pars.omegav=cosmology['OmegaL']
+    pars.omegav = cosmology['OmegaL']
     pars.set_matter_power(redshifts=[0.], kmax=camb_params['kmax'])
     results = camb.get_results(pars)
     sigma8 = results.get_sigma8()[0]

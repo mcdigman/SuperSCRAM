@@ -26,7 +26,7 @@ def param_vary(request):
 
 def test_vary_1_parameter(param_set,param_vary):
     """test variation of parameters for halofit and linear match expectations from camb"""
-    atol_rel=1.e-8
+    atol_rel = 1.e-8
     rtol = 3.e-3
     eps = 0.01
 
@@ -34,7 +34,8 @@ def test_vary_1_parameter(param_set,param_vary):
 
     camb_params['force_sigma8'] = param_set[0]
     camb_params['leave_h'] = param_set[1]
-    power_params.camb=camb_params
+    power_params = defaults.power_params.copy()
+    power_params.camb = camb_params
 
     cosmo_fid = defaults.cosmology.copy()
 
@@ -63,7 +64,7 @@ def test_vary_1_parameter(param_set,param_vary):
 
 
 if __name__=='__main__':
-    do_pytest=False
+    do_pytest = False
     if do_pytest:
         pytest.cmdline.main(['power_comparison_tests.py'])
     do_linear_test = True
@@ -74,7 +75,7 @@ if __name__=='__main__':
     param_sets = [[False,True,'halofit']]
     if do_linear_test:
         for param in param_sets:
-            atol_rel=1.e-8
+            atol_rel = 1.e-8
             #there is an ~0.05% discrepancy with camb halofit, probably due to the change of spectral_parameters
             #this version may or may not be better converged, convergence doesn't really seem to be the problem
             #for some reason the discrepancy is a function of pivot_scalar and is minimizaed around pivot_scalar=0.01-0.0001
@@ -87,10 +88,10 @@ if __name__=='__main__':
             camb_params['leave_h'] = param[1]
             camb_params['npoints'] = 3000
             camb_params['kmax'] = 2.
-            camb_params['maxkh'] =2.
+            camb_params['maxkh'] = 2.
             power_params = defaults.power_params.copy()
-            power_params.camb=camb_params
-            #camb_params['minkh'] =1e-3
+            power_params.camb = camb_params
+            #camb_params['minkh'] = 1e-3
 
             C_fid = cp.CosmoPie(cosmo_fid,p_space='jdem')
             P_fid = mps.MatterPower(C_fid,power_params)
@@ -106,7 +107,7 @@ if __name__=='__main__':
                 nonlinear_model = camb.model.NonLinear_none
 
             k_res2,P_res2 = camb_pow(C_fid.cosmology,zbar=np.array([0.]),camb_params=camb_params,nonlinear_model=nonlinear_model)
-            #k_res2 =k_fid
+            #k_res2 = k_fid
             #P_res2 = P_fid.get_matter_power(np.array([0.]),pmodel='linear')[:,0]
 
 
@@ -126,7 +127,7 @@ if __name__=='__main__':
             #assert np.allclose(k_res2,k_fid,atol=atol_k,rtol=rtol)
             #assert np.allclose(P_res1,P_res2,atol=atol_power,rtol=rtol)
         #print "PASS: passed all assertions"
-#        do_jvp_comp=True
+#        do_jvp_comp = True
 #        if do_jvp_comp:
 #            from halofit2 import PowerSpectrum
 #            jvp_halo = PowerSpectrum(0.,C_fid.Omegam,C_fid.OmegaL,C_fid.get_sigma8(),0.21)

@@ -50,106 +50,106 @@ if __name__ == '__main__':
     do_plot = True
     if param_use == 1:
         #matches to  0.918455921357 for l_max=340,x_cut=360, not monotonic
-        theta0=np.pi/2.-np.pi*0.21644180767757945
-        theta1=np.pi/2.+np.pi*0.21644180767757945
-        phi0=0.
-        phi1=np.pi*0.4328860177816256
+        theta0 = np.pi/2.-np.pi*0.21644180767757945
+        theta1 = np.pi/2.+np.pi*0.21644180767757945
+        phi0 = 0.
+        phi1 = np.pi*0.4328860177816256
 
         z_coarse = np.array([0.001,0.005])
         z_max = 0.0055
         z_fine = np.arange(0.00001,0.2,0.00001)
 
-        variance_pred1=6.94974e-01
+        variance_pred1 = 6.94974e-01
         variance_pred2 = 6.47471e-01
     elif param_use == 2:
         #matches to 0.984883733033 for l_max=340,x_cut=360, monotonic
-        theta0=np.pi/2.-np.pi*0.005549789940450755
-        theta1=np.pi/2.+np.pi*0.005549789940450755
-        phi0=0.
-        phi1=np.pi*0.011099641481580144
+        theta0 = np.pi/2.-np.pi*0.005549789940450755
+        theta1 = np.pi/2.+np.pi*0.005549789940450755
+        phi0 = 0.
+        phi1 = np.pi*0.011099641481580144
 
         z_coarse = np.array([0.9,1.0])
         z_fine = np.arange(0.0005,1.,0.0005)
         z_max = 1.05
 
-        variance_pred1=1.32333e-02
-        variance_pred2=1.38770e-02
+        variance_pred1 = 1.32333e-02
+        variance_pred2 = 1.38770e-02
     elif param_use ==3:
         #matches to  0.256984236659 for l_max=340,x_cut=360, monotonic but convergence appears poor
         #matches to 0.442356296589 for l_max=515, x_cut=
-        theta0=np.pi/2.-np.pi/1801.87
-        theta1=np.pi/2.+np.pi/1801.87
-        phi0=0.
-        phi1=np.pi/900.93
+        theta0 = np.pi/2.-np.pi/1801.87
+        theta1 = np.pi/2.+np.pi/1801.87
+        phi0 = 0.
+        phi1 = np.pi/900.93
 
         z_coarse = np.array([0.99525,1.0])
         z_fine = np.arange(0.0005,1.,0.0005)
         z_max = 1.05
 
-        variance_pred1=1.18262e+00
+        variance_pred1 = 1.18262e+00
         variance_pred2 = 1.18253e+00
     elif param_use==4:
         #matches to 0.982422823102 side 0.985672230237 volume  for l_max=340,x_cut=360, monotonic, convergence looks good
-        theta0=np.pi/2.-np.pi*0.025320951131222628
-        theta1=np.pi/2.+np.pi*0.025320951131222628
-        phi0=0.
-        phi1=np.pi*0.05064218331592479
+        theta0 = np.pi/2.-np.pi*0.025320951131222628
+        theta1 = np.pi/2.+np.pi*0.025320951131222628
+        phi0 = 0.
+        phi1 = np.pi*0.05064218331592479
 
         z_coarse = np.array([0.8102,1.0])
         z_fine = np.arange(0.0005,1.,0.0005)
         z_max = 1.05
 
-        variance_pred1=4.91106e-04
-        variance_pred2=4.89487E-04
+        variance_pred1 = 4.91106e-04
+        variance_pred2 = 4.89487E-04
     elif param_use==5:
         #20000 deg^2
         #matches to side 1.17896133281 vol 0.914043964767 for l_max=340,x_cut=360, appears converged
-        theta0=np.pi/2.-np.pi*0.48476681987396752
-        theta1=np.pi/2.+np.pi*0.48476681987396752
-        phi0=0.
-        phi1=np.pi*0.96953902048583762
+        theta0 = np.pi/2.-np.pi*0.48476681987396752
+        theta1 = np.pi/2.+np.pi*0.48476681987396752
+        phi0 = 0.
+        phi1 = np.pi*0.96953902048583762
 
         z_coarse = np.array([0.9,1.3])
         z_fine = np.arange(0.0005,1.,0.0005)
         z_max = 1.301
 
         #by sides
-        variance_pred1=2.88548E-07
+        variance_pred1 = 2.88548E-07
         #by volume
-        variance_pred2=3.10674E-07
+        variance_pred2 = 3.10674E-07
     elif param_use==6:
         #2000 deg^2
         #matches to side 1.17896133281 vol 0.914043964767 for l_max=340,x_cut=360, appears converged
-        theta0=np.pi/2.-np.pi*0.12306206198097261
-        theta1=np.pi/2.+np.pi*0.12306206198097261
+        theta0 = np.pi/2.-np.pi*0.12306206198097261
+        theta1 = np.pi/2.+np.pi*0.12306206198097261
 
-        phi0=0.
-        phi1=np.pi*0.24612548990671312
+        phi0 = 0.
+        phi1 = np.pi*0.24612548990671312
 
         z_coarse = np.array([0.9,1.3])
         z_fine = np.arange(0.0005,1.,0.0005)
         z_max = 1.301
 
         #by sides
-        variance_pred1=5.50604e-06
+        variance_pred1 = 5.50604e-06
         #by volume
         variance_pred2 = 4.95809e-06
     elif param_use==7:
         #20000 deg^2
         #matches to side 1.17896133281 vol 0.914043964767 for l_max=340,x_cut=360, appears converged
-        theta0=np.pi/2.-np.pi*0.48476681987396752
-        theta1=np.pi/2.+np.pi*0.48476681987396752
-        phi0=0.
-        phi1=np.pi*0.96953902048583762
+        theta0 = np.pi/2.-np.pi*0.48476681987396752
+        theta1 = np.pi/2.+np.pi*0.48476681987396752
+        phi0 = 0.
+        phi1 = np.pi*0.96953902048583762
 
         z_coarse = np.array([0.2,1.3])
         z_fine = np.arange(0.0005,1.,0.0005)
         z_max = 1.301
 
         #by sides
-        variance_pred1=1.12606e-07
+        variance_pred1 = 1.12606e-07
         #by volume
-        variance_pred2=1.50551e-07
+        variance_pred2 = 1.50551e-07
     thetas = np.array([theta0,theta1,theta1,theta0,theta0])
     phis = np.array([phi0,phi0,phi1,phi1,phi0])
     theta_in = (theta1+theta0)/2.
@@ -218,15 +218,15 @@ if __name__ == '__main__':
 #        geos = np.array([geo1,geo2])
 #        surveys_lw = np.array([])
 #    print "main: building super survey"
-#    SS=SuperSurvey(surveys_sw, surveys_lw,basis,C=C,get_a=True,do_unmitigated=True,do_mitigated=do_mit)
+#    SS = SuperSurvey(surveys_sw, surveys_lw,basis,C=C,get_a=True,do_unmitigated=True,do_mitigated=do_mit)
     print "main: getting variance"
     variance_res = basis.get_variance(geo1)
     time1 = time()
     print "main: finished building in "+str(time1-time0)+"s"
 
     r_width = np.diff(geo1.rs)[0]
-    theta_width=(geo1.rs[1]+geo1.rs[0])/2.*(theta1-theta0)
-    phi_width=(geo1.rs[1]+geo1.rs[0])/2.*(phi1-phi0)
+    theta_width = (geo1.rs[1]+geo1.rs[0])/2.*(theta1-theta0)
+    phi_width = (geo1.rs[1]+geo1.rs[0])/2.*(phi1-phi0)
     volume = 4./3.*np.pi*(geo1.rs[1]**3-geo1.rs[0]**3)*geo1.angular_area()/(4.*np.pi)
     square_equiv = volume**(1./3.)
     print 'main: r diffs',r_width*C.h

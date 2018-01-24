@@ -28,7 +28,7 @@ def cosmo_input():
     """get cosmology for test"""
     cosmo_start = defaults.cosmology.copy()
     cosmo_start['w'] = -1
-    cosmo_start['de_model']='constant_w'
+    cosmo_start['de_model'] = 'constant_w'
     C_start = cp.CosmoPie(cosmology=cosmo_start)
     #base set
     #params = {'w_step':0.005,'w_min':-3.50,'w_max':0.1,'a_step':0.001,'a_min':0.000916674,'a_max':1.00}
@@ -49,7 +49,7 @@ def test_const_match(w0_test,cosmo_input):
 
     w_use_int = w0_test
     cosmo_match_a = cosmo_start.copy()
-    cosmo_match_a['de_model']='jdem'
+    cosmo_match_a['de_model'] = 'jdem'
     cosmo_match_a['w0'] = w_use_int
     cosmo_match_a['wa'] = 0.
     cosmo_match_a['w'] = w_use_int
@@ -213,8 +213,8 @@ def test_casarini_match(cosmo_input):
     sigma_a = np.sqrt(pow_mults_a)*0.83
     sigma_b = np.sqrt(pow_mults_b)*0.83
 
-    mse_sigma_a=np.linalg.norm((sigma_a-sigma_a_interp)/sigma_a_interp)/sigma_a_interp.size
-    mse_sigma_b=np.linalg.norm((sigma_b-sigma_b_interp)/sigma_b_interp)/sigma_b_interp.size
+    mse_sigma_a = np.linalg.norm((sigma_a-sigma_a_interp)/sigma_a_interp)/sigma_a_interp.size
+    mse_sigma_b = np.linalg.norm((sigma_b-sigma_b_interp)/sigma_b_interp)/sigma_b_interp.size
     print mse_sigma_a,mse_sigma_b
     assert mse_sigma_a<1.e-4
     assert mse_sigma_b<1.e-4
@@ -229,14 +229,14 @@ if __name__=='__main__':
     if do_other_tests:
         cosmo_start = defaults.cosmology.copy()
         cosmo_start['w'] = -1
-        cosmo_start['de_model']='constant_w'
+        cosmo_start['de_model'] = 'constant_w'
         C_start = cp.CosmoPie(cosmology=cosmo_start)
         params = {'w_step':0.01,'w_min':-3.50,'w_max':0.1,'a_step':0.001,'a_min':0.000916674,'a_max':1.00}
 
         do_convergence_test_w0wa = False
         do_convergence_test_jdem = False
-        do_match_casarini=True
-        do_plots=True
+        do_match_casarini = True
+        do_plots = True
 
         fails = 0
 
@@ -380,8 +380,8 @@ if __name__=='__main__':
             sigma_a = np.sqrt(pow_mults_a)*0.83
             sigma_b = np.sqrt(pow_mults_b)*0.83
 
-            mse_sigma_a=np.linalg.norm((sigma_a-sigma_a_interp)/sigma_a_interp)/sigma_a_interp.size
-            mse_sigma_b=np.linalg.norm((sigma_b-sigma_b_interp)/sigma_b_interp)/sigma_b_interp.size
+            mse_sigma_a = np.linalg.norm((sigma_a-sigma_a_interp)/sigma_a_interp)/sigma_a_interp.size
+            mse_sigma_b = np.linalg.norm((sigma_b-sigma_b_interp)/sigma_b_interp)/sigma_b_interp.size
             print "mse sigma a/point: "+str(mse_sigma_a)
             print "mse sigma b/point: "+str(mse_sigma_b)
             if mse_sigma_a>1.e-4:

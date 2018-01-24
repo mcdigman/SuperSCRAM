@@ -3,46 +3,46 @@ import numpy as np
 from param_manager import PowerParamManager
 # default cosmology is Planck 2015 TT+lowP+lensing+ext (arxiv 1502.01589v3 page 32)
 #TODO set not derived paramters to none and derive
-cosmology={ 'Omegabh2' :0.02227,
-            'Omegach2' :0.1184,
-            'Omegab'   :0.0483037,#calculated
-            'Omegac'   : 0.25681, #calculated
-            'Omegamh2' : 0.1413,
-            'OmegaL'   : 0.6935,
-            'OmegaLh2' : 0.319732,#calculated
-            'Omegam'   : .3065,
-            'H0'       : 67.90,
-            'sigma8'   : .8154,
-            'h'        :.6790,#calculated
-            'Omegak'   : 0.0, # check on this value
-            'Omegakh2' : 0.0,
-            'Omegar'   : 0.0,
-            'ns'       : 0.9681,
-            'tau'      : 0.067,
-            '100thetamc': 1.04106,
-            'Yp'        :0.251,
-            'As'        : 2.143*10**-9,
-            'LogAs'     :-19.9619, #calculated
-            'w'         :-1.0,#not from planck
-            'de_model'  :'constant_w',#dark energy model
-            'zstar'     :1089.90,#redshift at last scattering
-            'mnu'       :0.
-          }
-#cosmology from jdem 2008 working group paper arxiv:0901.0721v1
-cosmology_jdem={'ns'       : 0.963,
-                'Omegamh2' : 0.1326,
-                'Omegabh2' : 0.0227,
-                'Omegakh2' : 0.,
-                'OmegaLh2' : 0.3844,
-                'dGamma'    : 0.,#parameter we don't need
-                'dM'        :0.,#parameter we don't need
-                'LogG0'     :0.,#parameter we don't need
-                'LogAs'     :-19.9628,
-                'w'         :-1.,
-                'de_model'  :'constant_w',
+cosmology = {   'Omegabh2' :0.02227,
+                'Omegach2' :0.1184,
+                'Omegab'   :0.0483037,#calculated
+                'Omegac'   : 0.25681, #calculated
+                'Omegamh2' : 0.1413,
+                'OmegaL'   : 0.6935,
+                'OmegaLh2' : 0.319732,#calculated
+                'Omegam'   : .3065,
+                'H0'       : 67.90,
+                'sigma8'   : .8154,
+                'h'        :.6790,#calculated
+                'Omegak'   : 0.0, # check on this value
+                'Omegakh2' : 0.0,
+                'Omegar'   : 0.0,
+                'ns'       : 0.9681,
+                'tau'      : 0.067,
+                '100thetamc': 1.04106,
+                'Yp'        :0.251,
+                'As'        : 2.143*10**-9,
+                'LogAs'     :-19.9619, #calculated
+                'w'         :-1.0,#not from planck
+                'de_model'  :'constant_w',#dark energy model
+                'zstar'     :1089.90,#redshift at last scattering
                 'mnu'       :0.
-               }
-cosmology_cosmolike={   'Omegabh2' :0.02227,
+            }
+#cosmology from jdem 2008 working group paper arxiv:0901.0721v1
+cosmology_jdem = {  'ns'      : 0.963,
+                    'Omegamh2' : 0.1326,
+                    'Omegabh2' : 0.0227,
+                    'Omegakh2' : 0.,
+                    'OmegaLh2' : 0.3844,
+                    'dGamma'    : 0.,#parameter we don't need
+                    'dM'        :0.,#parameter we don't need
+                    'LogG0'     :0.,#parameter we don't need
+                    'LogAs'     :-19.9628,
+                    'w'         :-1.,
+                    'de_model'  :'constant_w',
+                    'mnu'       :0.
+                 }
+cosmology_cosmolike = { 'Omegabh2' :0.02227,
                         'Omegach2' :0.1204,
                         'Omegamh2' : 0.14267,
                         'OmegaL'   : 0.685,
@@ -63,9 +63,9 @@ cosmology_cosmolike={   'Omegabh2' :0.02227,
                         'w'         :-1.,
                         'de_model'  :'constant_w',
                         'mnu'       :0.
-                    }
+                      }
 
-cosmology_chiang={  'Omegabh2' :0.023,
+cosmology_chiang = {'Omegabh2' :0.023,
                     'Omegach2' :0.1093,
                     'Omegamh2' : 0.1323,
                     'OmegaL'   : 0.73,
@@ -86,26 +86,26 @@ cosmology_chiang={  'Omegabh2' :0.023,
                     'As'        : None,
                     'LogAs'   : None,
                     'mnu'     :0.
-                 }
-cosmology_cosmosis={'Omegabh2' :0.049,
-                    'Omegach2' :0.1188,
-                    'Omegamh2' : 0.14170,
-                    'OmegaL'   : .641,
-                    'OmegaLh2' : 0.287745,
-                    'Omegam'   : .31,
-                    'H0'       : 67,
-                    'sigma8'   : .81,
-                    'h'        :.67,
-                    'Omegak'   : 0.0, # check on this value
-                    'Omegakh2' : 0.0,
-                    'Omegar'   : 0.0,
-                    'tau'      : None, # eventually fix to real cosmosis values
-                    'Yp'       : None,
-                    'As'        : 2.143*10**-9,
-                    'ns'       : 0.9681,
-                    'LogAs'   : np.log(2.143*10**-9),
-                    'mnu'     :0. #guess
                    }
+cosmology_cosmosis = {  'Omegabh2' :0.049,
+                        'Omegach2' :0.1188,
+                        'Omegamh2' : 0.14170,
+                        'OmegaL'   : .641,
+                        'OmegaLh2' : 0.287745,
+                        'Omegam'   : .31,
+                        'H0'       : 67,
+                        'sigma8'   : .81,
+                        'h'        :.67,
+                        'Omegak'   : 0.0, # check on this value
+                        'Omegakh2' : 0.0,
+                        'Omegar'   : 0.0,
+                        'tau'      : None, # eventually fix to real cosmosis values
+                        'Yp'       : None,
+                        'As'        : 2.143*10**-9,
+                        'ns'       : 0.9681,
+                        'LogAs'   : np.log(2.143*10**-9),
+                        'mnu'     :0. #guess
+                     }
 lensing_params = {  'z_resolution'    :0.002, #fine resolution
                     'z_min_integral'  :0.0005, #lowest z
                     'z_max_integral'  :2,#highest z
@@ -193,12 +193,12 @@ dp_params = {   'use_k3p':False,
             }
 #amara refregier 2006 parameter forecast stuff
 cosmopie_params = {'p_space':'overwride'}
-prior_fisher_params ={  'row_strip'     :np.array([3,5,6,7]),
+prior_fisher_params = { 'row_strip'     :np.array([3,5,6,7]),
                         'fisher_source' :'data/F_Planck_tau0.01.dat',
                         'n_full'        :45,
                         'n_de'          :36,
                         'z_step'        :0.025
-                     }
+                      }
 halofit_params = {  'r_max':6,#5
                     'r_min':0.05,#0.05
                     'r_step':0.01,

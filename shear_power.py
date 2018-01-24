@@ -49,11 +49,11 @@ class ShearPower(object):
         self.n_l = self.ls.size
         self.n_z = self.zs.size
 
-        self.p_dd_use=np.zeros((self.n_l,self.n_z))
+        self.p_dd_use = np.zeros((self.n_l,self.n_z))
         self.ps = np.zeros(self.n_z)
 
         self.params = params
-        self.mode=mode
+        self.mode = mode
 
         #some methods require special handling
         if self.mode == 'power':
@@ -272,5 +272,5 @@ class Cll_sh_g(Cll_q_q):
 #            term1 = sp.chis[i]**2/2.*(q1s.rs_d2[i]/q1s.rs[i]+q2s.rs_d2[i]/q2s.rs[i])
 #            term2 = sp.chis[i]**3/6.*(q1s.rs_d3[i]/q1s.rs[i]+q2s.rs_d3[i]/q2s.rs[i])
 #            integrand2[i] = -1./(sp.ls+0.5)**2*(term1+term2)*integrand1[i]
-#        self.integrand=integrand1+integrand2
-#        self.chis=sp.chis
+#        self.integrand = integrand1+integrand2
+#        self.chis = sp.chis

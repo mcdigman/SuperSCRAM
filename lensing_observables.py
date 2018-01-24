@@ -20,14 +20,14 @@ class LensingPowerBase(object):
             params: parameters
             nz_matcher: an NZMatcher object
         """
-        self.C=C
+        self.C = C
         self.geo = geo
         self.params = params
         self.cosmo_par_list = cosmo_par_list
         self.cosmo_par_epsilons = cosmo_par_epsilons
         self.ls = ls
         self.survey_id = survey_id
-        self.nz_matcher=nz_matcher
+        self.nz_matcher = nz_matcher
 
         #omega_s = self.geo.angular_area()/(4.*np.pi**2)
         omega_s = self.geo.angular_area()/(4.*np.pi)#removed square
@@ -52,7 +52,7 @@ class LensingObservable(SWObservable):
         """
         self.len_pow = len_pow
         self.r1 = r1
-        self.r2= r2
+        self.r2 = r2
         self.q1_handle = q1_handle
         self.q2_handle = q2_handle
         self.q1_pow = self.q1_handle(self.len_pow.C_pow,self.r1[0],self.r1[1])

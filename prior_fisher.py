@@ -62,7 +62,7 @@ def read_prior_fisher(params):
     fisher_mat = np.zeros((n_row,n_row))
     for itr in xrange(0,row_is.size):
         fisher_mat[row_is[itr],col_is[itr]] = fisher_d[itr,2]
-    fisher_mat=(fisher_mat+fisher_mat.T)/2.
+    fisher_mat = (fisher_mat+fisher_mat.T)/2.
     return fisher_mat
 
 def fix_elements(fisher_mat,params,labels):
@@ -78,16 +78,16 @@ def fix_elements(fisher_mat,params,labels):
     fisher_new = fisher_mat.copy()
     labels_new = labels.copy()
     for i in xrange(0,rows.size):
-        fisher_new=np.delete(fisher_new,(rows[i]),axis=0)
-        fisher_new=np.delete(fisher_new,(rows[i]),axis=1)
+        fisher_new = np.delete(fisher_new,(rows[i]),axis=0)
+        fisher_new = np.delete(fisher_new,(rows[i]),axis=1)
         labels_new = np.delete(labels_new,(rows[i]),axis=0)
     return fisher_new,labels_new
 
 def project_w0wa(fisher_mat,params,labels):
     """project jdem parametrization to w0wa"""
     n_de = params['n_de']
-    n_new= fisher_mat.shape[0]-(n_de-2) #will project 36 dark energy entries to just 2
-    fisher_new=np.zeros((n_new,n_new))
+    n_new = fisher_mat.shape[0]-(n_de-2) #will project 36 dark energy entries to just 2
+    fisher_new = np.zeros((n_new,n_new))
     #all the bins have constant change wrt w0
     project_mat = np.zeros((n_new,fisher_mat.shape[0]))
     project_mat[0:n_new-2,0:n_new-2] = np.identity(n_new-2)
@@ -99,9 +99,9 @@ def project_w0wa(fisher_mat,params,labels):
     #a_s = 1.-np.arange(0,36)*0.025+0.0125
     #zs = 1./(1.+a_s)
     #change in wa is z*a
-    dwzdwa =np.arange(0,36)*0.025+0.0125
+    dwzdwa = np.arange(0,36)*0.025+0.0125
     project_mat[n_new-1,n_new-2::] = dwzdwa
-    fisher_new= np.dot(np.dot(project_mat,fisher_mat),project_mat.T)
+    fisher_new = np.dot(np.dot(project_mat,fisher_mat),project_mat.T)
     fisher_new = (fisher_new+fisher_new.T)/2.
     labels_new = np.hstack([labels[0:n_new-2].copy(),'w0','wa'])
     return fisher_new,labels_new
@@ -109,8 +109,8 @@ def project_w0wa(fisher_mat,params,labels):
 def project_w0(fisher_mat,params,labels):
     """project jdem parametrization to w0"""
     n_de = params['n_de']
-    n_new= fisher_mat.shape[0]-(n_de-1) #will project 36 dark energy entries to just 1
-    fisher_new=np.zeros((n_new,n_new))
+    n_new = fisher_mat.shape[0]-(n_de-1) #will project 36 dark energy entries to just 1
+    fisher_new = np.zeros((n_new,n_new))
     #all the bins have constant change wrt w0
     #made full length for testing purposes
     project_mat = np.zeros((fisher_mat.shape[0],fisher_mat.shape[0]))
@@ -118,7 +118,7 @@ def project_w0(fisher_mat,params,labels):
     dwzdw0 = np.zeros(n_de)+1.
     project_mat[n_new-1,n_new-1::] = dwzdw0
     #TODO are project_mats transposed?
-    fisher_new= np.dot(np.dot(project_mat,fisher_mat),project_mat.T)
+    fisher_new = np.dot(np.dot(project_mat,fisher_mat),project_mat.T)
     fisher_new = fisher_new[0:n_new,0:n_new]
     fisher_new = (fisher_new+fisher_new.T)/2.
     labels_new = np.hstack([labels[0:n_new-1],'w'])
@@ -127,8 +127,8 @@ def project_w0(fisher_mat,params,labels):
 def project_no_de(fisher_mat,params,labels):
     """project out all dark energy parameters"""
     n_de = params['n_de']
-    n_new= fisher_mat.shape[0]-(n_de) #will project 36 dark energy entries to 0
-    fisher_new=np.zeros((n_new,n_new))
+    n_new = fisher_mat.shape[0]-(n_de) #will project 36 dark energy entries to 0
+    fisher_new = np.zeros((n_new,n_new))
     #all the bins have constant change wrt w0
     #project_mat = np.zeros((n_new,fisher_mat.shape[0]))
     fisher_new = fisher_mat[0:n_new,0:n_new]

@@ -14,16 +14,17 @@ def util_set():
     """get set of things needed for tests"""
     omega_s = 0.02
     ls = np.arange(2,3000)
-    camb_params = defaults.camb_params.copy()
+    #camb_params = defaults.camb_params.copy()
+    power_params = defaults.power_params.copy()
     C = CosmoPie(defaults.cosmology)
-    P_in = mps.MatterPower(C,camb_params)
+    P_in = mps.MatterPower(C,power_params)
     k_in = P_in.k
     C.P_lin = P_in
     C.k = k_in
 
     len_params = defaults.lensing_params.copy()
-    len_params['z_bar']=1.0
-    len_params['sigma']=0.4
+    len_params['z_bar'] = 1.0
+    len_params['sigma'] = 0.4
 
     z_test_res1 = 0.001
     zs_test1 = np.arange(len_params['z_min_integral'],len_params['z_max_integral'],z_test_res1)

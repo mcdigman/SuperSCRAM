@@ -17,18 +17,18 @@ if __name__ == '__main__':
     cosmo_nz = np.loadtxt(input_dir+'n_z_2.dat')
 
     camb_params = defaults.camb_params
-    camb_params['force_sigma8']=True
-    camb_params['leave_h'] =False
-    camb_params['npoints']=1000
-    camb_params['minkh']=1.1e-4
-    camb_params['maxkh']=100.
-    camb_params['kmax']=1.
+    camb_params['force_sigma8'] = True
+    camb_params['leave_h'] = False
+    camb_params['npoints'] = 1000
+    camb_params['minkh'] = 1.1e-4
+    camb_params['maxkh'] = 100.
+    camb_params['kmax'] = 1.
     power_params = defaults.power_params.copy()
-    power_params.camb=camb_params
+    power_params.camb = camb_params
 
     RTOL = 3.*10**-2
     ATOL = 10**-10
-    C=CosmoPie(defaults.cosmology_cosmolike)
+    C = CosmoPie(defaults.cosmology_cosmolike)
     lmin_cosmo = 20
     lmax_cosmo = 5000
     nbins_cosmo = 20
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     for i in xrange(tomo_bins_cosmo):
         for j in xrange(i,tomo_bins_cosmo):
             #print i,j
-            Cll_shear_shear_cosmo[i,j] =cosmo_shear[:,itr+1]
+            Cll_shear_shear_cosmo[i,j] = cosmo_shear[:,itr+1]
             if not i==j:
                 Cll_shear_shear_cosmo[j,i] = Cll_shear_shear_cosmo[i,j]
             itr += 1
@@ -149,7 +149,7 @@ if __name__ == '__main__':
     #k_in=d[:,0]; P_in=d[:,1]
     #k_in,P_in=camb_pow(defaults.cosmology_cosmolike,camb_params)
     P_in = mps.MatterPower(C,power_params)
-    k_in =P_in.k
+    k_in = P_in.k
     C.k = k_in
     C.P_lin = P_in
 

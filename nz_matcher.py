@@ -63,7 +63,7 @@ def get_gaussian_smoothed_dN_dz(z_grid,zs_chosen,params,normalize):
         if normalize=True then normalize so density integrates to total number of galaxies
         (in limit as maximum z_grid is much larger than maximum zs_chosen normalizing should have no effect)"""
     dN_dz = np.zeros(z_grid.size)
-    sigma=params['smooth_sigma']
+    sigma = params['smooth_sigma']
     for itr in xrange(0,zs_chosen.size):
         if params['mirror_boundary']:
             dN_dz += np.exp(-(z_grid-zs_chosen[itr])**2/(2.*sigma**2))+np.exp(-(z_grid+zs_chosen[itr])**2/(2.*sigma**2))

@@ -7,7 +7,7 @@ import scipy.linalg as spl
 import pytest
 import algebra_utils as au
 from algebra_utils import cholesky_inplace,get_inv_cholesky,ch_inv,invert_triangular,get_mat_from_inv_cholesky,cholesky_inv_contract,get_cholesky_inv,cholesky_contract,check_is_cholesky,check_is_cholesky_inv,trapz2
-au.DEBUG=True
+au.DEBUG = True
 #TODO add testing for inplace and clean parameters
 def get_test_mat(key):
     """get a test mat for the numerical key key"""
@@ -70,7 +70,7 @@ class TrapzTester(object):
     """holds arrays to apply trapz to"""
     def __init__(self,key):
         """key: select which test set to use"""
-        self.key=key
+        self.key = key
         if key == 1:
             self.xs = np.arange(0,4)
             self.integrand = np.random.rand(4)
@@ -103,7 +103,7 @@ relax_rtol = 1e-01
 relax_atol = 1e-03
 tighten_atol = 1e-9
 atol_rel_use = 1e-7
-rtol_use=1e-6
+rtol_use = 1e-6
 
     #inv loses precision so have to relax tolerance dramatically for tests involving direct inverse
     #this shows the superiority of using the cholesky inverse
@@ -361,7 +361,7 @@ def test_cholesky_inplace_inplace_F_order(test_mat):
 
     assert check_is_cholesky(test_chol_inplace1,A,lower=True,atol_rel=atol_rel_use,rtol=rtol_use)
     assert np.allclose(chol1,test_chol_inplace1,atol=atol_loc3,rtol=rtol_use)
-    test_chol_inplace1=None
+    test_chol_inplace1 = None
 
 
 def test_cholesky_inplace_not_inplace_F_order(test_mat):
@@ -415,8 +415,8 @@ def test_cholesky_inplace_inplace_C_order_nonfatal(test_mat):
             assert check_is_cholesky(test_chol_inplace4_res,A,atol_rel=atol_rel_use,rtol=rtol_use,lower=True)
             assert np.allclose(chol1,test_chol_inplace4_res,atol=atol_loc3,rtol=rtol_use)
             assert np.allclose(test_chol_inplace4,A,atol=atol_loc1,rtol=rtol_use)
-    test_chol_inplace4=None
-    test_chol_inplace4_res=None
+    test_chol_inplace4 = None
+    test_chol_inplace4_res = None
 
 def test_cholesky_inplace_inplace_C_order_fatal(test_mat):
     """test cholesky_inplace works F ordering no error recovery"""
@@ -476,9 +476,9 @@ def test_cholesky_inv_contract_scalar_direct_lower(test_mat):
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = np.random.rand(A_i.shape[0])
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
-    contract_res_test=cholesky_inv_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=False,lower=True)
+    contract_res_test = cholesky_inv_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=False,lower=True)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -490,9 +490,9 @@ def test_cholesky_inv_contract_scalar_direct_lower_cholesky_given(test_mat):
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = np.random.rand(A_i.shape[0])
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
-    contract_res_test=cholesky_inv_contract(chol_i,vec1,vec2,cholesky_given=True,identical_inputs=False,lower=True)
+    contract_res_test = cholesky_inv_contract(chol_i,vec1,vec2,cholesky_given=True,identical_inputs=False,lower=True)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -504,9 +504,9 @@ def test_cholesky_inv_contract_scalar_direct_upper(test_mat):
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = np.random.rand(A_i.shape[0])
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
-    contract_res_test=cholesky_inv_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=False,lower=False)
+    contract_res_test = cholesky_inv_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=False,lower=False)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -518,9 +518,9 @@ def test_cholesky_inv_contract_scalar_direct_upper_cholesky_given(test_mat):
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = np.random.rand(A_i.shape[0])
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
-    contract_res_test=cholesky_inv_contract(chol_i,vec1,vec2,cholesky_given=True,identical_inputs=False,lower=False)
+    contract_res_test = cholesky_inv_contract(chol_i,vec1,vec2,cholesky_given=True,identical_inputs=False,lower=False)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -531,9 +531,9 @@ def test_cholesky_inv_contract_scalar_direct_lower_identical(test_mat):
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = vec1
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
-    contract_res_test=cholesky_inv_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=True)
+    contract_res_test = cholesky_inv_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=True)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -544,9 +544,9 @@ def test_cholesky_inv_contract_scalar_direct_lower_cholesky_given_identical(test
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = vec1
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
-    contract_res_test=cholesky_inv_contract(chol_i,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=True)
+    contract_res_test = cholesky_inv_contract(chol_i,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=True)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -558,9 +558,9 @@ def test_cholesky_inv_contract_scalar_direct_upper_identical(test_mat):
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = vec1
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
-    contract_res_test=cholesky_inv_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=False)
+    contract_res_test = cholesky_inv_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=False)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -572,9 +572,9 @@ def test_cholesky_inv_contract_scalar_direct_upper_cholesky_given_identical(test
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = vec1
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
-    contract_res_test=cholesky_inv_contract(chol_i,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=False)
+    contract_res_test = cholesky_inv_contract(chol_i,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=False)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -585,15 +585,15 @@ def test_cholesky_inv_contract_matrix_direct_lower(test_mat):
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = np.random.rand(dim1,dim2)
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
-    contract_res_test=cholesky_inv_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=False,lower=True)
+    contract_res_test = cholesky_inv_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=False,lower=True)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -604,15 +604,15 @@ def test_cholesky_inv_contract_matrix_direct_lower_cholesky_given(test_mat):
     chol_i = test_mat.chol_i.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = np.random.rand(dim1,dim2)
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
-    contract_res_test=cholesky_inv_contract(chol_i,vec1,vec2,cholesky_given=True,identical_inputs=False,lower=True)
+    contract_res_test = cholesky_inv_contract(chol_i,vec1,vec2,cholesky_given=True,identical_inputs=False,lower=True)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -622,15 +622,15 @@ def test_cholesky_inv_contract_matrix_direct_upper(test_mat):
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = np.random.rand(dim1,dim2)
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
-    contract_res_test=cholesky_inv_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=False,lower=False)
+    contract_res_test = cholesky_inv_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=False,lower=False)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -640,15 +640,15 @@ def test_cholesky_inv_contract_matrix_direct_upper_cholesky_given(test_mat):
     chol_i = test_mat.chol_i_u.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = np.random.rand(dim1,dim2)
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
-    contract_res_test=cholesky_inv_contract(chol_i,vec1,vec2,cholesky_given=True,identical_inputs=False,lower=False)
+    contract_res_test = cholesky_inv_contract(chol_i,vec1,vec2,cholesky_given=True,identical_inputs=False,lower=False)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -658,15 +658,15 @@ def test_cholesky_inv_contract_matrix_direct_lower_identical_copy(test_mat):
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = (vec1).copy()
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
-    contract_res_test=cholesky_inv_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=True)
+    contract_res_test = cholesky_inv_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=True)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -676,15 +676,15 @@ def test_cholesky_inv_contract_matrix_direct_lower_cholesky_given_identical_copy
     chol_i = test_mat.chol_i.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = (vec1).copy()
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
-    contract_res_test=cholesky_inv_contract(chol_i,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=True)
+    contract_res_test = cholesky_inv_contract(chol_i,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=True)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -695,15 +695,15 @@ def test_cholesky_inv_contract_matrix_direct_upper_identical_copy(test_mat):
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = (vec1).copy()
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
-    contract_res_test=cholesky_inv_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=False)
+    contract_res_test = cholesky_inv_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=False)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -714,15 +714,15 @@ def test_cholesky_inv_contract_matrix_direct_upper_cholesky_given_identical_copy
     chol_i = test_mat.chol_i_u.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = (vec1).copy()
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
-    contract_res_test=cholesky_inv_contract(chol_i,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=False)
+    contract_res_test = cholesky_inv_contract(chol_i,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=False)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -732,15 +732,15 @@ def test_cholesky_inv_contract_matrix_direct_lower_identical_view(test_mat):
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = vec1
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
-    contract_res_test=cholesky_inv_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=True)
+    contract_res_test = cholesky_inv_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=True)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -750,15 +750,15 @@ def test_cholesky_inv_contract_matrix_direct_lower_cholesky_given_identical_view
     chol_i = test_mat.chol_i.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = vec1
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
-    contract_res_test=cholesky_inv_contract(chol_i,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=True)
+    contract_res_test = cholesky_inv_contract(chol_i,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=True)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -769,15 +769,15 @@ def test_cholesky_inv_contract_matrix_direct_upper_identical_view(test_mat):
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = vec1
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
-    contract_res_test=cholesky_inv_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=False)
+    contract_res_test = cholesky_inv_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=False)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -788,15 +788,15 @@ def test_cholesky_inv_contract_matrix_direct_upper_cholesky_given_identical_view
     chol_i = npl.pinv(spl.cholesky(test_mat.A,lower=False))
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = vec1
     contract_res = np.dot(np.dot(vec1.T,A_i),vec2)
-    contract_res_test=cholesky_inv_contract(chol_i,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=False)
+    contract_res_test = cholesky_inv_contract(chol_i,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=False)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -807,9 +807,9 @@ def test_cholesky_contract_scalar_direct_lower(test_mat):
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = np.random.rand(A_i.shape[0])
     contract_res = np.dot(np.dot(vec1.T,A_test),vec2)
-    contract_res_test=cholesky_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=False,lower=True)
+    contract_res_test = cholesky_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=False,lower=True)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -822,9 +822,9 @@ def test_cholesky_contract_scalar_direct_lower_cholesky_given(test_mat):
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = np.random.rand(A_i.shape[0])
     contract_res = np.dot(np.dot(vec1.T,A_test),vec2)
-    contract_res_test=cholesky_contract(chol,vec1,vec2,cholesky_given=True,identical_inputs=False,lower=True)
+    contract_res_test = cholesky_contract(chol,vec1,vec2,cholesky_given=True,identical_inputs=False,lower=True)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -836,9 +836,9 @@ def test_cholesky_contract_scalar_direct_upper(test_mat):
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = np.random.rand(A_i.shape[0])
     contract_res = np.dot(np.dot(vec1.T,A_test),vec2)
-    contract_res_test=cholesky_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=False,lower=False)
+    contract_res_test = cholesky_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=False,lower=False)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -850,9 +850,9 @@ def test_cholesky_contract_scalar_direct_upper_cholesky_given(test_mat):
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = np.random.rand(A_i.shape[0])
     contract_res = np.dot(np.dot(vec1.T,A_test),vec2)
-    contract_res_test=cholesky_contract(chol,vec1,vec2,cholesky_given=True,identical_inputs=False,lower=False)
+    contract_res_test = cholesky_contract(chol,vec1,vec2,cholesky_given=True,identical_inputs=False,lower=False)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -863,9 +863,9 @@ def test_cholesky_contract_scalar_direct_lower_identical(test_mat):
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = vec1
     contract_res = np.dot(np.dot(vec1.T,A_test),vec2)
-    contract_res_test=cholesky_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=True)
+    contract_res_test = cholesky_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=True)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -877,9 +877,9 @@ def test_cholesky_contract_scalar_direct_lower_cholesky_given_identical(test_mat
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = vec1
     contract_res = np.dot(np.dot(vec1.T,A_test),vec2)
-    contract_res_test=cholesky_contract(chol,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=True)
+    contract_res_test = cholesky_contract(chol,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=True)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -891,9 +891,9 @@ def test_cholesky_contract_scalar_direct_upper_identical(test_mat):
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = vec1
     contract_res = np.dot(np.dot(vec1.T,A_test),vec2)
-    contract_res_test=cholesky_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=False)
+    contract_res_test = cholesky_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=False)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -906,9 +906,9 @@ def test_cholesky_contract_scalar_direct_upper_cholesky_given_identical(test_mat
     vec1 = np.random.rand(A_i.shape[0])
     vec2 = vec1
     contract_res = np.dot(np.dot(vec1.T,A_test),vec2)
-    contract_res_test=cholesky_contract(chol,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=False)
+    contract_res_test = cholesky_contract(chol,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=False)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -919,15 +919,15 @@ def test_cholesky_contract_matrix_direct_lower(test_mat):
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = np.random.rand(dim1,dim2)
     contract_res = np.dot(np.dot(vec1.T,A_test),vec2)
-    contract_res_test=cholesky_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=False,lower=True)
+    contract_res_test = cholesky_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=False,lower=True)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -939,15 +939,15 @@ def test_cholesky_contract_matrix_direct_lower_cholesky_given(test_mat):
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = np.random.rand(dim1,dim2)
     contract_res = np.dot(np.dot(vec1.T,A_test),vec2)
-    contract_res_test=cholesky_contract(chol,vec1,vec2,cholesky_given=True,identical_inputs=False,lower=True)
+    contract_res_test = cholesky_contract(chol,vec1,vec2,cholesky_given=True,identical_inputs=False,lower=True)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -958,15 +958,15 @@ def test_cholesky_contract_matrix_direct_upper(test_mat):
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = np.random.rand(dim1,dim2)
     contract_res = np.dot(np.dot(vec1.T,A_test),vec2)
-    contract_res_test=cholesky_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=False,lower=False)
+    contract_res_test = cholesky_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=False,lower=False)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -978,15 +978,15 @@ def test_cholesky_contract_matrix_direct_upper_cholesky_given(test_mat):
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = np.random.rand(dim1,dim2)
     contract_res = np.dot(np.dot(vec1.T,A_test),vec2)
-    contract_res_test=cholesky_contract(chol,vec1,vec2,cholesky_given=True,identical_inputs=False,lower=False)
+    contract_res_test = cholesky_contract(chol,vec1,vec2,cholesky_given=True,identical_inputs=False,lower=False)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -996,15 +996,15 @@ def test_cholesky_contract_matrix_direct_lower_identical_copy(test_mat):
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = (vec1).copy()
     contract_res = np.dot(np.dot(vec1.T,A_test),vec2)
-    contract_res_test=cholesky_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=True)
+    contract_res_test = cholesky_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=True)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -1015,15 +1015,15 @@ def test_cholesky_contract_matrix_direct_lower_cholesky_given_identical_copy(tes
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = (vec1).copy()
     contract_res = np.dot(np.dot(vec1.T,A_test),vec2)
-    contract_res_test=cholesky_contract(chol,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=True)
+    contract_res_test = cholesky_contract(chol,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=True)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -1034,15 +1034,15 @@ def test_cholesky_contract_matrix_direct_upper_identical_copy(test_mat):
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = (vec1).copy()
     contract_res = np.dot(np.dot(vec1.T,A_test),vec2)
-    contract_res_test=cholesky_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=False)
+    contract_res_test = cholesky_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=False)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -1054,15 +1054,15 @@ def test_cholesky_contract_matrix_direct_upper_cholesky_given_identical_copy(tes
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = (vec1).copy()
     contract_res = np.dot(np.dot(vec1.T,A_test),vec2)
-    contract_res_test=cholesky_contract(chol,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=False)
+    contract_res_test = cholesky_contract(chol,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=False)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -1072,15 +1072,15 @@ def test_cholesky_contract_matrix_direct_lower_identical_view(test_mat):
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = vec1
     contract_res = np.dot(np.dot(vec1.T,A_test),vec2)
-    contract_res_test=cholesky_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=True)
+    contract_res_test = cholesky_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=True)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -1091,15 +1091,15 @@ def test_cholesky_contract_matrix_direct_lower_cholesky_given_identical_view(tes
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = vec1
     contract_res = np.dot(np.dot(vec1.T,A_test),vec2)
-    contract_res_test=cholesky_contract(chol,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=True)
+    contract_res_test = cholesky_contract(chol,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=True)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -1110,15 +1110,15 @@ def test_cholesky_contract_matrix_direct_upper_identical_view(test_mat):
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = vec1
     contract_res = np.dot(np.dot(vec1.T,A_test),vec2)
-    contract_res_test=cholesky_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=False)
+    contract_res_test = cholesky_contract(A_test,vec1,vec2,cholesky_given=False,identical_inputs=True,lower=False)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
@@ -1130,22 +1130,22 @@ def test_cholesky_contract_matrix_direct_upper_cholesky_given_identical_view(tes
     A_test = test_mat.A.copy()
     dim1 = A_i.shape[0]
     if dim1==1:
-        dim2=1
+        dim2 = 1
     else:
         dim2 = dim1-1
     vec1 = np.random.rand(dim1,dim2)
     vec2 = vec1
     contract_res = np.dot(np.dot(vec1.T,A_test),vec2)
-    contract_res_test=cholesky_contract(chol,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=False)
+    contract_res_test = cholesky_contract(chol,vec1,vec2,cholesky_given=True,identical_inputs=True,lower=False)
 
-    atol_loc=np.max(np.abs(contract_res))*atol_rel_use
+    atol_loc = np.max(np.abs(contract_res))*atol_rel_use
 
     assert np.allclose(contract_res,contract_res_test,atol=atol_loc,rtol=rtol_use)
 
 def test_get_cholesky_inv_lower(test_mat):
     """test get_cholesky_inv with lower triangular"""
-    A=test_mat.A.copy()
-    A_i=test_mat.A_i.copy()
+    A = test_mat.A.copy()
+    A_i = test_mat.A_i.copy()
     chol_test_inv = get_cholesky_inv(A,lower=True)
     chol_test = get_cholesky_inv(A_i,lower=True)
 
@@ -1154,8 +1154,8 @@ def test_get_cholesky_inv_lower(test_mat):
 
 def test_get_cholesky_inv_upper(test_mat):
     """test get_cholesky_inv with upper triangular"""
-    A=test_mat.A.copy()
-    A_i=test_mat.A_i.copy()
+    A = test_mat.A.copy()
+    A_i = test_mat.A_i.copy()
     chol_test_inv = get_cholesky_inv(A,lower=False)
     chol_test = get_cholesky_inv(A_i,lower=False)
 

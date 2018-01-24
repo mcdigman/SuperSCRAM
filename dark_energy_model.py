@@ -14,7 +14,7 @@ class DarkEnergyConstant(DarkEnergyModel):
     """w(z)=constant dark energy model"""
     def __init__(self,w):
         """w: constant w"""
-        self.w=w
+        self.w = w
         DarkEnergyModel.__init__(self)
 
     def w_of_z(self,z):
@@ -30,8 +30,8 @@ class DarkEnergyW0Wa(DarkEnergyModel):
     """w(z)=constant dark energy model"""
     def __init__(self,w0,wa):
         """w: constant w"""
-        self.w0=w0
-        self.wa=wa
+        self.w0 = w0
+        self.wa = wa
         DarkEnergyModel.__init__(self)
 
     def w_of_z(self,z):

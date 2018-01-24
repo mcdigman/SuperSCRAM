@@ -36,9 +36,9 @@ if __name__ == '__main__':
     len_params['sigma2_e'] = sigma_e_cosmo**2
 
     camb_params = defaults.camb_params
-    camb_params['force_sigma8']=True
+    camb_params['force_sigma8'] = True
     k_in,P_in=camb_pow(defaults.cosmology_cosmolike,camb_params=camb_params)
-    C=CosmoPie(defaults.cosmology_cosmolike,P_lin=P_in,k=k_in,p_space='overwride')
+    C = CosmoPie(defaults.cosmology_cosmolike,P_lin=P_in,k=k_in,p_space='overwride')
 
 
     n_s = sigma_e_cosmo**2/(2*n_gal_cosmo)
@@ -115,7 +115,7 @@ if __name__ == '__main__':
     for i in xrange(tomo_bins_cosmo):
         for j in xrange(i,tomo_bins_cosmo):
             #print i,j
-            Cll_shear_shear_cosmo[i,j] =cosmo_shear[:,itr+1]
+            Cll_shear_shear_cosmo[i,j] = cosmo_shear[:,itr+1]
             if not i==j:
                 Cll_shear_shear_cosmo[j,i] = Cll_shear_shear_cosmo[i,j]
             itr += 1
@@ -147,7 +147,7 @@ if __name__ == '__main__':
             chi_next = C.D_comov(z_bin_starts[i+1])
         chi_bins[i] = np.array([C.D_comov(z_bin_starts[i]),chi_next])
 
-    r_max=C.D_comov(np.max(z_fine))
+    r_max = C.D_comov(np.max(z_fine))
     #theta0=0.
     #theta1=np.pi/2.
     #phi0=0.
@@ -164,7 +164,7 @@ if __name__ == '__main__':
     #phi_in2 = phi2+(phi_in1-phi0)
     #theta0=(1.25814+np.pi/2.)
     #approximate circular 1000 square degree geo
-    theta0=np.pi-np.arccos(1.-5.*np.pi/324.)
+    theta0 = np.pi-np.arccos(1.-5.*np.pi/324.)
     phi0 = 0.
     #theta1s = np.array([theta0,theta0,theta0,theta0,theta0,theta0,theta0,theta0])
     #phi1s = np.array([phi0,phi0+np.pi/3.,phi0+2.*np.pi/3.,phi0+np.pi,phi0+4.*np.pi/3.,phi0+5.*np.pi/3.,6.*np.pi/3.,phi0])[::-1]
@@ -185,7 +185,7 @@ if __name__ == '__main__':
     theta_in2 = theta0+0.1
     phi_in2 = phi0-0.01
 
-    zs=np.hstack([z_bin_starts,np.max(z_fine)])
+    zs = np.hstack([z_bin_starts,np.max(z_fine)])
     #d=np.loadtxt('camb_m_pow_l.dat')
     #k_in=d[:,0]; P_in=d[:,1]
     l_max = 50
@@ -200,20 +200,20 @@ if __name__ == '__main__':
 
 
 
-    M_cut=10**(12.5)
+    M_cut = 10**(12.5)
 
 
-    surveys_sw=np.array([survey_1])
+    surveys_sw = np.array([survey_1])
 
 
     geos = np.array([geo1,geo2])
-    l_lw=np.arange(0,30)
+    l_lw = np.arange(0,30)
     k_cut = 0.009
-    n_zeros=49
+    n_zeros = 49
 
-    basis=SphBasisK(r_max,C,k_cut,defaults.basis_params,l_ceil=100)
+    basis = SphBasisK(r_max,C,k_cut,defaults.basis_params,l_ceil=100)
 
     survey_3 = LWSurvey(geos,'lw_survey1',basis,C=C,ls = l_lw,params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params)
-    surveys_lw=np.array([survey_3])
+    surveys_lw = np.array([survey_3])
 
-    SS=SuperSurvey(surveys_sw, surveys_lw,r_max,l_mids,n_zeros,k_in,basis,P_lin=P_in,C=C,get_a=False,do_unmitigated=True,do_mitigated=False)
+    SS = SuperSurvey(surveys_sw, surveys_lw,r_max,l_mids,n_zeros,k_in,basis,P_lin=P_in,C=C,get_a=False,do_unmitigated=True,do_mitigated=False)

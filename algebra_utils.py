@@ -20,7 +20,7 @@ def get_inv_cholesky(A,lower=True,inplace=False,clean=True):
     if DEBUG:
         A_copy = A.copy()
 
-    result = invert_triangular(cholesky_inplace(A,inplace=inplace,lower=lower,clean=clean),lower=lower,inplace=inplace)
+    result = invert_triangular(cholesky_inplace(A,inplace=inplace,lower=lower,clean=False),lower=lower,inplace=inplace,clean=clean)
 
     if DEBUG:
         assert check_is_cholesky_inv(result,A_copy,is_clean=clean,lower=lower,B_symmetrized=False)
@@ -33,7 +33,10 @@ def get_cholesky_inv(A,lower=True,inplace=False,clean=True):
     """Get the cholesky decomposition of the inverse of a matrix A"""
     if DEBUG:
         A_copy = A.copy()
-    result = np.asfortranarray(np.rot90(spl.lapack.dtrtri(cholesky_inplace(np.asfortranarray(np.rot90(A,2)),lower=(not lower),inplace=inplace,clean=clean),lower=(not lower),overwrite_c=inplace)[0],2))
+    result,info = spl.lapack.dtrtri(cholesky_inplace(np.asfortranarray(np.rot90(A,2)),lower=(not lower),inplace=inplace,clean=clean),lower=(not lower),overwrite_c=inplace)
+    if info!=0:
+        raise RuntimeError('dtrtri failed with exit code '+str(info))
+    result = np.asfortranarray(np.rot90(result,2))
     if DEBUG:
         if clean:
             assert check_is_triangular(result,lower)
@@ -48,12 +51,12 @@ def invert_triangular(A,lower=True,inplace=False,clean=True):
         completely ignores opposite triangle"""
     if DEBUG:
         A_copy = A.copy()
-    result = spl.lapack.dtrtri(A,lower=lower,overwrite_c=inplace)[0]
+    result,info = spl.lapack.dtrtri(A,lower=lower,overwrite_c=inplace)
+    if info!=0:
+        raise RuntimeError('dtrtri failed with exit code '+str(info))
     if clean:
-        if lower:
-            result = np.tril(result)
-        else:
-            result = np.triu(result)
+        result = clean_triangle(result,lower=lower,inplace=True)
+
     if DEBUG:
         if not inplace:
             assert np.all(A_copy==A)
@@ -66,15 +69,15 @@ def get_mat_from_inv_cholesky(A,lower=True,inplace=False,clean=True):
     """get a matrix from its inverse cholesky decomposition
         completely ignores opposite triangle"""
     if DEBUG:
-        A_copy=A.copy()
+        A_copy = A.copy()
     chol_mat = invert_triangular(A,lower,inplace=inplace,clean=False)
-    result = np.rot90(spl.lapack.dlauum(np.rot90(chol_mat,2),lower=not lower,overwrite_c=inplace)[0],2)
+    result,info = spl.lapack.dlauum(np.rot90(chol_mat,2),lower=not lower,overwrite_c=inplace)
+    if info!=0:
+        raise RuntimeError('dlauum failed with error code '+str(info))
+    result = np.rot90(result,2)
     if clean:
-        if lower:
-            result = np.tril(result)
-        else:
-            result = np.triu(result)
-        result = result+result.T-np.diagflat(np.diag(result))
+        result = mirror_symmetrize(result,lower,inplace=True)
+
     if DEBUG:
         if not inplace:
             assert np.all(A_copy==A)
@@ -99,13 +102,13 @@ def ch_inv(A,cholesky_given=False,lower=True,inplace=False,clean=True):
     else:
         chol_inv = get_inv_cholesky(A,lower=lower,inplace=inplace,clean=False)
 
-    result = spl.lapack.dlauum(chol_inv,lower=lower,overwrite_c=inplace)[0]
+    result,info = spl.lapack.dlauum(chol_inv,lower=lower,overwrite_c=inplace)
+    if info!=0:
+        raise RuntimeError('dlauum failed with error code '+str(info))
+
     if clean:
-        if lower:
-            result = np.tril(result)
-        else:
-            result = np.triu(result)
-        result = result+result.T-np.diagflat(np.diag(result))
+        result = mirror_symmetrize(result,lower=lower,inplace=True)
+
     if DEBUG:
         if clean:
             assert np.all(result==result.T)
@@ -129,9 +132,8 @@ def cholesky_inv_contract(A,vec1,vec2,cholesky_given=False,identical_inputs=Fals
             right_side = spl.blas.dtrmm(1.,chol_inv,vec1,lower=True)
         else:
             right_side = spl.blas.dtrmm(1.,chol_inv,vec1,lower=False,trans_a=True)
-        result = np.dot(right_side.T,right_side)
-        #result = spl.blas.dsyrk(1.,right_side,lower=True,trans=True)
-        #result = result+result.T-np.diagflat(np.diag(result))
+        result = spl.blas.dsyrk(1.,right_side,lower=False,trans=True,overwrite_c=True)
+        result = mirror_symmetrize(result,lower=False,inplace=True)
     else:
         if lower:
             result = np.dot(spl.blas.dtrmm(1.,chol_inv,vec1,lower=True).T,spl.blas.dtrmm(1.,chol_inv,vec2,lower=True))
@@ -153,10 +155,9 @@ def cholesky_contract(A,vec1,vec2,cholesky_given=False,identical_inputs=False,lo
         if lower:
             right_side = spl.blas.dtrmm(1.,chol,vec1,lower=True,trans_a=True)
         else:
-
             right_side = spl.blas.dtrmm(1.,chol,vec1,lower=False)
-        result = spl.blas.dsyrk(1.,right_side,lower=True,trans=True)
-        result = result+result.T-np.diagflat(np.diag(result))
+        result = spl.blas.dsyrk(1.,right_side,lower=True,trans=True,overwrite_c=True)
+        result = mirror_symmetrize(result,lower=True,inplace=True)
     else:
         if lower:
             result = np.dot(spl.blas.dtrmm(1.,chol,vec1,lower=True,trans_a=True).T,spl.blas.dtrmm(1.,chol,vec2,lower=True,trans_a=True))
@@ -210,6 +211,33 @@ def cholesky_inplace(A,inplace=True,fatal_errors=False,lower=True,clean=True):
 
     return result
 
+def mirror_symmetrize(A,lower=True,inplace=False):
+    """copy lower triangle of a matrix into upper triangle if lower=True,vice versa if False,
+    if inplace actually modify A"""
+    if not inplace:
+        A = A.copy()
+    n = A.shape[0]
+    for itr in xrange(0,n-1):
+        if lower:
+            A[itr,itr+1:n] = A[itr+1:n,itr]
+        else:
+            A[itr+1:n,itr] = A[itr,itr+1:n]
+    return A
+
+def clean_triangle(A,lower=True,inplace=False):
+    """set everything but lower/upper triangle in matrix to 0,in place if inplace
+        note if inplace=False, this is equivalent to tril/triu, although it is marginally faster for some reason.
+        if inplace=True it is quite a bit faster because it does not create a copy of the matrix"""
+    n = A.shape[0]
+    if not inplace:
+        A = A.copy()
+    for itr in xrange(0,n-1):
+        if lower:
+            A[itr,itr+1:n] = 0.
+        else:
+            A[itr+1:n,itr] = 0.
+    return A
+
 #ie similar to np.trapz(A,xs,axis=0)
 #TODO test
 #TODO just take 1 input xs and dx
@@ -255,7 +283,7 @@ def check_is_triangular(A,lower,atol_rel=1e-08,rtol=1e-05):
 
 def check_is_cholesky(A,B,atol_rel=1e-08,rtol=1e-05,lower=True,is_clean=True,B_symmetrized=True):
     """Check if A is the cholesky decomposition of B
-        lower=True if lower triangular, if is_clean assume opposite triangle should be 0.
+        lower = True if lower triangular, if is_clean assume opposite triangle should be 0.
         B_symmetrized for whether to assume both triangles of B are filled"""
     if not is_clean:
         if lower:
@@ -263,12 +291,7 @@ def check_is_cholesky(A,B,atol_rel=1e-08,rtol=1e-05,lower=True,is_clean=True,B_s
         else:
             A = np.triu(A)
     if not B_symmetrized:
-        if lower:
-            B = np.tril(B)
-        else:
-            B= np.triu(B)
-        B = B+B.T-np.diagflat(np.diag(B))
-
+        B = mirror_symmetrize(B,lower,False)
     atol_loc1 = np.max(np.abs(B))*atol_rel
     test1 = check_is_triangular(A,lower,atol_rel,rtol)
     if lower:
@@ -285,12 +308,9 @@ def check_is_cholesky_inv(A,B,atol_rel=1e-08,rtol=1e-05,lower=True,is_clean=True
             A = np.tril(A)
         else:
             A = np.triu(A)
+
     if not B_symmetrized:
-        if lower:
-            B = np.tril(B)
-        else:
-            B= np.triu(B)
-        B = B+B.T-np.diagflat(np.diag(B))
+        B = mirror_symmetrize(B,lower,False)
 
     chol = np.linalg.pinv(A)
     B_inv = np.linalg.pinv(B)

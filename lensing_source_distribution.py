@@ -17,7 +17,7 @@ class SourceDistribution(object):
         self.zs = zs
         self.chis = chis
         self.C = C
-        self.params=params
+        self.params = params
 
 class GaussianZSource(SourceDistribution):
     """gaussian source distribution in z space"""

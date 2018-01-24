@@ -28,16 +28,16 @@ if __name__=='__main__':
     p_space = 'jdem'
     camb_params = defaults.camb_params.copy()
     camb_params['force_sigma8'] = False
-    fpt_params = defaults.fpt_params.copy()
-    wmatcher_params = defaults.wmatcher_params.copy()
-    halofit_params = defaults.halofit_params.copy()
-    matter_power_params = defaults.matter_power_params.copy()
-    hf_params = defaults.halofit_params.copy()
+    #fpt_params = defaults.fpt_params.copy()
+    #wmatcher_params = defaults.wmatcher_params.copy()
+    #halofit_params = defaults.halofit_params.copy()
+    #matter_power_params = defaults.matter_power_params.copy()
+    #hf_params = defaults.halofit_params.copy()
     poly_params = defaults.polygon_params.copy()
     lensing_params = defaults.lensing_params.copy()
     nz_params_wfirst_lens = defaults.nz_params_wfirst_lens.copy()
-    sw_survey_params=defaults.sw_survey_params.copy()
-    lw_survey_params=defaults.lw_survey_params.copy()
+    sw_survey_params = defaults.sw_survey_params.copy()
+    lw_survey_params = defaults.lw_survey_params.copy()
     sw_observable_list = defaults.sw_observable_list
     #TODO don't use defaults for setting up the core demo
     lw_observable_list = defaults.lw_observable_list
@@ -77,9 +77,9 @@ if __name__=='__main__':
 
     #create the LSST geometry (for our purposes, a 20000 square degree survey encompassing the wfirst survey)
     #use the same redshift bin structure as for WFIRST because we only want LSST for galaxy counts, not lensing
-    theta0=np.pi/4.
-    theta1=3.*np.pi/4.
-    phi0=0.
+    theta0 = np.pi/4.
+    theta1 = 3.*np.pi/4.
+    phi0 = 0.
     phi1 = 3.074096023740458
     thetas_lsst = np.array([theta0,theta1,theta1,theta0,theta0])
     phis_lsst = np.array([phi0,phi0,phi1,phi1,phi0])-phi1/2.
@@ -120,7 +120,7 @@ if __name__=='__main__':
     #create the actual sw survey
     print "main: begin constructing SWSurvey for wfirst"
     sw_survey_wfirst = SWSurvey(geo_wfirst,'wfirst',C,l_sw,sw_survey_params,observable_list = sw_observable_list,cosmo_par_list = cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,len_params=lensing_params,nz_matcher=nz_wfirst_lens)
-    surveys_sw=np.array([sw_survey_wfirst])
+    surveys_sw = np.array([sw_survey_wfirst])
 
     #create the lw basis
     #z_max is the maximum radial extent of the basis
@@ -140,11 +140,11 @@ if __name__=='__main__':
     print "main: begin constructing LWSurvey for mitigation"
     #TODO control cut out here
     survey_lw = LWSurvey(geos,'combined_survey',basis,C,lw_survey_params,observable_list=lw_observable_list,param_list=lw_param_list)
-    surveys_lw=np.array([survey_lw])
+    surveys_lw = np.array([survey_lw])
 
     #create the SuperSurvey with mitigation
     print "main: begin constructing SuperSurvey"
-    SS=SuperSurvey(surveys_sw, surveys_lw,basis,C=C,get_a=False,do_unmitigated=True,do_mitigated=True)
+    SS = SuperSurvey(surveys_sw, surveys_lw,basis,C=C,get_a=False,do_unmitigated=True,do_mitigated=True)
 
     time1 = time()
     print "main: finished construction tasks in "+str(time1-time0)+"s"
@@ -187,7 +187,7 @@ if __name__=='__main__':
 #        for combo in itertools.combinations(np.hstack([np.arange(0,4),np.array([5,6])]),itr):
 #            fix_mat = np.zeros_like(SS.f_set[1][2].get_covar())
 #            for index in combo:
-#                fix_mat[index,index]=1e9
+#                fix_mat[index,index] = 1e9
 #            f_mat_g = f_base_g+fix_mat
 #            c_mat_g = np.linalg.inv(f_mat_g)
 #            valfound_g[combo] = c_mat_g[4,4]

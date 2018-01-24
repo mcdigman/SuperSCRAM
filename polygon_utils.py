@@ -49,7 +49,7 @@ def is_contained(pixels,sp_poly):
     contained = np.zeros(pixels.shape[0],dtype=bool)
     #check if each point is contained in the polygon. This is fairly slow if the number of points is huge
     for i in xrange(0,pixels.shape[0]):
-        contained[i]= sp_poly.contains_point([xyz_vals[0][i],xyz_vals[1][i],xyz_vals[2][i]])
+        contained[i] = sp_poly.contains_point([xyz_vals[0][i],xyz_vals[1][i],xyz_vals[2][i]])
     return contained
 
 def contains_points(pixels,sp_poly):

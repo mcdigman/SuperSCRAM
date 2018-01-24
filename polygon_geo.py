@@ -168,7 +168,7 @@ class PolygonGeo(Geo):
 #        assert np.allclose(vals1,vals4)
 #####
         for l_itr in xrange(0,ls.size):
-            ll=ls[l_itr]
+            ll = ls[l_itr]
             d_alm_table1[l_itr] = np.zeros((2*ll+1,self.n_v))
             for mm in xrange(0,ll+1):
                 if mm>ll-1:
@@ -180,7 +180,7 @@ class PolygonGeo(Geo):
                     else:
                         prefactor = (-1)**mm*np.sqrt((4.*ll**2-1.)*(ll-mm)*(ll+mm)/2.)/(ll*(-1+ll+2*ll**2))*Y_r_dict[(ll-1,mm)]
                 #else:
-                #    prefactor=0
+                #    prefactor = 0
                 if not np.all(np.isfinite(prefactor)):
                     #print ll,mm,Y_r_dict[(ll-1,mm)]
                     raise ValueError('prefactor is nan at l='+str(ll)+',m='+str(mm))
@@ -207,7 +207,7 @@ class PolygonGeo(Geo):
                     self.alm_table[(ll,mm)] = np.sum(d_alm_table4[l_itr][ll+mm])
                 else:
                     self.alm_table[(ll,mm)] = np.sum(d_alm_table4[l_itr][ll+mm])
-                    self.alm_table[(ll,-mm)] =np.sum(d_alm_table4[l_itr][ll-mm])
+                    self.alm_table[(ll,-mm)] = np.sum(d_alm_table4[l_itr][ll-mm])
         self._l_max = l_max
 
     def a_lm(self,l,m):
@@ -324,36 +324,36 @@ if __name__=='__main__':
     #phi2s*=3.0981128
 #    theta_in2 = 3.*np.pi/8.
 #    phi_in2 = 0.
-    #phi2_high1_d = =160.-360.
-    #phi2_high2_d = =160.-0.01
+    #phi2_high1_d == 160.-360.
+    #phi2_high2_d == 160.-0.01
     theta2r_high_fill = np.full(n_fill,5.)
-    theta2r_low_fill =np.full(n_fill, -65.)
+    theta2r_low_fill = np.full(n_fill, -65.)
     phi2r_high_fill = np.linspace(180.-360.,180.-1.,n_fill)
     phi2r_low_fill = phi2r_high_fill[::-1]
     theta2rs = np.hstack([theta2r_high_fill,theta2r_low_fill,theta2r_high_fill[0]])
     phi2rs = np.hstack([phi2r_high_fill,phi2r_low_fill,phi2r_high_fill[0]])
 
-    theta2s= np.zeros_like(theta2rs)
-    phi2s= np.zeros_like(theta2rs)
+    theta2s = np.zeros_like(theta2rs)
+    phi2s = np.zeros_like(theta2rs)
     from astropy.coordinates import SkyCoord
     for itr in xrange(0,theta2rs.size):
         coord_gal = SkyCoord(phi2rs[itr], theta2rs[itr], frame='icrs', unit='deg')
         theta2s[itr] = coord_gal.geocentrictrueecliptic.lat.rad+np.pi/2.
         phi2s[itr] = coord_gal.geocentrictrueecliptic.lon.rad
-    theta_in2= SkyCoord(0.,0.,frame='icrs',unit='deg').geocentrictrueecliptic.lat.rad+np.pi/2.
+    theta_in2 = SkyCoord(0.,0.,frame='icrs',unit='deg').geocentrictrueecliptic.lat.rad+np.pi/2.
     phi_in2 = SkyCoord(0.,0.,frame='icrs',unit='deg').geocentrictrueecliptic.lon.rad
 
     poly_geo2 = PolygonGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max_in,poly_params)
 
     thetar_high_fill = np.full(n_fill,20.)
-    thetar_low_fill =np.full(n_fill, -20.)
+    thetar_low_fill = np.full(n_fill, -20.)
     phir_high_fill = np.linspace(160.-360.,160.-20.,n_fill)
     phir_low_fill = np.linspace(160.-360.,160.-20.,n_fill)[::-1]
     thetars = np.hstack([thetar_high_fill,thetar_low_fill,thetar_high_fill[0]])
     phirs = np.hstack([phir_high_fill,phir_low_fill,phir_high_fill[0]])
 
-    thetas_mask= np.zeros_like(thetars)
-    phis_mask= np.zeros_like(thetars)
+    thetas_mask = np.zeros_like(thetars)
+    phis_mask = np.zeros_like(thetars)
     for itr in xrange(0,thetars.size):
         coord_gal = SkyCoord(phirs[itr], thetars[itr], frame='galactic', unit='deg')
         thetas_mask[itr] = coord_gal.geocentrictrueecliptic.lat.rad+np.pi/2.
@@ -402,12 +402,12 @@ if __name__=='__main__':
     #    m = Basemap(projection='moll',lon_0=0)
         lats = (pp_geo2.all_pixels[:,0]-np.pi/2.)*180/np.pi
         lons = pp_geo2.all_pixels[:,1]*180/np.pi
-        x,y=m(lons,lats)
+        x,y = m(lons,lats)
         #have to switch because histogram2d considers y horizontal, x vertical
         fig = plt.figure(figsize=(10,5))
         #minC = np.min([totals_poly,totals_pp])
         #maxC = np.max([totals_poly,totals_pp])
-        minC =np.min(totals_poly)
+        minC = np.min(totals_poly)
         maxC = np.max(totals_poly)
         bounds = np.linspace(minC,maxC,10)
         norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
@@ -420,7 +420,7 @@ if __name__=='__main__':
         #fig.colorbar(pc1,ax=ax)
         #m.plot(x,y,'bo',markersize=1)
         pp_geo2.sp_poly.draw(m,color='blue')
-        do_poly=True
+        do_poly = True
         if do_poly:
             ax = fig.add_subplot(122)
             H2,yedges2,xedges2 = np.histogram2d(y,x,100,weights=mask)
@@ -444,14 +444,14 @@ if __name__=='__main__':
 #    #theta0=np.pi/6+toffset
 #    #theta1=np.pi/3.+toffset
 #    #theta0=2.82893228356285
-#    theta0=np.pi-np.arccos(1.-5.*np.pi/324.)
+#    theta0 = np.pi-np.arccos(1.-5.*np.pi/324.)
 #    #theta0=(1.25814+toffset)
-#    theta1=np.pi/2.+toffset
-#    theta2=np.pi/3.+0.1+toffset
-#    theta3=theta2-np.pi/3.
+#    theta1 = np.pi/2.+toffset
+#    theta2 = np.pi/3.+0.1+toffset
+#    theta3 = theta2-np.pi/3.
 #    theta4 = theta3+np.pi/6.
-#    offset=0.
-#    phi0=0.+offset
+#    offset = 0.
+#    phi0 = 0.+offset
 #    phi1 = 4.*np.pi/3.+offset
 #    #phi1 = np.pi/3.+offset
 #    phi2 = phi1+np.pi/2.
@@ -483,10 +483,10 @@ if __name__=='__main__':
 #
 #
 #    #some setup to make an actual geo
-#    d=np.loadtxt('camb_m_pow_l.dat')
-#    k=d[:,0]; P=d[:,1]
-#    C=CosmoPie(cosmology=defaults.cosmology,k=k,P_lin=P)
-#    zs=np.array([.01,1.01])
+#    d = np.loadtxt('camb_m_pow_l.dat')
+#    k = d[:,0]; P=d[:,1]
+#    C = CosmoPie(cosmology=defaults.cosmology,k=k,P_lin=P)
+#    zs = np.array([.01,1.01])
 #    z_fine = np.arange(defaults.lensing_params['z_min_integral'],np.max(zs),defaults.lensing_params['z_resolution'])
 #
 #
@@ -516,7 +516,7 @@ if __name__=='__main__':
 #    #            r_geo.a_lm(ll,-mm)
 #    #r_alm_table = r_geo.alm_table
 #    #reconstruct at higher resolution to mitigate resolution effects in determining accuracy
-#    totals_pp= reconstruct_from_alm(l_max_in,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],pp_geo.alm_table)
+#    totals_pp = reconstruct_from_alm(l_max_in,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],pp_geo.alm_table)
 #    totals_poly = reconstruct_from_alm(l_max_in,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],my_table)
 #    avg_diff = np.average(np.abs(totals_pp-totals_poly))
 #    print "mean absolute difference between pixel and exact geo reconstruction: "+str(avg_diff)
@@ -528,8 +528,8 @@ if __name__=='__main__':
 #    print "improvement in rms reconstruction accuracy: "+str((pp_error-poly_error)/pp_error*100)+"%"
 #
 #    #totals_alm = reconstruct_from_alm(l_max_in,pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1],r_alm_table)
-#    try_plot=True
-#    do_poly=True
+#    try_plot = True
+#    do_poly = True
 #    if try_plot:
 #               #try:
 #            from mpl_toolkits.basemap import Basemap

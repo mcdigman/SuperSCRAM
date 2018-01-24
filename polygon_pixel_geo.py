@@ -139,7 +139,7 @@ class PolygonPixelGeo(PixelGeo):
 #    contained = np.zeros(pixels.shape[0],dtype=bool)
 #    #check if each point is contained in the polygon. This is fairly slow if the number of points is huge
 #    for i in xrange(0,pixels.shape[0]):
-#        contained[i]= sp_poly.contains_point([xyz_vals[0][i],xyz_vals[1][i],xyz_vals[2][i]])
+#        contained[i] = sp_poly.contains_point([xyz_vals[0][i],xyz_vals[1][i],xyz_vals[2][i]])
 #    return contained
 #
 #def contains_points(pixels,sp_poly):
@@ -173,10 +173,10 @@ class PolygonPixelGeo(PixelGeo):
 #    from geo import PixelGeo,RectGeo
 #    from time import time
 #    from cosmopie import CosmoPie
-#    theta0=0.
-#    theta1=np.pi/2.
-#    phi0=0.
-#    phi1=2.*np.pi/6.
+#    theta0 = 0.
+#    theta1 = np.pi/2.
+#    phi0 = 0.
+#    phi1 = 2.*np.pi/6.
 #
 #    thetas = np.array([theta0,theta1,theta1,theta0,theta0])
 #    phis = np.array([phi0,phi0,phi1,phi1,phi0])
@@ -189,10 +189,10 @@ class PolygonPixelGeo(PixelGeo):
 #
 #
 #    #some setup to make an actual geo
-#    d=np.loadtxt('camb_m_pow_l.dat')
-#    k=d[:,0]; P=d[:,1]
-#    C=CosmoPie(cosmology=defaults.cosmology,k=k,P_lin=P)
-#    zs=np.array([.01,1.01])
+#    d = np.loadtxt('camb_m_pow_l.dat')
+#    k = d[:,0]; P=d[:,1]
+#    C = CosmoPie(cosmology=defaults.cosmology,k=k,P_lin=P)
+#    zs = np.array([.01,1.01])
 #    z_fine = np.arange(defaults.lensing_params['z_min_integral'],np.max(zs),defaults.lensing_params['z_resolution'])
 #
 #    l_max = 25
@@ -215,7 +215,7 @@ class PolygonPixelGeo(PixelGeo):
 #    if do_old:
 #        print "PolygonPixelGeo: a_lm up to l="+str(l_max)+" time: "+str(t2-t1)+"s"
 #    for i in xrange(0,n_run):
-#        alm_recurse,ls,ms,_= pp_geo.get_a_lm_table(l_max)
+#        alm_recurse,ls,ms,_ = pp_geo.get_a_lm_table(l_max)
 #    t3 = time()
 #    print "PolygonPixelGeo: a_lm_recurse in avg time: "+str((t3-t2)/n_run)+"s"
 #    if do_old:
@@ -227,7 +227,7 @@ class PolygonPixelGeo(PixelGeo):
 #            alm_rect = {}
 #            for itr in xrange(0,ls.size):
 #                alm_rect[(ls[itr],ms[itr])] = r_geo.a_lm(ls[itr],ms[itr])
-#    t4 =time()
+#    t4 = time()
 #    if do_rect:
 #        print "RectGeo: rect geo alms in time"+str(t4-t3)
 #
@@ -251,7 +251,7 @@ class PolygonPixelGeo(PixelGeo):
 #    #        totals_recurse+=alm_recurse[itr]*Y_r(ls[itr],ms[itr],pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1])
 #        #totals_recurse+=alm_recurse[itr]*Y_r_2(ls[itr],ms[itr],pp_geo.pixels[:,0],pp_geo.pixels[:,1],known_legendre)
 #    #    if do_rect:
-#    t6=time()
+#    t6 = time()
 #    print "reconstruct time: "+str(t6-t5)+"s"
 #    #plot the polygon if basemap is installed, do nothing if it isn't
 #    import matplotlib.pyplot as plt
@@ -261,7 +261,7 @@ class PolygonPixelGeo(PixelGeo):
 #        im = ImageHDU(totals_recurse)
 #        w = wcs.WCS(im,naxis=1)
 #        w.wcs.ctype = ["HPX"]
-#        fig=plt.figure()
+#        fig = plt.figure()
 #        ax = fig.add_subplot(111, projection=w)
 #        ax.imshow(im, origin='lower', cmap='cubehelix')
 #        plt.show()

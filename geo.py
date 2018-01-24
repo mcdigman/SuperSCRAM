@@ -59,7 +59,7 @@ class Geo(object):
 
         self.dzdr = InterpolatedUnivariateSpline(self.r_fine,self.z_fine,ext=2).derivative()(self.r_fine)
         #smalles possible difference for a sum
-        self.eps=np.finfo(float).eps
+        self.eps = np.finfo(float).eps
 
         #for caching a_lm
         self.alm_table = {}
@@ -122,7 +122,7 @@ class RectGeo(Geo):
         """do the integral with quadrature over a function(phi,theta)"""
         def _integrand(phi,theta):
             return function(phi,theta)*np.sin(theta)
-        I=dblquad(_integrand,self.Theta[0],self.Theta[1], lambda phi: self.Phi[0], lambda phi: self.Phi[1])[0]
+        I = dblquad(_integrand,self.Theta[0],self.Theta[1], lambda phi: self.Phi[0], lambda phi: self.Phi[1])[0]
         #if (np.absolute(I) <= self.eps):
         #    return 0.0
         #else:

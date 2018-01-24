@@ -22,7 +22,7 @@ def rot_alm_z(d_alm_table_in,angles,ls):
 def rot_alm_x(d_alm_table_in,angles,ls,n_double=defaults.polygon_params['n_double'],debug=True):
     """rotate alms around x axis by angle theta_alpha"""
     print "alm_utils: rot x"
-    d_alm_table_out=np.zeros_like(d_alm_table_in)
+    d_alm_table_out = np.zeros_like(d_alm_table_in)
     n_v = angles.size
     for l_itr in xrange(0,ls.size):
         ll = ls[l_itr]
@@ -39,9 +39,9 @@ def rot_alm_x(d_alm_table_in,angles,ls,n_double=defaults.polygon_params['n_doubl
         m_mat = np.zeros_like(el_mat_complex)
         m_mat[ll,ll] = 1.
         ms = np.arange(1,ll+1)
-        m_mat[ms+ll,ms+ll]=1./np.sqrt(2.)
+        m_mat[ms+ll,ms+ll] = 1./np.sqrt(2.)
         m_mat[ms+ll,-ms+ll] = -1j/np.sqrt(2.)
-        m_mat[-ms+ll,ms+ll]=(-1)**ms/np.sqrt(2.)
+        m_mat[-ms+ll,ms+ll] = (-1)**ms/np.sqrt(2.)
         m_mat[-ms+ll,-ms+ll] = 1j*(-1)**ms/np.sqrt(2.)
 
         #m_mat_i = np.conjugate(m_mat.T)

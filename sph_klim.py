@@ -14,7 +14,7 @@ from algebra_utils import trapz2,cholesky_inplace
 import fisher_matrix as fm
 
 # the smallest value
-eps=np.finfo(float).eps
+eps = np.finfo(float).eps
 
 
 #TODO test analytic result for power law power spectrum
@@ -33,7 +33,7 @@ class SphBasisK(LWBasis):
         LWBasis.__init__(self,C)
         #TODO check correct power spectrum
         self.r_max = r_max
-        P_lin_in=self.C.P_lin.get_matter_power(np.array([0.]),pmodel='linear')[:,0]
+        P_lin_in = self.C.P_lin.get_matter_power(np.array([0.]),pmodel='linear')[:,0]
         camb_params2 = self.C.P_lin.camb_params.copy()
         camb_params2['npoints'] = params['n_bessel_oversample']
         #P_lin_in,k_in = camb_pow(self.C.cosmology,camb_params=camb_params2)
@@ -75,40 +75,40 @@ class SphBasisK(LWBasis):
                 self.n_l += 1
         l_alpha = np.arange(0,self.n_l)
 
-        self.l=l_alpha #TODO unnecessary
-        self.lm_map=np.zeros((l_alpha.size,3),dtype=object)
-        self.lm=np.zeros((l_alpha.size,2),dtype=object)
-        C_size=0
+        self.l = l_alpha #TODO unnecessary
+        self.lm_map = np.zeros((l_alpha.size,3),dtype=object)
+        self.lm = np.zeros((l_alpha.size,2),dtype=object)
+        C_size = 0
         for i in xrange(l_alpha.size):
-            m=np.arange(-l_alpha[i], l_alpha[i]+1)
-            self.lm_map[i,0]=l_alpha[i]
-            self.lm_map[i,1]=self.k_zeros[i]
-            self.lm_map[i,2]=m
-            C_size=self.lm_map[i,1].size*self.lm_map[i,2].size + C_size
-            self.lm[i,0]=l_alpha[i]
-            self.lm[i,1]=m
+            m = np.arange(-l_alpha[i], l_alpha[i]+1)
+            self.lm_map[i,0] = l_alpha[i]
+            self.lm_map[i,1] = self.k_zeros[i]
+            self.lm_map[i,2] = m
+            C_size = self.lm_map[i,1].size*self.lm_map[i,2].size + C_size
+            self.lm[i,0] = l_alpha[i]
+            self.lm[i,1] = m
         self.C_size = C_size
         print "sph_klim: basis size: ",self.C_size
-        self.C_id=np.zeros((C_size,3))
+        self.C_id = np.zeros((C_size,3))
         #self.C_alpha_beta=np.zeros((self.C_id.shape[0],self.C_id.shape[0]),order='F')
 
         self.C_compact = np.zeros(self.n_l,dtype=object)
         print "sph_klim: begin constructing covariance matrix. basis id: ",id(self)
-        itr=0
+        itr = 0
         for a in xrange(self.n_l):
-            ll=self.lm_map[a,0]
-            kk=self.lm_map[a,1]
-            mm=self.lm_map[a,2]
+            ll = self.lm_map[a,0]
+            kk = self.lm_map[a,1]
+            mm = self.lm_map[a,2]
 
             #itr_m1 = itr
             print "sph_klim: calculating covar for l=",ll
             for c in xrange(mm.size):
             #    itr_k1 = itr
                 for b in xrange(kk.size):
-                    self.C_id[itr,0]=ll
-                    self.C_id[itr,1]=kk[b]
-                    self.C_id[itr,2]=mm[c]
-                    itr=itr+1
+                    self.C_id[itr,0] = ll
+                    self.C_id[itr,1] = kk[b]
+                    self.C_id[itr,2] = mm[c]
+                    itr = itr+1
             #calculate I integrals and make table
             self.C_compact[ll] = np.zeros((kk.size,kk.size))
             integrand1 = k*P_lin*jv(ll+0.5,k*self.r_max)**2
@@ -119,8 +119,8 @@ class SphBasisK(LWBasis):
                     #TODO convergence test
                     #note: this integrand is highly oscillatory, and some integration methods may produce inaccurate results,
                     #especially for off diagonal elements. Tightly sampled trapezoidal rule is at least stable, be careful switching to anything else
-                    self.C_compact[ll][b,d]=coeff*trapz2(integrand1/((k**2-kk[b]**2)*(k**2-kk[d]**2)),dx=self.dk) #check coefficient
-                    self.C_compact[ll][d,b]=self.C_compact[ll][b,d]
+                    self.C_compact[ll][b,d] = coeff*trapz2(integrand1/((k**2-kk[b]**2)*(k**2-kk[d]**2)),dx=self.dk) #check coefficient
+                    self.C_compact[ll][d,b] = self.C_compact[ll][b,d]
 
         print "sph_klim: finished calculating covars"
         x_grid = np.linspace(0.,np.max(self.C_id[:,1])*self.r_max,self.params['x_grid_size'])
@@ -150,7 +150,7 @@ class SphBasisK(LWBasis):
         for ll in xrange(0,self.n_l):
             n_k = self.C_compact[ll].shape[0]
             for _m_itr in xrange(0,2*ll+1):
-                result[itr_ll:itr_ll+n_k,itr_ll:itr_ll+n_k]=self.C_compact[ll]
+                result[itr_ll:itr_ll+n_k,itr_ll:itr_ll+n_k] = self.C_compact[ll]
                 itr_ll+=n_k
         return result
 
@@ -175,7 +175,7 @@ class SphBasisK(LWBasis):
             n_k = self.C_compact[ll].shape[0]
             res = cholesky_inplace(self.C_compact[ll],inplace=False,lower=True)
             for _m_itr in xrange(0,2*ll+1):
-                result[itr_ll:itr_ll+n_k,itr_ll:itr_ll+n_k]=res
+                result[itr_ll:itr_ll+n_k,itr_ll:itr_ll+n_k] = res
                 itr_ll+=n_k
         return result
 
@@ -285,26 +285,26 @@ class SphBasisK(LWBasis):
                 self.ddelta_bar_cache[str(id(geo))] = {}
 
 
-        a_00=geo.a_lm(0,0)
+        a_00 = geo.a_lm(0,0)
         print "sph_klim: a_00="+str(a_00)
        # Omega=a_00*np.sqrt(4*np.pi)
         r_cache = {}
 
         if tomography:
             rbins = geo.rbins
-            result=np.zeros((rbins.shape[0],self.C_id.shape[0]))
+            result = np.zeros((rbins.shape[0],self.C_id.shape[0]))
             print "sph_klim: calculating with tomographic (coarse) bins"
         else:
             rbins = geo.rbins_fine
-            result=np.zeros((rbins.shape[0],self.C_id.shape[0]))
+            result = np.zeros((rbins.shape[0],self.C_id.shape[0]))
             print "sph_klim: calculating with resolution (fine) slices"
 
-        norm=3./(rbins[:,1]**3 - rbins[:,0]**3)/(a_00*2.*np.sqrt(np.pi))
+        norm = 3./(rbins[:,1]**3 - rbins[:,0]**3)/(a_00*2.*np.sqrt(np.pi))
 
         for itr in xrange(self.C_id.shape[0]):
-            ll=int(self.C_id[itr,0])
-            kk=self.C_id[itr,1]
-            mm=int(self.C_id[itr,2])
+            ll = int(self.C_id[itr,0])
+            kk = self.C_id[itr,1]
+            mm = int(self.C_id[itr,2])
             if (kk,ll) in r_cache:
                 r_part = r_cache[(kk,ll)]
             else:
@@ -318,7 +318,7 @@ class SphBasisK(LWBasis):
 #                if not np.allclose(r_part,r_part2,atol=atol_loc,rtol=1e-3):
 #                    print r_part/r_part2
 #                    r_grid3 = np.linspace(0.,self.r_max,self.params['x_grid_size'])
-#                    integrand3= r_grid3**2*j_n(ll,r_grid3*kk)
+#                    integrand3 = r_grid3**2*j_n(ll,r_grid3*kk)
 #                    integrated3 = InterpolatedUnivariateSpline(r_grid3,cumtrapz(integrand3,r_grid3,initial=0.),k=3,ext=2)
 #                    r_part3 = (integrated3(rbins[:,1])-integrated3(rbins[:,0]))*norm
 #                    print r_part/r_part3
@@ -355,9 +355,9 @@ def R_int(r_range,k,ll):
 def I_alpha(k_alpha,k,r_max,l_alpha):
     r"""return the integral \int_0^r_{max} dr r^2 j_{\l_alpha}(k_\alpha r)j_{l_\alpha}(k r)
     needed to calculate long wavelength covariance matrix."""
-    a=k_alpha*r_max
-    b=k*r_max
-    l=l_alpha+.5
+    a = k_alpha*r_max
+    b = k*r_max
+    l = l_alpha+.5
     return np.pi/2./np.sqrt(k_alpha*k)/(k_alpha**2 - k**2)*r_max*(-k_alpha*jv(l-1,a)*jv(l,b))
 
 def norm_factor(ka,la,r_max):
@@ -367,28 +367,28 @@ def norm_factor(ka,la,r_max):
 #if __name__=="__main__":
 #    import geo
 #
-#    d=np.loadtxt('Pk_Planck15.dat')
-#    k=d[:,0]; P=d[:,1]
+#    d = np.loadtxt('Pk_Planck15.dat')
+#    k = d[:,0]; P=d[:,1]
 #
-#    zs=np.array([.1,.2,.3])
+#    zs = np.array([.1,.2,.3])
 #    z_fine = np.arange(0.01,np.max(zs),0.01)
-#    Theta=[np.pi/4,np.pi/2.]
-#    Phi=[0,np.pi/3.]
+#    Theta = [np.pi/4,np.pi/2.]
+#    Phi = [0,np.pi/3.]
 #
 #
 #    from cosmopie import CosmoPie
-#    C=CosmoPie(cosmology=defaults.cosmology,k=k,P_lin=P)
+#    C = CosmoPie(cosmology=defaults.cosmology,k=k,P_lin=P)
 #
-#    geometry=geo.RectGeo(zs,Theta,Phi,C,z_fine)
+#    geometry = geo.RectGeo(zs,Theta,Phi,C,z_fine)
 #
-#    r_max=C.D_comov(0.5)
+#    r_max = C.D_comov(0.5)
 #
 #    k_cut = 0.010
 #    l_ceil = 100
-#    R=SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_ceil)
+#    R = SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_ceil)
 #    print R.C_size
 #
-#    r_min=C.D_comov(.1)
-#    r_max=C.D_comov(.2)
+#    r_min = C.D_comov(.1)
+#    r_max = C.D_comov(.2)
 #
 #    print 'this is r range', r_min, r_max

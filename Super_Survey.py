@@ -21,7 +21,7 @@ class SuperSurvey(object):
                 get_a: get (v.T).C_lw.v where v=\frac{\partial\bar{\delta}}{\delta_\alpha}
                 do_mitigated: if False don't get mitigated covariances
                 do_unmitigate: if False don't get unmitigated covariances"""
-        t1=time()
+        t1 = time()
 
         self.get_a = get_a
         self.do_mitigated = do_mitigated
@@ -29,23 +29,23 @@ class SuperSurvey(object):
 
         self.surveys_lw = surveys_lw
         self.surveys_sw = surveys_sw
-        self.N_surveys_sw=surveys_sw.size
-        self.N_surveys_lw=surveys_lw.size
+        self.N_surveys_sw = surveys_sw.size
+        self.N_surveys_lw = surveys_lw.size
         print'SuperSurvey: this is the number of surveys', self.N_surveys_sw, self.N_surveys_lw
 
-        self.C=C
+        self.C = C
 
           #k_cut = 0.25 #converge to 0.0004
         self.basis = basis
-        self.N_O_I=0
-        self.N_O_a=0
+        self.N_O_I = 0
+        self.N_O_a = 0
 
         #self.O_a=np.array([], dtype=object)
         for i in xrange(self.N_surveys_sw):
-            self.N_O_I=self.N_O_I + surveys_sw[i].get_N_O_I()
+            self.N_O_I = self.N_O_I + surveys_sw[i].get_N_O_I()
 
         for i in xrange(self.N_surveys_lw):
-            self.N_O_a=self.N_O_a + surveys_lw[i].get_N_O_a()
+            self.N_O_a = self.N_O_a + surveys_lw[i].get_N_O_a()
 
         print 'SuperSurvey: there are '+str(self.N_O_I)+' short wavelength and '+str(self.N_O_a)+' long wavelength observables'
 
@@ -64,7 +64,7 @@ class SuperSurvey(object):
         else:
             self.a_vals = np.zeros(2)
 
-        t2=time()
+        t2 = time()
         print 'SuperSurvey: all done'
         print 'SuperSurvey: run time', t2-t1
 
@@ -94,16 +94,16 @@ class SuperSurvey(object):
         #    list_ssc = np.arange(self.eig_set_ssc[1,1][0].size)
         #    list_ssc = np.array(sorted(list_ssc,comp_ssc))
         #    print "descending order of component along most improved direction with mitigation using unmitigated metric: "+str(self.surveys_sw[0].cosmo_par_list[list_ssc][::-1])
-        dchi2=2.3
+        dchi2 = 2.3
         width1s_g,width2s_g,angles_g,areas_g = get_ellipse_specs(self.f_set_nopriors[0][2].get_covar(),dchi2=dchi2)
         width1s_no_mit,width2s_no_mit,angles_no_mit,areas_no_mit = get_ellipse_specs(self.f_set_nopriors[1][2].get_covar(),dchi2=dchi2)
         width1s_mit,width2s_mit,angles_mit,areas_mit = get_ellipse_specs(self.f_set_nopriors[2][2].get_covar(),dchi2=dchi2)
         rat_no_mit_g = areas_no_mit/areas_g
-        rat_no_mit_g[np.isnan(rat_no_mit_g)]=0.
+        rat_no_mit_g[np.isnan(rat_no_mit_g)] = 0.
         rat_mit_g = areas_mit/areas_g
-        rat_mit_g[np.isnan(rat_mit_g)]=0.
+        rat_mit_g[np.isnan(rat_mit_g)] = 0.
         rat_mit_no_mit = areas_mit/areas_no_mit
-        rat_mit_no_mit[np.isnan(rat_mit_no_mit)]=0.
+        rat_mit_no_mit[np.isnan(rat_mit_no_mit)] = 0.
 
         print "alignment of most contaminated direction before and most contaminated direction after mitigation: "+str(np.dot(self.eig_set[1,0][1][:,-1],self.eig_set[1,1][1][:,-1]))
         print "alignment of most contaminated direction before mitigation and most improved direction: "+str(np.dot(self.eig_set[1,0][1][:,-1],self.eig_set_ssc[1,1][1][:,0]))
@@ -145,7 +145,7 @@ def get_ellipse_specs(covs,dchi2=2.3):
     a_s = np.zeros_like(covs)
     b_s = np.zeros_like(covs)
     #dchi2 = 2.3
-    alpha =np.sqrt(dchi2)
+    alpha = np.sqrt(dchi2)
     angles = np.zeros_like(covs)
     areas = np.zeros_like(covs)
     for i in xrange(0,covs.shape[0]):
@@ -242,11 +242,11 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
                 xbox_width = xbox_widths[itr1]
             #    ybox_width = 1.
             nticks = 2
-            tickrange =0.7
+            tickrange = 0.7
             #xticks = np.arange(fid_point[0]-tickrange/2*xbox_width,fid_point[0]+tickrange/2*xbox_width+0.01*xtickspacing,xtickspacing)
             #yticks = np.arange(fid_point[1]-tickrange/2*ybox_width,fid_point[1]+tickrange/2*ybox_width+0.01*ytickspacing,ytickspacing)
             #ax.set_title('1-sigma contours')
-            formatter=ticker.FormatStrFormatter("%.1e")
+            formatter = ticker.FormatStrFormatter("%.1e")
             if itr1<=itr2:
                 xtickspacing = xbox_width*tickrange/nticks
                 xticks = np.arange(-tickrange/2*xbox_width,tickrange/2*xbox_width+0.01*xtickspacing,xtickspacing)
@@ -331,19 +331,19 @@ if __name__=="__main__":
     import algebra_utils as au
     t1 = time()
     #TODO make sure input z cannot exceed z_max in geo
-    z_max=1.35
-    l_max=50
+    z_max = 1.35
+    l_max = 50
 
     #d=np.loadtxt('Pk_Planck15.dat')
     #d=np.loadtxt('camb_m_pow_l.dat')
     #k=d[:,0]; P=d[:,1]
     #TODO check possible h discrepancy
     camb_params = defaults.camb_params.copy()
-    camb_params['force_sigma8']=False
+    camb_params['force_sigma8'] = False
     camb_params['kmax'] = 10.
     camb_params['npoints'] = 1000
     cosmo_fid = defaults.cosmology_jdem.copy()
-    cosmo_fid['w']=-1.
+    cosmo_fid['w'] = -1.
     cosmo_fid['w0'] = cosmo_fid['w']
     cosmo_fid['wa'] = 0.
     cosmo_fid['de_model'] = 'constant_w'
@@ -351,16 +351,16 @@ if __name__=="__main__":
         for i in xrange(0,36):
             cosmo_fid['ws36_'+str(i)] = cosmo_fid['w']
 
-    C=cp.CosmoPie(cosmology=cosmo_fid,p_space='jdem')
+    C = cp.CosmoPie(cosmology=cosmo_fid,p_space='jdem')
     #C=cp.CosmoPie(cosmology=defaults.cosmology,p_space='basic')
     #k,P=C.get_P_lin()
     power_params = defaults.power_params.copy()
     power_params.camb = camb_params
-    P=mps.MatterPower(C,power_params)
-    k=P.k
+    P = mps.MatterPower(C,power_params)
+    k = P.k
     C.set_power(P)
     #TODO check comoving distance is working
-    r_max=C.D_comov(z_max)
+    r_max = C.D_comov(z_max)
     print 'this is r max and l_max', r_max , l_max
 
 #    #theta0=0.
@@ -370,13 +370,13 @@ if __name__=="__main__":
     phi_in1 = 7./180.*np.pi
     theta_in1 = -35.*np.pi/180.+np.pi/2.
 
-    theta0=np.pi/4.
-    theta1=3.*np.pi/4.
-    phi0=0.
+    theta0 = np.pi/4.
+    theta1 = 3.*np.pi/4.
+    phi0 = 0.
 #    #phi1=5.*np.pi**2/162. #gives exactly a 1000 square degree field of view
     phi1 = 3.074096023740458
-    phi2=np.pi/3.
-    phi3=phi2+(phi1-phi0)
+    phi2 = np.pi/3.
+    phi3 = phi2+(phi1-phi0)
 #    theta1s = np.array([theta0,theta1,theta1,theta0,theta0])
 #    phi1s = np.array([phi0,phi0,phi1,phi1,phi0])-phi1/2.
 #    theta_in1 = 3.*np.pi/8.
@@ -413,23 +413,23 @@ if __name__=="__main__":
 
 
 
-    Theta1=[theta0,theta1]
-    Phi1=[phi0,phi1]
-    Theta2=[theta0,theta1]
-    Phi2=[phi2,phi3]
+    Theta1 = [theta0,theta1]
+    Phi1 = [phi0,phi1]
+    Theta2 = [theta0,theta1]
+    Phi2 = [phi2,phi3]
 
     #zs=np.array([.4,0.8,1.2])
     #zs=np.array([.6,0.8,1.01])
     #zs=np.array([0.2,0.43,.63,0.9,1.178125])
-    zs=np.array([0.2,0.43,.63,0.9, 1.3])
+    zs = np.array([0.2,0.43,.63,0.9, 1.3])
     z_fine = np.arange(defaults.lensing_params['z_min_integral'],np.max(zs),defaults.lensing_params['z_resolution'])
     #z_fine = np.linspace(defaults.lensing_params['z_min_integral'],np.max(zs),590)
     #zbins=np.array([.2,.6,1.0])
     #l=np.logspace(np.log10(2),np.log10(3000),1000)
     l_sw = np.logspace(np.log(30),np.log(5000),base=np.exp(1.),num=40)
     #l_sw = np.arange(0,50)
-    use_poly=True
-    use_poly2=True
+    use_poly = True
+    use_poly2 = True
     if use_poly:
         if use_poly2:
             geo1 = PolygonGeo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max,defaults.polygon_params)
@@ -438,8 +438,8 @@ if __name__=="__main__":
             geo1 = PolygonPixelGeo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max,res_healpix=res_choose)
             geo2 = PolygonPixelGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max,res_healpix=res_choose)
     else:
-        geo1=RectGeo(zs,Theta1,Phi1,C,z_fine)
-        geo2=RectGeo(zs,Theta2,Phi2,C,z_fine)
+        geo1 = RectGeo(zs,Theta1,Phi1,C,z_fine)
+        geo2 = RectGeo(zs,Theta2,Phi2,C,z_fine)
 
     loc_lens_params = defaults.lensing_params.copy()
     loc_lens_params['z_min_dist'] = np.min(zs)
@@ -493,7 +493,7 @@ if __name__=="__main__":
     #survey_1 = SWSurvey(geo1,'survey1',C,l_sw,defaults.sw_survey_params,observable_list = np.array([]),len_params=loc_lens_params)
     #survey_2 = SWSurvey(geo1,'survey2',C,l_sw,lenless_defaults,observable_list = np.array([]),cosmo_par_list = np.array([],dtype=object),cosmo_par_epsilons=np.array([]),len_params=loc_lens_params,param_priors=param_priors)
 
-    surveys_sw=np.array([survey_1])
+    surveys_sw = np.array([survey_1])
 
 
     geos = np.array([geo1,geo2])
@@ -508,16 +508,16 @@ if __name__=="__main__":
     #k_cut = 0.0214
     #k_cut = 0.03
 
-    basis=SphBasisK(r_max,C,k_cut,defaults.basis_params,l_ceil=100)
+    basis = SphBasisK(r_max,C,k_cut,defaults.basis_params,l_ceil=100)
     lw_param_list = defaults.lw_param_list.copy()
     lw_observable_list = defaults.lw_observable_list.copy()
     survey_3 = LWSurvey(geos,'lw_survey1',basis,C,defaults.lw_survey_params,observable_list=lw_observable_list,param_list = lw_param_list)
-    surveys_lw=np.array([survey_3])
+    surveys_lw = np.array([survey_3])
 
 
     print 'main: this is r_max: '+str(r_max)
     #TODO do not need basis as an argument
-    SS=SuperSurvey(surveys_sw, surveys_lw,basis,C=C,get_a=False,do_unmitigated=True,do_mitigated=True)
+    SS = SuperSurvey(surveys_sw, surveys_lw,basis,C=C,get_a=False,do_unmitigated=True,do_mitigated=True)
 
     t2 = time()
     print "main: total run time "+str(t2-t1)+" s"
@@ -563,7 +563,7 @@ if __name__=="__main__":
         v_no_mit_sw = np.dot(SS.f_set_nopriors[0][1].get_cov_cholesky(),no_mit_eigs_sw[1])
         v_mit_sw = np.dot(SS.f_set_nopriors[0][1].get_cov_cholesky(),mit_eigs_sw[1])
 
-        test_v=False
+        test_v = False
         if test_v:
             m_mat_no_mit_par = np.identity(mit_eigs_par[0].size)+np.dot(SS.f_set_nopriors[1][2].get_covar(),SS.f_set_nopriors[0][2].get_fisher())
             m_mat_mit_par = np.identity(mit_eigs_par[0].size)+np.dot(SS.f_set_nopriors[2][2].get_covar(),SS.f_set_nopriors[0][2].get_fisher())
@@ -598,7 +598,7 @@ if __name__=="__main__":
     print 'main: phi width',(geo1.rs[1]+geo1.rs[0])/2.*(Phi1[1]-Phi1[0])*np.sin((Theta1[1]+Theta1[0])/2)
     #ax_ls = np.hstack((l_sw,l_sw))
 
-    #v= SS.surveys_sw[0].get_dO_I_dpar_array()
+    #v = SS.surveys_sw[0].get_dO_I_dpar_array()
     #eig_nm = SS.cov_no_mit[0].get_SS_eig_param(v)
     #eig_m = SS.cov_mit[0].get_SS_eig_param(v)
 #    ellipse_plot_setup = True
@@ -614,13 +614,13 @@ if __name__=="__main__":
 #        cov_set = np.array([SS.f_set[2][2].get_covar(),SS.f_set[1][2].get_covar(),SS.f_set[0][2].get_covar()])
 #        label_set = np.array(["ssc+mit+g","ssc+g","g"])
 
-    ellipse_plot=False
+    ellipse_plot = False
     if ellipse_plot:
 #        make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',cosmo_par_list,dchi2=dchi2)
         SS.make_standard_ellipse_plot()
 
 
-#    chol_plot=False
+#    chol_plot = False
 #    if chol_plot:
 #        import matplotlib.pyplot as plt
 #        ax = plt.subplot(111)
@@ -653,9 +653,9 @@ if __name__=="__main__":
             warn("perturbed fisher matrix not symmetric, unacceptable")
         #get eigenvalues and set numerically zero values to 0
         eigf0 = np.linalg.eigh(f0)[0]
-        eigf0[np.abs(eigf0)<REL_TOLERANCE*np.max(np.abs(eigf0))]=0.
+        eigf0[np.abs(eigf0)<REL_TOLERANCE*np.max(np.abs(eigf0))] = 0.
         eigf1 = np.linalg.eigh(f1)[0]
-        eigf1[np.abs(eigf1)<REL_TOLERANCE*np.max(np.abs(eigf1))]=0.
+        eigf1[np.abs(eigf1)<REL_TOLERANCE*np.max(np.abs(eigf1))] = 0.
         #check positive semidefinite
         if np.any(eigf0<0.):
             pert_test_fails+=1
@@ -674,7 +674,7 @@ if __name__=="__main__":
         #check interlace theorem satisfied (eigenvalues cannot be reordered by more than rank of perturbation)
         n_offset = SS.surveys_lw[0].get_total_rank()
         rolled_eig = (eigf1[::-1][n_offset:eigf0.size]-eigf0[::-1][0:eigf0.size-n_offset])
-        rolled_eig[np.abs(rolled_eig)<REL_TOLERANCE*np.max(np.abs(rolled_eig))]=0.
+        rolled_eig[np.abs(rolled_eig)<REL_TOLERANCE*np.max(np.abs(rolled_eig))] = 0.
         if np.any(rolled_eig>0):
             pert_test_fails+=1
             warn("some eigenvalues fail interlace theorem, unacceptable")
@@ -723,8 +723,8 @@ if __name__=="__main__":
         eigsys_ssc1 = np.linalg.eigh(c_ssc1)
         eig_ssc0 = eigsys_ssc0[0].copy()
         eig_ssc1 = eigsys_ssc1[0].copy()
-        eig_ssc0[np.abs(eig_ssc0)<np.max(np.abs(eig_ssc0))*REL_TOLERANCE]=0
-        eig_ssc1[np.abs(eig_ssc0)<np.max(np.abs(eig_ssc0))*REL_TOLERANCE]=0
+        eig_ssc0[np.abs(eig_ssc0)<np.max(np.abs(eig_ssc0))*REL_TOLERANCE] = 0
+        eig_ssc1[np.abs(eig_ssc0)<np.max(np.abs(eig_ssc0))*REL_TOLERANCE] = 0
         if np.any(eig_ssc0<0):
             eig_test_fails+=1
             warn("unperturbed result cov not positive semidefinite, unacceptable")

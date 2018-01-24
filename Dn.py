@@ -29,12 +29,12 @@ class DNumberDensityObservable(LWObservable):
         min_mass = params['M_cut']
         self.variable_cut = params['variable_cut']
         LWObservable.__init__(self,geos,params,survey_id,C)
-        self.fisher_type=False
+        self.fisher_type = False
 
         self.geo1 = geos[0]
         self.geo2 = geos[1]
-        self.nz_params1=nz_params1
-        self.nz_params2=nz_params2
+        self.nz_params1 = nz_params1
+        self.nz_params2 = nz_params2
 
         #there is a bug in spherical_geometry that causes overlap to fail if geometries are nested and 1 side is identical, handle this case unless they fix it
         try:
@@ -50,7 +50,7 @@ class DNumberDensityObservable(LWObservable):
             else:
                 self.overlap_fraction = self.geo2.angular_area()/self.geo1.angular_area()
 
-        self.mf=ST_hmf(self.C,params=mf_params)
+        self.mf = ST_hmf(self.C,params=mf_params)
         self.nzc_1 = NZCandel(self.nz_params1)
         #self.nzc_2 = NZLSST(self.nzc_1.z_grid,self.nz_params2)
         self.nzc_2 = NZCandel(self.nz_params2)
@@ -99,22 +99,22 @@ class DNumberDensityObservable(LWObservable):
 
             if self.variable_cut:
                 #for i in range1:
-                self.dn_ddelta_bar1=self.mf.bias_n_avg(self.M_cuts1[range1],self.geo1.z_fine[range1])
-                self.dn_ddelta_bar2=self.mf.bias_n_avg(self.M_cuts2[range2],self.geo2.z_fine[range2])
+                self.dn_ddelta_bar1 = self.mf.bias_n_avg(self.M_cuts1[range1],self.geo1.z_fine[range1])
+                self.dn_ddelta_bar2 = self.mf.bias_n_avg(self.M_cuts2[range2],self.geo2.z_fine[range2])
                 #for i in range2:
-                 #   self.dn_ddelta_bar2[i]=self.mf.bias_avg(self.M_cuts2[i],self.geo2.z_fine[i])
+                 #   self.dn_ddelta_bar2[i] = self.mf.bias_avg(self.M_cuts2[i],self.geo2.z_fine[i])
             else:
                 mass_array1 = np.full(range1.shape,min_mass)
-                self.dn_ddelta_bar1=self.mf.bias_n_avg(mass_array1,self.geo1.z_fine[range1])
+                self.dn_ddelta_bar1 = self.mf.bias_n_avg(mass_array1,self.geo1.z_fine[range1])
                 mass_array2 = np.full(range2.shape,min_mass)
-                self.dn_ddelta_bar2=self.mf.bias_n_avg(mass_array2,self.geo2.z_fine[range2])
+                self.dn_ddelta_bar2 = self.mf.bias_n_avg(mass_array2,self.geo2.z_fine[range2])
             print "Dn: getting d1,d2"
             #multiplier for integrand,TODO maybe better way
             self.integrand1 = np.expand_dims(self.dn_ddelta_bar1*self.geo1.r_fine[range1]**2,axis=1)
-            self.d1=self.basis.D_O_I_D_delta_alpha(self.geo1,self.integrand1,use_r=True,range_spec=range1)/(self.geo1.r_fine[range1[-1]]**3-self.geo1.r_fine[range1[0]]**3)*3.
+            self.d1 = self.basis.D_O_I_D_delta_alpha(self.geo1,self.integrand1,use_r=True,range_spec=range1)/(self.geo1.r_fine[range1[-1]]**3-self.geo1.r_fine[range1[0]]**3)*3.
 
             self.integrand2 = np.expand_dims(self.dn_ddelta_bar1*self.geo2.r_fine[range2]**2,axis=1)
-            self.d2=self.basis.D_O_I_D_delta_alpha(self.geo2,self.integrand2,use_r=True,range_spec=range2)/(self.geo2.r_fine[range2[-1]]**3-self.geo2.r_fine[range2[0]]**3)*3.
+            self.d2 = self.basis.D_O_I_D_delta_alpha(self.geo2,self.integrand2,use_r=True,range_spec=range2)/(self.geo2.r_fine[range2[-1]]**3-self.geo2.r_fine[range2[0]]**3)*3.
             self.DO_a = self.d2-self.d1
 
             self.n_avg1 = trapz2((self.geo1.r_fine**2*self.n_avgs1)[range1],self.geo1.r_fine[range1])/(self.geo1.r_fine[range1[-1]]**3-self.geo1.r_fine[range1[0]]**3)*3.
@@ -128,10 +128,10 @@ class DNumberDensityObservable(LWObservable):
             if Nab_itr == 0.:
                 warn('Dn: variance had a value which was exactly 0; mitigation disabled for axis '+str(itr))
                 self.Nab_i[itr,itr] = 0.
-                self.vs[itr]=np.zeros(self.DO_a.flatten().shape)
+                self.vs[itr] = np.zeros(self.DO_a.flatten().shape)
             else:
-                self.Nab_i[itr,itr]=1./Nab_itr
-                self.vs[itr]=self.DO_a.flatten()
+                self.Nab_i[itr,itr] = 1./Nab_itr
+                self.vs[itr] = self.DO_a.flatten()
 
 
         self.Nab_f = fm.FisherMatrix(np.sqrt(self.Nab_i),input_type=fm.REP_CHOL_INV)

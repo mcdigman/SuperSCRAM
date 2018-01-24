@@ -17,52 +17,52 @@ class ST_hmf(object):
                 log10_min_mass,log10_max_mass: log10(minimum/maximum mass to go to)
                 n_grid: number of grid points for mass
         """
-        self.A=0.3222
-        self.a=0.707
-        self.p=0.3
+        self.A = 0.3222
+        self.a = 0.707
+        self.p = 0.3
 
         self.params = params
         # log 10 of the minimum and maximum halo mass
-        self.min=params['log10_min_mass']
-        self.max=params['log10_max_mass']
+        self.min = params['log10_min_mass']
+        self.max = params['log10_max_mass']
         # number of grid points in M
-        n_grid=self.params['n_grid']
+        n_grid = self.params['n_grid']
         # I add an additional point because I will take derivatives latter
         # and the finite difference scheme misses that last grid point.
-        dlog_M=(self.max-self.min)/float(n_grid)
-        self.M_grid=10**np.linspace(self.min,self.max+dlog_M, n_grid+1)
-        self.mass_grid=self.M_grid[0:-1]
+        dlog_M = (self.max-self.min)/float(n_grid)
+        self.M_grid = 10**np.linspace(self.min,self.max+dlog_M, n_grid+1)
+        self.mass_grid = self.M_grid[0:-1]
 
 
-        self.nu_array=np.zeros(n_grid+1)
-        self.sigma=np.zeros(n_grid+1)
+        self.nu_array = np.zeros(n_grid+1)
+        self.sigma = np.zeros(n_grid+1)
         self.C = C
 
         #self.delta_c=C.delta_c(0)
         #TODO consider having option to overwride delta_c
         self.delta_c = 1.686
         if delta_bar is not None:
-            self.delta_c=self.delta_c - delta_bar
-        self.rho_bar=C.rho_bar(0)
+            self.delta_c = self.delta_c - delta_bar
+        self.rho_bar = C.rho_bar(0)
 
-        self.Growth=C.G_norm
+        self.Growth = C.G_norm
 
 
         #print 'rhos', 0,self.rho_bar/(1e10), C.rho_crit(0)/(1e10)
 
         self.R = (3./4.*self.M_grid/self.rho_bar/np.pi)**(1./3.)
         #manually fixed h factor to agree with convention
-        self.sigma=C.sigma_r(0.,self.R/C.h)
+        self.sigma = C.sigma_r(0.,self.R/C.h)
 
         # calculated at z=0
-        self.nu_array=(self.delta_c/self.sigma)**2
-        sigma_inv=self.sigma**(-1)
-        dsigma_dM=np.diff(np.log(sigma_inv))/(np.diff(self.M_grid))
+        self.nu_array = (self.delta_c/self.sigma)**2
+        sigma_inv = self.sigma**(-1)
+        dsigma_dM = np.diff(np.log(sigma_inv))/(np.diff(self.M_grid))
 
-        self.sigma_of_M=interp1d(self.M_grid[:-1],self.sigma[:-1])
-        self.nu_of_M=interp1d(self.M_grid[:-1], self.nu_array[:-1])
-        self.M_of_nu=interp1d(self.nu_array[:-1],self.M_grid[:-1])
-        self.dsigma_dM_of_M=interp1d(self.M_grid[:-1],dsigma_dM)
+        self.sigma_of_M = interp1d(self.M_grid[:-1],self.sigma[:-1])
+        self.nu_of_M = interp1d(self.M_grid[:-1], self.nu_array[:-1])
+        self.M_of_nu = interp1d(self.nu_array[:-1],self.M_grid[:-1])
+        self.dsigma_dM_of_M = interp1d(self.M_grid[:-1],dsigma_dM)
 
         #grid for precomputing z dependent quantities
         self.z_grid = np.arange(self.params['z_min'],self.params['z_max'],self.params['z_resolution'])
@@ -83,26 +83,26 @@ class ST_hmf(object):
         """ get normalization factor to ensure all mass is in a halo
             accepts either a numpy array or a scalar input for G"""
         if isinstance(G,np.ndarray):
-            nu=np.outer(self.nu_array,1./G**2)
-            sigma_inv=np.outer(1./self.sigma,1./G**2)
+            nu = np.outer(self.nu_array,1./G**2)
+            sigma_inv = np.outer(1./self.sigma,1./G**2)
         else:
-            nu=self.nu_array/G**2
-            sigma_inv=1./self.sigma*1./G**2
-        f=self.A*np.sqrt(2*self.a/np.pi)*(1. + (1./self.a/nu)**self.p)*np.sqrt(nu)*np.exp(-self.a*nu/2.)
-        norm=trapz2(f,np.log(sigma_inv))
+            nu = self.nu_array/G**2
+            sigma_inv = 1./self.sigma*1./G**2
+        f = self.A*np.sqrt(2*self.a/np.pi)*(1. + (1./self.a/nu)**self.p)*np.sqrt(nu)*np.exp(-self.a*nu/2.)
+        norm = trapz2(f,np.log(sigma_inv))
         return norm
 
     def bias_norm(self,G):
         """ gets the normalization for bias b(r) for Sheth-Tormen mass function
             supports numpy array or scalar for G"""
         if isinstance(G,np.ndarray):
-            nu=np.outer(self.nu_array,1./G**2)
+            nu = np.outer(self.nu_array,1./G**2)
         else:
-            nu=self.nu_array/G**2
+            nu = self.nu_array/G**2
 
         bias = self.bias_nu(nu)
         f = self.f_nu(nu)
-        norm=trapz2(f*bias,nu)
+        norm = trapz2(f*bias,nu)
         return norm
 
     def bias_nu(self,nu):
@@ -120,15 +120,15 @@ class ST_hmf(object):
             both M and G can be numpy arrays
             renormalizing for input mass range is optional"""
         if norm_in is None and self.f_norm_overwride:
-            norm=self.f_norm_cache(G)
+            norm = self.f_norm_cache(G)
         else:
             norm = 1.
 
         #note  nu = delta_c**2/sigma**2
         if isinstance(G,np.ndarray) and isinstance(M,np.ndarray):
-            nu=np.outer(self.nu_of_M(M),1./G**2)
+            nu = np.outer(self.nu_of_M(M),1./G**2)
         else:
-            nu=self.nu_of_M(M)/G**2
+            nu = self.nu_of_M(M)/G**2
 
         f = self.f_nu(nu)
         if self.f_norm_overwride or norm_in is not None:
@@ -140,13 +140,13 @@ class ST_hmf(object):
         """ get Sheth-Tormen mass function
             implements equation 3 in   arXiv:astro-ph/0607150
             supports M and G to be numpy arrays or scalars"""
-        f=self.f_sigma(M,G)
-        sigma=self.sigma_of_M(M)
-        dsigma_dM=self.dsigma_dM_of_M(M)
+        f = self.f_sigma(M,G)
+        sigma = self.sigma_of_M(M)
+        dsigma_dM = self.dsigma_dM_of_M(M)
         if isinstance(G,np.ndarray) and isinstance(M,np.ndarray):
-            mf=(self.rho_bar/M*dsigma_dM*f.T).T
+            mf = (self.rho_bar/M*dsigma_dM*f.T).T
         else:
-            mf=self.rho_bar/M*dsigma_dM*f
+            mf = self.rho_bar/M*dsigma_dM*f
         # return sigma,f,and the mass function dn/dM
         return sigma,f,mf
 
@@ -154,14 +154,14 @@ class ST_hmf(object):
     def dndM_G(self,M,G):
         """ gets Sheth-Tormen dn/dM as a function of G
             both M and G can be numpy arrays or scalars"""
-        _,_,mf=self.mass_func(M,G)
+        _,_,mf = self.mass_func(M,G)
         return mf
 
     def dndM(self,M,z):
         """ gets Sheth-Tormen dn/dM as a function of z
             both M and z can be numpy arrays or scalars"""
-        G=self.Growth(z)
-        _,_,mf=self.mass_func(M,G)
+        G = self.Growth(z)
+        _,_,mf = self.mass_func(M,G)
         return mf
 
     def M_star(self):
@@ -170,21 +170,21 @@ class ST_hmf(object):
 
     def bias(self,M,z,norm_in=None):
         """get Sheth-Tormen bias as a function of z"""
-        G=self.Growth(z)
+        G = self.Growth(z)
         self.bias_G(M,G,norm_in=norm_in)
 
     def bias_G(self,M,G,norm_in=None):
         """get bias as a function of G
         implements arXiv:astro-ph/9901122 eq 12"""
         if norm_in is None and self.b_norm_overwride:
-            norm=self.b_norm_cache(G)
+            norm = self.b_norm_cache(G)
         else:
-            norm=1.
+            norm = 1.
 
         if isinstance(M,np.ndarray) and isinstance(G,np.ndarray):
-            nu=np.outer(self.nu_of_M(M),1./G**2)
+            nu = np.outer(self.nu_of_M(M),1./G**2)
         else:
-            nu=self.nu_of_M(M)/G**2
+            nu = self.nu_of_M(M)/G**2
         bias = self.bias_nu(nu)
         if self.b_norm_overwride or norm_in is not None:
             return bias/norm
@@ -208,7 +208,7 @@ class ST_hmf(object):
 
         #TODO could probably consolidate these conditions somewhat
         if isinstance(min_mass,np.ndarray):
-            mf=self.dndM_G(self.mass_grid,G)
+            mf = self.dndM_G(self.mass_grid,G)
 
             b_array = self.bias_G(self.mass_grid,G,norm)
 
@@ -220,13 +220,13 @@ class ST_hmf(object):
                 result[itr] = integrated(min_mass[itr],G[itr])
             return result
         else:
-            mass=self.mass_grid[ self.mass_grid >= min_mass]
-            mf=self.dndM_G(mass,G)
+            mass = self.mass_grid[ self.mass_grid >= min_mass]
+            mf = self.dndM_G(mass,G)
 
-            b_array=np.zeros_like(mass)
+            b_array = np.zeros_like(mass)
 
             for i in xrange(mass.size):
-                b_array[i]=self.bias_G(mass[i],G,norm_in=norm)
+                b_array[i] = self.bias_G(mass[i],G,norm_in=norm)
 
             return trapz2(b_array*mf,mass)
 
@@ -241,7 +241,7 @@ class ST_hmf(object):
         G = self.Growth(z)
         #TODO this does not handle z being of length 1 correctly
         if isinstance(min_mass,np.ndarray) and isinstance(z,np.ndarray):
-            mf=self.dndM_G(self.mass_grid,G)
+            mf = self.dndM_G(self.mass_grid,G)
             integrated = RectBivariateSpline(self.mass_grid,G[::-1],-np.vstack((np.zeros((1,mf.shape[1])),cumtrapz(mf[::-1,:],self.mass_grid[::-1],axis=0)))[::-1,::-1],kx=1,ky=1)
             result = np.zeros(G.size)
             for itr in xrange(0,G.size):
@@ -251,13 +251,13 @@ class ST_hmf(object):
             if isinstance(min_mass,np.ndarray):
                 result = np.zeros(min_mass.size)
                 for i in xrange(0,min_mass.size):
-                    mass=self.mass_grid[ self.mass_grid >= min_mass[i]]
-                    mf=self.dndM_G(mass,G)
+                    mass = self.mass_grid[ self.mass_grid >= min_mass[i]]
+                    mf = self.dndM_G(mass,G)
                     result[i] = trapz2(mf,mass)
                 return result
             else:
-                mass=self.mass_grid[ self.mass_grid >= min_mass]
-                mf=self.dndM_G(mass,G)
+                mass = self.mass_grid[ self.mass_grid >= min_mass]
+                mf = self.dndM_G(mass,G)
                 return trapz2(mf,mass)
 
 #if __name__=="__main__":
@@ -282,15 +282,15 @@ class ST_hmf(object):
 #    import matter_power_spectrum as mps
 #    cosmo_fid = defaults.cosmology
 #
-#    cosmo_fid['h']=0.65
-#    cosmo_fid['Omegamh2']=0.148
-#    cosmo_fid['Omegabh2']=0.02
-#    cosmo_fid['OmegaLh2']=0.65*0.65**2
+#    cosmo_fid['h'] = 0.65
+#    cosmo_fid['Omegamh2'] = 0.148
+#    cosmo_fid['Omegabh2'] = 0.02
+#    cosmo_fid['OmegaLh2'] = 0.65*0.65**2
 #    cosmo_fid['sigma8'] = 0.92
-#    cosmo_fid['ns']=1.
+#    cosmo_fid['ns'] = 1.
 #    cosmo_fid = cp.add_derived_pars(cosmo_fid,p_space='basic')
-#    C=cp.CosmoPie(cosmo_fid)
-#    P=mps.MatterPower(C)
+#    C = cp.CosmoPie(cosmo_fid)
+#    P = mps.MatterPower(C)
 #    C.P_lin = P
 #    C.k = P.k
 #    #z=1.1; h=.677el
@@ -302,7 +302,7 @@ class ST_hmf(object):
 #    params['log10_min_mass'] = 6
 #    params['log10_max_mass'] = 18.63
 #    params['n_grid'] = 50000
-#    hmf=ST_hmf(C,params=params)
+#    hmf = ST_hmf(C,params=params)
 #
 #    #M=np.logspace(8,15,150)
 #
@@ -311,9 +311,9 @@ class ST_hmf(object):
 #    do_plot_check1 = False
 #    if do_plot_check1:
 #
-#        h=.6774
-#        z1=0;z2=1.1;z3=.1
-#        G1=hmf.Growth(z1);G2=hmf.Growth(z2);G3=hmf.Growth(z3)
+#        h = .6774
+#        z1 = 0;z2=1.1;z3=.1
+#        G1 = hmf.Growth(z1);G2=hmf.Growth(z2);G3=hmf.Growth(z3)
 #
 #        M = hmf.mass_grid
 #        #M=d[:,0]
@@ -321,7 +321,7 @@ class ST_hmf(object):
 #        _,f2,mf2=hmf.mass_func(M,G2)
 #        _,f2,mf3=hmf.mass_func(M,G3)
 #
-#        ax=plt.subplot(131)
+#        ax = plt.subplot(131)
 #        ax.set_xscale('log')
 #        ax.set_yscale('log')
 #        #ax.set_xlim(9.6,15)
@@ -333,8 +333,8 @@ class ST_hmf(object):
 #        ax.plot(M,mf2*M)
 #        #ax.plot(d[:,0], d[:,3]/h**2, '--')
 #
-#        zz=np.array([.1,.2,.3,.5,1,2])
-#        GG=hmf.Growth(zz)
+#        zz = np.array([.1,.2,.3,.5,1,2])
+#        GG = hmf.Growth(zz)
 #        for i in xrange(zz.size):
 #            _,_,y=hmf.mass_func(M,GG[i])
 #            ax.plot(M,y*M)
@@ -346,7 +346,7 @@ class ST_hmf(object):
 #
 #        plt.grid()
 #
-#        ax=plt.subplot(132)
+#        ax = plt.subplot(132)
 #        ax.set_xscale('log')
 #        #ax.set_xlim(-.2,.4)
 #        ax.set_yscale('log')
@@ -362,14 +362,14 @@ class ST_hmf(object):
 #
 #        plt.grid()
 #
-#        ax=plt.subplot(133)
+#        ax = plt.subplot(133)
 #        ax.set_xscale('log')
 #        #ax.set_xlim(-.2,.4)
 #        ax.set_yscale('log')
 #        ax.set_ylabel(r'$f(M_h)}$', size=20)
 #
-#        b1=hmf.bias(M,0)
-#        b2=hmf.bias(M,1)
+#        b1 = hmf.bias(M,0)
+#        b2 = hmf.bias(M,1)
 #
 #        ax.plot(M,b1)
 #        ax.plot(M,b2)
@@ -377,7 +377,7 @@ class ST_hmf(object):
 #        plt.grid()
 #        plt.show()
 #
-#    do_sanity_checks=True
+#    do_sanity_checks = True
 #    if do_sanity_checks:
 #        #some sanity checks
 #        #Gs = np.arange(0.01,1.0,0.01)
@@ -396,7 +396,7 @@ class ST_hmf(object):
 #            n_avgs_alt[i] = hmf.n_avg(m_z_in[i],zs[i])
 #            bias_n_avgs_alt[i] = hmf.bias_n_avg(m_z_in[i],zs[i])
 #            dndM_G_alt[:,i] = hmf.dndM_G(hmf.mass_grid,Gs[i])
-#        dndM_G=hmf.dndM_G(hmf.mass_grid,Gs)
+#        dndM_G = hmf.dndM_G(hmf.mass_grid,Gs)
 #        #consistency checks for vector method
 #        assert np.allclose(dndM_G,dndM_G_alt)
 #        n_avgs = hmf.n_avg(m_z_in,zs)
@@ -416,12 +416,12 @@ class ST_hmf(object):
 #        #Ms = 10**(np.linspace(11,14,500))
 #        Ms = hmf.mass_grid
 #       # dndM_G=hmf.dndM_G(hmf.mass_grid,Gs)
-#        do_jenkins_comp=False
+#        do_jenkins_comp = False
 #        #should look like dotted line in figure 3 of    arXiv:astro-ph/0005260
 #        if do_jenkins_comp:
 #            zs = np.array([0.])
 #            Gs = C.G_norm(zs)
-#            dndM_G=hmf.f_sigma(hmf.mass_grid,Gs)
+#            dndM_G = hmf.f_sigma(hmf.mass_grid,Gs)
 #            input_dndm = np.loadtxt('test_inputs/hmf/dig_jenkins_fig3.csv',delimiter=',')
 #            plt.plot(np.log(1./hmf.sigma[:-1:]),np.log(dndM_G))
 #            plt.plot(input_dndm[:,0],input_dndm[:,1])
@@ -430,22 +430,22 @@ class ST_hmf(object):
 #            plt.grid()
 #            plt.show()
 #
-#        do_sheth_bias_comp=True
+#        do_sheth_bias_comp = True
 #        #agrees pretty well, maybe as well as it should
 #        if do_sheth_bias_comp:
 #            cosmo_fid2 = cosmo_fid.copy()
-#            cosmo_fid2['Omegamh2']=0.3*0.7**2
-#            cosmo_fid2['Omegabh2']=0.05*0.7**2
-#            cosmo_fid2['OmegaLh2']=0.7*0.7**2
+#            cosmo_fid2['Omegamh2'] = 0.3*0.7**2
+#            cosmo_fid2['Omegabh2'] = 0.05*0.7**2
+#            cosmo_fid2['OmegaLh2'] = 0.7*0.7**2
 #            cosmo_fid2['sigma8'] = 0.9
-#            cosmo_fid2['h']=0.7
+#            cosmo_fid2['h'] = 0.7
 #            cosmo_fid2['ns'] = 1.0
 #            cosmo_fid2 = cp.add_derived_pars(cosmo_fid2,p_space='basic')
-#            C2=cp.CosmoPie(cosmo_fid2)
-#            P2=mps.MatterPower(C2)
+#            C2 = cp.CosmoPie(cosmo_fid2)
+#            P2 = mps.MatterPower(C2)
 #            C2.P_lin = P2
 #            C2.k = P2.k
-#            hmf2=ST_hmf(C2,params=params)
+#            hmf2 = ST_hmf(C2,params=params)
 #            zs = np.array([0.,1.,2.,4.])
 #            Gs = C2.G_norm(zs)
 #            bias = hmf2.bias_G(Ms,Gs)
@@ -457,7 +457,7 @@ class ST_hmf(object):
 #            plt.grid()
 #            plt.show()
 #        #might agree
-#        do_hu_bias_comp1=False
+#        do_hu_bias_comp1 = False
 #        if do_hu_bias_comp1:
 #            zs = np.array([0.])
 #            Gs = C.G_norm(zs)
@@ -473,7 +473,7 @@ class ST_hmf(object):
 #            bias_hu_i = InterpolatedUnivariateSpline(10**input_bias[:,0],input_bias[:,1])(masses)
 #            bias_i = InterpolatedUnivariateSpline(Ms,bias)(masses)
 #        #should agree, does
-#        do_hu_bias_comp2=False
+#        do_hu_bias_comp2 = False
 #        if do_hu_bias_comp2:
 #            zs = np.array([0.])
 #            Gs = C.G_norm(zs)
@@ -490,23 +490,23 @@ class ST_hmf(object):
 #            bias_i = InterpolatedUnivariateSpline(Ms,bias)(masses)
 #
 #        #might agree
-#        do_hu_navg_comp1=False
+#        do_hu_navg_comp1 = False
 #        if do_hu_navg_comp1:
 #            cosmo_fid2 = cosmo_fid.copy()
-#            cosmo_fid2['h']=0.65
-#            cosmo_fid2['Omegamh2']=0.15
-#            cosmo_fid2['Omegabh2']=0.02
-#            cosmo_fid2['OmegaLh2']=(1-cosmo_fid2['Omegamh2']/cosmo_fid2['h']**2)*cosmo_fid2['h']**2
+#            cosmo_fid2['h'] = 0.65
+#            cosmo_fid2['Omegamh2'] = 0.15
+#            cosmo_fid2['Omegabh2'] = 0.02
+#            cosmo_fid2['OmegaLh2'] = (1-cosmo_fid2['Omegamh2']/cosmo_fid2['h']**2)*cosmo_fid2['h']**2
 #            cosmo_fid2['sigma8'] = 1.07
-#            cosmo_fid2['ns']=1.
+#            cosmo_fid2['ns'] = 1.
 #            cosmo_fid2 = cp.add_derived_pars(cosmo_fid2,p_space='basic')
-#            C2=cp.CosmoPie(cosmo_fid2)
-#            P2=mps.MatterPower(C2)
+#            C2 = cp.CosmoPie(cosmo_fid2)
+#            P2 = mps.MatterPower(C2)
 #            C2.P_lin = P2
 #            C2.k = P2.k
 #            zs = np.array([0.])
 #            Gs = C2.G_norm(zs)
-#            hmf2=ST_hmf(C2,params=params)
+#            hmf2 = ST_hmf(C2,params=params)
 #            input_navg = np.loadtxt('test_inputs/hmf/dig_hu_navg.csv',delimiter=',')
 #            navg = hmf2.n_avg(10**input_navg[:,0],0.)
 #            plt.loglog(10**input_navg[:,0],navg)
@@ -519,7 +519,7 @@ class ST_hmf(object):
 #            navg_hu_i = InterpolatedUnivariateSpline(10**input_navg[:,0],10**input_navg[:,1])(masses)
 #            navg_i = InterpolatedUnivariateSpline(10**input_navg[:,0],navg)(masses)
 #        #should agree, does
-#        do_hu_sigma_comp=False
+#        do_hu_sigma_comp = False
 #        if do_hu_sigma_comp:
 #            input_sigma = np.loadtxt('test_inputs/hmf/dig_hu_sigma.csv',delimiter=',')
 #            plt.loglog(hmf.R,hmf.sigma)

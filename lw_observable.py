@@ -15,7 +15,7 @@ class LWObservable(object):
         self.params = params
         self.survey_id = survey_id
         #TODO formalize fisher_type
-        self.fisher_type=True
+        self.fisher_type = True
     #TODO assess if actually needs to be mandatory for an LWObservable
     def get_dO_a_ddelta_bar(self):
         """

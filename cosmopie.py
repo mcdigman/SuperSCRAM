@@ -15,7 +15,7 @@ from algebra_utils import trapz2
 import defaults
 from dark_energy_model import DarkEnergyConstant,DarkEnergyW0Wa,DarkEnergyJDEM
 
-eps=np.finfo(float).eps
+eps = np.finfo(float).eps
 #TODO ensure safe sigma8
 class CosmoPie(object):
     """stores and calculates various parameters for a cosmology"""
@@ -35,12 +35,12 @@ class CosmoPie(object):
 
 
         # default to Planck 2015 values
-        self.silent=silent
+        self.silent = silent
         if not silent:
             print "cosmopie "+str(id(self))+": begin initialization"
 
         #define parameterization
-        self.p_space=p_space
+        self.p_space = p_space
         #fill out cosmology
         self.cosmology = cosmology.copy()
         self.cosmology = add_derived_pars(self.cosmology,self.p_space)
@@ -51,7 +51,7 @@ class CosmoPie(object):
         self.Omegamh2 = self.cosmology['Omegamh2']
         self.OmegaL   = self.cosmology['OmegaL']
         self.Omegam   = self.cosmology['Omegam']
-        self.ns =self.cosmology['ns']
+        self.ns = self.cosmology['ns']
         self.H0       = self.cosmology['H0']
         self.h        = self.cosmology['h']
         self.Omegak   = self.cosmology['Omegak']
@@ -63,8 +63,8 @@ class CosmoPie(object):
         if self.de_model is None:
             warn('no dark energy model specified, assuming w=-1')
             self.de_model = 'constant_w'
-            self.cosmology['de_model']=self.de_model
-            self.cosmology['w']=-1
+            self.cosmology['de_model'] = self.de_model
+            self.cosmology['w'] = -1
 
         if self.de_model=='constant_w':
             self.de_object = DarkEnergyConstant(self.cosmology['w'])
@@ -80,30 +80,30 @@ class CosmoPie(object):
 
 
         # solar mass
-        self.M_sun=1.9885*1e30 # kg
+        self.M_sun = 1.9885*1e30 # kg
 
         # parsec
-        self.pc=3.08567758149*1e16 # m
+        self.pc = 3.08567758149*1e16 # m
 
         # Newton's constant (CODATA value)
-        self.GN=6.67408*10**(-11) # m^3/kg/s^2
+        self.GN = 6.67408*10**(-11) # m^3/kg/s^2
 
         # speed of light
         self.c        = 2.997924580*1e5 #km/s
 
         self.DH       = self.c/self.H0
 
-        self.tH= 1/self.H0
+        self.tH = 1/self.H0
 
         #curvature
         self.K = -self.Omegak*(self.H0/self.c)**2
 
         #precompute the normalization factor from the differential equation
-        self.a_step=a_step
-        self.G_safe=G_safe
+        self.a_step = a_step
+        self.G_safe = G_safe
 
-        a_min=a_step
-        a_max=1.
+        a_min = a_step
+        a_max = 1.
         self.a_grid = np.arange(a_max,a_min-a_step/10.,-a_step)
         self.z_grid = 1./self.a_grid-1.
 
@@ -118,17 +118,17 @@ class CosmoPie(object):
             d_args = (np.array([_d_mult_interp,_dp_mult_interp]),)
             def _d_evolve_eqs(ys,a,g_args):
                 yps = np.zeros(2)
-                yps[0]=ys[1]
-                yps[1]=g_args[0](a)*ys[0]+g_args[1](a)*ys[1]
+                yps[0] = ys[1]
+                yps[1] = g_args[0](a)*ys[0]+g_args[1](a)*ys[1]
                 return yps
             #drop ghost cell
             integ_result = odeint(_d_evolve_eqs,d_ics,self.a_grid[::-1],d_args)
             self.G_p = InterpolatedUnivariateSpline(self.z_grid,(self.a_grid*integ_result[:,0][::-1]),k=2,ext=2)
         else:
-            self.G_p=G_in
+            self.G_p = G_in
 
-        self.P_lin=P_lin
-        self.k=k
+        self.P_lin = P_lin
+        self.k = k
 
         if not silent:
             print "cosmopie "+str(id(self))+": finished initialization"
@@ -137,7 +137,7 @@ class CosmoPie(object):
         """
         Get E(z)=H(z)/H0
         """
-        zp1=z + 1
+        zp1 = z + 1
         #need to use interpolating function for a dependence of OmegaL term because could be time dependent if w is not constant
         return np.sqrt(self.Omegam*zp1**3 + self.Omegar*zp1**4 + self.Omegak*zp1**2 + self.OmegaL*self.de_object.de_mult(z))
 
@@ -188,10 +188,10 @@ class CosmoPie(object):
     def D_comov_T(self,z):
         """Transverse comoving distance"""
         if self.Omegak > 0:
-            sq=np.sqrt(self.Omegak)
+            sq = np.sqrt(self.Omegak)
             return self.DH/sq*np.sinh(sq*self.D_comov(z)/self.DH)
         elif self.Omegak < 0:
-            sq=np.sqrt(self.Omegak)
+            sq = np.sqrt(self.Omegak)
             return self.DH/sq*np.sin(sq*self.D_comov(z)/self.DH)
         else:
             return self.D_comov(z)
@@ -217,13 +217,13 @@ class CosmoPie(object):
 
     def G_norm(self,z):
         """linear growth factor normalized so the G(z=0)=1"""
-        G_0=self.G(0.)
+        G_0 = self.G(0.)
         return self.G(z)/G_0
 
 
     def log_growth(self,z):
         """using equation 3.2 from Baldauf 2015, not currently consistent with G(z)"""
-        a=1/(1+z)
+        a = 1/(1+z)
         print 'what I think it is', a/self.H(z)*self.dH_da(z) + 5/2.*self.Omegam*self.G_norm(0)/self.H(z)**2/a**2/self.G_norm(z)
         return -3/2.*self.Omegam/a**3*self.H0**2/self.H(z)**2 + 1/self.H(z)**2/a**2/self.G_norm(z)
 
@@ -235,29 +235,29 @@ class CosmoPie(object):
         in the appendix of NFW 1997"""
         #TODO fitting formula, probably not appropriate for the code anymore
         #TODO should have z dependence
-        A=0.15*(12.*np.pi)**(2/3.)
+        A = 0.15*(12.*np.pi)**(2/3.)
 
         if (self.Omegam ==1) and (self.OmegaL==0):
-            d_crit=A
+            d_crit = A
         elif (self.Omegam < 1) and (self.OmegaL ==0):
-            d_crit=A*self.Omegam**(0.0185)
+            d_crit = A*self.Omegam**(0.0185)
         elif (self.Omegam + self.OmegaL)==1.0:
-            d_crit=A*self.Omegam**(0.0055)
+            d_crit = A*self.Omegam**(0.0055)
         else:
-            d_crit=A*self.Omegam**(0.0055)
+            d_crit = A*self.Omegam**(0.0055)
             warn('inexact equality to 1~='+str(self.Omegam)+"+"+str(self.OmegaL)+"="+str(self.OmegaL+self.Omegam))
-        d_c=d_crit#/self.G_norm(z)
+        d_c = d_crit#/self.G_norm(z)
         return d_c
 
     def delta_v(self,z):
         """over density for virialized halo"""
-        A=178.0
+        A = 178.0
         if (self.Omegam_z(z) ==1) and (self.OmegaL_z(z)==0):
-            d_v=A
+            d_v = A
         if (self.Omegam_z(z) < 1) and (self.OmegaL_z(z) ==0):
-            d_v=A/self.Omegam_z(z)**(0.7)
+            d_v = A/self.Omegam_z(z)**(0.7)
         if (self.Omegam_z(z) + self.OmegaL_z(z))==1.0:
-            d_v=A/self.Omegam_z(z)**(0.55)
+            d_v = A/self.Omegam_z(z)**(0.55)
 
         return d_v/self.G_norm(z)
 
@@ -269,9 +269,9 @@ class CosmoPie(object):
 
     def sigma_m(self,mass,z):
         """ RMS power on a scale of R(mass)
-         rho=mass/volume=mass"""
-        R=3/4.*mass/self.rho_bar(z)/np.pi
-        R=R**(1/3.)
+         rho = mass/volume=mass"""
+        R = 3/4.*mass/self.rho_bar(z)/np.pi
+        R = R**(1/3.)
         return self.sigma_r(z,R)
 
     def sigma_r(self,z,R):
@@ -285,11 +285,11 @@ class CosmoPie(object):
             kr = np.outer(self.P_lin.k,R)
         else:
             kr = self.P_lin.k*R
-        W=3.0*(np.sin(kr)/kr**3-np.cos(kr)/kr**2)
+        W = 3.0*(np.sin(kr)/kr**3-np.cos(kr)/kr**2)
         #P=self.G_norm(z)**2*self.P_lin
         #TODO should be z dependence?
-        P=self.P_lin.get_matter_power(np.array([0.]),pmodel='linear')[:,0]
-        I=trapz2(((W*W).T*P*self.P_lin.k**3).T,np.log(self.P_lin.k)).T/2./np.pi**2
+        P = self.P_lin.get_matter_power(np.array([0.]),pmodel='linear')[:,0]
+        I = trapz2(((W*W).T*P*self.P_lin.k**3).T,np.log(self.P_lin.k)).T/2./np.pi**2
 
         return np.sqrt(I)
 
@@ -322,7 +322,7 @@ class CosmoPie(object):
     #critical density should be about 2.77536627*10^11 h^2 M_sun/Mpc^-3 at z=0 according to pdg table
     def rho_crit(self,z):
         """return critical density in units of solar mass and h^2 """
-        factor=1e12/self.M_sun*self.pc
+        factor = 1e12/self.M_sun*self.pc
         #print 'rho crit [g/cm^3] at z =', z, 3*self.H(z)**2/8./np.pi/self.GN*1e9/(3.086*10**24)**2/10**2
         return 3*self.H(z)**2/8./np.pi/self.GN*factor/self.h**2
 
@@ -353,7 +353,7 @@ class CosmoPie(object):
     # -----------------------------------------------------------------------------
 
 JDEM_LIST = ['ws36_'+str(itr_36) for itr_36 in xrange(0,36)]
-P_SPACES ={'jdem': ['ns','Omegamh2','Omegabh2','Omegakh2','OmegaLh2','dGamma','dM','LogG0','LogAs'],
+P_SPACES = {'jdem': ['ns','Omegamh2','Omegabh2','Omegakh2','OmegaLh2','dGamma','dM','LogG0','LogAs'],
            'lihu' : ['ns','Omegach2','Omegabh2','Omegakh2','h','LogAs'],
            'basic': ['ns','Omegamh2','Omegabh2','Omegakh2','h','sigma8'],
            'overwride':[]}
@@ -390,7 +390,7 @@ def strip_cosmology(cosmo_old,p_space,overwride=[]):
 
 
     #mark this cosmology with its parameter space
-    cosmo_new['p_space']=p_space
+    cosmo_new['p_space'] = p_space
     return cosmo_new
 
 def add_derived_pars(cosmo_old,p_space=None):
@@ -417,7 +417,7 @@ def add_derived_pars(cosmo_old,p_space=None):
         cosmo_new['Omegar'] = 1.-cosmo_new['Omegam']-cosmo_new['OmegaL']-cosmo_new['Omegak']
         cosmo_new['Omegarh2'] = cosmo_new['Omegar']*cosmo_new['h']**2
 
-        cosmo_new['As']=np.exp(cosmo_old['LogAs'])
+        cosmo_new['As'] = np.exp(cosmo_old['LogAs'])
     elif p_space == 'lihu':
         cosmo_new['Omegamh2'] = cosmo_old['Omegach2']+cosmo_old['Omegabh2']
         cosmo_new['H0'] = cosmo_old['h']*100.
@@ -431,7 +431,7 @@ def add_derived_pars(cosmo_old,p_space=None):
         cosmo_new['OmegaLh2'] = cosmo_new['OmegaL']*cosmo_new['h']**2
         cosmo_new['Omegarh2'] = cosmo_new['Omegar']*cosmo_new['h']**2
 
-        cosmo_new['As']=np.exp(cosmo_old['LogAs'])
+        cosmo_new['As'] = np.exp(cosmo_old['LogAs'])
     elif p_space == 'basic':
         cosmo_new['Omegach2'] = cosmo_old['Omegamh2']-cosmo_old['Omegabh2']
         cosmo_new['H0'] = cosmo_old['h']*100.

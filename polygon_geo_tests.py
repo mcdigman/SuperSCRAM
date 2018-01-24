@@ -16,7 +16,7 @@ def check_mutually_orthonormal(vectors):
     fails = 0
     for itr1 in xrange(0,vectors.shape[0]):
         for itr2  in xrange(0,vectors.shape[0]):
-            prod =np.sum(vectors[itr1]*vectors[itr2],axis=1)
+            prod = np.sum(vectors[itr1]*vectors[itr2],axis=1)
             if itr1==itr2:
                 if not np.allclose(prod,np.zeros(vectors[itr1].shape[0])+1.):
                     warn("normality failed on vector pair: "+str(itr1)+","+str(itr2))
@@ -33,11 +33,11 @@ class GeoTestSet(object):
     """class wrapping a testing geometry"""
     def __init__(self,params):
         """some setup to make an actual geo"""
-        d=np.loadtxt('camb_m_pow_l.dat')
-        k=d[:,0]
-        P=d[:,1]
-        self.C=CosmoPie(cosmology=defaults.cosmology,k=k,P_lin=P)
-        self.zs=np.array([.01,1.01])
+        d = np.loadtxt('camb_m_pow_l.dat')
+        k = d[:,0]
+        P = d[:,1]
+        self.C = CosmoPie(cosmology=defaults.cosmology,k=k,P_lin=P)
+        self.zs = np.array([.01,1.01])
         self.z_fine = np.arange(defaults.lensing_params['z_min_integral'],np.max(self.zs),defaults.lensing_params['z_resolution'])
 
         self.poly_params = defaults.polygon_params.copy()
@@ -63,8 +63,8 @@ def get_param_set(indices):
                 toffset = 0.
             else:
                 toffset = np.pi/2.
-            theta0=0.+toffset
-            theta1=np.pi/2.+toffset
+            theta0 = 0.+toffset
+            theta1 = np.pi/2.+toffset
             phi0 = 0.+poffset
             phi1 = 2.*np.pi/3.+poffset
             params['theta_in'] = np.pi/4.+toffset
@@ -79,12 +79,12 @@ def get_param_set(indices):
         params = {'do_RectGeo':False,'do_pp_geo1':True,'do_pp_geo2':True,'res_choose1':6,'res_choose2':7,'l_max_rect':10,'l_max_poly':50}
         if param_index==0 or param_index==1:
             if param_index==0:
-                poffset=0.
+                poffset = 0.
             else:
-                poffset=2.*np.pi/3
+                poffset = 2.*np.pi/3
             toffset = np.pi/6.
-            theta0=0.+toffset
-            theta1=np.pi/2.+toffset
+            theta0 = 0.+toffset
+            theta1 = np.pi/2.+toffset
             phi0 = 0.+poffset
             phi1 = 2.*np.pi/3.+poffset
             params['theta_in'] = np.pi/4.+toffset
@@ -92,8 +92,8 @@ def get_param_set(indices):
         elif param_index==2:
             poffset = 0.
             toffset = np.pi/6.
-            theta0=0.+toffset
-            theta1=2.*np.pi/3.+toffset
+            theta0 = 0.+toffset
+            theta1 = 2.*np.pi/3.+toffset
             phi0 = 0.+poffset
             phi1 = 2.*np.pi/3.+poffset
             params['theta_in'] = np.pi/4.+toffset
@@ -101,8 +101,8 @@ def get_param_set(indices):
         elif param_index==3:
             poffset = 0.
             toffset = np.pi/6.
-            theta0=0.+toffset
-            theta1=2.*np.pi/3.+toffset
+            theta0 = 0.+toffset
+            theta1 = 2.*np.pi/3.+toffset
             phi0 = 0.+poffset
             phi1 = 4.*np.pi/3.+poffset
             params['theta_in'] = np.pi/4.+toffset
@@ -110,8 +110,8 @@ def get_param_set(indices):
         elif param_index==4:
             poffset = 0.
             toffset = np.pi/6.
-            theta0=0.+toffset
-            theta1=2.*np.pi/3.+toffset
+            theta0 = 0.+toffset
+            theta1 = 2.*np.pi/3.+toffset
             phi0 = 0.+poffset
             phi1 = 2.*np.pi/3.+poffset
             params['theta_in'] = np.pi/4.+toffset
@@ -129,13 +129,13 @@ def get_param_set(indices):
         params = {'do_RectGeo':False,'do_pp_geo1':True,'do_pp_geo2':True,'res_choose1':6,'res_choose2':7,'l_max_rect':10,'l_max_poly':50}
         if param_index==0:
             toffset = np.pi/2.
-            theta0=np.pi/6+toffset
-            theta1=np.pi/3.+toffset
-            theta2=np.pi/3.+0.1+toffset
-            theta3=theta2-np.pi/3.
+            theta0 = np.pi/6+toffset
+            theta1 = np.pi/3.+toffset
+            theta2 = np.pi/3.+0.1+toffset
+            theta3 = theta2-np.pi/3.
             theta4 = theta3+np.pi/6.
-            offset=0.
-            phi0=0.+offset
+            offset = 0.
+            phi0 = 0.+offset
             phi1 = np.pi/3.+offset
             phi2 = phi1+np.pi/2.
             phi3 = phi2-np.pi/6.
@@ -236,9 +236,9 @@ def test_rotational_suite(geo_input):
     assert check_mutually_orthonormal(np.array([x1_1,y1_1,z1_1]))==0
     assert np.allclose(np.cross(x1_1,y1_1),z1_1)
 
-    x1_g=poly_geo.bounding_xyz[0:nt]
-    z1_g=poly_geo.z_hats
-    y1_g=np.cross(z1_g,x1_g)
+    x1_g = poly_geo.bounding_xyz[0:nt]
+    z1_g = poly_geo.z_hats
+    y1_g = np.cross(z1_g,x1_g)
 
     assert np.allclose(poly_geo.bounding_xyz[1:nt+1],np.expand_dims(np.cos(poly_geo.betas),1)*x1_g-np.expand_dims(np.sin(poly_geo.betas),1)*y1_g)
 
@@ -258,9 +258,9 @@ def test_rotational_suite(geo_input):
     assert check_mutually_orthonormal(np.array([x2_1,y2_1,z2_1]))==0
     assert np.allclose(np.cross(x2_1,y2_1),z2_1)
 
-    x2_g_alt =np.expand_dims(np.sum(x2_1*x1_1,axis=1),1)*x1_g+np.expand_dims(np.sum(y2_1*x1_1,axis=1),1)*y1_g+np.expand_dims(np.sum(z2_1*x1_1,axis=1),1)*z1_g
-    y2_g_alt =np.expand_dims(np.sum(x2_1*y1_1,axis=1),1)*x1_g+np.expand_dims(np.sum(y2_1*y1_1,axis=1),1)*y1_g+np.expand_dims(np.sum(z2_1*y1_1,axis=1),1)*z1_g
-    z2_g_alt =np.expand_dims(np.sum(x2_1*z1_1,axis=1),1)*x1_g+np.expand_dims(np.sum(y2_1*z1_1,axis=1),1)*y1_g+np.expand_dims(np.sum(z2_1*z1_1,axis=1),1)*z1_g
+    x2_g_alt = np.expand_dims(np.sum(x2_1*x1_1,axis=1),1)*x1_g+np.expand_dims(np.sum(y2_1*x1_1,axis=1),1)*y1_g+np.expand_dims(np.sum(z2_1*x1_1,axis=1),1)*z1_g
+    y2_g_alt = np.expand_dims(np.sum(x2_1*y1_1,axis=1),1)*x1_g+np.expand_dims(np.sum(y2_1*y1_1,axis=1),1)*y1_g+np.expand_dims(np.sum(z2_1*y1_1,axis=1),1)*z1_g
+    z2_g_alt = np.expand_dims(np.sum(x2_1*z1_1,axis=1),1)*x1_g+np.expand_dims(np.sum(y2_1*z1_1,axis=1),1)*y1_g+np.expand_dims(np.sum(z2_1*z1_1,axis=1),1)*z1_g
     assert check_mutually_orthonormal(np.array([x2_g_alt,y2_g_alt,z2_g_alt]))==0
     assert np.allclose(np.cross(x2_g_alt,y2_g_alt),z2_g_alt)
 
@@ -268,8 +268,8 @@ def test_rotational_suite(geo_input):
     x2_g = np.zeros((nt,3))
     x2_g[:,0] = np.cos(poly_geo.gamma_alphas)
     x2_g[:,1] = np.sin(poly_geo.gamma_alphas)
-    z2_g=z1_g
-    y2_g=np.cross(z2_g,x2_g)
+    z2_g = z1_g
+    y2_g = np.cross(z2_g,x2_g)
     assert check_mutually_orthonormal(np.array([x2_g,y2_g,z2_g]))==0
     assert np.allclose(np.cross(x2_g,y2_g),z2_g)
 
@@ -287,10 +287,10 @@ def test_rotational_suite(geo_input):
 
 
 
-    x3_g =x2_g
+    x3_g = x2_g
     z3_g = np.zeros((nt,3))
     z3_g[:,2] = 1.
-    y3_g=np.cross(z3_g,x3_g)
+    y3_g = np.cross(z3_g,x3_g)
     assert check_mutually_orthonormal(np.array([x3_g,y3_g,z3_g]))==0
     assert np.allclose(np.cross(x3_g,y3_g),z3_g)
 
@@ -313,9 +313,9 @@ def test_rotational_suite(geo_input):
     assert np.allclose(1.,np.sum(x3_g*x2_g,axis=1))
 
 
-    x3_g_alt =np.expand_dims(np.sum(x3_2*x2_2,axis=1),1)*x2_g_alt+np.expand_dims(np.sum(y3_2*x2_2,axis=1),1)*y2_g_alt+np.expand_dims(np.sum(z3_2*x2_2,axis=1),1)*z2_g_alt
-    y3_g_alt =np.expand_dims(np.sum(x3_2*y2_2,axis=1),1)*x2_g_alt+np.expand_dims(np.sum(y3_2*y2_2,axis=1),1)*y2_g_alt+np.expand_dims(np.sum(z3_2*y2_2,axis=1),1)*z2_g_alt
-    z3_g_alt =np.expand_dims(np.sum(x3_2*z2_2,axis=1),1)*x2_g_alt+np.expand_dims(np.sum(y3_2*z2_2,axis=1),1)*y2_g_alt+np.expand_dims(np.sum(z3_2*z2_2,axis=1),1)*z2_g_alt
+    x3_g_alt = np.expand_dims(np.sum(x3_2*x2_2,axis=1),1)*x2_g_alt+np.expand_dims(np.sum(y3_2*x2_2,axis=1),1)*y2_g_alt+np.expand_dims(np.sum(z3_2*x2_2,axis=1),1)*z2_g_alt
+    y3_g_alt = np.expand_dims(np.sum(x3_2*y2_2,axis=1),1)*x2_g_alt+np.expand_dims(np.sum(y3_2*y2_2,axis=1),1)*y2_g_alt+np.expand_dims(np.sum(z3_2*y2_2,axis=1),1)*z2_g_alt
+    z3_g_alt = np.expand_dims(np.sum(x3_2*z2_2,axis=1),1)*x2_g_alt+np.expand_dims(np.sum(y3_2*z2_2,axis=1),1)*y2_g_alt+np.expand_dims(np.sum(z3_2*z2_2,axis=1),1)*z2_g_alt
     assert check_mutually_orthonormal(np.array([x3_g_alt,y3_g_alt,z3_g_alt]))==0
     assert np.allclose(np.cross(x3_g_alt,y3_g_alt),z3_g_alt)
 
@@ -342,9 +342,9 @@ def test_rotational_suite(geo_input):
     assert np.allclose(np.cross(x4_3,y4_3),z4_3)
 
 
-    x4_g_alt =np.expand_dims(np.sum(x4_3*x3_3,axis=1),1)*x3_g_alt+np.expand_dims(np.sum(y4_3*x3_3,axis=1),1)*y3_g_alt+np.expand_dims(np.sum(z4_3*x3_3,axis=1),1)*z3_g_alt
-    y4_g_alt =np.expand_dims(np.sum(x4_3*y3_3,axis=1),1)*x3_g_alt+np.expand_dims(np.sum(y4_3*y3_3,axis=1),1)*y3_g_alt+np.expand_dims(np.sum(z4_3*y3_3,axis=1),1)*z3_g_alt
-    z4_g_alt =np.expand_dims(np.sum(x4_3*z3_3,axis=1),1)*x3_g_alt+np.expand_dims(np.sum(y4_3*z3_3,axis=1),1)*y3_g_alt+np.expand_dims(np.sum(z4_3*z3_3,axis=1),1)*z3_g_alt
+    x4_g_alt = np.expand_dims(np.sum(x4_3*x3_3,axis=1),1)*x3_g_alt+np.expand_dims(np.sum(y4_3*x3_3,axis=1),1)*y3_g_alt+np.expand_dims(np.sum(z4_3*x3_3,axis=1),1)*z3_g_alt
+    y4_g_alt = np.expand_dims(np.sum(x4_3*y3_3,axis=1),1)*x3_g_alt+np.expand_dims(np.sum(y4_3*y3_3,axis=1),1)*y3_g_alt+np.expand_dims(np.sum(z4_3*y3_3,axis=1),1)*z3_g_alt
+    z4_g_alt = np.expand_dims(np.sum(x4_3*z3_3,axis=1),1)*x3_g_alt+np.expand_dims(np.sum(y4_3*z3_3,axis=1),1)*y3_g_alt+np.expand_dims(np.sum(z4_3*z3_3,axis=1),1)*z3_g_alt
     assert check_mutually_orthonormal(np.array([x4_g_alt,y4_g_alt,z4_g_alt]))==0
     assert np.allclose(np.cross(x4_g_alt,y4_g_alt),z4_g_alt)
 
@@ -368,7 +368,7 @@ def test_rotational_suite(geo_input):
 if __name__=='__main__':
     #pytest.cmdline.main(['polygon_geo_tests.py'])
     do_plot = True
-    do_rect=False
+    do_rect = False
 
     if do_plot:
         params = get_param_set(np.array([0,0]))
@@ -401,7 +401,7 @@ if __name__=='__main__':
         poly_error = np.sqrt(np.average(np.abs(totals_poly-pp_geo2.contained*1.)**2))
         print "rms reconstruction error of exact geo: "+str(poly_error)
         if do_rect:
-            totals_pp= reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],gts.r_geo.alm_table)
+            totals_pp = reconstruct_from_alm(l_max,pp_geo2.all_pixels[:,0],pp_geo2.all_pixels[:,1],gts.r_geo.alm_table)
             avg_diff = np.average(np.abs(totals_pp-totals_poly))
             print "mean absolute difference between pixel and exact geo reconstruction: "+str(avg_diff)
             pp_error = np.sqrt(np.average(np.abs(totals_pp-pp_geo2.contained*1.)**2))
@@ -412,8 +412,8 @@ if __name__=='__main__':
             totals_pp = totals_poly
 
         #totals_alm = reconstruct_from_alm(l_max,pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1],r_alm_table)
-        try_plot=True
-        do_poly=True
+        try_plot = True
+        do_poly = True
         if try_plot:
                    #try:
             from mpl_toolkits.basemap import Basemap
@@ -425,7 +425,7 @@ if __name__=='__main__':
             #restrict = totals_recurse>-1.
             lats = (pp_geo2.all_pixels[:,0]-np.pi/2.)*180/np.pi
             lons = pp_geo2.all_pixels[:,1]*180/np.pi
-            x,y=m(lons,lats)
+            x,y = m(lons,lats)
             #have to switch because histogram2d considers y horizontal, x vertical
             fig = plt.figure(figsize=(10,5))
             minC = np.min([totals_poly,totals_pp])

@@ -24,18 +24,18 @@ def test_alm_match1():
     alm_math = np.loadtxt(test_base+'alm_mathematica.dat')
     lm_table = np.loadtxt(test_base+'lm_table.dat')
 
-    zs=np.array([.1,.2,.3])
+    zs = np.array([.1,.2,.3])
     z_fine = np.arange(0.01,0.3,0.001)
-    Theta=[np.pi/4,np.pi/2.]
-    Phi=[0,np.pi/3.+np.sqrt(2.)/100.]
+    Theta = [np.pi/4,np.pi/2.]
+    Phi = [0,np.pi/3.+np.sqrt(2.)/100.]
 
 
-    C=CosmoPie(cosmology=defaults.cosmology)
+    C = CosmoPie(cosmology=defaults.cosmology)
     geo1 = RectGeo(zs,Theta,Phi,C,z_fine)
 
     alm_py = np.zeros_like(alm_math)
     for i in xrange(0,lm_table.shape[0]):
-        alm_py[i] =geo1.a_lm(lm_table[i,0],lm_table[i,1])# sph.a_lm(geo1,lm_table[i,0],lm_table[i,1])
+        alm_py[i] = geo1.a_lm(lm_table[i,0],lm_table[i,1])# sph.a_lm(geo1,lm_table[i,0],lm_table[i,1])
 
     alm_math1 = alm_math[alm_math>0]
     alm_py1 = alm_py[alm_math>0]
@@ -83,7 +83,7 @@ def test_rint_match_mpmath():
     n_count = 0
     z_count = 0
     bad_count = 0
-    C=CosmoPie(defaults.cosmology)
+    C = CosmoPie(defaults.cosmology)
     P_lin = mps.MatterPower(C,defaults.power_params.copy())
     C.set_power(P_lin)
     basis = sph.SphBasisK(r_max,C,k_cut,defaults.basis_params)

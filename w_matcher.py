@@ -22,8 +22,8 @@ class WMatcher(object):
         #CosmoPie appears to be used to extract G_norm,G, and Ez
         self.C_fid = C_fid
         self.cosmo_fid = C_fid.cosmology.copy()
-        self.cosmo_fid['w']=-1.
-        self.cosmo_fid['de_model']='constant_w'
+        self.cosmo_fid['w'] = -1.
+        self.cosmo_fid['de_model'] = 'constant_w'
 
         self.w_step = wmatcher_params['w_step']
         self.w_min = wmatcher_params['w_min']
@@ -59,7 +59,7 @@ class WMatcher(object):
         for i in xrange(1,self.n_a):
             if self.ind_switches[i]>1:
                 if self.integ_Es[self.ind_switches[i]-1,i]-self.integ_Es[0,i]>=0:
-                    self.integ_Es[0:(self.ind_switches[i]-1),i]=self.integ_Es[self.ind_switches[i]-1,i]
+                    self.integ_Es[0:(self.ind_switches[i]-1),i] = self.integ_Es[self.ind_switches[i]-1,i]
                 else:
                     raise RuntimeError( "Nonmonotonic integral, solution is not unique at "+str(self.a_s[i]))
 
@@ -70,7 +70,7 @@ class WMatcher(object):
     def match_w(self,C_in,z_match,n_pad=3):
         """ match effective constant w as in casarini paper
             require some padding so can get very accurate interpolation results, 2 works 3 is better"""
-        z_match=np.asanyarray(z_match)
+        z_match = np.asanyarray(z_match)
         a_match = 1./(1.+z_match)
         E_in = C_in.Ez(self.zs)
         integ_E_in = cumtrapz(1./(self.a_s**2*E_in)[::-1],self.a_s[::-1],initial=0.)
@@ -95,7 +95,7 @@ class WMatcher(object):
         pow_mult = np.zeros(n_z_in)
         #TODO vectorize correctly
         for itr in xrange(0,n_z_in):
-            pow_mult[itr]=(G_norm_ins[itr]/(self.G_interp(w_in[itr],a_in[itr])/self.G_interp(w_in[itr],1.)))**2
+            pow_mult[itr] = (G_norm_ins[itr]/(self.G_interp(w_in[itr],a_in[itr])/self.G_interp(w_in[itr],1.)))**2
         #return multiplier for linear power spectrum from effective constant w model
         return pow_mult
 

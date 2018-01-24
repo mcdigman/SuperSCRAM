@@ -33,7 +33,7 @@ class SWSurvey(object):
         self.ls = ls
         self.survey_id = survey_id
         self.cosmo_par_list = cosmo_par_list
-        self.nz_matcher=nz_matcher
+        self.nz_matcher = nz_matcher
         if self.needs_lensing:
             self.len_pow = lo.LensingPowerBase(self.geo,self.ls,survey_id,C,cosmo_par_list,cosmo_par_epsilons,len_params,ps=ps,nz_matcher=self.nz_matcher)
             self.len_params = len_params

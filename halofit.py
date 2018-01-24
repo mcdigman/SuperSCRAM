@@ -43,7 +43,7 @@ class HalofitPk(object):
         self.params = halofit_params
         self.k_fix = self.params['k_fix']
         self.linear_cutoff = self.params['min_kh_nonlinear']
-        self.smooth_width=self.params['smooth_width']
+        self.smooth_width = self.params['smooth_width']
         self.leave_h = leave_h
         if not self.leave_h:
             self.linear_cutoff = self.linear_cutoff*self.C.cosmology['h']
@@ -59,15 +59,15 @@ class HalofitPk(object):
             self.k = np.hstack((k_in,k_extend))
             self.p_use = np.hstack((p_lin,p_lin[-1]*(k_extend/k_in[-1])**(C.ns-4.))) #use ns-4 extrapolation on high end
         else:
-            self.n_k_extend=0
+            self.n_k_extend = 0
             self.k = k_in
             self.p_use = p_lin
         self.k_max = np.max(self.k)
 
-        self.gams=.21# what is the number ?
+        self.gams = .21# what is the number ?
 
         if self.p_use.size==0:
-            self.p_use=self.p_cdm(self.k)*(2.*np.pi**2)/k_in**3
+            self.p_use = self.p_cdm(self.k)*(2.*np.pi**2)/k_in**3
         self.p_input = self.p_use*self.k**3/(2.*np.pi**2)
         #spline might be more accurate, although slower
         self.p_interp = interp1d(self.k,self.p_input)
@@ -89,7 +89,7 @@ class HalofitPk(object):
 #        sig_d1s = np.zeros(n_r)
 #        sig_d2s = np.zeros(n_r)
 
-        sigs,sig_d1s,sig_d2s=self.wint(rs)
+        sigs,sig_d1s,sig_d2s = self.wint(rs)
         #can safely cutoff if 1/sig is greater than 1, because that corresponds to a normalized growth factor>1 and 1/sig monotonically increases with higher r
 #        n_r_max = n_r
 #        for i in xrange(0,n_r):
@@ -111,7 +111,7 @@ class HalofitPk(object):
             r_range = r_max-r_min
             while 1./sigs[-1]<1. and itr<halofit_params['max_extend']:
                 rs = np.hstack((rs,np.arange(rs[-1]+r_step,rs[-1]+r_step+r_range,r_step)))
-                sigs,sig_d1s,sig_d2s=self.wint(rs)
+                sigs,sig_d1s,sig_d2s = self.wint(rs)
                 itr+=1
 
         self.n_r = n_r
@@ -129,10 +129,10 @@ class HalofitPk(object):
 #    #way of getting parameters without doing the interpolation, old
 #    def spectral_parameters(self):
 #
-#        growth=self.C.G_norm(self.z)
-#        self.amp=growth
-#        xlogr1=-2.0
-#        xlogr2=3.5
+#        growth = self.C.G_norm(self.z)
+#        self.amp = growth
+#        xlogr1 = -2.0
+#        xlogr2 = 3.5
 #
 #        ''' iterate to determine the wavenumber where
 #                        nonlinear effects become important (rknl),
@@ -179,7 +179,7 @@ class HalofitPk(object):
         #nint=np.floor((self.k_max)/2.)
         #print self.k_max/2.
         #TODO figure out what to do if k_max<2
-        nint =min(np.int(self.k_max/2.),np.int(self.k_fix/2.))
+        nint = min(np.int(self.k_max/2.),np.int(self.k_fix/2.))
         #nint = np.int(self.k_fix/2.)
         t = ( np.arange(nint)+0.5 )/nint
         y = 1./t - 1.
@@ -188,8 +188,8 @@ class HalofitPk(object):
         d2 = self.D2_L(y,0.)
         mult = d2/y/t**2/nint
         x2 = np.outer(r**2,y**2)
-        w1=mult*np.exp(-x2)
-        w2=2.*x2*w1
+        w1 = mult*np.exp(-x2)
+        w2 = 2.*x2*w1
         #w3=4.*x2*(1.-x2)*w1
         #w3=2.*w2*(1.-x2)
 
@@ -221,11 +221,11 @@ class HalofitPk(object):
             cf Annu. Rev. Astron. Astrophys. 1994. 32: 319-70"""
         rk = np.asarray(rk)
         p_index = 1.
-        rkeff=0.172+0.011*np.log(self.gams/0.36)*np.log(self.gams/0.36)
-        q=1.e-20 + rk/self.gams
-        q8=1.e-20 + rkeff/self.gams
-        tk=1./(1.+(6.4*q+(3.0*q)**1.5+(1.7*q)**2)**1.13)**(1./1.13)
-        tk8=1./(1.+(6.4*q8+(3.0*q8)**1.5+(1.7*q8)**2)**1.13)**(1./1.13)
+        rkeff = 0.172+0.011*np.log(self.gams/0.36)*np.log(self.gams/0.36)
+        q = 1.e-20 + rk/self.gams
+        q8 = 1.e-20 + rkeff/self.gams
+        tk = 1./(1.+(6.4*q+(3.0*q)**1.5+(1.7*q)**2)**1.13)**(1./1.13)
+        tk8 = 1./(1.+(6.4*q8+(3.0*q8)**1.5+(1.7*q8)**2)**1.13)**(1./1.13)
         return self.C.get_sigma8()*self.C.get_sigma8()*((q/q8)**(3.+p_index))*tk*tk/tk8/tk8
 
     def D2_NL_smith(self,rk,z,return_components = False):
@@ -257,41 +257,41 @@ class HalofitPk(object):
         #extragam=0.
 
 
-        gam=extragam+0.86485+0.2989*rn+0.1631*rncur
-        a=10**(1.4861+1.83693*rn+1.67618*rn*rn+0.7940*rn*rn*rn+\
+        gam = extragam+0.86485+0.2989*rn+0.1631*rncur
+        a = 10**(1.4861+1.83693*rn+1.67618*rn*rn+0.7940*rn*rn*rn+\
              0.1670756*rn*rn*rn*rn-0.620695*rncur)
-        b=10**(0.9463+0.9466*rn+0.3084*rn*rn-0.940*rncur)
-        c=10**(-0.2807+0.6669*rn+0.3214*rn*rn-0.0793*rncur)
-        xmu=10**(-3.54419+0.19086*rn)
-        xnu=10**(0.95897+1.2857*rn)
-        alpha=1.38848+0.3701*rn-0.1452*rn*rn
+        b = 10**(0.9463+0.9466*rn+0.3084*rn*rn-0.940*rncur)
+        c = 10**(-0.2807+0.6669*rn+0.3214*rn*rn-0.0793*rncur)
+        xmu = 10**(-3.54419+0.19086*rn)
+        xnu = 10**(0.95897+1.2857*rn)
+        alpha = 1.38848+0.3701*rn-0.1452*rn*rn
         fnu = 0.0 #for neutrinos later, in cosmosis
-        beta=0.8291+0.9854*rn+0.3400*rn**2+fnu*(-6.4868+1.4373*rn**2)
+        beta = 0.8291+0.9854*rn+0.3400*rn**2+fnu*(-6.4868+1.4373*rn**2)
 
 
         if abs(1-om_m) > 0.01: #omega evolution
-            f1a=om_m**(-0.0732)
-            f2a=om_m**(-0.1423)
-            f3a=om_m**(0.0725)
-            f1b=om_m**(-0.0307)
-            f2b=om_m**(-0.0585)
-            f3b=om_m**(0.0743)
-            frac=om_v/(1.-om_m)
-            f1=frac*f1b + (1-frac)*f1a
-            f2=frac*f2b + (1-frac)*f2a
-            f3=frac*f3b + (1-frac)*f3a
+            f1a = om_m**(-0.0732)
+            f2a = om_m**(-0.1423)
+            f3a = om_m**(0.0725)
+            f1b = om_m**(-0.0307)
+            f2b = om_m**(-0.0585)
+            f3b = om_m**(0.0743)
+            frac = om_v/(1.-om_m)
+            f1 = frac*f1b + (1-frac)*f1a
+            f2 = frac*f2b + (1-frac)*f2a
+            f3 = frac*f3b + (1-frac)*f3a
         else:
-            f1=1.0
-            f2=1.0
-            f3=1.0
+            f1 = 1.0
+            f2 = 1.0
+            f3 = 1.0
 
-        y=(rk/rknl)
+        y = (rk/rknl)
 
         ph = a*y**(f1*3.)/(1.+b*y**(f2)+(f3*c*y)**(3.-gam))
         ph /= (1.+xmu*y**(-1)+xnu*y**(-2))
         pq = plin*(1.+plin)**beta/(1.+plin*alpha)*np.exp(-y/4.0-y**2/8.0)
 
-        pnl=pq+ph
+        pnl = pq+ph
 
         if return_components:
             return pnl,pq,ph,plin
@@ -326,51 +326,51 @@ class HalofitPk(object):
         om_v  = self.C.OmegaL_z(z)
         #w = -0.758
         if w_overwride:
-            w=fixed_w
+            w = fixed_w
         else:
-            w=self.C.de_object.w_of_z(z) #not sure if z dependent w is appropriate in halofit, possible answer in https://arxiv.org/pdf/0911.2454.pdf
+            w = self.C.de_object.w_of_z(z) #not sure if z dependent w is appropriate in halofit, possible answer in https://arxiv.org/pdf/0911.2454.pdf
        # #cf Bird, Viel, Haehnelt 2011 for extragam explanation (cosmosis)
         #extragam = 0.3159-0.0765*rn-0.8350*rncur
 
         #gam=extragam+0.86485+0.2989*rn+0.1631*rncur
         gam = 0.1971-0.0843*rn+0.8460*rncur
-        a=10**(1.5222+2.8553*rn+2.3706*rn*rn+0.9903*rn*rn*rn+\
+        a = 10**(1.5222+2.8553*rn+2.3706*rn*rn+0.9903*rn*rn*rn+\
              0.2250*rn*rn*rn*rn-0.6038*rncur+0.1749*om_v*(1.+w))
-        b=10**(-0.5642+0.5864*rn+0.5716*rn*rn-1.5474*rncur+0.2279*om_v*(1.+w))
-        c=10**(0.3698+2.0404*rn+0.8161*rn*rn+0.5869*rncur)
-        xmu=0.
+        b = 10**(-0.5642+0.5864*rn+0.5716*rn*rn-1.5474*rncur+0.2279*om_v*(1.+w))
+        c = 10**(0.3698+2.0404*rn+0.8161*rn*rn+0.5869*rncur)
+        xmu = 0.
         xnu = 10**(5.2105+3.6902*rn)
-        alpha=abs(6.0835+1.3373*rn-0.1959*rn*rn-5.5274*rncur)
+        alpha = abs(6.0835+1.3373*rn-0.1959*rn*rn-5.5274*rncur)
         fnu = 0. #neutrinos
-        beta=2.0379-0.7354*rn+0.3157*rn**2+1.2490*rn**3+0.3980*rn**4-0.1682*rncur+fnu*(1.081+0.395*rn**2)
+        beta = 2.0379-0.7354*rn+0.3157*rn**2+1.2490*rn**3+0.3980*rn**4-0.1682*rncur+fnu*(1.081+0.395*rn**2)
 
         if True:#abs(1-om_m) > 0.01: #omega evolution
-            f1a=om_m**(-0.0732)
-            f2a=om_m**(-0.1423)
-            f3a=om_m**(0.0725)
-            f1b=om_m**(-0.0307)
-            f2b=om_m**(-0.0585)
-            f3b=om_m**(0.0743)
-            frac=om_v/(1.-om_m)
-            f1=frac*f1b + (1-frac)*f1a
-            f2=frac*f2b + (1-frac)*f2a
-            f3=frac*f3b + (1-frac)*f3a
+            f1a = om_m**(-0.0732)
+            f2a = om_m**(-0.1423)
+            f3a = om_m**(0.0725)
+            f1b = om_m**(-0.0307)
+            f2b = om_m**(-0.0585)
+            f3b = om_m**(0.0743)
+            frac = om_v/(1.-om_m)
+            f1 = frac*f1b + (1-frac)*f1a
+            f2 = frac*f2b + (1-frac)*f2a
+            f3 = frac*f3b + (1-frac)*f3a
         else:
-            f1=1.0
-            f2=1.0
-            f3=1.0
+            f1 = 1.0
+            f2 = 1.0
+            f3 = 1.0
 
         if isinstance(z,np.ndarray):
-            y=np.outer(rk,1./rknl)
+            y = np.outer(rk,1./rknl)
         else:
-            y=(rk/rknl)
+            y = (rk/rknl)
         #fnu from cosmosis
         ph = a*y**(f1*3.)/(1.+b*y**(f2)+(f3*c*y)**(3.-gam))*(1.+fnu*0.977)
         ph /= (1.+xmu*y**(-1)+xnu*y**(-2))
-        plinaa=(plin.T*(1+fnu*47.48*rk**2/(1+1.5*rk**2))).T #added to match camb implementation
+        plinaa = (plin.T*(1+fnu*47.48*rk**2/(1+1.5*rk**2))).T #added to match camb implementation
         pq = plin*(1.+plinaa)**beta/(1.+plinaa*alpha)*np.exp(-y/4.0-y**2/8.0)
 
-        pnl=pq+ph
+        pnl = pq+ph
 
         #set values below minimum k cutoff to linear to avoid difference from camb implementation
         #gaussian smooth transition to avoid spikes in derivatives wrt k
@@ -391,7 +391,7 @@ class HalofitPk(object):
     def P_NL(self,k,z,return_components = False):
         """Nonlinear power spectrum"""
         if return_components:
-            pnl,pq,ph,plin=self.D2_NL(k,z,return_components)
+            pnl,pq,ph,plin = self.D2_NL(k,z,return_components)
             return pnl/k**3*(2*np.pi**2), pq, ph, plin/k**3*(2*np.pi**2)
         else:
             return self.D2_NL(k,return_components)/k**3*(2*np.pi**2)

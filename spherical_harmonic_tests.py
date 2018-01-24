@@ -19,8 +19,8 @@ class ThetaPhiList(object):
         self.key = key
         if key==1:
             n_side = 8
-            theta_need=np.linspace(0.,np.pi,n_side)
-            phi_need=np.linspace(0.,2.*np.pi,n_side)
+            theta_need = np.linspace(0.,np.pi,n_side)
+            phi_need = np.linspace(0.,2.*np.pi,n_side)
             self.thetas = np.zeros(n_side**2)
             self.phis = np.zeros(n_side**2)
             self.l_max = 20
@@ -48,7 +48,7 @@ def theta_phis(request):
 class ALMList(object):
     """test spherical decompositions"""
     def __init__(self,key):
-        self.key=key
+        self.key = key
         if key==1:
             self.l_max = 10
             self.lm_dict,self.ls,self.ms = ylmu.get_lm_dict(self.l_max)

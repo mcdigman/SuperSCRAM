@@ -34,7 +34,7 @@ class NZWFirst(NZMatcher):
         #cut off faint galaxies
         self.zs_chosen = self.data[self.chosen,1]
         print "nz_wfirst: "+str(self.zs_chosen.size)+" available galaxies"
-        dN_dz=get_gaussian_smoothed_dN_dz(z_grid,self.zs_chosen,params,normalize=True)
+        dN_dz = get_gaussian_smoothed_dN_dz(z_grid,self.zs_chosen,params,normalize=True)
         NZMatcher.__init__(self,z_grid,dN_dz)
 
 
@@ -110,7 +110,7 @@ if __name__ == '__main__':
     m_cuts_lsst = nz_lsst.get_M_cut(mf,geo1)
     density_res_lsst = trapz2(dN_dz_lsst,dx=0.01)
     print "lsst total galaxies/steradian: "+str(density_res_lsst)+" galaxies/20000 deg^2 = "+str(density_res_lsst*np.pi**2/180**2*20000)+" g/arcmin^2="+str(density_res_lsst*np.pi**2/180**2/3600.)
-    do_plot =True
+    do_plot = True
     if do_plot:
         import matplotlib.pyplot as plt
         ax = plt.subplot(111)

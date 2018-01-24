@@ -10,14 +10,14 @@ class PriorFisherTest(object):
     """class for managing test PriorFisher objects"""
     def __init__(self,key,de_type):
         """key: numerical key"""
-        prior_fisher_params ={  'row_strip'     :np.array([3,5,6,7]),
+        prior_fisher_params = { 'row_strip'     :np.array([3,5,6,7]),
                                 'fisher_source' :'data/F_Planck_tau0.01.dat',
                                 'n_full'        :45,
                                 'n_de'          :36,
                                 'z_step'        :0.025
-                             }
-        self.key=key
-        self.de_type=de_type
+                              }
+        self.key = key
+        self.de_type = de_type
         if key==1:
             self.fisher_prior = PriorFisher(de_type,prior_fisher_params)
         elif key==2:
@@ -114,7 +114,7 @@ def test_de(prior_fisher):
 #TODO is ther a useful eigenvalue or similar test?
 #def test_multi_project():
 #    """test that information is removed each time matrix projected down"""
-#    prior_fisher_params ={  'row_strip'     :np.array([3,5,6,7]),
+#    prior_fisher_params = {  'row_strip'     :np.array([3,5,6,7]),
 #                            'fisher_source' :'data/F_Planck_tau0.01.dat',
 #                            'n_full'        :45,
 #                            'n_de'          :36,
@@ -140,16 +140,16 @@ if __name__=='__main__':
     pytest.cmdline.main(['prior_fisher_tests.py'])
 #if __name__=='__main__':
 #    param_1 = defaults.prior_fisher_params.copy()
-#    param_1['row_strip']=np.array([3,5,6,7])
-#    fisher_mat=read_prior_fisher(params=param_1)
+#    param_1['row_strip'] = np.array([3,5,6,7])
+#    fisher_mat = read_prior_fisher(params=param_1)
 #    assert fisher_mat.shape==(45,45)
 #    assert np.all(fisher_mat==fisher_mat.T)
 #    fisher_strip = fix_elements(fisher_mat,param_1)
 #    assert fisher_strip.shape==(41,41)
 #    param_2 = defaults.prior_fisher_params.copy()
-#    param_2['row_strip']=np.array([5,6,7])
+#    param_2['row_strip'] = np.array([5,6,7])
 #    param_3 = defaults.prior_fisher_params.copy()
-#    param_3['row_strip']=np.array([3])
+#    param_3['row_strip'] = np.array([3])
 #    fisher_strip_567 = fix_elements(fisher_mat,params=param_2)
 #    fisher_strip_3567 = fix_elements(fisher_strip_567,params=param_3)
 #    assert np.all(fisher_strip_3567==fisher_strip)
