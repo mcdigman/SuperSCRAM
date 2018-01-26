@@ -93,8 +93,6 @@ class CosmoPie(object):
 
         self.DH       = self.c/self.H0
 
-        self.tH = 1/self.H0
-
         #curvature
         self.K = -self.Omegak*(self.H0/self.c)**2
 
@@ -107,7 +105,7 @@ class CosmoPie(object):
         self.a_grid = np.arange(a_max,a_min-a_step/10.,-a_step)
         self.z_grid = 1./self.a_grid-1.
 
-        if not G_safe:
+        if not self.G_safe:
             def _dp_mult_interp(a):
                 z = 1./a-1.
                 return -1./a*(7./2.*self.Omegam_z(z)+3*self.Omegar_z(z)+(7./2.-3./2.*self.de_object.w_of_z(z))*self.OmegaL_z(z)+4.*self.Omegak_z(z))
@@ -147,12 +145,11 @@ class CosmoPie(object):
         """
         return self.H0*self.Ez(z)
 
-    def dH_da(self,z):
-        """
-        Derivative of H with respect to a
-        """
-        #TODO check this if anything actually uses it
-        return -(1+z)*self.H0/2.*(3.*self.Omegam_z(z)+4.*self.Omegar_z(z)+2.*self.Omegak_z(z)+3.*(1.+self.de_object.w_of_z(z))*self.OmegaL_z(z))
+#    def dH_da(self,z):
+#        """
+#        Derivative of H with respect to a
+#        """
+#        return -(1+z)*self.H0/2.*(3.*self.Omegam_z(z)+4.*self.Omegar_z(z)+2.*self.Omegak_z(z)+3.*(1.+self.de_object.w_of_z(z))*self.OmegaL_z(z))
 
     # distances, volumes, and time
     # -----------------------------------------------------------------------------
@@ -171,7 +168,7 @@ class CosmoPie(object):
 
     def D_comov_A(self,z):
         """the comoving angular diameter distance, as defined in ie Bartelmann and Schneider arXiv:astro-px/9912508v1"""
-        if self.K ==0:
+        if self.K==0:
             return self.D_comov(z)
         elif self.K>0:
             sqrtK = np.sqrt(abs(self.K))
@@ -181,9 +178,9 @@ class CosmoPie(object):
             return 1./sqrtK*np.sinh(sqrtK*self.D_comov(z))
 
 
-    def D_comov_dz(self,z):
-        """Integrand of D_comov"""
-        return self.DH/self.Ez(z)
+#    def D_comov_dz(self,z):
+#        """Integrand of D_comov"""
+#        return self.DH/self.Ez(z)
 
     def D_comov_T(self,z):
         """Transverse comoving distance"""
@@ -221,58 +218,16 @@ class CosmoPie(object):
         return self.G(z)/G_0
 
 
-    def log_growth(self,z):
-        """using equation 3.2 from Baldauf 2015, not currently consistent with G(z)"""
-        a = 1/(1+z)
-        print 'what I think it is', a/self.H(z)*self.dH_da(z) + 5/2.*self.Omegam*self.G_norm(0)/self.H(z)**2/a**2/self.G_norm(z)
-        return -3/2.*self.Omegam/a**3*self.H0**2/self.H(z)**2 + 1/self.H(z)**2/a**2/self.G_norm(z)
+#    def log_growth(self,z):
+#        """using equation 3.2 from Baldauf 2015, not currently consistent with G(z)"""
+#        a = 1/(1+z)
+#        print 'what I think it is', a/self.H(z)*self.dH_da(z) + 5/2.*self.Omegam*self.G_norm(0)/self.H(z)**2/a**2/self.G_norm(z)
+#        return -3/2.*self.Omegam/a**3*self.H0**2/self.H(z)**2 + 1/self.H(z)**2/a**2/self.G_norm(z)
 
     # ----------------------------------------------------------------------------
     # halo and matter stuff
     # -----------------------------------------------------------------------------
-    def delta_c(self,z):
-        """ critical threshold for spherical collapse, as given
-        in the appendix of NFW 1997"""
-        #TODO fitting formula, probably not appropriate for the code anymore
-        #TODO should have z dependence
-        A = 0.15*(12.*np.pi)**(2/3.)
 
-        if (self.Omegam ==1) and (self.OmegaL==0):
-            d_crit = A
-        elif (self.Omegam < 1) and (self.OmegaL ==0):
-            d_crit = A*self.Omegam**(0.0185)
-        elif (self.Omegam + self.OmegaL)==1.0:
-            d_crit = A*self.Omegam**(0.0055)
-        else:
-            d_crit = A*self.Omegam**(0.0055)
-            warn('inexact equality to 1~='+str(self.Omegam)+"+"+str(self.OmegaL)+"="+str(self.OmegaL+self.Omegam))
-        d_c = d_crit#/self.G_norm(z)
-        return d_c
-
-    def delta_v(self,z):
-        """over density for virialized halo"""
-        A = 178.0
-        if (self.Omegam_z(z) ==1) and (self.OmegaL_z(z)==0):
-            d_v = A
-        if (self.Omegam_z(z) < 1) and (self.OmegaL_z(z) ==0):
-            d_v = A/self.Omegam_z(z)**(0.7)
-        if (self.Omegam_z(z) + self.OmegaL_z(z))==1.0:
-            d_v = A/self.Omegam_z(z)**(0.55)
-
-        return d_v/self.G_norm(z)
-
-
-    def nu(self,z,mass):
-        """calculates nu=(delta_c/sigma(M))^2
-         delta_c is the overdensity for collapse"""
-        return (self.delta_c(z)/self.sigma_m(mass,z))**2
-
-    def sigma_m(self,mass,z):
-        """ RMS power on a scale of R(mass)
-         rho = mass/volume=mass"""
-        R = 3/4.*mass/self.rho_bar(z)/np.pi
-        R = R**(1/3.)
-        return self.sigma_r(z,R)
 
     def sigma_r(self,z,R):
         r""" returns RMS power on scale R
@@ -311,9 +266,9 @@ class CosmoPie(object):
         """curvature density as a function of redshift"""
         return 1.-self.Omegam_z(z)-self.OmegaL_z(z)-self.Omegar_z(z)
 
-    def Omega_tot(self,z):
-        """Total density as a function of redshift, should be 1"""
-        return self.Omegak_z(z) + self.OmegaL_z(z) + self.Omegam_z(z)+self.Omegar_z(z)
+#    def Omega_tot(self,z):
+#        """Total density as a function of redshift, should be 1"""
+#        return self.Omegak_z(z) + self.OmegaL_z(z) + self.Omegam_z(z)+self.Omegar_z(z)
 
     def rho_bar(self,z):
         """return average density in units of solar mass and h^2 """
@@ -354,9 +309,9 @@ class CosmoPie(object):
 
 JDEM_LIST = ['ws36_'+str(itr_36) for itr_36 in xrange(0,36)]
 P_SPACES = {'jdem': ['ns','Omegamh2','Omegabh2','Omegakh2','OmegaLh2','dGamma','dM','LogG0','LogAs'],
-           'lihu' : ['ns','Omegach2','Omegabh2','Omegakh2','h','LogAs'],
-           'basic': ['ns','Omegamh2','Omegabh2','Omegakh2','h','sigma8'],
-           'overwride':[]}
+            'lihu' : ['ns','Omegach2','Omegabh2','Omegakh2','h','LogAs'],
+            'basic': ['ns','Omegamh2','Omegabh2','Omegakh2','h','sigma8'],
+            'overwride':[]}
 DE_METHODS = {'constant_w':['w'],
               'w0wa'      :['w','w0','wa'],
               'jdem'      :JDEM_LIST,
@@ -365,7 +320,7 @@ DE_METHODS = {'constant_w':['w'],
 GROW_SAFE = ['ns','LogAs','sigma8']
 #parameters guaranteed to not require generating a new WMatcher object
 DE_SAFE = np.unique(np.concatenate(DE_METHODS.values())).tolist()
-def strip_cosmology(cosmo_old,p_space,overwride=[]):
+def strip_cosmology(cosmo_old,p_space,overwride=None):
     """
         remove all nonessential attributes for a cosmology unless they are in overwride list,
         leaving only the necessary elements of the parameter space
@@ -373,6 +328,8 @@ def strip_cosmology(cosmo_old,p_space,overwride=[]):
         'jdem':parameter space proposed in joint dark energy mission figure of merit working group paper, arxiv:0901.0721v1
         'lihu':parameter space used in Li, Hu & Takada 2013, arxiv:1408.1081v2
     """
+    if overwride is None:
+        overwride = []
     cosmo_new = cosmo_old.copy()
     if p_space in P_SPACES:
         #delete unneeded values
@@ -404,7 +361,7 @@ def add_derived_pars(cosmo_old,p_space=None):
     cosmo_new = cosmo_old.copy()
     if p_space is None:
         p_space = cosmo_old.get('p_space')
-    if p_space == 'jdem':
+    if p_space=='jdem':
         cosmo_new['Omegach2'] = cosmo_old['Omegamh2']-cosmo_old['Omegabh2']
         cosmo_new['h'] = np.sqrt(cosmo_old['Omegamh2']+cosmo_old['OmegaLh2']+cosmo_old['Omegakh2'])
         cosmo_new['H0'] = cosmo_new['h']*100.
@@ -418,7 +375,7 @@ def add_derived_pars(cosmo_old,p_space=None):
         cosmo_new['Omegarh2'] = cosmo_new['Omegar']*cosmo_new['h']**2
 
         cosmo_new['As'] = np.exp(cosmo_old['LogAs'])
-    elif p_space == 'lihu':
+    elif p_space=='lihu':
         cosmo_new['Omegamh2'] = cosmo_old['Omegach2']+cosmo_old['Omegabh2']
         cosmo_new['H0'] = cosmo_old['h']*100.
         cosmo_new['Omegab'] = cosmo_old['Omegabh2']/cosmo_new['h']**2
@@ -432,7 +389,7 @@ def add_derived_pars(cosmo_old,p_space=None):
         cosmo_new['Omegarh2'] = cosmo_new['Omegar']*cosmo_new['h']**2
 
         cosmo_new['As'] = np.exp(cosmo_old['LogAs'])
-    elif p_space == 'basic':
+    elif p_space=='basic':
         cosmo_new['Omegach2'] = cosmo_old['Omegamh2']-cosmo_old['Omegabh2']
         cosmo_new['H0'] = cosmo_old['h']*100.
         cosmo_new['Omegab'] = cosmo_old['Omegabh2']/cosmo_new['h']**2
@@ -447,7 +404,7 @@ def add_derived_pars(cosmo_old,p_space=None):
        #don't know how to get As if don't have
        # cosmo_new['As']=np.exp(cosmo_old['LogAs'])
 
-    elif p_space == 'overwride':
+    elif p_space=='overwride':
         #option which does nothing
         pass
 

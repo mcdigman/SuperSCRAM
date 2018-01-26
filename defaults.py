@@ -187,10 +187,6 @@ camb_params = { 'npoints':1000,
                 'force_sigma8':False,
                 'return_sigma8':False
               }
-dp_params = {   'use_k3p':False,
-                'log_deriv_direct':False,
-                'log_deriv_indirect':False
-            }
 #amara refregier 2006 parameter forecast stuff
 cosmopie_params = {'p_space':'overwride'}
 prior_fisher_params = { 'row_strip'     :np.array([3,5,6,7]),

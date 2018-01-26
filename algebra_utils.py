@@ -191,7 +191,7 @@ def cholesky_inplace(A,inplace=True,fatal_errors=False,lower=True,clean=True):
             try_inplace = False
 
     #spl.cholesky won't do them in place
-    if not A.dtype == np.float_:
+    if not A.dtype==np.float_:
         raise ValueError('algebra_utils: cholesky_inplace currently only supports arrays with dtype=np.float_')
 
     #TODO maybe workaround, determine actual threshold (46253 is just largest successful run)
@@ -252,7 +252,7 @@ def trapz2(A,xs=None,dx=None):
     else:
         dx_use = np.diff(xs,axis=0)
     if isinstance(dx_use,np.ndarray):
-        if not dx_use.shape[0] == A.shape[0]-1:
+        if not dx_use.shape[0]==A.shape[0]-1:
             raise ValueError('input xs or dx has incompatible shape')
         elif dx_use.ndim>1 or A.ndim>2:
             raise ValueError('currently only support 1 dimensional dx')

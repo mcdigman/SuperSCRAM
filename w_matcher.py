@@ -21,7 +21,7 @@ class WMatcher(object):
         #appears only use of C_fid to extract cosmology
         #CosmoPie appears to be used to extract G_norm,G, and Ez
         self.C_fid = C_fid
-        self.cosmo_fid = C_fid.cosmology.copy()
+        self.cosmo_fid = self.C_fid.cosmology.copy()
         self.cosmo_fid['w'] = -1.
         self.cosmo_fid['de_model'] = 'constant_w'
 

@@ -61,13 +61,13 @@ class FisherMatrix(object):
         if old_state==new_state:
             if not self.silent:
                 print "FisherMatrix "+str(id(self))+": internal state "+str(self.internal_state)+" unchanged"
-        elif new_state == REP_CHOL:
+        elif new_state==REP_CHOL:
             self._internal_mat = self.get_cov_cholesky(inplace=True,copy_output=False,internal=True)
-        elif new_state == REP_CHOL_INV:
+        elif new_state==REP_CHOL_INV:
             self._internal_mat = self.get_cov_cholesky_inv(inplace=True,copy_output=False,internal=True)
-        elif new_state == REP_FISHER:
+        elif new_state==REP_FISHER:
             self._internal_mat = self.get_fisher(inplace=True,copy_output=False,internal=True)
-        elif new_state == REP_COVAR:
+        elif new_state==REP_COVAR:
             self._internal_mat = self.get_covar(inplace=True,copy_output=False,internal=True)
         else:
             raise ValueError("FisherMatrix "+str(id(self))+": unrecognized new state "+str(new_state)+" when asked to switch from state "+str(old_state))
@@ -179,7 +179,7 @@ class FisherMatrix(object):
             if identical_inputs and not return_fisher:
                 result = mirror_symmetrize(result,lower=True,inplace=True)
         else:
-            if self.internal_state == REP_FISHER:
+            if self.internal_state==REP_FISHER:
                 chol_fisher = cholesky_inplace(self._internal_mat,lower=True,inplace=destructive,clean=False)
                 if destructive:
                     self._internal_mat = None
@@ -307,11 +307,11 @@ class FisherMatrix(object):
         else:
             if not self.silent:
                 print "FisherMatrix ",id(self)," cholesky decomposition inv cache miss"
-            if self.internal_state == REP_CHOL:
+            if self.internal_state==REP_CHOL:
                 result = invert_triangular(self._internal_mat,lower=True,inplace=inplace,clean=False)
-            elif self.internal_state == REP_FISHER:
+            elif self.internal_state==REP_FISHER:
                 result = np.asfortranarray(np.rot90(cholesky_inplace(np.asfortranarray(np.rot90(self._internal_mat,2)),inplace=inplace,lower=False,clean=False),2))
-            elif self.internal_state == REP_COVAR:
+            elif self.internal_state==REP_COVAR:
                 result = get_inv_cholesky(self._internal_mat,lower=True,inplace=inplace,clean=False)
             else:
                 raise ValueError("FisherMatrix "+str(id(self))+": unrecognized internal state "+str(self.internal_state))
@@ -347,15 +347,15 @@ class FisherMatrix(object):
             if not self.silent:
                 print "FisherMatrix "+str(id(self)),": cholesky decomposition cache miss"
 
-            if self.internal_state == REP_CHOL_INV :
+            if self.internal_state==REP_CHOL_INV :
                 if not self.silent:
                     print "FisherMatrix "+str(id(self)),": getting cholesky decomposition of covariance matrix from its inverse, size: "+str(self._internal_mat.nbytes/10**6)+" megabytes"
                 result = invert_triangular(self._internal_mat,lower=True,inplace=inplace,clean=False)
-            elif self.internal_state == REP_COVAR:
+            elif self.internal_state==REP_COVAR:
                 if not self.silent:
                     print "FisherMatrix "+str(id(self)),": getting cholesky decomposition of covariance matrix directly, size: "+str(self._internal_mat.nbytes/10**6)+" megabytes"
                 result = cholesky_inplace(self._internal_mat,inplace=inplace,lower=True,clean=False)
-            elif self.internal_state == REP_FISHER:
+            elif self.internal_state==REP_FISHER:
                 if not self.silent:
                     print "FisherMatrix "+str(id(self)),": getting cholesky decomposition of covariance matrix from F_alpha_beta, size: "+str(self._internal_mat.nbytes/10**6)+" megabytes"
                 result = get_cholesky_inv(self._internal_mat,lower=True,inplace=inplace,clean=False)
@@ -389,11 +389,11 @@ class FisherMatrix(object):
         if inplace and not internal:
             self.switch_rep(REP_FISHER)
 
-        if self.internal_state == REP_FISHER:
+        if self.internal_state==REP_FISHER:
             if not self.silent:
                 print "FisherMatrix "+str(id(self))+": retrieved fisher matrix from cache"
             result = self._internal_mat
-        elif self.internal_state == REP_COVAR or self.internal_state==REP_CHOL:
+        elif self.internal_state==REP_COVAR or self.internal_state==REP_CHOL:
             result,info = spl.lapack.dpotri(self.get_cov_cholesky(copy_output=False,internal=True,inplace=inplace),lower=True,overwrite_c=inplace)
             if info!=0:
                 raise RuntimeError('dpotri failed with error code '+str(info))

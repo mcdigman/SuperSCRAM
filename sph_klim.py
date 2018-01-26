@@ -66,7 +66,7 @@ class SphBasisK(LWBasis):
         for ll in xrange(0,self.k_num.size):
             k_alpha = jn_zeros_cut(ll,self.k_cut*self.r_max)/self.r_max
             #once there are no zeros above the cut, skip higher l
-            if k_alpha.size == 0:
+            if k_alpha.size==0:
                 print "sph_klim: cutting off all l>=",ll
                 break
             else:
@@ -75,7 +75,6 @@ class SphBasisK(LWBasis):
                 self.n_l += 1
         l_alpha = np.arange(0,self.n_l)
 
-        self.l = l_alpha #TODO unnecessary
         self.lm_map = np.zeros((l_alpha.size,3),dtype=object)
         self.lm = np.zeros((l_alpha.size,2),dtype=object)
         C_size = 0
@@ -209,7 +208,7 @@ class SphBasisK(LWBasis):
                 if self.C_id[itr_ll+k_itr,1]>k_cut_use:
                     n_break = k_itr
                     break
-            #if n_break == 0:
+            #if n_break==0:
             #    continue
             for _m_itr in xrange(0,2*ll+1):
                 variance+=np.dot(v[itr_ll:itr_ll+n_break].T,np.dot(res[0:n_break,0:n_break],v[itr_ll:itr_ll+n_break]))
@@ -223,7 +222,7 @@ class SphBasisK(LWBasis):
         return self.C_id[:,1]
 
     #get the partial derivatives of an sw observable wrt the basis given an integrand with elements at each r_fine i.e.  \frac{\partial O_i}{\partial \bar(\delta)(r_{fine})}
-    def D_O_I_D_delta_alpha(self,geo,integrand,force_recompute = False,use_r=True,range_spec=None):
+    def D_O_I_D_delta_alpha(self,geo,integrand,use_r=True,range_spec=None):
         r"""Get \frac{\partial O^I}{\partial \delta_\alpha} for an observable.
             inputs:
                 geo: a Geo object for the geometry
@@ -232,7 +231,7 @@ class SphBasisK(LWBasis):
                 range_spec: array slice specification for geo.r_fine to limit range of integration for tomographic bins
         """
         print "sph_klim: calculating D_O_I_D_delta_alpha"
-        d_delta_bar = self.D_delta_bar_D_delta_alpha(geo,force_recompute,tomography=False)
+        d_delta_bar = self.D_delta_bar_D_delta_alpha(geo,tomography=False)
         result = np.zeros((d_delta_bar.shape[1],integrand.shape[1]))
         #the variable to integrate over
         if use_r:
@@ -257,19 +256,18 @@ class SphBasisK(LWBasis):
     #Note: the basis has an allow_caching setting for whether to allow cacheing between function calls for the same geo
     #Cacheing is potentially dangerous if the geo changes, so it should not be allowed to. #TODO add cache_good flag to geo
     #Note that this function will cache alm and R_int internally as needed regardless of cache_alm or allow_caching, but it won't save the results for future function calls if caching is prohibited
-    def D_delta_bar_D_delta_alpha(self,geo,force_recompute = False,tomography=True):
+    def D_delta_bar_D_delta_alpha(self,geo,tomography=True):
         r"""Calculate \frac{\partial\bar{\delta}}{\partial\delta_\alpha}
             inputs:
                 geo: an input Geo object for the geometry
                 tomography: if True use tomographic (coarse) bins, otherwise use resolution (fine) bins for r integrals
-                force_recompute: clears the cache: use this if geo has changed.
         """
         #r=np.array([r_min,r_max])
         #TODO Check this
         print "sph_klim: begin D_delta_bar_D_delta_alpha with geo id: ",id(geo)
 
         #Caching implements significant speedup, check caches
-        if self.allow_caching and not force_recompute:
+        if self.allow_caching:
             result_cache = self.ddelta_bar_cache.get(str(id(geo)))
             if result_cache is not None:
                 if tomography and ('tomo' in result_cache):

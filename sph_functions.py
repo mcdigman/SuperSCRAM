@@ -11,10 +11,10 @@ import numpy as np
 from scipy.special import sph_harm as Y_lm, jv
 
 #eps = np.finfo(float).eps
-Z_CUT = 1e-2
+#Z_CUT = 1e-2
 
-#data=np.loadtxt('data/spherical_bessel_zeros_360.dat')
-data=np.loadtxt('data/spherical_bessel_zeros_527.dat')
+#data = np.loadtxt('data/spherical_bessel_zeros_360.dat')
+data = np.loadtxt('data/spherical_bessel_zeros_527.dat')
 data[data<0.] = np.inf
 
 l_max_zeros = data.shape[0]-1
@@ -56,7 +56,7 @@ def Y_r(l,m,theta,phi):
         Y_lm(m,l,phi,theta)
     """
     if np.abs(m) > l:
-        print 'You must have |m| <=l for spherical harmonics.'
+        print 'You must have |m|<=l for spherical harmonics.'
         raise ValueError('Please check the function values you sent into Y_r in module sph_functions.py')
         #sys.exit()
 

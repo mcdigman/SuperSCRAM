@@ -84,7 +84,7 @@ class HalofitPk(object):
         #n_r = halofit_params['n_r']
         #array should use generously sized r_max initially
         rs = np.arange(r_min,r_max,r_step)
-        n_r = rs.size
+#        n_r = rs.size
 #        sigs = np.zeros(n_r)
 #        sig_d1s = np.zeros(n_r)
 #        sig_d2s = np.zeros(n_r)
@@ -114,8 +114,8 @@ class HalofitPk(object):
                 sigs,sig_d1s,sig_d2s = self.wint(rs)
                 itr+=1
 
-        self.n_r = n_r
-        self.sigs = sigs
+#        self.n_r = n_r
+#        self.sigs = sigs
         self.g_max = (1./sigs[-1])
         self.g_min = (1./sigs[0])
         #splines might give somewhat better results than interp1d for a given grid size, which is what this originally used, at the expense of time
@@ -344,21 +344,24 @@ class HalofitPk(object):
         fnu = 0. #neutrinos
         beta = 2.0379-0.7354*rn+0.3157*rn**2+1.2490*rn**3+0.3980*rn**4-0.1682*rncur+fnu*(1.081+0.395*rn**2)
 
-        if True:#abs(1-om_m) > 0.01: #omega evolution
-            f1a = om_m**(-0.0732)
-            f2a = om_m**(-0.1423)
-            f3a = om_m**(0.0725)
-            f1b = om_m**(-0.0307)
-            f2b = om_m**(-0.0585)
-            f3b = om_m**(0.0743)
-            frac = om_v/(1.-om_m)
-            f1 = frac*f1b + (1-frac)*f1a
-            f2 = frac*f2b + (1-frac)*f2a
-            f3 = frac*f3b + (1-frac)*f3a
-        else:
-            f1 = 1.0
-            f2 = 1.0
-            f3 = 1.0
+        #if abs(1-om_m) > 0.01: #omega evolution
+        f1a = om_m**(-0.0732)
+        f2a = om_m**(-0.1423)
+        f3a = om_m**(0.0725)
+        f1b = om_m**(-0.0307)
+        f2b = om_m**(-0.0585)
+        f3b = om_m**(0.0743)
+        frac = om_v/(1.-om_m)
+        f1 = np.full_like(om_m,1.)
+        f2 = np.full_like(om_m,1.)
+        f3 = np.full_like(om_m,1.)
+        f1[abs(1.-om_m)>0.01] = (frac*f1b + (1-frac)*f1a)[abs(1.-om_m)>0.01]
+        f2[abs(1.-om_m)>0.01] = (frac*f2b + (1-frac)*f2a)[abs(1.-om_m)>0.01]
+        f3[abs(1.-om_m)>0.01] = (frac*f3b + (1-frac)*f3a)[abs(1.-om_m)>0.01]
+        #else:
+        #    f1 = 1.0
+        #    f2 = 1.0
+        #    f3 = 1.0
 
         if isinstance(z,np.ndarray):
             y = np.outer(rk,1./rknl)

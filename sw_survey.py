@@ -34,12 +34,11 @@ class SWSurvey(object):
         self.survey_id = survey_id
         self.cosmo_par_list = cosmo_par_list
         self.nz_matcher = nz_matcher
+        self.len_params = len_params
         if self.needs_lensing:
-            self.len_pow = lo.LensingPowerBase(self.geo,self.ls,survey_id,C,cosmo_par_list,cosmo_par_epsilons,len_params,ps=ps,nz_matcher=self.nz_matcher)
-            self.len_params = len_params
+            self.len_pow = lo.LensingPowerBase(self.geo,self.ls,survey_id,C,cosmo_par_list,cosmo_par_epsilons,self.len_params,ps=ps,nz_matcher=self.nz_matcher)
         else:
             self.len_pow = None
-            self.len_params = None
         self.n_param = cosmo_par_list.size
 
         self.observable_names = generate_observable_names(self.geo,observable_list,params['cross_bins'])
@@ -66,6 +65,7 @@ class SWSurvey(object):
             dim_list[i] = self.observables[i].get_dimension()
         return dim_list
 
+    #TODO not actually needed by anything
     def get_O_I_array(self):
         """Get the sw observables as a concatenated array"""
         O_I_array = np.zeros(self.get_total_dimension())

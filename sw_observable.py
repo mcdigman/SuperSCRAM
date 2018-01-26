@@ -13,6 +13,7 @@ class SWObservable(object):
         self.dim = dim
         self.survey_id = survey_id
 
+    #TODO not actually needed by anythin
     def get_O_I(self):
         """Must be implemented by subclass, should return a numpy array with the first axis being z bins
         return array of vectors representing the observable itself"""

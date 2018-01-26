@@ -42,7 +42,6 @@ class MultiFisher(object):
         self.do_mit = do_mit
 
         #prepare to project lw basis to sw basis
-        self.n_o = self.sw_survey.get_N_O_I()
         self.n_sw = self.sw_survey.get_total_dimension()
 
         self.lw_F_no_mit = None

@@ -13,9 +13,8 @@ class SWCovMat(object):
             silent: whether to print messages
         """
         self.gaussian_covar = 0.
-        self.dimension = 0
         if isinstance(O_I_1,lo.LensingObservable) and isinstance(O_I_2,lo.LensingObservable):
-            if O_I_1.get_survey_id() == O_I_2.get_survey_id():
+            if O_I_1.get_survey_id()==O_I_2.get_survey_id():
                 if not silent:
                     print "SWCovMat: retrieving covariance"
                 class_a = O_I_1.q1_pow.__class__
@@ -41,10 +40,7 @@ class SWCovMat(object):
                     ns[2] = sh_pow1.get_n_shape(class_b,class_d)
                 if np.allclose(r1_2 , r2_1):
                     ns[3] = sh_pow1.get_n_shape(class_b,class_c)
-                #ns = np.zeros(4)
-                #ns[0:2] =
                 self.gaussian_covar = np.diagflat(sh_pow1.cov_g_diag(np.array([O_I_1.q1_pow,O_I_1.q2_pow,O_I_2.q1_pow,O_I_2.q2_pow]),ns))
-                self.dimension = self.gaussian_covar.shape[0]
                 if not silent:
                     print "SWCovMat: covariance retrieved"
 

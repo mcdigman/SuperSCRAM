@@ -39,7 +39,7 @@ class ConstantZSource(SourceDistribution):
         SourceDistribution.__init__(self,ps,zs,chis,C,params)
 
 class CosmoLikeZSource(SourceDistribution):
-    """source distribution from cosmolike paper""";
+    """source distribution from cosmolike paper"""
     def __init__(self,zs,chis,C,params,alpha=1.24,beta=1.01,z0=0.51):
         """cosmolike uses alpha=1.3, beta=1.5, z0=0.56"""
         ps = zs**alpha*np.exp(-(zs/z0)**beta)
@@ -56,14 +56,14 @@ class NZMatcherZSource(SourceDistribution):
 
 def get_source_distribution(smodel,zs,chis,C,params,ps=np.array([]),nz_matcher=None):
     """generate a source distribution from among the list of available source distributions"""
-    if smodel == 'gaussian':
+    if smodel=='gaussian':
         dist = GaussianZSource(zs,chis,C,params,zbar=params['zbar'],sigma=params['sigma'])
-    elif smodel == 'constant':
+    elif smodel=='constant':
         dist = ConstantZSource(zs,chis,C,params)
-    elif smodel == 'cosmolike':
+    elif smodel=='cosmolike':
         dist = CosmoLikeZSource(zs,chis,C,params)
     elif smodel=='custom_z':
-        if ps.size == zs.size:
+        if ps.size==zs.size:
             dist = SourceDistribution(dz_to_dchi(ps,zs,chis,C,params),zs,chis,C,params)
         else:
             raise ValueError('input zs.size='+str(zs.size)+'and ps.size='+str(ps.size)+' do not match')

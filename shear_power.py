@@ -30,56 +30,55 @@ class ShearPower(object):
         self.C = C
         self.zs = zs
         self.ls = ls
-        self.epsilon = params['epsilon']
+        self.params = params
 
         #self.omega_s = np.pi/(3.*np.sqrt(2))
         #self.n_gal = 286401.
         #118000000 galaxies/rad^2 if 10/arcmin^2 and omega_s is area in radians of field
         self.omega_s = omega_s
-        #TODO maybe get n_gal from an NZMAtcher directly
-        self.n_gal = params['n_gal']
+#        self.n_gal = params['n_gal']
         self.pmodel = pmodel
-        self.sigma2_e = params['sigma2_e']
-        self.sigma2_mu = params['sigma2_mu']
+#        self.sigma2_e = params['sigma2_e']
+#        self.sigma2_mu = params['sigma2_mu']
 
 
-        self.n_map = {QShear:{QShear:(self.sigma2_e/(2.*self.n_gal))}}
+        #TODO PRIORITY maybe get n_gal from an NZMAtcher directly
+        self.n_map = {QShear:{QShear:(self.params['sigma2_e']/(2.*self.params['n_gal']))}}
         #print self.n_map[QShear][QShear]
-        self.n_k = self.k_in.size
+#        self.n_k = self.k_in.size
         self.n_l = self.ls.size
         self.n_z = self.zs.size
 
         self.p_dd_use = np.zeros((self.n_l,self.n_z))
         self.ps = np.zeros(self.n_z)
 
-        self.params = params
         self.mode = mode
 
         #some methods require special handling
-        if self.mode == 'power':
-            if pmodel == 'cosmosis':
+        if self.mode=='power':
+            if self.pmodel=='cosmosis':
                 z_bar = np.loadtxt('test_inputs/proj_2/z.txt')
                 k_bar = np.loadtxt('test_inputs/proj_2/k_h.txt')*C.h
                 self.pow_interp = RectBivariateSpline(k_bar,z_bar,(np.loadtxt('test_inputs/proj_2/p_k.txt')/C.h**3).T,kx=1,ky=1)
                 self.chis = interp1d(z_bar,np.loadtxt('test_inputs/proj_2/d_m.txt')[::-1])(zs)
                 self.chi_As = self.chis
-            elif pmodel=='halofit':
+            elif self.pmodel=='halofit':
                 self.pow_interp = RectBivariateSpline(self.k_in,self.zs,self.C.P_lin.get_matter_power(self.zs,pmodel='halofit'),kx=2,ky=2)
-            elif pmodel=='fastpt':
+            elif self.pmodel=='fastpt':
                 self.pow_interp = RectBivariateSpline(self.k_in,self.zs,self.C.P_lin.get_matter_power(self.zs,pmodel='fastpt'),kx=2,ky=2)
-            elif pmodel=='linear':
+            elif self.pmodel=='linear':
                 self.pow_interp = RectBivariateSpline(self.k_in,self.zs,self.C.P_lin.get_matter_power(self.zs,pmodel='linear'),kx=2,ky=2)
             else:
-                raise ValueError('unrecognized pmodel\''+str(pmodel)+'\' for mode \''+str(self.mode)+'\'')
-        elif self.mode == 'dc_ddelta':
-            self.pow_interp = RectBivariateSpline(self.k_in,zs,dp_ddelta(self.C.P_lin,zs,C=self.C,pmodel=pmodel,epsilon=self.epsilon)[0],kx=2,ky=2)
+                raise ValueError('unrecognized pmodel\''+str(self.pmodel)+'\' for mode \''+str(self.mode)+'\'')
+        elif self.mode=='dc_ddelta':
+            self.pow_interp = RectBivariateSpline(self.k_in,zs,dp_ddelta(self.C.P_lin,zs,C=self.C,pmodel=self.pmodel,epsilon=self.params['epsilon'])[0],kx=2,ky=2)
         else:
             raise ValueError('unrecognized mode \''+str(self.mode)+'\'')
 
-        if pmodel!='cosmosis':
+        if self.pmodel!='cosmosis':
             self.chis = self.C.D_comov(zs)
             #TODO if using Omegak not 0, make sure chis and chi_As used consistently
-            if C.Omegak==0:
+            if self.C.Omegak==0:
                 self.chi_As = self.chis
             else:
                 warn('ShearPower may not support nonzero curvature consistently')
@@ -99,8 +98,8 @@ class ShearPower(object):
 
         self.source_dist = get_source_distribution(self.params['smodel'],self.zs,self.chis,self.C,self.params,ps=ps,nz_matcher=nz_matcher)
         self.ps = self.source_dist.ps
-        self.z_min_dist = params['z_min_dist']
-        self.z_max_dist = params['z_max_dist']
+#        self.z_min_dist = params['z_min_dist']
+#        self.z_max_dist = params['z_max_dist']
 
         #used in getting Cll_q_q for a given ShearPower
         self.Cll_kernel = 1./self.chi_As**2*self.p_dd_use
@@ -151,7 +150,7 @@ class ShearPower(object):
 
 #    def tan_shear(self,thetas,with_limber=False):
 #        """stacked tangential shear, note ls must be successive integers to work correctly
-#        note that exact result is necessary if result must be self-consistent (ie tan_shear(theta)=tan_shear(theta+2*pi)) for theta not <<1
+#        note that exact result is necessary if result must be self-consistent (ie tan_shear(theta)=tan_shear(theta+2*pi)) for theta not<<1
 #        see Putter & Takada 2010 arxiv:1007.4809
 #        not used by anything or tested"""
 #        n_t = thetas.size
@@ -262,7 +261,7 @@ class Cll_sh_g(Cll_q_q):
 #    def __init__(self,sp,q1s,q2s,corr_param=np.array([])):
 #        integrand1 = np.zeros((sp.n_z,sp.n_l))
 #        integrand2 = np.zeros((sp.n_z,sp.n_l))
-#        if corr_param.size !=0:
+#        if corr_param.size!=0:
 #            for i in xrange(0,sp.n_z):
 #                integrand1[i] = q1s.qs[i]*q2s.qs[i]/sp.chis[i]**2*sp.p_dd_use[:,i]*corr_param[:,i]
 #        else:

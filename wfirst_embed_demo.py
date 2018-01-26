@@ -4,7 +4,7 @@ from time import time
 import numpy as np
 
 
-from Super_Survey import SuperSurvey,make_ellipse_plot
+from super_survey import SuperSurvey,make_ellipse_plot
 from lw_survey import LWSurvey
 from sw_survey import SWSurvey
 from cosmopie import CosmoPie
@@ -94,11 +94,11 @@ if __name__=='__main__':
     if cosmo['de_model']=='w0wa':
         #TODO PRIORITY if using priors enforce cosmo_par_list ordered correctly, handle priors correcly
         cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w0','wa'])
-        cosmo_par_string = ["$n_s$",r"$\Omega_m h^2$",r"$\Omega_{de} h^2$","$ln(A_s)$","$w_0$","$w_a$"]
+        #cosmo_par_string = ["$n_s$",r"$\Omega_m h^2$",r"$\Omega_{de} h^2$","$ln(A_s)$","$w_0$","$w_a$"]
         cosmo_par_epsilons = np.array([0.002,0.0005,0.0001,0.0005,0.1,0.01,0.07])
     elif cosmo['de_model']=='constant_w':
         cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w'])
-        cosmo_par_string = ["$n_s$",r"$\Omega_m h^2$",r"$\Omega_{de} h^2$","$ln(A_s)$","$w_0$"]
+        #cosmo_par_string = ["$n_s$",r"$\Omega_m h^2$",r"$\Omega_{de} h^2$","$ln(A_s)$","$w_0$"]
         cosmo_par_epsilons = np.array([0.002,0.0005,0.0001,0.0005,0.1,0.01])
     else:
         raise ValueError('unrecognized de_model '+str(cosmo['de_model']))
@@ -238,10 +238,10 @@ if __name__=='__main__':
 #f_rot_no_mit = (f_rot_no_mit+f_rot_no_mit.T)/2.
 #c_rot_no_mit = np.linalg.inv(f_rot_no_mit)
 
-cov_g = SS.f_set_nopriors[0][2].get_covar()
+#cov_g = SS.f_set_nopriors[0][2].get_covar()
 cov_g_inv = SS.f_set_nopriors[0][2].get_fisher()
 chol_g = SS.f_set_nopriors[0][2].get_cov_cholesky()
-chol_g_inv = SS.f_set_nopriors[0][2].get_cov_cholesky_inv()
+#chol_g_inv = SS.f_set_nopriors[0][2].get_cov_cholesky_inv()
 u_no_mit = SS.eig_set[1][0][1]
 v_no_mit = np.dot(chol_g,u_no_mit)
 of_no_mit = np.dot(cov_g_inv,v_no_mit)

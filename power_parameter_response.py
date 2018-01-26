@@ -22,7 +22,7 @@ def get_perturbed_cosmopies(C_fid,pars,epsilons,log_param_derivs=np.array([],dty
     power_params = P_fid.power_params.copy()
 
     #default assumption is ordinary derivative, can do log deriv in parameter also
-    #if log_param_derivs[i] == True, will do log deriv
+    #if log_param_derivs[i]==True, will do log deriv
     if not log_param_derivs.size==pars.size:
         log_param_derivs = np.zeros(pars.size,dtype=bool)
 
@@ -78,7 +78,7 @@ def get_perturbed_cosmology(cosmo_old,parameter,epsilon,log_param_deriv=False):
         else:
             cosmo_new[parameter]+=epsilon
 
-        if cosmo_old['de_model'] == 'w0wa' and parameter=='w':
+        if cosmo_old['de_model']=='w0wa' and parameter=='w':
             warn('given parameter should not be used in w0wa parameterization, use w0 instead')
             cosmo_new['w0'] = cosmo_new['w']
 
@@ -88,14 +88,13 @@ def get_perturbed_cosmology(cosmo_old,parameter,epsilon,log_param_deriv=False):
     else:
         raise ValueError('undefined parameter in cosmology \''+str(parameter)+'\'')
 
-#TODO test if needed
-def dp_dpar(C_fid,parameter,log_param_deriv,pmodel,epsilon,log_deriv=False):
-    """get derivative of power spectrum with respect to an observable, may not currently work"""
-    Cs = get_perturbed_cosmopies(C_fid,np.array([parameter]),np.array([epsilon]),np.array([log_param_deriv]),override_safe=True)
-    if log_deriv:
-        pza = C_fid.k**3/(2.*np.pi**2.)*Cs[0][0].P_lin.get_matter_power(np.array([0.]),pmodel=pmodel)
-        pzb = C_fid.k**3/(2.*np.pi**2.)*Cs[0][1].P_lin.get_matter_power(np.array([0.]),pmodel=pmodel)
-        result = (np.log(pza)-np.log(pzb))/(2*epsilon)
-    else:
-        result = (Cs[0][0].P_lin.get_matter_power(np.array([0.]),pmodel=pmodel)-Cs[0][1].P_lin.get_matter_power(np.array([0.]),pmodel=pmodel))/(2*epsilon)
-    return result
+#def dp_dpar(C_fid,parameter,log_param_deriv,pmodel,epsilon,log_deriv=False):
+#    """get derivative of power spectrum with respect to an observable, may not currently work"""
+#    Cs = get_perturbed_cosmopies(C_fid,np.array([parameter]),np.array([epsilon]),np.array([log_param_deriv]),override_safe=True)
+#    if log_deriv:
+#        pza = C_fid.k**3/(2.*np.pi**2.)*Cs[0][0].P_lin.get_matter_power(np.array([0.]),pmodel=pmodel)
+#        pzb = C_fid.k**3/(2.*np.pi**2.)*Cs[0][1].P_lin.get_matter_power(np.array([0.]),pmodel=pmodel)
+#        result = (np.log(pza)-np.log(pzb))/(2*epsilon)
+#    else:
+#        result = (Cs[0][0].P_lin.get_matter_power(np.array([0.]),pmodel=pmodel)-Cs[0][1].P_lin.get_matter_power(np.array([0.]),pmodel=pmodel))/(2*epsilon)
+#    return result

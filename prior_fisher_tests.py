@@ -57,8 +57,8 @@ def test_strip(prior_fisher):
         stripped_2 = np.vstack([stripped_2[0:index,:],stripped_2[index+1:,:]])
         stripped_2 = np.hstack([stripped_2[:,0:index],stripped_2[:,index+1:]])
         stripped_labels_2 = np.hstack([stripped_labels_2[0:index],stripped_labels_2[index+1:]])
-    assert np.all(stripped_2 == stripped)
-    assert np.all(stripped_labels_2 == stripped_labels)
+    assert np.all(stripped_2==stripped)
+    assert np.all(stripped_labels_2==stripped_labels)
 
     if prior_fisher.key==2:
         index_list = np.hstack([1,2,3,5,np.arange(9,46)])
@@ -66,7 +66,7 @@ def test_strip(prior_fisher):
         print stripped_true[0:5,0:5]
         print stripped[0:5,0:5]
         print original[0:5,0:5]
-        assert np.all(stripped_true == stripped)
+        assert np.all(stripped_true==stripped)
     assert np.all(stripped.T==stripped)
     eig_strip = np.linalg.eigh(stripped)
     assert np.all(eig_strip[0][np.abs(eig_strip[0])>EIG_SMALL]>0.)
@@ -86,26 +86,26 @@ def test_de(prior_fisher):
         assert processed_labels.shape[0]==6
         assert processed.shape[0]==6
         assert processed.shape[1]==6
-        assert np.all(processed_labels == np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w']))
+        assert np.all(processed_labels==np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w']))
     elif prior_fisher.fisher_prior.de_model=='w0wa':
         assert processed_labels.shape[0]==7
         assert processed.shape[0]==7
         assert processed.shape[1]==7
-        assert np.all(processed_labels == np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w0','wa']))
+        assert np.all(processed_labels==np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w0','wa']))
     elif prior_fisher.fisher_prior.de_model=='jdem':
         assert processed_labels.shape[0]==41
         assert processed.shape[0]==41
         assert processed.shape[1]==41
-        assert np.all(processed_labels[0:5] == np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs']))
+        assert np.all(processed_labels[0:5]==np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs']))
         for i in xrange(0,36):
-            assert processed_labels[5+i] == 'ws36_'+str(i)
+            assert processed_labels[5+i]=='ws36_'+str(i)
         assert np.all(processed==stripped)
         assert np.all(processed_labels==stripped_labels)
     elif prior_fisher.fisher_prior.de_model=='none':
         assert processed_labels.shape[0]==5
         assert processed.shape[0]==5
         assert processed.shape[1]==5
-        assert np.all(processed_labels == np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs']))
+        assert np.all(processed_labels==np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs']))
 
     assert np.all(processed.T==processed)
     eig_process = np.linalg.eigh(processed)

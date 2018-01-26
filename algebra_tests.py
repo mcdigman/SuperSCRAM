@@ -71,22 +71,22 @@ class TrapzTester(object):
     def __init__(self,key):
         """key: select which test set to use"""
         self.key = key
-        if key == 1:
+        if key==1:
             self.xs = np.arange(0,4)
             self.integrand = np.random.rand(4)
-        elif key ==2:
+        elif key==2:
             self.xs = np.arange(0,6)
             self.integrand = np.random.rand(4,6).T
-        elif key ==3:
+        elif key==3:
             self.xs = np.arange(0,10)**2
             self.integrand = np.random.rand(15,10).T
-        elif key ==4:
+        elif key==4:
             self.xs = np.arange(0,1000)**2
             self.integrand = np.random.rand(200,1000).T
-        elif key == 5:
+        elif key==5:
             self.xs = np.arange(0,800)
             self.integrand = np.arange(0,800)
-        elif key == 6:
+        elif key==6:
             self.xs = np.arange(0,1300)
             self.integrand = np.outer(np.arange(1,17),np.arange(0,1300)).T
         else:
@@ -144,7 +144,7 @@ def test_get_inv_cholesky_F_order_direct_lower(test_mat):
 def test_get_inv_cholesky_F_order_inverse_lower(test_mat):
     """check get_inv_cholesky works with Fortran ordering, lower given"""
     A_i = test_mat.A_i.copy()
-    #check L*L.T=A^-1 => (L.T^-1)*L^-1=A=B*B.T note significant loss of precision here Fortran ordering
+    #check L*L.T=A^-1=>(L.T^-1)*L^-1=A=B*B.T note significant loss of precision here Fortran ordering
     test_A_i = A_i.copy('F')
     test_chol2 = get_inv_cholesky(test_A_i,lower=True)
 
@@ -174,7 +174,7 @@ def test_get_inv_cholesky_C_order_direct_lower(test_mat):
 def test_get_inv_cholesky_C_order_inverse_lower(test_mat):
     """check get_inv_cholesky works with C ordering, lower given"""
     A_i = test_mat.A_i.copy()
-    #check L*L.T=A^-1 => (L.T^-1)*L^-1=A=B*B.T note significant loss of precision here C ordering
+    #check L*L.T=A^-1=>(L.T^-1)*L^-1=A=B*B.T note significant loss of precision here C ordering
     test_A_i = A_i.copy('C')
     test_chol4 = get_inv_cholesky(test_A_i,lower=True)
 
@@ -203,7 +203,7 @@ def test_get_inv_cholesky_F_order_direct_upper(test_mat):
 def test_get_inv_cholesky_F_order_inverse_upper(test_mat):
     """check get_inv_cholesky works with F ordering, upper given"""
     A_i = test_mat.A_i.copy()
-    #check L*L.T=A^-1 => (L.T^-1)*L^-1=A=B*B.T note significant loss of precision here Fortran ordering
+    #check L*L.T=A^-1=>(L.T^-1)*L^-1=A=B*B.T note significant loss of precision here Fortran ordering
     test_A_i = A_i.copy('F')
     test_chol2 = get_inv_cholesky(test_A_i,lower=False)
 
@@ -230,7 +230,7 @@ def test_get_inv_cholesky_C_order_direct_upper(test_mat):
 def test_get_inv_cholesky_C_order_inverse_upper(test_mat):
     """check get_inv_cholesky works with C ordering, upper given"""
     A_i = test_mat.A_i.copy()
-    #check L*L.T=A^-1 => (L.T^-1)*L^-1=A=B*B.T note significant loss of precision here C ordering
+    #check L*L.T=A^-1=>(L.T^-1)*L^-1=A=B*B.T note significant loss of precision here C ordering
     test_A_i = A_i.copy('C')
     test_chol2 = get_inv_cholesky(test_A_i,lower=False)
 

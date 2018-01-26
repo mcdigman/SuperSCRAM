@@ -76,7 +76,6 @@ def camb_sigma8(cosmology,camb_params=None):
     if camb_params is None:
         raise ValueError('need camb params')
     pars = camb.CAMBparams()
-    #TODO see about omega r, including tau and YHe
     pars.set_cosmology(H0=cosmology['H0'], ombh2=cosmology['Omegabh2'], omch2=cosmology['Omegach2'],omk=cosmology['Omegak'],mnu=cosmology['mnu'])
     if 'As' in cosmology:
         pars.InitPower.set_params(ns=cosmology['ns'],As=cosmology['As'])

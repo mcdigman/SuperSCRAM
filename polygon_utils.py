@@ -20,7 +20,7 @@ def get_poly(theta_vertices,phi_vertices,theta_in,phi_in):
     return sp_poly
 
 #can safely resolve up to lmax~2*nside (although can keep going with loss of precision until lmax=3*nside-1), so if lmax=100,need nside~50
-#nside = 2^res, so res=6 => nside=64 should safely resolve lmax=100, for extra safety can choose res=7
+#nside = 2^res, so res=6=>nside=64 should safely resolve lmax=100, for extra safety can choose res=7
 #res = 10 takes ~164.5  sec
 #res = 9 takes ~50.8 sec
 #res = 8 takes ~11 sec
@@ -42,28 +42,31 @@ def get_healpix_pixelation(res_choose=6):
     return pixels
 
 
-def is_contained(pixels,sp_poly):
-    """Pixels is a pixelation (ie what get_healpix_pixelation returns) and sp_poly is a spherical polygon, ie from get_poly"""
-    #xyz vals for the pixels
-    xyz_vals = sgv.radec_to_vector(pixels[:,1],pixels[:,0]-np.pi/2.,degrees=False)
-    contained = np.zeros(pixels.shape[0],dtype=bool)
-    #check if each point is contained in the polygon. This is fairly slow if the number of points is huge
-    for i in xrange(0,pixels.shape[0]):
-        contained[i] = sp_poly.contains_point([xyz_vals[0][i],xyz_vals[1][i],xyz_vals[2][i]])
-    return contained
+#def is_contained(pixels,sp_poly):
+#    """Pixels is a pixelation (ie what get_healpix_pixelation returns) and sp_poly is a spherical polygon, ie from get_poly"""
+#    #xyz vals for the pixels
+#    xyz_vals = sgv.radec_to_vector(pixels[:,1],pixels[:,0]-np.pi/2.,degrees=False)
+#    contained = np.zeros(pixels.shape[0],dtype=bool)
+#    #check if each point is contained in the polygon. This is fairly slow if the number of points is huge
+#    for i in xrange(0,pixels.shape[0]):
+#        contained[i] = sp_poly.contains_point([xyz_vals[0][i],xyz_vals[1][i],xyz_vals[2][i]])
+#    return contained
 
 def contains_points(pixels,sp_poly):
     """contains procedure adapted from spherical_geometry but pixels can be a vector so faster"""
     xyz_vals = np.array(sgv.radec_to_vector(pixels[:,1],pixels[:,0]-np.pi/2.,degrees=False)).T
-    intersects = np.zeros(pixels.shape[0],dtype=int)
-    bounding_xyz = sp_poly._polygons[0]._points
-    inside_xyz = sp_poly._polygons[0]._inside
-    inside_large = np.zeros_like(xyz_vals)
-    inside_large+=inside_xyz
-    for itr in xrange(0,bounding_xyz.shape[0]-1):
-        #intersects+= great_circle_arc.intersects(bounding_xyz[itr], bounding_xyz[itr+1], inside_large, xyz_vals)
-        intersects+= contains_intersect(bounding_xyz[itr], bounding_xyz[itr+1], inside_xyz, xyz_vals)
-    return np.mod(intersects,2)==0
+    contained = np.zeros(pixels.shape[0],dtype=bool)
+    points = list(sp_poly.points)
+    inside = list(sp_poly.inside)
+    #iterate over polygons if disjoint
+    for itr1 in xrange(0,len(points)):
+        intersects = np.zeros(pixels.shape[0],dtype=int)
+        bounding_xyz = np.asarray(points[itr1])
+        inside_xyz = np.asarray(inside[itr1])
+        for itr2 in xrange(0,bounding_xyz.shape[0]-1):
+            intersects+= contains_intersect(bounding_xyz[itr2], bounding_xyz[itr2+1], inside_xyz, xyz_vals)
+        contained = (contained+np.mod(intersects,2)==0).astype(bool)
+    return contained
 
 def contains_intersect(vertex1,vertex2,inside_point,test_points):
     """adapted from spherical_geometry.great_circle_arc.intersects, but much faster for our purposes

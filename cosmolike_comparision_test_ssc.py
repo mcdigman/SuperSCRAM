@@ -9,9 +9,9 @@ from sph_klim import SphBasisK
 from polygon_geo import PolygonGeo
 from sw_survey import SWSurvey
 from lw_survey import LWSurvey
-from Super_Survey import SuperSurvey
+from super_survey import SuperSurvey
 
-if __name__ == '__main__':
+if __name__=='__main__':
     base_dir = './'
     input_dir = base_dir+'test_inputs/cosmolike_1/'
     cosmo_results = np.loadtxt(input_dir+'cov_results_7.dat')

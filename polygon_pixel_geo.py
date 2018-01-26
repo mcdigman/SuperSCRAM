@@ -5,10 +5,8 @@ from math import isnan
 
 import numpy as np
 
-from geo import PixelGeo
+from pixel_geo import PixelGeo
 from polygon_utils import get_poly,get_healpix_pixelation,contains_points
-
-import ylm_utils as ylmu
 
 import defaults
 
@@ -25,22 +23,19 @@ class PolygonPixelGeo(PixelGeo):
                     l_max: the maximum l to compute the alm table to
                     res_healpix: 4 to 9, healpix resolution to use
         """
-        self.thetas = thetas
-        self.phis = phis
-        self.theta_in = theta_in
-        self.phi_in = phi_in
+        #self.thetas = thetas
+        #self.phis = phis
         self.C = C
         self.z_fine = z_fine
         self.res_healpix = res_healpix
-        all_pixels = get_healpix_pixelation(res_choose=res_healpix)
+        self.all_pixels = get_healpix_pixelation(res_choose=self.res_healpix)
         self.sp_poly = get_poly(thetas,phis,theta_in,phi_in)
         if isnan(self.sp_poly.area()):
             raise ValueError("PolygonPixelGeo: Calculated area of polygon is nan, polygon likely invalid")
         #self.contained =  is_contained(all_pixels,self.sp_poly)
-        self.contained =  contains_points(all_pixels,self.sp_poly)
-        contained_pixels = all_pixels[self.contained,:]
-        self.n_pix = contained_pixels.shape[0]
-        self.all_pixels = all_pixels
+        self.contained =  contains_points(self.all_pixels,self.sp_poly)
+        contained_pixels = self.all_pixels[self.contained,:]
+        #self.n_pix = contained_pixels.shape[0]
         print "PolygonPixelGeo: total contained pixels in polygon: "+str(np.sum(self.contained*1.))
         print "PolygonPixelGeo: total contained area of polygon: "+str(np.sum(contained_pixels[:,2]))
         print "PolygonPixelGeo: area calculated by SphericalPolygon: "+str(self.sp_poly.area())
@@ -48,25 +43,25 @@ class PolygonPixelGeo(PixelGeo):
         calc_area = np.sum(contained_pixels[:,2])
         if not np.isclose(calc_area,self.sp_poly.area(),atol=10**-2,rtol=10**-3):
             warn("PolygonPixelGeo: significant discrepancy between true area "+str(self.sp_poly.area())+" and calculated area"+str(np.sum(contained_pixels[:,2]))+" results may be poorly converged")
-        PixelGeo.__init__(self,zs,contained_pixels,C,z_fine)
+        PixelGeo.__init__(self,zs,contained_pixels,C,z_fine,l_max)
 
         #set a00 to value from pixels for consistency, not angle defect even though angle defect is more accurate
-        self.alm_table[(0,0)] = calc_area/np.sqrt(4.*np.pi)
+    #    self.alm_table[(0,0)] = calc_area/np.sqrt(4.*np.pi)
         #precompute a table of alms
-        self.alm_table,_,_,self.alm_dict = self.get_a_lm_table(l_max)
-        self._l_max = l_max
+        #self.alm_table,_,_,self.alm_dict = self.get_a_lm_table(l_max)
+        #self._l_max = l_max
 
 
-    def a_lm(self,l,m):
-        #if not precomputed, regenerate table up to specified l, otherwise read it out of the table
-        if l>self._l_max:
-            print "PolygonPixelGeo: l value "+str(l)+" exceeds maximum precomputed l "+str(self._l_max)+",expanding table"
-            self.alm_table,_,_,self.alm_dict = self.get_a_lm_table(l)
-            self._l_max = l
-        alm = self.alm_table.get((l,m))
-        if alm is None:
-            raise RuntimeError("PolygonPixelGeo: alm evaluated to None at l="+str(l)+",m="+str(m)+". l,m may exceed highest available Ylm")
-        return alm
+#    def a_lm(self,l,m):
+#        #if not precomputed, regenerate table up to specified l, otherwise read it out of the table
+#        if l>self._l_max:
+#            print "PolygonPixelGeo: l value "+str(l)+" exceeds maximum precomputed l "+str(self._l_max)+",expanding table"
+#            self.alm_table,_,_,self.alm_dict = self.get_a_lm_table(l)
+#            self._l_max = l
+#        alm = self.alm_table.get((l,m))
+#        if alm is None:
+#            raise RuntimeError("PolygonPixelGeo: alm evaluated to None at l="+str(l)+",m="+str(m)+". l,m may exceed highest available Ylm")
+#        return alm
 
 
     #first try loop takes 22.266 sec for l_max=5 for 290 pixel region
@@ -88,18 +83,18 @@ class PolygonPixelGeo(PixelGeo):
 #
 #        for ll in xrange(0,l_max+1):
 #            for mm in xrange(-ll,ll+1):
-#                #first try takes ~0.618 sec/iteration for 290 pixel region=> 2.1*10**-3 sec/(iteration pixel), much too slow
+#                #first try takes ~0.618 sec/iteration for 290 pixel region=>2.1*10**-3 sec/(iteration pixel), much too slow
 #                ls[itr] = ll
 #                ms[itr] = mm
 #                a_lms[(ll,mm)] = self.a_lm(ll,mm)
 #                itr+=1
 #        return a_lms,ls,ms
 
-    #TODO check numerical stability
-    def get_a_lm_table(self,l_max):
-        """get table of a(l,m) below l_max"""
-        return ylmu.get_a_lm_table(l_max,self.pixels[:,0],self.pixels[:,1],self.pixels[0,2])
-
+#    #TODO check numerical stability
+#    def get_a_lm_table(self,l_max):
+#        """get table of a(l,m) below l_max"""
+#        return ylmu.get_a_lm_table(l_max,self.pixels[:,0],self.pixels[:,1],self.pixels[0,2])
+#
     #TODO make robust
     def get_overlap_fraction(self,geo2):
         """get overlap fraction between this geometry and another PolygonPixelGeo"""
@@ -110,7 +105,7 @@ class PolygonPixelGeo(PixelGeo):
 
 
 ##can safely resolve up to lmax~2*nside (although can keep going with loss of precision until lmax=3*nside-1), so if lmax=100,need nside~50
-##nside = 2^res, so res=6 => nside=64 should safely resolve lmax=100, for extra safety can choose res=7
+##nside = 2^res, so res=6=>nside=64 should safely resolve lmax=100, for extra safety can choose res=7
 ##res = 10 takes ~164.5  sec
 ##res = 9 takes ~50.8 sec
 ##res = 8 takes ~11 sec

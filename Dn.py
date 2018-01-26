@@ -43,7 +43,7 @@ class DNumberDensityObservable(LWObservable):
             else:
                 warn('Dn: do not know how to compute overlap, assuming 0')
                 self.overlap_fraction = 0.
-        except:
+        except Exception:
             warn('spherical_geometry overlap failed, assuming total overlap')
             if self.geo1.angular_area()<=self.geo2.angular_area():
                 self.overlap_fraction = 1.
@@ -90,9 +90,9 @@ class DNumberDensityObservable(LWObservable):
             VInt = self.geo1.volumes[itr]*self.overlap_fraction
 
             #TODO pull out of loop
-            self.dn_ddelta_bar1 = np.zeros((range1.size))
-            self.dn_ddelta_bar2 = np.zeros((range2.size))
-            #self.DO_a=np.zeros(ddelta_bar_ddelta_alpha_list.size)
+            #self.dn_ddelta_bar1 = np.zeros((range1.size))
+            #self.dn_ddelta_bar2 = np.zeros((range2.size))
+            #DO_a=np.zeros(ddelta_bar_ddelta_alpha_list.size)
 
             #d1s = ddelta_bar_ddelta_alpha_list[0]
             #d2s = ddelta_bar_ddelta_alpha_list[1]
@@ -113,9 +113,9 @@ class DNumberDensityObservable(LWObservable):
             self.integrand1 = np.expand_dims(self.dn_ddelta_bar1*self.geo1.r_fine[range1]**2,axis=1)
             self.d1 = self.basis.D_O_I_D_delta_alpha(self.geo1,self.integrand1,use_r=True,range_spec=range1)/(self.geo1.r_fine[range1[-1]]**3-self.geo1.r_fine[range1[0]]**3)*3.
 
-            self.integrand2 = np.expand_dims(self.dn_ddelta_bar1*self.geo2.r_fine[range2]**2,axis=1)
+            self.integrand2 = np.expand_dims(self.dn_ddelta_bar2*self.geo2.r_fine[range2]**2,axis=1)
             self.d2 = self.basis.D_O_I_D_delta_alpha(self.geo2,self.integrand2,use_r=True,range_spec=range2)/(self.geo2.r_fine[range2[-1]]**3-self.geo2.r_fine[range2[0]]**3)*3.
-            self.DO_a = self.d2-self.d1
+            DO_a = self.d2-self.d1
 
             self.n_avg1 = trapz2((self.geo1.r_fine**2*self.n_avgs1)[range1],self.geo1.r_fine[range1])/(self.geo1.r_fine[range1[-1]]**3-self.geo1.r_fine[range1[0]]**3)*3.
             self.n_avg2 = trapz2((self.geo2.r_fine**2*self.n_avgs2)[range2],self.geo2.r_fine[range2])/(self.geo2.r_fine[range2[-1]]**3-self.geo2.r_fine[range2[0]]**3)*3.
@@ -125,13 +125,13 @@ class DNumberDensityObservable(LWObservable):
             #TODO ensure well behaved if overlap is total
             #TODO enable different type of cutoff for LSST like and WFIRST like surveys
             Nab_itr = self.n_avg1/V1+self.n_avg2/V2-2.*np.min([self.n_avg1,self.n_avg2])*VInt/(V1*V2)
-            if Nab_itr == 0.:
+            if Nab_itr==0.:
                 warn('Dn: variance had a value which was exactly 0; mitigation disabled for axis '+str(itr))
                 self.Nab_i[itr,itr] = 0.
-                self.vs[itr] = np.zeros(self.DO_a.flatten().shape)
+                self.vs[itr] = np.zeros(DO_a.flatten().shape)
             else:
                 self.Nab_i[itr,itr] = 1./Nab_itr
-                self.vs[itr] = self.DO_a.flatten()
+                self.vs[itr] = DO_a.flatten()
 
 
         self.Nab_f = fm.FisherMatrix(np.sqrt(self.Nab_i),input_type=fm.REP_CHOL_INV)
@@ -140,9 +140,9 @@ class DNumberDensityObservable(LWObservable):
         """get the rank of the perturbation, ie the number of vectors summed in F=v^Tv"""
         return self.n_bins
 
-    def get_dO_a_ddelta_bar(self):
-        """get the observables response to a density fluctuation"""
-        return self.DO_a
+#    def get_dO_a_ddelta_bar(self):
+#        """get the observables response to a density fluctuation"""
+#        return self.DO_a
 
     def get_fisher(self):
         """get the fisher matrix"""

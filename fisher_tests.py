@@ -101,9 +101,9 @@ test_list = [[1,1],[2,1],[3,1],[4,1],[5,1],[7,1],[8,1],[8,1],[1,0],[2,0],[3,0],[
 def fisher_input(request):
     """iterate through test matrixes"""
     A = get_test_mat(request.param[0])
-    if request.param[1] == 0:
+    if request.param[1]==0:
         return ManualFisherFromFab1(A)
-    elif request.param[1] == 1:
+    elif request.param[1]==1:
         return ManualFisherFromCov1(A)
     else:
         raise ValueError("fisher_input: unrecognized input: "+str(request.param))
@@ -120,13 +120,13 @@ input_initial = [[0,0],[0,1],[0,2],[0,3],[1,0],[1,1],[1,2],[1,3],[2,0],[2,1],[2,
 @pytest.fixture(params=input_initial,scope="function")
 def fisher_params(request,fisher_input):
     """iterate thorugh fisher matrix starting params and fisher matrices"""
-    if request.param[0] == fm.REP_FISHER:
+    if request.param[0]==fm.REP_FISHER:
         internal_mat = fisher_input.fab.copy('F')
-    elif request.param[0] == fm.REP_COVAR:
+    elif request.param[0]==fm.REP_COVAR:
         internal_mat = fisher_input.cov.copy('F')
-    elif request.param[0] == fm.REP_CHOL:
+    elif request.param[0]==fm.REP_CHOL:
         internal_mat = fisher_input.chol_cov.copy('F')
-    elif request.param[0] == fm.REP_CHOL_INV:
+    elif request.param[0]==fm.REP_CHOL_INV:
         internal_mat = fisher_input.chol_cov_i.copy('F')
     fisher =  fm.FisherMatrix(internal_mat,input_type=request.param[0],initial_state=request.param[1])
     return FisherWithManual(fisher_input,fisher)

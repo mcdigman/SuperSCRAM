@@ -123,6 +123,7 @@ def get_Y_r_dict(l_max,thetas,phis):
 
 def get_Y_r_dict_central(l_max):
     """use analytic formula for Y_r(l,m,pi/2,0)"""
+    assert isinstance(l_max,int)
     if 2*l_max>170:
         raise ValueError('Scipy factorial will fail for n!>170 because 171!>2^1024, need to use arbitrary precision or implement asymptotic form')
     Y_lms = {(0,0):1./np.sqrt(4.*np.pi)}

@@ -197,7 +197,7 @@ class ST_hmf(object):
             if min_mass is a function of z it should be an array of the same size as z
             z can be scalar or an array"""
         if isinstance(min_mass,np.ndarray):
-            if not min_mass.size == z.size:
+            if not min_mass.size==z.size:
                 raise ValueError('min_mass and z must be the same size')
 
         G = self.Growth(z)
@@ -220,7 +220,7 @@ class ST_hmf(object):
                 result[itr] = integrated(min_mass[itr],G[itr])
             return result
         else:
-            mass = self.mass_grid[ self.mass_grid >= min_mass]
+            mass = self.mass_grid[ self.mass_grid>=min_mass]
             mf = self.dndM_G(mass,G)
 
             b_array = np.zeros_like(mass)
@@ -236,7 +236,7 @@ class ST_hmf(object):
             if min_mass is a function of z it should be an array of the same size as z
             z can be scalar or an array"""
         if isinstance(min_mass,np.ndarray) and isinstance(z,np.ndarray):
-            if not min_mass.size == z.size:
+            if not min_mass.size==z.size:
                 raise ValueError('min_mass and z must be the same size')
         G = self.Growth(z)
         #TODO this does not handle z being of length 1 correctly
@@ -251,14 +251,55 @@ class ST_hmf(object):
             if isinstance(min_mass,np.ndarray):
                 result = np.zeros(min_mass.size)
                 for i in xrange(0,min_mass.size):
-                    mass = self.mass_grid[ self.mass_grid >= min_mass[i]]
+                    mass = self.mass_grid[ self.mass_grid>=min_mass[i]]
                     mf = self.dndM_G(mass,G)
                     result[i] = trapz2(mf,mass)
                 return result
             else:
-                mass = self.mass_grid[ self.mass_grid >= min_mass]
+                mass = self.mass_grid[ self.mass_grid>=min_mass]
                 mf = self.dndM_G(mass,G)
                 return trapz2(mf,mass)
+#    def sigma_m(self,mass,z):
+#        """ RMS power on a scale of R(mass)
+#         rho = mass/volume=mass"""
+#        R = 3/4.*mass/self.rho_bar(z)/np.pi
+#        R = R**(1/3.)
+#        return self.C.sigma_r(z,R)
+#    def delta_c(self,z):
+#        """ critical threshold for spherical collapse, as given
+#        in the appendix of NFW 1997"""
+#        #TODO should have z dependence
+#        A = 0.15*(12.*np.pi)**(2/3.)
+#
+#        if (self.C.Omegam==1) and (self.C.OmegaL==0):
+#            d_crit = A
+#        elif (self.C.Omegam < 1) and (self.C.OmegaL==0):
+#            d_crit = A*self.Omegam**(0.0185)
+#        elif (self.C.Omegam + self.C.OmegaL)==1.0:
+#            d_crit = A*self.C.Omegam**(0.0055)
+#        else:
+#            d_crit = A*self.C.Omegam**(0.0055)
+#            warn('inexact equality to 1~='+str(self.C.Omegam)+"+"+str(self.C.OmegaL)+"="+str(self.C.OmegaL+self.C.Omegam))
+#        d_c = d_crit#/self.C.G_norm(z)
+#        return d_c
+#
+#    def delta_v(self,z):
+#        """over density for virialized halo"""
+#        A = 178.0
+#        if (self.C.Omegam_z(z)==1) and (self.C.OmegaL_z(z)==0):
+#            d_v = A
+#        if (self.C.Omegam_z(z) < 1) and (self.C.OmegaL_z(z)==0):
+#            d_v = A/self.C.Omegam_z(z)**(0.7)
+#        if (self.C.Omegam_z(z) + self.C.OmegaL_z(z))==1.0:
+#            d_v = A/self.C.Omegam_z(z)**(0.55)
+#
+#        return d_v/self.G_norm(z)
+#
+#
+#    def nu(self,z,mass):
+#        """calculates nu=(delta_c/sigma(M))^2
+#         delta_c is the overdensity for collapse"""
+#        return (self.delta_c(z)/self.sigma_m(mass,z))**2
 
 #if __name__=="__main__":
 #

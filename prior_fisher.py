@@ -136,30 +136,29 @@ def project_no_de(fisher_mat,params,labels):
     labels_new = labels[0:n_new].copy()
     return (fisher_new+fisher_new.T)/2.,labels_new
 
-#TODO obsolete
-def get_jdem_projected(params):
-    """get matrix in jdem parametrization"""
-    fisher_mat = read_prior_fisher(params=params)
-    fisher_strip,labels_strip = fix_elements(fisher_mat,params,JDEM_LABELS)
-    return fisher_strip,labels_strip
-
-def get_no_de_projected(params):
-    """get matrix with no de"""
-    fisher_mat = read_prior_fisher(params=params)
-    fisher_strip,labels_strip = fix_elements(fisher_mat,params,JDEM_LABELS)
-    fisher_project,labels_project = project_no_de(fisher_strip,params,labels_strip)
-    return fisher_project,labels_project
-
-def get_w0wa_projected(params):
-    """get matrix with w0wa parametrization"""
-    fisher_mat = read_prior_fisher(params=params)
-    fisher_strip,labels_strip = fix_elements(fisher_mat,params,JDEM_LABELS)
-    fisher_project,labels_project = project_w0wa(fisher_strip,params,labels_strip)
-    return fisher_project,labels_project
-
-def get_w0_projected(params):
-    """get matrix with constant w parametrization"""
-    fisher_mat = read_prior_fisher(params=params)
-    fisher_strip,labels_strip = fix_elements(fisher_mat,params,JDEM_LABELS)
-    fisher_project,labels_project = project_w0(fisher_strip,params,labels_strip)
-    return fisher_project,labels_project
+#def get_jdem_projected(params):
+#    """get matrix in jdem parametrization"""
+#    fisher_mat = read_prior_fisher(params=params)
+#    fisher_strip,labels_strip = fix_elements(fisher_mat,params,JDEM_LABELS)
+#    return fisher_strip,labels_strip
+#
+#def get_no_de_projected(params):
+#    """get matrix with no de"""
+#    fisher_mat = read_prior_fisher(params=params)
+#    fisher_strip,labels_strip = fix_elements(fisher_mat,params,JDEM_LABELS)
+#    fisher_project,labels_project = project_no_de(fisher_strip,params,labels_strip)
+#    return fisher_project,labels_project
+#
+#def get_w0wa_projected(params):
+#    """get matrix with w0wa parametrization"""
+#    fisher_mat = read_prior_fisher(params=params)
+#    fisher_strip,labels_strip = fix_elements(fisher_mat,params,JDEM_LABELS)
+#    fisher_project,labels_project = project_w0wa(fisher_strip,params,labels_strip)
+#    return fisher_project,labels_project
+#
+#def get_w0_projected(params):
+#    """get matrix with constant w parametrization"""
+#    fisher_mat = read_prior_fisher(params=params)
+#    fisher_strip,labels_strip = fix_elements(fisher_mat,params,JDEM_LABELS)
+#    fisher_project,labels_project = project_w0(fisher_strip,params,labels_strip)
+#    return fisher_project,labels_project

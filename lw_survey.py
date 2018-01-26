@@ -32,7 +32,7 @@ class LWSurvey(object):
             self.param_list = np.full(observable_list.size,{})
         else:
             self.param_list = param_list
-        self.observable_names = generate_observable_names(observable_list,param_list)
+        self.observable_names = generate_observable_names(observable_list,self.param_list)
         self.observables = self.names_to_observables(self.observable_names)
         print "lw_survey: finished initializing long wavelength survey: "+str(survey_id)
 
@@ -40,12 +40,12 @@ class LWSurvey(object):
         """get number of long wavelength observables"""
         return self.observables.size
 
-    def get_dO_a_ddelta_bar_list(self):
-        """get list of arrays of long wavelength observables"""
-        dO_a_ddelta_bar_list = np.zeros(self.observables.size,dtype=object)
-        for i in xrange(self.observables.size):
-            dO_a_ddelta_bar_list[i] = self.observables[i].get_dO_a_ddelta_bar()
-        return dO_a_ddelta_bar_list
+#    def get_dO_a_ddelta_bar_list(self):
+#        """get list of arrays of long wavelength observables"""
+#        dO_a_ddelta_bar_list = np.zeros(self.observables.size,dtype=object)
+#        for i in xrange(self.observables.size):
+#            dO_a_ddelta_bar_list[i] = self.observables[i].get_dO_a_ddelta_bar()
+#        return dO_a_ddelta_bar_list
 
     def fisher_accumulate(self,fisher_0):
         """add the fisher matrices for all available lw observables to the FisherMatrix object fisher_0"""

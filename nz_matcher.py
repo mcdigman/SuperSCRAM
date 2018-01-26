@@ -47,9 +47,9 @@ class NZMatcher(object):
         for itr in xrange(0,geo.z_fine.size):
             dn = dns[:,itr]
             n_avgs = np.hstack((-(cumtrapz(dn[::-1],mass[::-1]))[::-1],0.))
-            n_avg_index = np.argmin(n_avgs >= nz[itr]) #TODO check edge cases
+            n_avg_index = np.argmin(n_avgs>=nz[itr]) #TODO check edge cases
             #TODO only need 1 interpolating function
-            if n_avg_index == 0:
+            if n_avg_index==0:
                 m_cuts[itr] = mass[n_avg_index]
             else:
                 m_interp = interp1d(n_avgs[n_avg_index-1:n_avg_index+1],mass[n_avg_index-1:n_avg_index+1])(nz[itr])

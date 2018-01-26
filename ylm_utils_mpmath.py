@@ -64,7 +64,7 @@ def get_Y_r_dict_central(l_max):
             Y_lms[(ll,mm)] = 0.
         for nn in xrange(0,np.int(ll/2.)+1):
             Y_lms[(ll,ll-2*nn-1)] = 0.
-            if 2*nn ==ll:
+            if 2*nn==ll:
                 Y_lms[(ll,ll-2*nn)] = np.double((-1)**(nn)*mp.sqrt((2.*ll+1.)/(4.*mp.pi)*(factorials[2*nn]/factorials[2*ll-2*nn]))*2**-ll*(factorials[(2*ll-2*nn)]/factorials[ll-nn]*1./factorials[nn]))
             else:
                 Y_lms[(ll,ll-2*nn)] = np.double((-1)**(nn)*mp.sqrt((2.*ll+1.)/(2.*mp.pi)*(factorials[2*nn]/factorials[2*ll-2*nn]))*2**-ll*(factorials[(2*ll-2*nn)]/factorials[ll-nn]*1./factorials[nn]))

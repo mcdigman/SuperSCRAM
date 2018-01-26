@@ -9,7 +9,7 @@ import defaults
 from lensing_weight import QShear
 import matter_power_spectrum as mps
 
-if __name__ == '__main__':
+if __name__=='__main__':
     base_dir = './'
     input_dir = base_dir+'test_inputs/cosmolike_1/'
     cosmo_results = np.loadtxt(input_dir+'cov_results_7.dat')
@@ -225,7 +225,7 @@ if __name__ == '__main__':
 #
 #                    cov_g_mat[z1,z2,z3,z4] = np.diagflat(sp.cov_g_diag(np.array([qs[z1],qs[z2],qs[z3],qs[z4]]),ns,delta_ls=dls,ls=l_mids))
 #                    if not isinstance(cov_g_mat_cosmo[z1,z2,z3,z4],int):
-#                        if z1==0 and z2==0 and ((z3==3 and z4 ==0) or (z3 ==0 and z4==3)):
+#                        if z1==0 and z2==0 and ((z3==3 and z4==0) or (z3==0 and z4==3)):
 #                            print np.diag(cov_g_mat[z1,z2,z3,z4])/np.diag(cov_g_mat_cosmo[z1,z2,z3,z4])
 #                        cov_g_rat_means[z1,z2,z3,z4] = np.average(np.diag(cov_g_mat[z1,z2,z3,z4])/np.diag(cov_g_mat_cosmo[z1,z2,z3,z4]))
 #                    else:

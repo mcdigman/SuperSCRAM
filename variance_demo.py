@@ -7,7 +7,7 @@ import defaults
 from sph_klim import SphBasisK
 import matter_power_spectrum as mps
 
-if __name__ == '__main__':
+if __name__=='__main__':
     time0 = time()
     camb_params = { 'npoints':1000,
                     'minkh':1.1e-4,
@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
     param_use = 7
     do_plot = True
-    if param_use == 1:
+    if param_use==1:
         #matches to  0.918455921357 for l_max=340,x_cut=360, not monotonic
         theta0 = np.pi/2.-np.pi*0.21644180767757945
         theta1 = np.pi/2.+np.pi*0.21644180767757945
@@ -61,7 +61,7 @@ if __name__ == '__main__':
 
         variance_pred1 = 6.94974e-01
         variance_pred2 = 6.47471e-01
-    elif param_use == 2:
+    elif param_use==2:
         #matches to 0.984883733033 for l_max=340,x_cut=360, monotonic
         theta0 = np.pi/2.-np.pi*0.005549789940450755
         theta1 = np.pi/2.+np.pi*0.005549789940450755
@@ -74,7 +74,7 @@ if __name__ == '__main__':
 
         variance_pred1 = 1.32333e-02
         variance_pred2 = 1.38770e-02
-    elif param_use ==3:
+    elif param_use==3:
         #matches to  0.256984236659 for l_max=340,x_cut=360, monotonic but convergence appears poor
         #matches to 0.442356296589 for l_max=515, x_cut=
         theta0 = np.pi/2.-np.pi/1801.87

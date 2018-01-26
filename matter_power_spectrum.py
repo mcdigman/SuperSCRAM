@@ -70,13 +70,13 @@ class MatterPower(object):
             self.w_match_grid = self.wm.match_w(self.C,self.z_grid)
             #TODO is this grid acceptably fine?
             self.w_match_interp = InterpolatedUnivariateSpline(self.z_grid,self.w_match_grid,k=3,ext=2)
-            self.pow_mult_grid = self.wm.match_growth(self.C,self.z_grid,self.w_match_grid)
+#            self.pow_mult_grid = self.wm.match_growth(self.C,self.z_grid,self.w_match_grid)
             self.use_match_grid = True
         else:
             self.wm = None
             self.w_match_grid = np.zeros(self.n_a)+self.cosmology['w']
             self.w_match_interp = InterpolatedUnivariateSpline(self.z_grid,self.w_match_grid,k=3,ext=2)
-            self.pow_mult_grid = np.zeros(self.n_a)+1.
+#            self.pow_mult_grid = np.zeros(self.n_a)+1.
             self.use_match_grid = False
         #figure out an error checking method here
         #Interpolated to capture possible k dependence in camb of w,#TODO see if sufficient
@@ -140,7 +140,6 @@ class MatterPower(object):
             self.w_min = None
             self.w_max = None
             self.camb_w_grid = np.array([])
-            self.camb_cosmos = np.array([])
             self.camb_w_pows = np.array([])
             self.camb_sigma8s = np.array([])
             self.camb_w_interp = None
@@ -179,13 +178,9 @@ class MatterPower(object):
         n_z = zs.size
 
         if self.use_match_grid:
-            #w_match_grid = self.wm.match_w(self.C,zs)
             #TODO maybe allow override of interpolation
             w_match_grid = self.w_match_interp(zs)
             pow_mult_grid = self.wm.match_growth(self.C,zs,w_match_grid)*const_pow_mult
-        #else:
-        #    w_match_grid = np.zeros(zs.size)+self.cosmology.w
-        #    pow_mult_grid = np.zeros(zs.size)+1.*const_pow_mult
 
         G_norms = self.C.G_norm(zs)
         if self.use_match_grid:
