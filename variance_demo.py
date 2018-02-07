@@ -39,10 +39,10 @@ if __name__=='__main__':
 
     #x_cut = 527.
     #l_max = 515
-    x_cut = 360
-    l_max = 340
-    #x_cut = 150
-    #l_max = 140
+    #x_cut = 360
+    #l_max = 340
+    x_cut = 150
+    l_max = 140
     #x_cut = 30
     #l_max = 30
 
@@ -159,7 +159,7 @@ if __name__=='__main__':
 
     print "main: building geometries"
     polygon_params = defaults.polygon_params
-    polygon_params['n_double'] = 30
+    polygon_params['n_double'] = 80
     geo1 = PolygonGeo(z_coarse,thetas,phis,theta_in,phi_in,C,z_fine,l_max,defaults.polygon_params)
     print 'main: r diffs',np.diff(geo1.rs)
     print 'main: theta width',(geo1.rs[1]+geo1.rs[0])/2.*(theta1-theta0)
@@ -171,7 +171,7 @@ if __name__=='__main__':
 
     print "main: building basis"
     basis_params = defaults.basis_params.copy()
-    #basis_params['n_bessel_oversample']*=4
+    basis_params['n_bessel_oversample']*=4
     basis_params['x_grid_size']*=10
 
     r_max = C.D_comov(z_max)
@@ -201,11 +201,9 @@ if __name__=='__main__':
 #    loc_lens_params = defaults.lensing_params.copy()
 #    loc_lens_params['z_min_dist'] = np.min(z_coarse)
 #    loc_lens_params['z_max_dist'] = np.max(z_coarse)
-#    loc_lens_params['pmodel_O'] = 'halofit'
-#    loc_lens_params['pmodel_dO_ddelta'] = 'halofit'
-#    loc_lens_params['pmodel_dO_dpar'] = 'halofit'
+#    loc_lens_params['pmodel'] = 'halofit'
 #
-#    sw_survey_1 = SWSurvey(geo1,'survey1',C,l_sw,defaults.sw_survey_params,observable_list = defaults.sw_observable_list,cosmo_par_list = cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,len_params=loc_lens_params)
+#    sw_survey_1 = SWSurvey(geo1,'survey1',C,defaults.sw_survey_params,observable_list = defaults.sw_observable_list,cosmo_par_list = cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,len_params=loc_lens_params)
 #    surveys_sw = np.array([sw_survey_1])
 
 #    do_mit = False
@@ -218,7 +216,7 @@ if __name__=='__main__':
 #        geos = np.array([geo1,geo2])
 #        surveys_lw = np.array([])
 #    print "main: building super survey"
-#    SS = SuperSurvey(surveys_sw, surveys_lw,basis,C=C,get_a=True,do_unmitigated=True,do_mitigated=do_mit)
+#    SS = SuperSurvey(surveys_sw, surveys_lw,basis,C,defaults.prior_fisher_params.copy(),get_a=True,do_unmitigated=True,do_mitigated=do_mit)
     print "main: getting variance"
     variance_res = basis.get_variance(geo1)
     time1 = time()

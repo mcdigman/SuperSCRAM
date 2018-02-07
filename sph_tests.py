@@ -30,7 +30,7 @@ def test_alm_match1():
     Phi = [0,np.pi/3.+np.sqrt(2.)/100.]
 
 
-    C = CosmoPie(cosmology=defaults.cosmology)
+    C = CosmoPie(cosmology=defaults.cosmology,p_space='jdem')
     geo1 = RectGeo(zs,Theta,Phi,C,z_fine)
 
     alm_py = np.zeros_like(alm_math)
@@ -83,7 +83,7 @@ def test_rint_match_mpmath():
     n_count = 0
     z_count = 0
     bad_count = 0
-    C = CosmoPie(defaults.cosmology)
+    C = CosmoPie(defaults.cosmology,p_space='jdem')
     P_lin = mps.MatterPower(C,defaults.power_params.copy())
     C.set_power(P_lin)
     basis = sph.SphBasisK(r_max,C,k_cut,defaults.basis_params)

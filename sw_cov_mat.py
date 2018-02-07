@@ -5,9 +5,11 @@ from warnings import warn
 import numpy as np
 import lensing_observables as lo
 
+DEBUG = False
+
 class SWCovMat(object):
     """Object to handle retrieving the non SSC short wavelength covariance matrices"""
-    def __init__(self,O_I_1,O_I_2,debug=False,silent=False):
+    def __init__(self,O_I_1,O_I_2,silent=False):
         """ O_I_1,O_I_2: SWObservable objects
             debug: do debugging checks
             silent: whether to print messages
@@ -31,7 +33,6 @@ class SWCovMat(object):
                 r2_2 = O_I_2.r2
 
                 ns = np.zeros(4)
-                #TODO check ns
                 if np.allclose(r1_1, r2_1):
                     ns[0] = sh_pow1.get_n_shape(class_a,class_c)
                 if np.allclose(r1_1, r2_2):
@@ -44,7 +45,7 @@ class SWCovMat(object):
                 if not silent:
                     print "SWCovMat: covariance retrieved"
 
-                if debug:
+                if DEBUG:
                     #check that covariance matrix possesses all expected symmetries
                     assert np.all(self.gaussian_covar.T==self.gaussian_covar)
                     assert np.all(np.linalg.eigh(self.gaussian_covar)[0]>0.)

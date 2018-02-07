@@ -6,12 +6,9 @@ from warnings import warn
 import numpy as np
 from Dn import DNumberDensityObservable
 
-import defaults
-
-#TODO no good reason to use defaults at all here
 class LWSurvey(object):
     """handle getting long wavelength observables and their fisher matrices for mitigation"""
-    def __init__(self,geos,survey_id,basis,C,params,observable_list=defaults.lw_observable_list,param_list=None):
+    def __init__(self,geos,survey_id,basis,C,params,observable_list,param_list):
         """ inputs:
                 geos: an array of Geo objects, fo the survey windows of different long wavelength surveys
                 survey_id: an id for the survey
@@ -27,11 +24,8 @@ class LWSurvey(object):
         self.C = C
         self.survey_id = survey_id
         self.basis = basis
-        #self.dn_params = dn_params
-        if param_list is None:
-            self.param_list = np.full(observable_list.size,{})
-        else:
-            self.param_list = param_list
+        self.param_list = param_list
+
         self.observable_names = generate_observable_names(observable_list,self.param_list)
         self.observables = self.names_to_observables(self.observable_names)
         print "lw_survey: finished initializing long wavelength survey: "+str(survey_id)
@@ -53,9 +47,8 @@ class LWSurvey(object):
             if self.observables[i].fisher_type:
                 fisher_0.add_fisher(self.observables[i].get_fisher())
             else:
-                fisher_0.perturb_fisher(self.observables[i].get_perturbing_vector())
-
-            #fisher_0.internal_mat = self.observables[i].add_fisher(fisher_0.internal_mat)
+                vs,sigma2s = self.observables[i].get_perturbing_vector()
+                fisher_0.perturb_fisher(vs,sigma2s)
 
     def get_total_rank(self):
         """get the total rank of perturbations that will be added to the SSC contribution, for testing interlace theorems"""
@@ -72,8 +65,7 @@ class LWSurvey(object):
         for key in names:
             if re.match('^d_number_density',key):
                 params = names[key]
-                #TODO don't think actually needs both n1_params and n2_params anymore
-                observables[itr] = DNumberDensityObservable(self.geos,params['dn_params'],self.survey_id,self.C,self.basis,params['n1_params'],params['n2_params'],params['mf_params'])
+                observables[itr] = DNumberDensityObservable(self.geos,params['dn_params'],self.survey_id,self.C,self.basis,params['n_params'],params['mf_params'])
             else:
                 warn('unrecognized or unprocessable observable: \'',key,'\', skipping')
                 observables[itr] = None

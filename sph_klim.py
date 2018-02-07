@@ -126,8 +126,8 @@ class SphBasisK(LWBasis):
         self.rints = np.zeros(self.n_l,dtype=object)
 
         for ll in xrange(0,self.n_l):
-            r_I = lambda y,x: x**2*j_n(ll,x)
-            result_ll = odeint(r_I,0.,x_grid,atol=1e-20,rtol=1e-13)[:,0]
+            #r_I = lambda y,x: x**2*j_n(ll,x)
+            result_ll = odeint(lambda y,x: x**2*j_n(ll,x),0.,x_grid,atol=1e-20,rtol=1e-13)[:,0]
             self.rints[ll] = InterpolatedUnivariateSpline(x_grid,result_ll,ext=2,k=3)
 
         t2 = time()
@@ -232,24 +232,39 @@ class SphBasisK(LWBasis):
         """
         print "sph_klim: calculating D_O_I_D_delta_alpha"
         d_delta_bar = self.D_delta_bar_D_delta_alpha(geo,tomography=False)
-        result = np.zeros((d_delta_bar.shape[1],integrand.shape[1]))
+#        result = np.zeros((d_delta_bar.shape[1],integrand.shape[1]))
         #the variable to integrate over
         if use_r:
             x = geo.r_fine
         else:
             x = geo.z_fine
         #allow a restriction to the range of r_fine or z_fine
+        if x.size != integrand.shape[0]:
+            raise ValueError('invalid input x with shape '+str(x.shape)+' does not match '+str(integrand.shape))
+
         if range_spec is not None:
-            x = x[range_spec]
-            d_delta_bar = d_delta_bar[range_spec,:]
-       # dxs = np.diff(x,axis=0)
-        dx1s = (np.diff(x)*d_delta_bar[1::].T)/2.
-        dx2s = (np.diff(x)*d_delta_bar[:-1:].T)/2.
-        for ll in xrange(0, integrand.shape[1]):
+            x_cut = x[range_spec]
+            d_delta_bar_cut = d_delta_bar[range_spec,:]
+            integrand_cut = integrand[range_spec]
+        else:
+            x_cut = x
+            d_delta_bar_cut = d_delta_bar
+            integrand_cut = integrand
+
+        delta_x = np.diff(x_cut)
+        dx1s = (delta_x*d_delta_bar_cut[1::].T)/2.
+        dx2s = (delta_x*d_delta_bar_cut[:-1:].T)/2.
+        dxs = np.hstack([np.zeros((dx1s.shape[0],1)),dx1s])+np.hstack([dx2s,np.zeros((dx2s.shape[0],1))])
+        print dxs.shape, integrand_cut.shape
+#        for ll in xrange(0, integrand_cut.shape[1]):
             #note can be sped up if dx is constant
             #note this is just the trapezoidal rule with d_delta_bar absorbed into dx for a minor speedup
-            result[:,ll] = (np.dot(dx2s,integrand[:-1:,ll])+np.dot(dx1s,integrand[1::,ll]))
+            #result_alt = (np.dot(dx2s,integrand[:-1:,ll])+np.dot(dx1s,integrand[1::,ll]))
+#            result[:,ll] = np.dot(dxs,integrand_cut[:,ll])
             #result[:,ll] = trapz2((d_delta_bar.T*integrand[:,ll]).T,dx=dxs)
+            #result_alt = np.trapz((d_delta_bar.T*integrand[:,ll]),x)
+            #assert np.allclose(result_alt,result[:,ll],atol=1.e-15,rtol=1.e-8)
+        result = np.dot(dxs,integrand_cut)
         print "sph_klim: got D_O_I_D_delta_alpha"
         return result
 
@@ -285,7 +300,6 @@ class SphBasisK(LWBasis):
 
         a_00 = geo.a_lm(0,0)
         print "sph_klim: a_00="+str(a_00)
-       # Omega=a_00*np.sqrt(4*np.pi)
         r_cache = {}
 
         if tomography:
@@ -345,9 +359,9 @@ def R_int(r_range,k,ll):
     def _integrand(r):
         return r**2*j_n(ll,r*k)
     #TODO can be done with trapz
-    I = quad(_integrand,r_range[0],r_range[1],epsabs=10e-20,epsrel=1e-10)[0]
+    result = quad(_integrand,r_range[0],r_range[1],epsabs=10e-20,epsrel=1e-10)[0]
     #TODO check if eps logic needed
-    return I
+    return result
 
 #I_alpha checked
 def I_alpha(k_alpha,k,r_max,l_alpha):
@@ -355,8 +369,8 @@ def I_alpha(k_alpha,k,r_max,l_alpha):
     needed to calculate long wavelength covariance matrix."""
     a = k_alpha*r_max
     b = k*r_max
-    l = l_alpha+.5
-    return np.pi/2./np.sqrt(k_alpha*k)/(k_alpha**2 - k**2)*r_max*(-k_alpha*jv(l-1,a)*jv(l,b))
+    ll = l_alpha+.5
+    return np.pi/2./np.sqrt(k_alpha*k)/(k_alpha**2 - k**2)*r_max*(-k_alpha*jv(ll-1,a)*jv(ll,b))
 
 def norm_factor(ka,la,r_max):
     """Get normalization factor, which is I_\alpha(k_\alpha,r_{max}) simplified"""

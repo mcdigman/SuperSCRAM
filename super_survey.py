@@ -3,21 +3,20 @@ from time import time
 
 import numpy as np
 
-
-import defaults
 import multi_fisher as mf
 #TODO maybe make possible to serialize/pickle or at least provide a standardized way of storing run information
 #TODO examine possibile platform dependence bug with ruby
 class SuperSurvey(object):
     """ This class holds and returns information for all surveys
     """
-    def __init__(self, surveys_sw, surveys_lw, basis,C,get_a=False,do_mitigated=True,do_unmitigated=True):
+    def __init__(self,surveys_sw,surveys_lw,basis,C,prior_params,get_a=False,do_mitigated=True,do_unmitigated=True):
         r"""master class for mitigation analysis
             inputs:
                 surveys_sw: an array of SWSurveys
                 surveys_lw: an array of LWSurveys (different mitigations)
                 basis: an LWBasis object
                 C: a CosmoPie object
+                prior_params: parameters needed for PriorFisher
                 get_a: get (v.T).C_lw.v where v=\frac{\partial\bar{\delta}}{\delta_\alpha}
                 do_mitigated: if False don't get mitigated covariances
                 do_unmitigate: if False don't get unmitigated covariances"""
@@ -35,12 +34,10 @@ class SuperSurvey(object):
 
         self.C = C
 
-          #k_cut = 0.25 #converge to 0.0004
         self.basis = basis
         self.N_O_I = 0
         self.N_O_a = 0
 
-        #self.O_a=np.array([], dtype=object)
         for i in xrange(self.N_surveys_sw):
             self.N_O_I = self.N_O_I + surveys_sw[i].get_N_O_I()
 
@@ -50,8 +47,7 @@ class SuperSurvey(object):
         print 'SuperSurvey: there are '+str(self.N_O_I)+' short wavelength and '+str(self.N_O_a)+' long wavelength observables'
 
         #TODO support multiple sw surveys with MultiFisher
-        de_prior_params = defaults.prior_fisher_params
-        self.multi_f = mf.MultiFisher(basis,surveys_sw[0],surveys_lw,de_prior_params,needs_a=self.get_a,do_mit=self.do_mitigated)
+        self.multi_f = mf.MultiFisher(basis,surveys_sw[0],surveys_lw,prior_params,needs_a=self.get_a,do_mit=self.do_mitigated)
 
         self.f_set_nopriors = self.multi_f.get_fisher_set(include_priors=False)
         self.f_set = self.multi_f.get_fisher_set(include_priors=True)
@@ -162,9 +158,26 @@ def get_ellipse_specs(covs,dchi2=2.3):
     return width1s,width2s,angles,areas
 
 
+FORMATTED_LABELS = {"ns":"$n_s$",
+                    "Omegamh2":r"$\Omega_m h^2$",
+                    "OmegaLh2":r"$\Omega_{de} h^2$",
+                    "Omegabh2":r"$\Omega_b h^2$",
+                    "LogAs":"$ln(A_s)$",
+                    "As":"$A_s$",
+                    "sigma8":r"$\sigma_8$",
+                    "w0":"$w_0$",
+                    "wa":"$w_a$",
+                    "w":"w",
+                    "Omegam":r"$\Omega_m$",
+                    "OmegaL":r"$\Omega_{de}$",
+                    "Omegab":r"$\Omega_b$",
+                    "h":"h",
+                    "H0":"H_0",
+                    "Omegach2":r"$\Omega_c h^2$",
+                    "Omegac":r"$\Omega_c$"
+                   }
 def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_par_list,dchi2,adaptive_mult=1.05,include_diag=True):
     """make the plot of error ellipses given the set of covariance matrices"""
-    formatted_labels = {"ns":"$n_s$","Omegamh2":r"$\Omega_m h^2$","OmegaLh2":r"$\Omega_\phi h^2$","Omegabh2":r"$\Omega_b h^2$","LogAs":"$ln(A_s)$","As":"$A_s$","sigma8":r"$\sigma_8$","w0":"$w_0$","wa":"$w_a$","w":"w","Omegam":r"$\Omega_m$","OmegaL":r"$\Omega_\phi$","Omegab":r"$\Omega_b$","h":"h","H0":"H_0","Omegach2":r"$\Omega_c h^2$","Omegac":r"$\Omega_c$"}
     import matplotlib.pyplot as plt
     import matplotlib.ticker as ticker
     from matplotlib.patches import Ellipse
@@ -173,9 +186,6 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
         _,ax_list = plt.subplots(n_p,n_p)
     else:
         _,ax_list = plt.subplots(n_p-1,n_p-1)
-    #width1s_g,width2s_g,angles_g,areas_g = get_ellipse_specs(SS.c_g_params,dchi2=dchi2)
-    #width1s_no_mit,width2s_no_mit,angles_no_mit,areas_no_mit = get_ellipse_specs(SS.c_no_mit_params,dchi2=dchi2)
-    #width1s_mit,width2s_mit,angles_mit,areas_mit = get_ellipse_specs(SS.c_mit_params,dchi2=dchi2)
     n_c = cov_set.shape[0]
     n_p = cosmo_par_list.shape[0]
     width1_set = np.zeros((n_c,n_p,n_p))
@@ -212,11 +222,9 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
             ax.set_axisbelow(True)
             if itr2<itr1:
                 ax.axis('off')
-                #ax.tick_params(axis='both',labelsize='small',labelbottom='off',labelleft='off',labeltop='off',labelright='off')
                 continue
             param1 = cosmo_par_list[itr1]
             param2 = cosmo_par_list[itr2]
-            #fid_point = np.array([C.cosmology[param1],C.cosmology[param2]])
             fid_point = np.array([0.,0.])
 
             #TODO check sense of rotation
@@ -229,7 +237,6 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
                     sigma = np.sqrt(cov_set[itr3][itr1,itr1])#width1_set[itr3][itr1,itr1]
                     ax.plot(xs,1./np.sqrt(2.*np.pi*sigma**2)*np.exp(-xs**2/(2.*sigma**2)),color=color_set[itr3])
                     ybox_width = np.max(np.array([ybox_width,np.max(1./np.sqrt(2.*np.pi*sigma**2)*np.exp(-xs**2/(2.*sigma**2)))*1.05]))
-                    #ybox_width=5.
                 elif itr1<itr2:
                     ax.add_artist(es[itr3])
                 es[itr3].set_clip_box(ax.bbox)
@@ -243,12 +250,8 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
                 ybox_width = ybox_widths[itr2]
             elif itr1==itr2:
                 xbox_width = xbox_widths[itr1]
-            #    ybox_width = 1.
             nticks = 2
             tickrange = 0.7
-            #xticks = np.arange(fid_point[0]-tickrange/2*xbox_width,fid_point[0]+tickrange/2*xbox_width+0.01*xtickspacing,xtickspacing)
-            #yticks = np.arange(fid_point[1]-tickrange/2*ybox_width,fid_point[1]+tickrange/2*ybox_width+0.01*ytickspacing,ytickspacing)
-            #ax.set_title('1-sigma contours')
             formatter = ticker.FormatStrFormatter("%.1e")
             if itr1<=itr2:
                 xtickspacing = xbox_width*tickrange/nticks
@@ -271,39 +274,28 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
                     ax.set_ylim(0.,ybox_width)
                 else:
                     ax.set_ylim(-ybox_width/2.,ybox_width/2.)
-                #ax.set_xlim(fid_point[0]-xbox_width/2.,fid_point[0]+xbox_width/2.)
-                #ax.set_ylim(fid_point[1]-ybox_width/2.,fid_point[1]+ybox_width/2.)
                 ax.tick_params(axis='both',labelsize='small',labelbottom='off',labelleft='off',labeltop='off',labelright='off')
-                #ax.ticklabel_format(useOffset=False)
 
             ax.grid()
-            #print "itr1,itr2,yticks,yboxwidth",itr1,itr2,yticks,ybox_width
 
             if itr1==itr2==0:
-                #ax.legend(handles=[es[0],es[1],es[2]],loc=2,prop={'size':6})
-                param2_pretty = formatted_labels.get(param2)
+                param2_pretty = FORMATTED_LABELS.get(param2)
                 if param2_pretty is None:
                     param2_pretty = param2
                 ax.set_ylabel("$\\Delta$"+str(param2_pretty),fontsize=8)
                 ax.legend(handles=es.tolist(),loc=2,prop={'size':6})
             if itr1==0 and itr1<itr2:
-                param2_pretty = formatted_labels.get(param2)
+                param2_pretty = FORMATTED_LABELS.get(param2)
                 if param2_pretty is None:
                     param2_pretty = param2
                 ax.set_ylabel("$\\Delta$"+str(param2_pretty),fontsize=8)
                 ax.tick_params(axis='y',labelsize=6,labelleft='on',pad=0.2,bottom='on',left='on',right='on',top='on',direction='inout')
-            #if itr1==n_p-1:
-            #    ax.tick_params(axis='y',labelsize=6,labelright='on')
-            #if itr2==0:
-            #    ax.tick_params(axis='x',labelsize=6,labeltop='on')
-             #   ax.ticklabel_format(axis='x',useOffset=True)
             if itr2==n_p-1:
-                param1_pretty = formatted_labels.get(param1)
+                param1_pretty = FORMATTED_LABELS.get(param1)
                 if param1_pretty is None:
                     param1_pretty = param1
                 ax.set_xlabel("$\\Delta$"+str(param1_pretty),fontsize=8)
                 ax.tick_params(axis='x',labelsize=6,labelbottom='on',pad=0.2,bottom='on',left='on',right='on',top='on',direction='inout')
-             #   ax.ticklabel_format(axis='x',useOffset=True)
             if itr1==itr2:
                 if itr2==n_p-1:
                     ax.tick_params(axis='both',labelsize=6,labelright='off',labeltop='off',pad=0.2,bottom='on',left='on',right='on',top='on',direction='inout')
@@ -311,7 +303,6 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
                     ax.tick_params(axis='both',labelsize=6,labelright='off',labeltop='off',labelleft='on',pad=0.2,bottom='on',left='on',right='off',top='on',direction='inout')
                 else:
                     ax.tick_params(axis='both',labelsize=6,labelright='off',labeltop='off',labelbottom='on',pad=0.2,bottom='on',left='on',right='off',top='on',direction='inout')
-                #ax.tick_params(axis='x',labelsize=6,labeltop='on')
     plt.subplots_adjust(wspace=0.,hspace=0.,left=0.1,right=0.9,top=0.9,bottom=0.1)
     plt.show()
-     #TODO add correlation matrix functionality
+    #TODO add correlation matrix functionality

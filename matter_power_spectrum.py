@@ -9,9 +9,9 @@ from camb_power import camb_pow
 import FASTPTcode.FASTPT as FASTPT
 import cosmopie as cp
 
-import defaults
 import halofit
 import w_matcher
+from extrap_utils import power_law_extend
 #class for a matter power spectrum which can get both linear and nonlinear power spectra as needed
 #TODO clean up
 #TODO treat w0 and w consistently
@@ -40,20 +40,21 @@ class MatterPower(object):
         self.C = C_in
         self.cosmology = self.C.cosmology
 
+        #give error if extrapolation is more than offset between camb default H0 and our H0
+        self.extend_limit = self.cosmology['H0']/71.902712048990196
+        self.extend_limit = np.max([self.extend_limit,1./self.extend_limit])+0.001
         if P_lin is None or k_in is None:
             k_camb,self.P_lin,self.sigma8_in = camb_pow(self.cosmology,camb_params=self.camb_params)
             #TODO check handling fixing sigma8 right
             if k_in is None:
                 self.k = k_camb
             else:
-                if not np.allclose(k_camb,k_in):
-                    #print "MatterPower: adjusting k grid"
-                    #TODO extrapolate properly, not safe on edges now. Issue is k_camb is off by factor of self.cosmology['H0']/71.902712048990196
-                    self.P_lin = InterpolatedUnivariateSpline(k_camb,self.P_lin,k=2)(k_in)
+                self.P_lin = power_law_extend(k_camb,self.P_lin,k_in,k=2,extend_limit=self.extend_limit)
                 self.k = k_in
         else:
             self.k = k_in
             self.P_lin = P_lin
+            #TODO this cannot be right, because C_in needs MatterPower to get sigma8
             self.sigma8_in = C_in.get_sigma8()
 
         self.a_grid = np.arange(self.params['a_max'],self.params['a_min']-self.params['a_step']/10.,-self.params['a_step'])
@@ -79,15 +80,12 @@ class MatterPower(object):
 #            self.pow_mult_grid = np.zeros(self.n_a)+1.
             self.use_match_grid = False
         #figure out an error checking method here
-        #Interpolated to capture possible k dependence in camb of w,#TODO see if sufficient
+        #Interpolated to capture possible k dependence in camb of w
         #needed because field can cluster on very large scales, see arXiv:astro-ph/9906174
         if self.params['needs_camb_w_grid'] and self.use_match_grid:
 
             #get grid of camb power spectra for various w values
-            #TODO found bug with force_sigma8 consistency
             #borrow some parameters from an input power spectrum if camb need not be called repeatedly
-            #TODO check robustness ie do not need to also get alternate w_match_grid
-            #TODO not sure all these camb calls are a good idea
             cache_usable = False
             if camb_safe and not P_fid is None:
                 self.camb_w_interp = P_fid.camb_w_interp
@@ -99,9 +97,7 @@ class MatterPower(object):
                 self.w_min = P_fid.w_min
                 self.w_max = P_fid.w_max
                 if self.use_match_grid and np.any(self.w_match_grid>self.w_max) or np.any(self.w_match_grid<self.w_min):
-                    #TODO extending would be better than regenerating
-                    #TODO bug is causing this to expand itself somehow
-                    warn('Insufficient range in given camb w grid, needed min '+str(np.min(self.w_match_grid))+' max '+str(np.max(self.w_match_grid)))
+                    raise ValueError('Insufficient range in given camb w grid, needed min '+str(np.min(self.w_match_grid))+' max '+str(np.max(self.w_match_grid)))
                 else:
                     cache_usable = True
             if not cache_usable:
@@ -125,16 +121,23 @@ class MatterPower(object):
                 self.camb_sigma8s = np.zeros(n_cw)
                 camb_cosmos = self.cosmology.copy()
                 camb_cosmos['de_model'] = 'constant_w'
+                #k_use,P_use,sigma8_use = camb_pow(camb_cosmos,camb_params=self.camb_params)
+                #if not np.all(k_use==self.k):
+                #    P_use = InterpolatedUnivariateSpline(k_use,P_use,k=2,ext=2)(self.k)
                 for i in xrange(0,n_cw):
                     camb_cosmos['w'] = self.camb_w_grid[i]
-                    #TODO check the G input is correct
                     print "camb with w=",self.camb_w_grid[i]
                     k_i,self.camb_w_pows[:,i],self.camb_sigma8s[i] = camb_pow(camb_cosmos,camb_params=self.camb_params)
+                    #self.camb_sigma8s[i] = sigma8_use*self.wm.match_scale(np.array([0.]),self.camb_w_grid[i])[0]#camb_sigma8(camb_cosmos,self.camb_params)
+                    #alt_camb_sigma8s = camb_sigma8(camb_cosmos,self.camb_params)
+                    #print self.camb_sigma8s[i],alt_camb_sigma8s[i]
                     #This interpolation shift shouldn't really be needed because self.k is generated with the same value of H0
-                    if not np.all(k_i==self.k):
-                        self.camb_w_pows[:,i] = InterpolatedUnivariateSpline(k_i,self.camb_w_pows[:,i],k=2,ext=2)(self.k)
-                    self.camb_w_interp = RectBivariateSpline(self.k,self.camb_w_grid,self.camb_w_pows,kx=3,ky=3)
-                    self.camb_sigma8_interp = InterpolatedUnivariateSpline(self.camb_w_grid,self.camb_sigma8s,k=2,ext=2)
+                    self.camb_w_pows[:,i] = power_law_extend(k_i,self.camb_w_pows[:,i],self.k,k=2,extend_limit=self.extend_limit)
+                    #if not np.all(k_i==self.k):
+                    #    self.camb_w_pows[:,i] = InterpolatedUnivariateSpline(k_i,self.camb_w_pows[:,i],k=2,ext=2)(self.k)
+                    #self.camb_w_pows[:,i] = P_use*self.camb_sigma8s[i]**2/sigma8_use**2
+                self.camb_w_interp = RectBivariateSpline(self.k,self.camb_w_grid,self.camb_w_pows,kx=3,ky=3)
+                self.camb_sigma8_interp = InterpolatedUnivariateSpline(self.camb_w_grid,self.camb_sigma8s,k=2,ext=2)
                 self.use_camb_grid = True
         else:
             self.w_min = None
@@ -147,23 +150,22 @@ class MatterPower(object):
             self.use_camb_grid = False
 
         if self.params['needs_fpt']:
-            self.fpt = FASTPT.FASTPT(self.k,self.power_params.fpt['nu'],low_extrap=self.power_params.fpt['low_extrap'],high_extrap=self.power_params.fpt['high_extrap'],n_pad=self.power_params.fpt['n_pad'])
+            fpt_p = self.power_params.fpt
+            self.fpt = FASTPT.FASTPT(self.k,fpt_p['nu'],None,fpt_p['low_extrap'],fpt_p['high_extrap'],fpt_p['n_pad'])
         else:
             self.fpt = None
 
     def get_sigma8_eff(self,zs):
         """get effective sigma8(z) for matching power spectrum amplitude in w(z) models from WMatcher"""
         if self.use_match_grid:
-            #w_match_grid = self.wm.match_w(self.C,zs)
             w_match_grid = self.w_match_interp(zs)
             pow_mult_grid = self.wm.match_growth(self.C,zs,w_match_grid)
-            #pow_mult_grid = self.pow_mult_interp(zs)
             return self.camb_sigma8_interp(w_match_grid)*np.sqrt(pow_mult_grid)
         else:
             return self.sigma8_in+np.zeros(zs.size)
 
     #const_pow_mult allows adjusting sigma8 without creating a whole new power spectrum
-    def get_matter_power(self,zs_in,pmodel=defaults.matter_power_params['nonlinear_model'],const_pow_mult=1.,get_one_loop=False):
+    def get_matter_power(self,zs_in,pmodel='linear',const_pow_mult=1.,get_one_loop=False):
         """get a matter power spectrum P(z)
         Inputs:
         pmodel: nonlinear power spectrum model to use, options are 'linear','halofit', and 'fastpt'
@@ -202,7 +204,7 @@ class MatterPower(object):
                     cosmo_hf_i = self.cosmology.copy()
                     cosmo_hf_i['de_model'] = 'constant_w'
                     cosmo_hf_i['w'] = w_match_grid[i]
-                    hf_C_calc = cp.CosmoPie(cosmology=cosmo_hf_i,silent=True,G_safe=True,G_in=InterpolatedUnivariateSpline(self.C.z_grid,self.wm.growth_interp(w_match_grid[i],self.C.a_grid),ext=2,k=2))
+                    hf_C_calc = cp.CosmoPie(cosmo_hf_i,self.C.p_space,silent=True,G_safe=True,G_in=InterpolatedUnivariateSpline(self.C.z_grid,self.wm.growth_interp(w_match_grid[i],self.C.a_grid),ext=2,k=2))
                     hf_C_calc.k = self.k
                     hf_calc = halofit.HalofitPk(hf_C_calc,Pbases[:,i],self.power_params.halofit,self.camb_params['leave_h'])
                     P_nonlin[:,i] = 2.*np.pi**2*(hf_calc.D2_NL(self.k,zs[i]).T/self.k**3)

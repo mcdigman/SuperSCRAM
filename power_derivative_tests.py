@@ -13,10 +13,8 @@ import matter_power_spectrum as mps
 def util_set():
     """get set of things needed for tests"""
     omega_s = 0.02
-    ls = np.arange(2,3000)
-    #camb_params = defaults.camb_params.copy()
     power_params = defaults.power_params.copy()
-    C = CosmoPie(defaults.cosmology)
+    C = CosmoPie(defaults.cosmology,p_space='jdem')
     P_in = mps.MatterPower(C,power_params)
     k_in = P_in.k
     C.P_lin = P_in
@@ -25,13 +23,17 @@ def util_set():
     len_params = defaults.lensing_params.copy()
     len_params['z_bar'] = 1.0
     len_params['sigma'] = 0.4
+    len_params['l_min'] = 30
+    len_params['l_max'] = 3000
+    len_params['n_l'] = 1000
 
     z_test_res1 = 0.001
     zs_test1 = np.arange(len_params['z_min_integral'],len_params['z_max_integral'],z_test_res1)
 
-    dC_ddelta1 = ShearPower(C,zs_test1,ls,omega_s,len_params,pmodel=len_params['pmodel_dO_ddelta'],mode='dc_ddelta')
+    dC_ddelta1 = ShearPower(C,zs_test1,omega_s,len_params,pmodel=len_params['pmodel'],mode='dc_ddelta')
 
-    sp1 = ShearPower(C,zs_test1,ls,omega_s,len_params,pmodel=len_params['pmodel_O'],mode='power')
+    sp1 = ShearPower(C,zs_test1,omega_s,len_params,pmodel=len_params['pmodel'],mode='power')
+    ls = sp1.l_starts
 
 
     z_min1 = 0.8
@@ -72,7 +74,7 @@ def test_dz(util_set):
     mean_abs_error1_test = np.average(np.abs(1.-results_norm1_test),axis=1)
     mean_abs_error1_0 = np.average(np.abs(1.-results_norm1_0),axis=1)
     assert np.all((mean_abs_error1_0[1::]/mean_abs_error1_test[1::])>10.)
-    assert np.all(mean_abs_error1_test[1::]<0.03)
+    assert np.all(mean_abs_error1_test[1::]<0.04)
 
 def test_zavg(util_set):
     """test proportional to power spectrum and z average"""
@@ -102,3 +104,6 @@ def test_zavg(util_set):
     mean_abs_error3_0 = np.average(np.abs(1.-results_norm3_0),axis=1)
     assert np.all((mean_abs_error3_0[1::]/mean_abs_error2_test[1::])>10.)
     assert np.all(mean_abs_error2_test[1::]<0.01)
+
+if __name__=='__main__':
+    pytest.cmdline.main(['power_derivative_tests.py'])

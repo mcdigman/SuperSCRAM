@@ -43,10 +43,10 @@ def j_n(n,z):
 
 
 
-def jn_zeros_cut(l,q_lim):
+def jn_zeros_cut(ll,q_lim):
     """return all spherical bessel function zeros for an l value smaller than a cut value q_lim"""
-    if l<=l_max_zeros:
-        return data[l,data[l]<q_lim]
+    if ll<=l_max_zeros:
+        return data[ll,data[ll]<q_lim]
     else:
         raise IndexError('l is greater than the number of ls in the bessel functions lookup table,choose lower ceiling or expand the lookup table')
 

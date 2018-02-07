@@ -2,6 +2,7 @@
 contains various weight functions used by lensing observables
 """
 import numpy as np
+from scipy.integrate import cumtrapz
 from algebra_utils import trapz2
 
 class QWeight(object):
@@ -36,17 +37,19 @@ def _gs(sp,chi_max=np.inf,chi_min=0):
     high_mask = (sp.chis<=chi_max)*1. #so only integrate from max(chi,chi_min)
 
     ps_norm = sp.ps*high_mask*low_mask/trapz2(sp.ps*low_mask*high_mask,sp.chis) #TODO check normalization
-    for i in xrange(0,sp.n_z):
-        if chi_max<sp.chis[i]:
-            break
-        if sp.C.Omegak==0.0:
-            g_vals[i] = trapz2(low_mask[i:sp.n_z]*ps_norm[i:sp.n_z]*(sp.chis[i:sp.n_z]-sp.chis[i])/sp.chis[i:sp.n_z],sp.chis[i:sp.n_z])
-        elif sp.C.Omegak>0.0: #TODO handle curvature
-            sqrtK = np.sqrt(sp.C.K)
-            g_vals[i] = trapz2(low_mask[i:sp.n_z]*ps_norm[i:sp.n_z]*sp.chis[i]*1./sqrtK(1./np.tan(sqrtK*sp.chis[i])-1./np.tan(sqrtK*sp.chis[i:sp.n_z])),sp.chis[i:sp.n_z])
-        else:
-            sqrtK = np.sqrt(abs(sp.C.K))
-            g_vals[i] = trapz2(low_mask[i:sp.n_z]*ps_norm[i:sp.n_z]*sp.chis[i]*1./sqrtK(1./np.tanh(sqrtK*sp.chis[i])-1./np.tanh(sqrtK*sp.chis[i:sp.n_z])),sp.chis[i:sp.n_z])
+
+    if sp.C.Omegak==0.0:
+        g_vals = -cumtrapz(ps_norm[::-1],sp.chis[::-1],initial=0.)[::-1]+sp.chis*cumtrapz((ps_norm/sp.chis)[::-1],sp.chis[::-1],initial=0.)[::-1]
+    else:
+        for i in xrange(0,sp.n_z):
+            if chi_max<sp.chis[i]:
+                break
+            if sp.C.Omegak>0.0: #TODO handle curvature
+                sqrtK = np.sqrt(sp.C.K)
+                g_vals[i] = trapz2(ps_norm[i:sp.n_z]*sp.chis[i]*1./sqrtK*(1./np.tan(sqrtK*sp.chis[i])-1./np.tan(sqrtK*sp.chis[i:sp.n_z])),sp.chis[i:sp.n_z])
+            else:
+                sqrtK = np.sqrt(abs(sp.C.K))
+                g_vals[i] = trapz2(ps_norm[i:sp.n_z]*sp.chis[i]*1./sqrtK*(1./np.tanh(sqrtK*sp.chis[i])-1./np.tanh(sqrtK*sp.chis[i:sp.n_z])),sp.chis[i:sp.n_z])
     return g_vals
 
 class QMag(QShear):

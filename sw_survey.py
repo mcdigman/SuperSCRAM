@@ -8,15 +8,17 @@ import numpy as np
 
 import lensing_observables as lo
 from sw_cov_mat import SWCovMat
+
+DEBUG = False
+
 #TODO evaluate if param_list as used by LWSurvey more elegant
 class SWSurvey(object):
     """Short wavelength survey: manage short wavelength observables and get their non SSC covariances and derivatives"""
-    def __init__(self,geo,survey_id,C,ls,params,cosmo_par_list=None,cosmo_par_epsilons=None,observable_list=None,len_params=None,ps=None,nz_matcher=None):
+    def __init__(self,geo,survey_id,C,params,cosmo_par_list=None,cosmo_par_epsilons=None,observable_list=None,len_params=None,ps=None,nz_matcher=None):
         """ inputs:
                 geo: a Geo object
                 survey_id: some identifier for the survey
                 C: a CosmoPie object
-                ls: short wavelength ls to use
                 cosmo_par_list: list of cosmological parameters that should be varied
                 cosmo_par_epsilons: amount to vary cosmological paramters by when getting partial derivatives
                 params, len_params: parameters
@@ -28,18 +30,25 @@ class SWSurvey(object):
         print "sw_survey: began initializing survey: "+str(survey_id)
         self.geo = geo
         self.params = params
-        self.needs_lensing = params['needs_lensing']
+        self.needs_lensing = self.params['needs_lensing']
         self.C = C # cosmopie
-        self.ls = ls
         self.survey_id = survey_id
-        self.cosmo_par_list = cosmo_par_list
+        if cosmo_par_list is None:
+            self.cosmo_par_list = np.array([])
+            self.cosmo_par_epsilons = np.array([])
+        else:
+            if cosmo_par_epsilons is None or cosmo_par_epsilons.size!=cosmo_par_list.size:
+                raise ValueError('cosmo_par_epsilons must be set and same size if cosmo_par_list is set')
+
+            self.cosmo_par_list = cosmo_par_list
+            self.cosmo_par_epsilons = cosmo_par_epsilons
         self.nz_matcher = nz_matcher
         self.len_params = len_params
         if self.needs_lensing:
-            self.len_pow = lo.LensingPowerBase(self.geo,self.ls,survey_id,C,cosmo_par_list,cosmo_par_epsilons,self.len_params,ps=ps,nz_matcher=self.nz_matcher)
+            self.len_pow = lo.LensingPowerBase(self.geo,survey_id,C,self.cosmo_par_list,self.cosmo_par_epsilons,self.len_params,ps=ps,nz_matcher=self.nz_matcher)
         else:
             self.len_pow = None
-        self.n_param = cosmo_par_list.size
+        self.n_param = self.cosmo_par_list.size
 
         self.observable_names = generate_observable_names(self.geo,observable_list,params['cross_bins'])
         self.observables = self.names_to_observables(self.observable_names)
@@ -65,16 +74,15 @@ class SWSurvey(object):
             dim_list[i] = self.observables[i].get_dimension()
         return dim_list
 
-    #TODO not actually needed by anything
-    def get_O_I_array(self):
-        """Get the sw observables as a concatenated array"""
-        O_I_array = np.zeros(self.get_total_dimension())
-        itr = 0
-        ds = self.get_dimension_list()
-        for i in xrange(self.observables.size):
-            O_I_array[itr:itr+ds[i]] = self.observables[i].get_O_I()
-            itr+=ds[i]
-        return O_I_array
+#    def get_O_I_array(self):
+#        """Get the sw observables as a concatenated array"""
+#        O_I_array = np.zeros(self.get_total_dimension())
+#        itr = 0
+#        ds = self.get_dimension_list()
+#        for i in xrange(self.observables.size):
+#            O_I_array[itr:itr+ds[i]] = self.observables[i].get_O_I()
+#            itr+=ds[i]
+#        return O_I_array
 
     def get_dO_I_ddelta_bar_array(self):
         r"""Get \frac{\partial O_I}{\partial\bar{\delta}} of the observables
@@ -105,13 +113,23 @@ class SWSurvey(object):
         n1 = 0
         for i in xrange(0,self.get_N_O_I()):
             n2 = 0
-            for j in xrange(0,self.get_N_O_I()):
+            for j in xrange(0,i+1):
+                #if time consumption here is a problem can exploit symmetries to avoid getting same Cll multiple times
                 cov = SWCovMat(self.observables[i],self.observables[j],silent=True)
-                #could exploit/enforce all symmetries of gaussian covariance matrix, ie C^{ABCD}=C^{BACD}=C^{BADC}=C^{ABDC} if time consumption of this function is ever important
                 cov_mats[0,n1:n1+ds[i],n2:n2+ds[j]] = cov.get_gaussian_covar_array()
                 cov_mats[0,n2:n2+ds[j],n1:n1+ds[i]] = cov_mats[0,n1:n1+ds[i],n2:n2+ds[j]]
                 cov_mats[1,n1:n1+ds[i],n2:n2+ds[j]] = cov.get_nongaussian_covar_array()
                 cov_mats[1,n2:n2+ds[j],n1:n1+ds[i]] = cov_mats[1,n1:n1+ds[i],n2:n2+ds[j]]
+                n2+=ds[j]
+            n1+=ds[i]
+
+        assert np.all(cov_mats[0]==cov_mats[0].T)
+        if DEBUG:
+            n1 = 0
+            for i in xrange(0,self.get_N_O_I()):
+                n2 = 0
+                for j in xrange(0,self.get_N_O_I()):
+                    assert np.all(cov_mats[0,n2:n2+ds[j],n1:n1+ds[i]] == cov_mats[0,n1:n1+ds[i],n2:n2+ds[j]])
                 n2+=ds[j]
             n1+=ds[i]
 

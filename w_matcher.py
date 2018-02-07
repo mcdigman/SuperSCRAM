@@ -47,7 +47,7 @@ class WMatcher(object):
         for i in xrange(0,self.n_w):
             self.cosmos[i] = self.cosmo_fid.copy()
             self.cosmos[i]['w'] = self.ws[i]
-            C_i = cp.CosmoPie(cosmology=self.cosmos[i],silent=True)
+            C_i = cp.CosmoPie(cosmology=self.cosmos[i],p_space=self.cosmo_fid['p_space'],silent=True)
             E_as = C_i.Ez(self.zs)
             #TODO check initial 0 on this integral is right
             self.integ_Es[i] = cumtrapz(1./(self.a_s**2*E_as)[::-1],self.a_s[::-1],initial=0.)
@@ -93,7 +93,6 @@ class WMatcher(object):
         G_norm_ins = C_in.G_norm(z_in)
         n_z_in = z_in.size
         pow_mult = np.zeros(n_z_in)
-        #TODO vectorize correctly
         for itr in xrange(0,n_z_in):
             pow_mult[itr] = (G_norm_ins[itr]/(self.G_interp(w_in[itr],a_in[itr])/self.G_interp(w_in[itr],1.)))**2
         #return multiplier for linear power spectrum from effective constant w model
@@ -101,5 +100,14 @@ class WMatcher(object):
 
     def growth_interp(self,w_in,a_in):
         """get an interpolated growth factor for a given w, a_in is a vector"""
-        #TODO why grid=False?
         return self.G_interp(w_in,a_in,grid=False).T
+    #TODO check
+    def match_scale(self,z_in,w_in):
+        """match scaling (ie sigma8) for the input model compared to the fiducial model, not used"""
+        n_z_in = z_in.size
+        pow_scale = np.zeros(n_z_in)
+        G_fid = self.C_fid.G(0)
+        for itr in xrange(0,n_z_in):
+            pow_scale[itr]=(self.G_interp(w_in,1./(1.+z_in))/G_fid)**2
+        #return multiplier for linear power spectrum from effective constant w model
+        return pow_scale

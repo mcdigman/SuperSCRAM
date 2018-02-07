@@ -5,7 +5,7 @@ import numpy as np
 import cosmopie as cp
 import matter_power_spectrum as mps
 #TODO there may be a little h handling bug somewhere, see test case 2
-def get_perturbed_cosmopies(C_fid,pars,epsilons,log_param_derivs=np.array([],dtype=bool),override_safe=False):
+def get_perturbed_cosmopies(C_fid,pars,epsilons,log_param_derivs=None,override_safe=False):
     """get set of 2 perturbed cosmopies, above and below (including camb linear power spectrum) for getting partial derivatives
         using central finite difference method
         inputs:
@@ -23,7 +23,9 @@ def get_perturbed_cosmopies(C_fid,pars,epsilons,log_param_derivs=np.array([],dty
 
     #default assumption is ordinary derivative, can do log deriv in parameter also
     #if log_param_derivs[i]==True, will do log deriv
-    if not log_param_derivs.size==pars.size:
+    if log_param_derivs is not None and log_param_derivs.size!=pars.size:
+        raise ValueError('invalid input log_param_derivs '+str(log_param_derivs))
+    elif log_param_derivs is None:
         log_param_derivs = np.zeros(pars.size,dtype=bool)
 
     Cs_pert = np.zeros((pars.size,2),dtype=object)

@@ -72,7 +72,7 @@ class HalofitPk(object):
         #spline might be more accurate, although slower
         self.p_interp = interp1d(self.k,self.p_input)
 
-       #TODO check necessary r_min,r_max,n_r nint in wint are good
+        #TODO check necessary r_min,r_max,n_r nint in wint are good
         r_min = halofit_params['r_min']
         r_max = halofit_params['r_max']
         r_step = halofit_params['r_step']
@@ -228,7 +228,7 @@ class HalofitPk(object):
         tk8 = 1./(1.+(6.4*q8+(3.0*q8)**1.5+(1.7*q8)**2)**1.13)**(1./1.13)
         return self.C.get_sigma8()*self.C.get_sigma8()*((q/q8)**(3.+p_index))*tk*tk/tk8/tk8
 
-    def D2_NL_smith(self,rk,z,return_components = False):
+    def D2_NL_smith(self,rk,z,return_components=False):
         """
         halo model nonlinear fitting formula as described in
         Appendix C of Smith et al. (2002)
@@ -298,7 +298,7 @@ class HalofitPk(object):
         else:
             return pnl
 
-    def D2_NL(self,rk,z,return_components = False,w_overwride=False,fixed_w=-1.,grow_overwride=False,fixed_growth=1.):
+    def D2_NL(self,rk,z,return_components=False,w_overwride=False,fixed_w=-1.,grow_overwride=False,fixed_growth=1.):
         """
         halo model nonlinear fitting formula as described in
         Appendix C of Smith et al. (2002)
@@ -329,7 +329,7 @@ class HalofitPk(object):
             w = fixed_w
         else:
             w = self.C.de_object.w_of_z(z) #not sure if z dependent w is appropriate in halofit, possible answer in https://arxiv.org/pdf/0911.2454.pdf
-       # #cf Bird, Viel, Haehnelt 2011 for extragam explanation (cosmosis)
+        # #cf Bird, Viel, Haehnelt 2011 for extragam explanation (cosmosis)
         #extragam = 0.3159-0.0765*rn-0.8350*rncur
 
         #gam=extragam+0.86485+0.2989*rn+0.1631*rncur
@@ -391,7 +391,7 @@ class HalofitPk(object):
             return pnl
 
     #TODO use or eliminate as obsolete
-    def P_NL(self,k,z,return_components = False):
+    def P_NL(self,k,z,return_components=False):
         """Nonlinear power spectrum"""
         if return_components:
             pnl,pq,ph,plin = self.D2_NL(k,z,return_components)

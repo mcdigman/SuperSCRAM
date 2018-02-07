@@ -1,4 +1,5 @@
-"""Sample implementation of a long wavelength mitigation strategy, for the difference in galaxy number densities
+"""Sample implementation of a long wavelength mitigation strategy,
+for the difference in galaxy number densities
 between two survey geometries, as described in the paper"""
 
 from warnings import warn
@@ -6,135 +7,108 @@ import numpy as np
 
 from hmf import ST_hmf
 from nz_candel import NZCandel
+from nz_wfirst import NZWFirst
+from nz_lsst import NZLSST
 from lw_observable import LWObservable
 from algebra_utils import trapz2
 from polygon_geo import PolygonGeo
 from polygon_pixel_geo import PolygonPixelGeo
+from polygon_union_geo import PolygonUnionGeo
+from polygon_pixel_union_geo import PolygonPixelUnionGeo
 
 import fisher_matrix as fm
 
 class DNumberDensityObservable(LWObservable):
     """An observable for the difference in galaxy number density between two bins"""
-    def __init__(self,geos,params,survey_id, C,basis,nz_params1,nz_params2,mf_params):
+    def __init__(self,geos,params,survey_id,C,basis,nz_params,mf_params):
         """ inputs:
                 geos: a numpy array of Geo objects
-                params: a dict of parameters
+                        the [geo1,geo2], where geo2 will be used for mitigation
+                        of covariance in geo1 geometry
+                params: a dict of parameters,
+                        nz_select: 'CANDELS','WFIRST','LSST' to use for NZMatcher
                 survey_id: an id for the associated LWSurvey
                 C: as CosmoPie object
-                nz_params1,nz_params2: parameters for the nz_matcher objects to get
-                    nz_params as needed by NZCandel
+                nz_params: parameters needed by NZMatcher object
                 mf_params: params needed by ST_hmf
         """
         print "Dn: initializing"
-        min_mass = params['M_cut']
-        self.variable_cut = params['variable_cut']
         LWObservable.__init__(self,geos,params,survey_id,C)
         self.fisher_type = False
+        self.basis = basis
+        self.nz_select = params['nz_select']
+        self.nz_params = nz_params
 
-        self.geo1 = geos[0]
-        self.geo2 = geos[1]
-        self.nz_params1 = nz_params1
-        self.nz_params2 = nz_params2
+        #self.geo2 should be area in mitigation survey but not in original survey
+        if isinstance(geos[0],PolygonGeo):
+            self.geo2 = PolygonUnionGeo(np.array([geos[1]]),np.array([geos[0]]))
+        elif isinstance(self.geos[0],PolygonPixelGeo):
+            self.geo2 = PolygonPixelUnionGeo(np.array([geos[1]]),np.array([geos[0]]))
+        else:
+            raise ValueError('unrecognized type for geo1')
 
-        #there is a bug in spherical_geometry that causes overlap to fail if geometries are nested and 1 side is identical, handle this case unless they fix it
-        try:
-            if isinstance(self.geo1,(PolygonGeo,PolygonPixelGeo)):
-                self.overlap_fraction = self.geo1.get_overlap_fraction(self.geo2)
+        #self.geo1 should be intersect of mitigation survey and original survey
+        if np.isclose(geos[0].get_overlap_fraction(geos[1]),1.):
+            self.geo1 = geos[0]
+        else:
+            if isinstance(geos[0],PolygonGeo):
+                self.geo1 = PolygonUnionGeo(np.array([geos[0]]),np.array([self.geo2]))
+            elif isinstance(self.geos[0],PolygonPixelGeo):
+                self.geo2 = PolygonPixelUnionGeo(np.array([geos[0]]),np.array([self.geo2]))
             else:
-                warn('Dn: do not know how to compute overlap, assuming 0')
-                self.overlap_fraction = 0.
-        except Exception:
-            warn('spherical_geometry overlap failed, assuming total overlap')
-            if self.geo1.angular_area()<=self.geo2.angular_area():
-                self.overlap_fraction = 1.
-            else:
-                self.overlap_fraction = self.geo2.angular_area()/self.geo1.angular_area()
+                raise ValueError('unrecognized type for geo1')
+
+        #should be using r bin structure of mitigation survey
+        self.r_fine = self.geo2.r_fine
+        self.z_fine = self.geo2.z_fine
+        assert np.all(self.r_fine==geos[1].r_fine)
+        assert np.all(self.z_fine==geos[1].z_fine)
 
         self.mf = ST_hmf(self.C,params=mf_params)
-        self.nzc_1 = NZCandel(self.nz_params1)
-        #self.nzc_2 = NZLSST(self.nzc_1.z_grid,self.nz_params2)
-        self.nzc_2 = NZCandel(self.nz_params2)
-        self.n_bins = self.geo1.fine_indices.shape[0]
-        if not self.n_bins==self.geo2.fine_indices.shape[0]:
-            warn("size of geo1 "+str(self.n_bins)+" incompatible with size of geo2 "+str(self.geo2.fine_indices.shape[0]))
+
+        if self.nz_select == 'CANDELS':
+            self.nzc = NZCandel(self.nz_params)
+        elif self.nz_select == 'WFIRST':
+            self.nzc = NZWFirst(self.nz_params)
+        elif self.nz_select == 'LSST':
+            self.nzc = NZLSST(self.z_fine,self.nz_params)
+        else:
+            raise ValueError('unrecognized nz_select '+str(self.nz_select))
+
+        self.n_bins = self.geo2.fine_indices.shape[0]
+
         self.Nab_i = np.zeros((self.n_bins,self.n_bins))
         self.vs = np.zeros((self.n_bins,basis.get_size()))
 
+        self.n_avgs = self.nzc.get_nz(self.geo2)
+        self.M_cuts = self.nzc.get_M_cut(self.mf,self.geo2)
+        self.dn_ddelta_bar = self.mf.bias_n_avg(self.M_cuts,self.z_fine)
+        self.integrand = np.expand_dims(self.dn_ddelta_bar*self.r_fine**2,axis=1)
 
-        #TODO check if interpolation needed
-        if self.variable_cut:
-            self.n_avgs1 = self.nzc_1.get_nz(self.geo1)
-            self.n_avgs2 = self.nzc_2.get_nz(self.geo2)
-        else:
-            self.n_avgs1 = np.zeros(self.geo1.z_fine.size)
-            self.n_avgs2 = np.zeros(self.geo2.z_fine.size)
-            for i in xrange(0,self.geo1.z_fine.size):
-                self.n_avgs1[i] = self.mf.n_avg(min_mass,self.geo1.z_fine[i])
-            for i in xrange(0,self.geo2.z_fine.size):
-                self.n_avgs2[i] = self.mf.n_avg(min_mass,self.geo2.z_fine[i])
-
-        if self.variable_cut:
-            self.M_cuts1 = self.nzc_1.get_M_cut(self.mf,self.geo1)
-            self.M_cuts2 = self.nzc_2.get_M_cut(self.mf,self.geo2)
-
+        #NOTE this whole loop could be pulled apart with a small change in sph_klim
         for itr in xrange(0,self.n_bins):
-            self.basis = basis
-            self.bounds1 = self.geo1.fine_indices[itr]
-            self.bounds2 = self.geo2.fine_indices[itr]
-            range1 = np.array(range(self.bounds1[0],self.bounds1[1]))
-            range2 = np.array(range(self.bounds2[0],self.bounds2[1]))
+            bounds1 = self.geo2.fine_indices[itr]
+            range1 = np.array(range(bounds1[0],bounds1[1]))
 
+            print "Dn: getting d1,d2"
+            #multiplier for integrand
+            d1 = self.basis.D_O_I_D_delta_alpha(self.geo1,self.integrand,use_r=True,range_spec=range1)
+            d2 = self.basis.D_O_I_D_delta_alpha(self.geo2,self.integrand,use_r=True,range_spec=range1)
+
+            r_vol = 1./(self.r_fine[range1[-1]]**3-self.r_fine[range1[0]]**3)*3.
+            DO_a = (d2-d1)*r_vol
+            #TODO check number densities sensible
+            n_avg1 = trapz2((self.r_fine**2*self.n_avgs)[range1],self.r_fine[range1])*r_vol
 
             V1 = self.geo1.volumes[itr]
             V2 = self.geo2.volumes[itr]
-            VInt = self.geo1.volumes[itr]*self.overlap_fraction
-
-            #TODO pull out of loop
-            #self.dn_ddelta_bar1 = np.zeros((range1.size))
-            #self.dn_ddelta_bar2 = np.zeros((range2.size))
-            #DO_a=np.zeros(ddelta_bar_ddelta_alpha_list.size)
-
-            #d1s = ddelta_bar_ddelta_alpha_list[0]
-            #d2s = ddelta_bar_ddelta_alpha_list[1]
-
-            if self.variable_cut:
-                #for i in range1:
-                self.dn_ddelta_bar1 = self.mf.bias_n_avg(self.M_cuts1[range1],self.geo1.z_fine[range1])
-                self.dn_ddelta_bar2 = self.mf.bias_n_avg(self.M_cuts2[range2],self.geo2.z_fine[range2])
-                #for i in range2:
-                 #   self.dn_ddelta_bar2[i] = self.mf.bias_avg(self.M_cuts2[i],self.geo2.z_fine[i])
-            else:
-                mass_array1 = np.full(range1.shape,min_mass)
-                self.dn_ddelta_bar1 = self.mf.bias_n_avg(mass_array1,self.geo1.z_fine[range1])
-                mass_array2 = np.full(range2.shape,min_mass)
-                self.dn_ddelta_bar2 = self.mf.bias_n_avg(mass_array2,self.geo2.z_fine[range2])
-            print "Dn: getting d1,d2"
-            #multiplier for integrand,TODO maybe better way
-            self.integrand1 = np.expand_dims(self.dn_ddelta_bar1*self.geo1.r_fine[range1]**2,axis=1)
-            self.d1 = self.basis.D_O_I_D_delta_alpha(self.geo1,self.integrand1,use_r=True,range_spec=range1)/(self.geo1.r_fine[range1[-1]]**3-self.geo1.r_fine[range1[0]]**3)*3.
-
-            self.integrand2 = np.expand_dims(self.dn_ddelta_bar2*self.geo2.r_fine[range2]**2,axis=1)
-            self.d2 = self.basis.D_O_I_D_delta_alpha(self.geo2,self.integrand2,use_r=True,range_spec=range2)/(self.geo2.r_fine[range2[-1]]**3-self.geo2.r_fine[range2[0]]**3)*3.
-            DO_a = self.d2-self.d1
-
-            self.n_avg1 = trapz2((self.geo1.r_fine**2*self.n_avgs1)[range1],self.geo1.r_fine[range1])/(self.geo1.r_fine[range1[-1]]**3-self.geo1.r_fine[range1[0]]**3)*3.
-            self.n_avg2 = trapz2((self.geo2.r_fine**2*self.n_avgs2)[range2],self.geo2.r_fine[range2])/(self.geo2.r_fine[range2[-1]]**3-self.geo2.r_fine[range2[0]]**3)*3.
-
-
-            #use min because assume all galaxies detected in the deeper survey, so np.min([self.n_avg1,self.n_avg2]) should be n_both
-            #TODO ensure well behaved if overlap is total
-            #TODO enable different type of cutoff for LSST like and WFIRST like surveys
-            Nab_itr = self.n_avg1/V1+self.n_avg2/V2-2.*np.min([self.n_avg1,self.n_avg2])*VInt/(V1*V2)
+            Nab_itr = n_avg1*(1./V1+1./V2)
             if Nab_itr==0.:
                 warn('Dn: variance had a value which was exactly 0; mitigation disabled for axis '+str(itr))
                 self.Nab_i[itr,itr] = 0.
-                self.vs[itr] = np.zeros(DO_a.flatten().shape)
             else:
                 self.Nab_i[itr,itr] = 1./Nab_itr
                 self.vs[itr] = DO_a.flatten()
-
-
-        self.Nab_f = fm.FisherMatrix(np.sqrt(self.Nab_i),input_type=fm.REP_CHOL_INV)
 
     def get_rank(self):
         """get the rank of the perturbation, ie the number of vectors summed in F=v^Tv"""
@@ -142,12 +116,13 @@ class DNumberDensityObservable(LWObservable):
 
 #    def get_dO_a_ddelta_bar(self):
 #        """get the observables response to a density fluctuation"""
-#        return self.DO_a
+#        return self.vs
 
     def get_fisher(self):
         """get the fisher matrix"""
-        return self.Nab_f.project_fisher(self.vs)
+        Nab_f = fm.FisherMatrix(np.sqrt(self.Nab_i),input_type=fm.REP_CHOL_INV)
+        return Nab_f.project_fisher(self.vs)
 
     def get_perturbing_vector(self):
         """get decomposition of fisher matrix as F=v^Tv"""
-        return np.dot( np.sqrt(self.Nab_i),self.vs)
+        return self.vs,np.diag(self.Nab_i)

@@ -1,8 +1,7 @@
 """some utility functions for real spherical harmonic a_lm computations, used by PolygonGeo"""
 import numpy as np
-
-import defaults
-
+import scipy.linalg as spl
+from algebra_utils import mirror_symmetrize
 
 def rot_alm_z(d_alm_table_in,angles,ls):
     """rotate alms around z axis by angle gamma_alpha"""
@@ -19,7 +18,7 @@ def rot_alm_z(d_alm_table_in,angles,ls):
         d_alm_table_out[l_itr][ll] = d_alm_table_in[l_itr][ll]
     return d_alm_table_out
 
-def rot_alm_x(d_alm_table_in,angles,ls,n_double=defaults.polygon_params['n_double'],debug=True):
+def rot_alm_x(d_alm_table_in,angles,ls,n_double=30,debug=True):
     """rotate alms around x axis by angle theta_alpha"""
     print "alm_utils: rot x"
     d_alm_table_out = np.zeros_like(d_alm_table_in)
@@ -63,6 +62,7 @@ def rot_alm_x(d_alm_table_in,angles,ls,n_double=defaults.polygon_params['n_doubl
             #use angle doubling fomula to get to correct angle
             for _itr2 in xrange(0,n_double):
                 el_mat = 2.*el_mat+np.dot(el_mat,el_mat)
+                #el_mat = spl.blas.dgemm(1.,el_mat,el_mat,2.,el_mat,overwrite_c=False)
             ######Walled
 #            for itr3 in xrange(1,3):
 #                epsilon2 = angles[itr]/2.**(n_double+itr3)

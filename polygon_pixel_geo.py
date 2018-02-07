@@ -8,11 +8,9 @@ import numpy as np
 from pixel_geo import PixelGeo
 from polygon_utils import get_poly,get_healpix_pixelation,contains_points
 
-import defaults
-
 class PolygonPixelGeo(PixelGeo):
     """healpix pixelated spherical polygon geo"""
-    def __init__(self,zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max,res_healpix=defaults.polygon_params['res_healpix']):
+    def __init__(self,zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max,res_healpix):
         """create a spherical polygon defined by vertices
                 inputs:
                     zs: the tomographic z bins
@@ -199,7 +197,7 @@ class PolygonPixelGeo(PixelGeo):
 #    do_reconstruct = False
 #
 #    t0 = time()
-#    pp_geo = PolygonPixelGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max,res_healpix=res_choose)
+#    pp_geo = PolygonPixelGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max,res_choose)
 #    t1 = time()
 #    print "instantiation finished in time: "+str(t1-t0)+"s"
 #    #TODO write explicit test case to compare

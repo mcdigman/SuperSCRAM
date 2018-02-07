@@ -12,13 +12,15 @@ import cosmopie as cp
 
 #test h independence of code, self consistent handling of h
 #note my code does not recover the low k dependence of the transfer functions on z
-test_list = [[False,False,'halofit'],[False,True,'linear'],[False,True,'halofit']]
+#force_sigma8,leave_h,nonlinear_model
+test_list = [[True,False,'linear'],[False,False,'halofit'],[False,True,'linear'],[False,True,'halofit']]
 @pytest.fixture(params=test_list)
 def param_set(request):
     """choose params from test_list"""
     return request.param
 
 vary_list = defaults.cosmology.keys()
+#vary_list = ['OmegaLh2']
 @pytest.fixture(params=vary_list)
 def param_vary(request):
     """iterate over all possible params, including unused ones/params that should not matter for robustness"""
@@ -28,7 +30,7 @@ def test_vary_1_parameter(param_set,param_vary):
     """test variation of parameters for halofit and linear match expectations from camb"""
     atol_rel = 1.e-8
     rtol = 3.e-3
-    eps = 0.01
+    eps = 0.1
 
     camb_params = defaults.camb_params.copy()
 
@@ -47,6 +49,7 @@ def test_vary_1_parameter(param_set,param_vary):
     if isinstance(cosmo_fid[param_vary],float):
         cosmo_pert = cosmo_fid.copy()
         cosmo_pert[param_vary]*=(1.+eps)
+        print cosmo_pert['Omegar']
 
         C_pert = cp.CosmoPie(cosmo_pert,p_space='jdem')
         P_pert = mps.MatterPower(C_pert,power_params)
@@ -64,11 +67,11 @@ def test_vary_1_parameter(param_set,param_vary):
 
 
 if __name__=='__main__':
-    do_pytest = False
+    do_pytest = True
     if do_pytest:
         pytest.cmdline.main(['power_comparison_tests.py'])
-    do_linear_test = True
-    do_plots = True
+    do_linear_test = False
+    do_plots = False
     if do_plots:
         import matplotlib.pyplot as plt
     #param_sets = [[False,False,'halofit'],[False,True,'linear'],[False,True,'halofit']]
@@ -117,9 +120,6 @@ if __name__=='__main__':
             k_mask = (k_fid<10.)
 
             if do_plots:
-                #plt.loglog(k_fid[k_mask],P_lin1[k_mask])
-           #     plt.plot(k_fid[k_mask],(P_res1-P_lin1)[k_mask])
-           #     plt.plot(k_res2[k_mask],(P_res2-P_lin1)[k_mask])
                 plt.semilogx(k_fid[k_mask],((P_res1-P_res2)/P_res2)[k_mask])
 
             mean_abs_err_lin = np.average(np.abs((P_res2-P_res1)/P_res2)[k_mask])

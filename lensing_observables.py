@@ -8,10 +8,9 @@ import lensing_weight as len_w
 import power_parameter_response as ppr
 class LensingPowerBase(object):
     """Shared object to generate and store things that will be needed my multiple LensingObservable objects, such as the lensing weight functions"""
-    def __init__(self,geo,ls,survey_id,C,cosmo_par_list,cosmo_par_epsilons,params,log_param_derivs=np.array([]),ps=np.array([]),nz_matcher=None):
+    def __init__(self,geo,survey_id,C,cosmo_par_list,cosmo_par_epsilons,params,log_param_derivs=None,ps=None,nz_matcher=None):
         r"""inputs:
             geo: a Geo object for the geometry
-            ls: the set of l bins to compute the sw observables on
             survey_id: an identifier for the SWSurvey this object is associated with
             cosmo_par_list: a list of the names of cosmological parameters to compute \partial{O_I}\partial{\Theta_i} with respect to
             cosmo_par_epsilons: array of epsilons to use when calculating partial derivatives specified by cosmo_par_list
@@ -25,21 +24,19 @@ class LensingPowerBase(object):
         self.params = params
         self.cosmo_par_list = cosmo_par_list
         self.cosmo_par_epsilons = cosmo_par_epsilons
-        self.ls = ls
         self.survey_id = survey_id
         self.nz_matcher = nz_matcher
 
-        #omega_s = self.geo.angular_area()/(4.*np.pi**2)
-        omega_s = self.geo.angular_area()/(4.*np.pi)#removed square
-        self.C_pow = sp.ShearPower(C,self.geo.z_fine,ls,omega_s,params,pmodel=params['pmodel_O'],mode='power',ps=ps,nz_matcher=self.nz_matcher)
-        self.dC_ddelta = sp.ShearPower(C,self.geo.z_fine,ls,omega_s,params,pmodel=params['pmodel_dO_ddelta'],mode='dc_ddelta',ps=ps,nz_matcher=self.nz_matcher)
+        omega_s = self.geo.angular_area()/(4.*np.pi)
+        self.C_pow = sp.ShearPower(C,self.geo.z_fine,omega_s,params,pmodel=params['pmodel'],mode='power',ps=ps,nz_matcher=self.nz_matcher)
+        self.dC_ddelta = sp.ShearPower(C,self.geo.z_fine,omega_s,params,pmodel=params['pmodel'],mode='dc_ddelta',ps=ps,nz_matcher=self.nz_matcher)
 
         self.dC_dpars = np.zeros((cosmo_par_list.size,2),dtype=object)
         self.Cs_pert = ppr.get_perturbed_cosmopies(C,cosmo_par_list,cosmo_par_epsilons,log_param_derivs)
 
         for i in xrange(0,cosmo_par_list.size):
-            self.dC_dpars[i,0] = sp.ShearPower(self.Cs_pert[i,0],self.geo.z_fine,ls,omega_s,params,pmodel=params['pmodel_O'],mode='power',nz_matcher=self.nz_matcher)
-            self.dC_dpars[i,1] = sp.ShearPower(self.Cs_pert[i,1],self.geo.z_fine,ls,omega_s,params,pmodel=params['pmodel_O'],mode='power',nz_matcher=self.nz_matcher)
+            self.dC_dpars[i,0] = sp.ShearPower(self.Cs_pert[i,0],self.geo.z_fine,omega_s,params,pmodel=params['pmodel'],mode='power',nz_matcher=self.nz_matcher)
+            self.dC_dpars[i,1] = sp.ShearPower(self.Cs_pert[i,1],self.geo.z_fine,omega_s,params,pmodel=params['pmodel'],mode='power',nz_matcher=self.nz_matcher)
 
 #TODO observables should know their name
 class LensingObservable(SWObservable):
@@ -66,7 +63,7 @@ class LensingObservable(SWObservable):
             self.q1_dpars[itr,1] = self.q1_handle(self.len_pow.dC_dpars[itr,1],self.r1[0],self.r1[1])
             self.q2_dpars[itr,0] = self.q2_handle(self.len_pow.dC_dpars[itr,0],self.r2[0],self.r2[1])
             self.q2_dpars[itr,1] = self.q2_handle(self.len_pow.dC_dpars[itr,1],self.r2[0],self.r2[1])
-        SWObservable.__init__(self,len_pow.survey_id,dim=self.len_pow.ls.size)
+        SWObservable.__init__(self,len_pow.survey_id,dim=self.len_pow.params['n_l'])
 
     def get_O_I(self):
         """Get the actual observable associated with the object"""

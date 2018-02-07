@@ -26,6 +26,5 @@ class PolygonPixelUnionGeo(PixelGeo):
         self.contain_mask = self.contain_mask*self.contain_pos
         self.union_contains = self.contain_pos*(~self.contain_mask).astype(bool)
         contained_pixels = self.all_pixels[self.union_contains,:]
-      #  self.n_pix = contained_pixels.shape[0]
 
         PixelGeo.__init__(self,geos[0].zs.copy(),contained_pixels,geos[0].C,geos[0].z_fine.copy(),l_max)

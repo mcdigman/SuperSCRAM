@@ -30,11 +30,14 @@ def reconstruct_from_alm(l_max,thetas,phis,alms):
     known_legendre = {(0,0):(mp.zeros(thetas.rows,1)+1.),(1,0):cos_theta,(1,1):-abs_sin_theta}
     for ll in np.arange(0,l_max+1):
         if ll>=2:
-            known_legendre[(ll,ll-1)] = mp.matrix([(2.*ll-1.)*cos_theta[i,0]*known_legendre[(ll-1,ll-1)][i,0] for i in xrange(0,thetas.rows)])
-            known_legendre[(ll,ll)] = mp.matrix([-(2.*ll-1.)*abs_sin_theta[i,0]*known_legendre[(ll-1,ll-1)][i,0] for i in xrange(0,thetas.rows)])
+            kl11 = known_legendre[(ll-1,ll-1)]
+            known_legendre[(ll,ll-1)] = mp.matrix([(2.*ll-1.)*cos_theta[i,0]*kl11[i,0] for i in xrange(0,thetas.rows)])
+            known_legendre[(ll,ll)] = mp.matrix([-(2.*ll-1.)*abs_sin_theta[i,0]*kl11[i,0] for i in xrange(0,thetas.rows)])
         for mm in np.arange(0,ll+1):
             if mm<=ll-2:
-                known_legendre[(ll,mm)] = mp.matrix([((2.*ll-1.)/(ll-mm)*cos_theta[i,0]*known_legendre[(ll-1,mm)][i,0]-(ll+mm-1.)/(ll-mm)*known_legendre[(ll-2,mm)][i,0]) for i in xrange(0,thetas.rows)])
+                kl1 = known_legendre[(ll-1,mm)]
+                kl2 = known_legendre[(ll-2,mm)]
+                known_legendre[(ll,mm)] = mp.matrix([((2.*ll-1.)/(ll-mm)*cos_theta[i,0]*kl1[i,0]-(ll+mm-1.)/(ll-mm)*kl2[i,0]) for i in xrange(0,thetas.rows)])
                 known_legendre.pop((ll-2,mm),None)
             prefactor = mp.sqrt((2.*ll+1.)/(4.*mp.pi)*factorials[ll-mm]/factorials[ll+mm])
 
@@ -76,15 +79,18 @@ def get_Y_r_dict_central(l_max):
 def get_Y_r_table(l_max,thetas,phis):
     """get Y_r as a table up to l_max for thetas and phis given"""
     n_tot = (l_max+1)**2
-    thetas = mp.matrix(thetas)
+    #thetas = mp.matrix(thetas)
 
-    Y_lms = np.zeros((n_tot,thetas.rows))
+    Y_lms = np.zeros((n_tot,thetas.size))
 
     lm_dict,ls,ms = get_lm_dict(l_max)
 
-    sin_theta = mp.matrix([mp.sin(val) for val in thetas])
-    cos_theta = mp.matrix([mp.cos(val) for val in thetas])
-    abs_sin_theta = mp.matrix([mp.fabs(val) for val in sin_theta])
+    #sin_theta = mp.matrix([mp.sin(val) for val in thetas])
+    #cos_theta = mp.matrix([mp.cos(val) for val in thetas])
+    #abs_sin_theta = mp.matrix([mp.fabs(val) for val in sin_theta])
+    sin_theta = np.sin(thetas)#mp.matrix([mp.sin(val) for val in thetas])
+    cos_theta = np.cos(thetas)#mp.matrix([mp.cos(val) for val in thetas])
+    abs_sin_theta = np.abs(sin_theta)#mp.matrix([mp.fabs(val) for val in sin_theta])
 
     sin_phi_m = np.zeros((l_max+1,phis.size))
     cos_phi_m = np.zeros((l_max+1,phis.size))
@@ -92,17 +98,23 @@ def get_Y_r_table(l_max,thetas,phis):
         sin_phi_m[mm,:] = np.sin(mm*phis)
         cos_phi_m[mm,:] = np.cos(mm*phis)
 
-    factorials = mp.matrix([mp.factorial(val) for val in np.arange(0,2*l_max+1)])
-    known_legendre = {(0,0):(mp.zeros(thetas.rows,1)+1.),(1,0):cos_theta,(1,1):-abs_sin_theta}
+    factorials = np.array([mp.factorial(val) for val in np.arange(0,2*l_max+1)])
+    known_legendre = {(0,0):np.full(thetas.size,mp.mpf(1.)),(1,0):np.asarray(mp.matrix(cos_theta)),(1,1):np.asarray(mp.matrix(-abs_sin_theta))}
 
     for ll in np.arange(0,l_max+1):
         if ll>=2:
-            known_legendre[(ll,ll-1)] = mp.matrix([(2.*ll-1.)*cos_theta[i,0]*known_legendre[(ll-1,ll-1)][i,0] for i in xrange(0,thetas.rows)])
-            known_legendre[(ll,ll)] = mp.matrix([-(2.*ll-1.)*abs_sin_theta[i,0]*known_legendre[(ll-1,ll-1)][i,0] for i in xrange(0,thetas.rows)])
+            kl11 = known_legendre[(ll-1,ll-1)]
+            known_legendre[(ll,ll-1)] = (2.*ll-1.)*cos_theta*kl11
+            known_legendre[(ll,ll)] = -(2.*ll-1.)*abs_sin_theta*kl11
+            kl11=None
         for mm in np.arange(0,ll+1):
             if mm<=ll-2:
-                known_legendre[(ll,mm)] = mp.matrix([((2.*ll-1.)/(ll-mm)*cos_theta[i,0]*known_legendre[(ll-1,mm)][i,0]-(ll+mm-1.)/(ll-mm)*known_legendre[(ll-2,mm)][i,0]) for i in xrange(0,thetas.rows)])
+                kl1 = known_legendre[(ll-1,mm)]
+                kl2 = known_legendre[(ll-2,mm)]
+                known_legendre[(ll,mm)] = (2.*ll-1.)/(ll-mm)*cos_theta*kl1-(ll+mm-1.)/(ll-mm)*kl2
                 known_legendre.pop((ll-2,mm),None)
+                kl1=None
+                kl2=None
 
             prefactor = mp.sqrt((2.*ll+1.)/(4.*mp.pi)*factorials[ll-mm]/factorials[ll+mm])
             base = known_legendre[(ll,mm)]
@@ -114,4 +126,6 @@ def get_Y_r_table(l_max,thetas,phis):
                 Y_lms[lm_dict[(ll, mm)]] = multiplier*cos_phi_m[mm]
                 Y_lms[lm_dict[(ll,-mm)]] = multiplier*sin_phi_m[mm]
                 multiplier = None
+            prefactor=None
+            base=None
     return Y_lms,ls,ms

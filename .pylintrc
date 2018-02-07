@@ -1,0 +1,18 @@
+[MESSAGES CONTROL]
+disable=C0326,C0301,C0103,no-else-return 
+[TYPECHECK]
+ignored-modules=numpy,scipy.linalg.blas,scipy.linalg.lapack,scipy.special,astropy.io,numpy.random
+ignored-classes=HDUList
+[DESIGN]
+max-args=10
+max-locals=25
+max-returns=11
+max-statements=100
+max-attributes=11
+min-public-methods=0
+max-branches=26
+[SIMILARITIES]
+min-similiarity-lines=6
+ignore-comments=yes
+ignore-docstrings=yes
+ignore-imports=yes

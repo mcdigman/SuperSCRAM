@@ -3,11 +3,10 @@ from warnings import warn
 import camb
 
 #TODO may want to investigate possible halofit discrepancy
-#TODO maybe don't let camb_params default
 #TODO add accuracy parameter, for either set_accuracy or k_per_logint in set_matter_power
 #TODO set pivot_scalar to be a parameter
 #Note force_sigma8 forces sigma8_nl(z) to be the sigma8 in the cosmology, not sigma8_lin(z=0.), which may not be ideal behavior
-def camb_pow(cosmology,zbar=0.,camb_params=None,nonlinear_model=camb.model.NonLinear_none):
+def camb_pow(cosmology,camb_params,zbar=0.,nonlinear_model=camb.model.NonLinear_none):
     """get camb linear power spectrum
         inputs:
             cosmology: can vary H0, Omegabh2,Omegach2,Omegak,mnu,As,ns,OmegaL and w
@@ -40,7 +39,7 @@ def camb_pow(cosmology,zbar=0.,camb_params=None,nonlinear_model=camb.model.NonLi
     #camb.set_halofit_version('original')
     pars.NonLinear = nonlinear_model
     results = camb.get_results(pars)
-    kh, _, pk = results.get_matter_power_spectrum(minkh=camb_params['minkh'], maxkh=camb_params['maxkh'], npoints = camb_params['npoints'])
+    kh, _, pk = results.get_matter_power_spectrum(minkh=camb_params['minkh'], maxkh=camb_params['maxkh'], npoints=camb_params['npoints'])
     if camb_params['force_sigma8']:
         sigma8 = cosmology['sigma8']
         pk[0] = pk[0]*sigma8**2/results.get_sigma8()**2
@@ -51,10 +50,6 @@ def camb_pow(cosmology,zbar=0.,camb_params=None,nonlinear_model=camb.model.NonLi
 
     pars.set_dark_energy() #reset defaults
 
-   # if camb_params['leave_h']:
-   #     return kh,pk[0],sigma8,results
-   # else:
-   #     return kh*cosmology['h'],pk[0]/cosmology['h']**3,sigma8,results
     #TODO check little h again
     if camb_params['leave_h']:
         if camb_params['return_sigma8']:

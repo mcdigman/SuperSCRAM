@@ -12,8 +12,9 @@ import numpy as np
 
 from algebra_utils import trapz2
 
-import defaults
 from dark_energy_model import DarkEnergyConstant,DarkEnergyW0Wa,DarkEnergyJDEM
+
+DEBUG=True
 
 eps = np.finfo(float).eps
 #TODO ensure safe sigma8
@@ -21,7 +22,7 @@ class CosmoPie(object):
     """stores and calculates various parameters for a cosmology"""
     #TODO convergence test a grid values
     #TODO reduce possibility of circular reference to MatterPower
-    def __init__(self,cosmology, P_lin=None, k=None,p_space=defaults.cosmopie_params['p_space'],a_step=0.001,G_in=None,G_safe=False,silent=False):
+    def __init__(self,cosmology,p_space,P_lin=None,k=None,a_step=0.001,G_in=None,G_safe=False,silent=False):
         """
         Set up for cosmological parameters in input cosmology.
         Inputs:
@@ -44,6 +45,8 @@ class CosmoPie(object):
         #fill out cosmology
         self.cosmology = cosmology.copy()
         self.cosmology = add_derived_pars(self.cosmology,self.p_space)
+        if DEBUG:
+            sanity_check_pars(self.cosmology)
 
 
         self.Omegabh2 = self.cosmology['Omegabh2']
@@ -154,13 +157,15 @@ class CosmoPie(object):
     # distances, volumes, and time
     # -----------------------------------------------------------------------------
     def D_comov(self,z):
-        """the line of sight comoving distance"""
+        """the line of sight comoving distance, Mpc"""
         #I = lambda zp : 1/self.Ez(zp)
         #return self.DH*quad(I,0,z)[0]
-        I = lambda y,zp : 1/self.Ez(zp)
+        def _integrand(_,zp):
+            """integrand for comoving distance"""
+            return 1/self.Ez(zp)
         #make sure value at 0 is 0 to fix initial conditions
         z_use = np.hstack([0.,z])
-        d = self.DH*odeint(I,0.,z_use,atol=10e-20,rtol=10e-10)[1::,0]
+        d = self.DH*odeint(_integrand,0.,z_use,atol=10e-20,rtol=10e-10)[1::,0]
         if np.isscalar(z):
             return d[0]
         else:
@@ -188,7 +193,7 @@ class CosmoPie(object):
             sq = np.sqrt(self.Omegak)
             return self.DH/sq*np.sinh(sq*self.D_comov(z)/self.DH)
         elif self.Omegak < 0:
-            sq = np.sqrt(self.Omegak)
+            sq = np.sqrt(-self.Omegak)
             return self.DH/sq*np.sin(sq*self.D_comov(z)/self.DH)
         else:
             return self.D_comov(z)
@@ -203,7 +208,7 @@ class CosmoPie(object):
 
     def DV(self,z):
         r""" comoving volume element, with out the d\Omega
-         dV/dz"""
+         dV/dz, in Mpc^3"""
         return self.DH*(1+z)**2*self.D_A(z)**2/self.Ez(z)
     # -----------------------------------------------------------------------------
     # Growth functions
@@ -228,7 +233,7 @@ class CosmoPie(object):
     # halo and matter stuff
     # -----------------------------------------------------------------------------
 
-
+    #could move this to MatterPower or something
     def sigma_r(self,z,R):
         r""" returns RMS power on scale R
          sigma^2(R)= \int dlogk/(2 np.pi^2) W^2 P(k) k^3
@@ -244,9 +249,9 @@ class CosmoPie(object):
         #P=self.G_norm(z)**2*self.P_lin
         #TODO should be z dependence?
         P = self.P_lin.get_matter_power(np.array([0.]),pmodel='linear')[:,0]
-        I = trapz2(((W*W).T*P*self.P_lin.k**3).T,np.log(self.P_lin.k)).T/2./np.pi**2
+        result = trapz2(((W*W).T*P*self.P_lin.k**3).T,np.log(self.P_lin.k)).T/2./np.pi**2
 
-        return np.sqrt(I)
+        return np.sqrt(result)
 
     # densities as a function of redshift
 
@@ -317,7 +322,7 @@ DE_METHODS = {'constant_w':['w'],
               'jdem'      :JDEM_LIST,
               'grid_w'    :['ws']}
 #parameters guaranteed not to affect linear growth factor (G_norm)
-GROW_SAFE = ['ns','LogAs','sigma8']
+GROW_SAFE = ['ns','LogAs','sigma8','p_space','de_model']
 #parameters guaranteed to not require generating a new WMatcher object
 DE_SAFE = np.unique(np.concatenate(DE_METHODS.values())).tolist()
 def strip_cosmology(cosmo_old,p_space,overwride=None):
@@ -371,7 +376,8 @@ def add_derived_pars(cosmo_old,p_space=None):
         cosmo_new['OmegaL'] = cosmo_old['OmegaLh2']/cosmo_new['h']**2
         cosmo_new['Omegak'] = cosmo_old['Omegakh2']/cosmo_new['h']**2
         #define omega radiation
-        cosmo_new['Omegar'] = 1.-cosmo_new['Omegam']-cosmo_new['OmegaL']-cosmo_new['Omegak']
+        cosmo_new['Omegar'] = 0.
+        #cosmo_new['Omegar'] = 1.-cosmo_new['Omegam']-cosmo_new['OmegaL']-cosmo_new['Omegak']
         cosmo_new['Omegarh2'] = cosmo_new['Omegar']*cosmo_new['h']**2
 
         cosmo_new['As'] = np.exp(cosmo_old['LogAs'])
@@ -401,8 +407,8 @@ def add_derived_pars(cosmo_old,p_space=None):
         cosmo_new['OmegaL'] = 1.-cosmo_new['Omegam']-cosmo_new['Omegar']-cosmo_new['Omegak']
         cosmo_new['OmegaLh2'] = cosmo_new['OmegaL']*cosmo_new['h']**2
         cosmo_new['Omegarh2'] = cosmo_new['Omegar']*cosmo_new['h']**2
-       #don't know how to get As if don't have
-       # cosmo_new['As']=np.exp(cosmo_old['LogAs'])
+        #don't know how to get As if don't have
+        # cosmo_new['As']=np.exp(cosmo_old['LogAs'])
 
     elif p_space=='overwride':
         #option which does nothing
@@ -413,3 +419,25 @@ def add_derived_pars(cosmo_old,p_space=None):
 
     cosmo_new['p_space'] = p_space
     return cosmo_new
+
+def sanity_check_pars(cosmo_in):
+    """run a few sanity checks of the cosmological paramaters"""
+    assert np.isclose(cosmo_in['Omegamh2'],cosmo_in['Omegam']*cosmo_in['h']**2)
+    assert np.isclose(cosmo_in['OmegaLh2'],cosmo_in['OmegaL']*cosmo_in['h']**2)
+    assert np.isclose(cosmo_in['Omegach2'],cosmo_in['Omegac']*cosmo_in['h']**2)
+    assert np.isclose(cosmo_in['Omegabh2'],cosmo_in['Omegab']*cosmo_in['h']**2)
+    assert np.isclose(cosmo_in['Omegakh2'],cosmo_in['Omegak']*cosmo_in['h']**2)
+    assert np.isclose(cosmo_in['Omegarh2'],cosmo_in['Omegar']*cosmo_in['h']**2)
+    assert np.isclose(cosmo_in['h'],cosmo_in['H0']/100.)
+    assert np.isclose(cosmo_in['Omegak']+cosmo_in['Omegar']+cosmo_in['Omegam']+cosmo_in['OmegaL'],1.)
+    assert np.isclose(cosmo_in['Omegakh2']+cosmo_in['Omegarh2']+cosmo_in['Omegamh2']+cosmo_in['OmegaLh2'],cosmo_in['h']**2)
+    assert np.isclose(cosmo_in['Omegam'],cosmo_in['Omegab']+cosmo_in['Omegac'])
+    assert np.isclose(cosmo_in['Omegamh2'],cosmo_in['Omegabh2']+cosmo_in['Omegach2'])
+    assert cosmo_in['h']>0.
+    assert cosmo_in['Omegam']>=0.
+    assert cosmo_in['Omegac']>=0.
+    assert cosmo_in['Omegab']>=0.
+    assert cosmo_in['Omegar']==0. #TODO fix if use Omegar
+    assert cosmo_in['Omegarh2']==0.
+    assert cosmo_in['Omegak']==0.
+    assert cosmo_in['Omegakh2']==0.

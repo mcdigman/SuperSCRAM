@@ -64,7 +64,7 @@ class PolygonGeo(Geo):
             itr2 = itr1+1
             pa1 = self.bounding_xyz[itr1] #vertex 1
             pa2 = self.bounding_xyz[itr2] #vertex 2
-            cos_beta12 = np.dot(pa1,pa2) #cos of angle between pa1 and pa2
+            cos_beta12 = np.dot(pa2,pa1) #cos of angle between pa1 and pa2
             cross_12 = np.cross(pa2,pa1)
             sin_beta12 = np.linalg.norm(cross_12) #magnitude of cross product
             self.betas[itr1] = np.arctan2(sin_beta12,cos_beta12)  #angle between pa1 and pa2
@@ -94,7 +94,9 @@ class PolygonGeo(Geo):
                 self.z_hats[itr1] = cross_12/sin_beta12 #direction of cross product
 
             #three euler rotation angles #TODO check, especially signs
+            #TODO maybe be more specific than isclose here, specify tolerance
             if not (np.isclose(self.z_hats[itr1,1],0.) and np.isclose(self.z_hats[itr1,0],0.)):
+                #TODO can theta_alphas be defined with an arctan2?
                 self.theta_alphas[itr1] = -np.arccos(self.z_hats[itr1,2])
                 y1 = np.cross(self.z_hats[itr1],pa1)
                 self.y_hats[itr1] = y1

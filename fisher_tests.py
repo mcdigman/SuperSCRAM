@@ -154,6 +154,84 @@ def test_basic_setup_succeeded(fisher_input):
     assert np.allclose(np.tril(chol_cov_i),chol_cov_i,atol=atol_loc4,rtol=rtol_use)
     assert check_is_cholesky_inv(chol_cov_i,cov,atol_rel=atol_rel_use,rtol=rtol_use)
 
+#def test_perturb_fisher_vec(fisher_params):
+#    """test perturb_fisher"""
+#    fisher = copy.deepcopy(fisher_params.fisher)
+#    fab = fisher_params.fisher_input.fab.copy()
+#    vec = np.random.rand(1,fab.shape[0])
+#    sigma2 = np.random.uniform(1,10)**2
+#    fab2 = fab+sigma2*np.dot(vec.T,vec)
+#    fisher.perturb_fisher(vec,sigma2)
+#    fab3 = fisher.get_fisher()
+#
+#    atol_loc2 = np.max(np.abs(fab))*atol_rel_use
+#    assert np.allclose(fab2,fab3,atol=atol_loc2,rtol=rtol_use)
+
+def test_perturb_fisher_vec_1(fisher_params):
+    """test perturb_fisher"""
+    fisher_1 = copy.deepcopy(fisher_params.fisher)
+    fisher_2 = copy.deepcopy(fisher_params.fisher)
+    fab = fisher_params.fisher_input.fab.copy()
+    cov = fisher_params.fisher_input.cov.copy()
+
+    vec = np.random.rand(1,fab.shape[0])
+    sigma2_1 = np.random.uniform(0.1,0.99,1)**2
+    sigma2_2 = np.random.uniform(1.,5.,1)**2
+
+    fab2_1 = fab+np.dot(vec.T*sigma2_1,vec)
+    fab2_2 = fab+np.dot(vec.T*sigma2_2,vec)
+    cov2_1 = np.linalg.inv(fab2_1)
+    cov2_2 = np.linalg.inv(fab2_2)
+
+    fisher_1.perturb_fisher(vec,sigma2_1)
+    cov3_1 = fisher_1.get_covar()
+    fab3_1 = fisher_1.get_fisher()
+    fisher_2.perturb_fisher(vec,sigma2_2)
+    cov3_2 = fisher_2.get_covar()
+    fab3_2 = fisher_2.get_fisher()
+
+    atol_loc1 = np.max(np.abs(cov))*atol_rel_use
+    atol_loc2 = np.max(np.abs(fab))*atol_rel_use
+
+    assert np.allclose(fab2_1,fab3_1,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(cov2_1,cov3_1,atol=atol_loc1,rtol=rtol_use)
+
+    assert np.allclose(fab2_2,fab3_2,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(cov2_2,cov3_2,atol=atol_loc1,rtol=rtol_use)
+
+def test_perturb_fisher_vec_5(fisher_params):
+    """test perturb_fisher"""
+    fisher_1 = copy.deepcopy(fisher_params.fisher)
+    fisher_2 = copy.deepcopy(fisher_params.fisher)
+    fab = fisher_params.fisher_input.fab.copy()
+    cov = fisher_params.fisher_input.cov.copy()
+
+    vec = np.random.rand(5,fab.shape[0])
+    sigma2_1 = np.random.uniform(0.1,0.99,5)**2
+    sigma2_2 = np.random.uniform(1.,5.,5)**2
+
+    fab2_1 = fab+np.dot(vec.T*sigma2_1,vec)
+    fab2_2 = fab+np.dot(vec.T*sigma2_2,vec)
+    cov2_1 = np.linalg.inv(fab2_1)
+    cov2_2 = np.linalg.inv(fab2_2)
+
+    fisher_1.perturb_fisher(vec,sigma2_1)
+    cov3_1 = fisher_1.get_covar()
+    fab3_1 = fisher_1.get_fisher()
+    fisher_2.perturb_fisher(vec,sigma2_2)
+    cov3_2 = fisher_2.get_covar()
+    fab3_2 = fisher_2.get_fisher()
+
+    atol_loc1 = np.max(np.abs(cov))*atol_rel_use
+    atol_loc2 = np.max(np.abs(fab))*atol_rel_use
+
+    assert np.allclose(fab2_1,fab3_1,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(cov2_1,cov3_1,atol=atol_loc1,rtol=rtol_use)
+
+    assert np.allclose(fab2_2,fab3_2,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(cov2_2,cov3_2,atol=atol_loc1,rtol=rtol_use)
+
+
 def test_fab_any_input_any_initial(fisher_params):
     """test get_fisher consistency"""
     fab = fisher_params.fisher_input.fab.copy()
@@ -549,6 +627,9 @@ def test_get_eig_metric_rand(fisher_params):
     p_mat2_use = p_mat2-np.diag(np.diag(p_mat2))
     assert np.allclose(np.zeros(cov.shape),p_mat2_use,atol=atol_loc,rtol=rtol_use)
     assert np.allclose(np.dot(m_mat,eigvs_5),eigs_1[0]*eigvs_5,atol=atol_loc,rtol=rtol_use)
+
+
+
 
 if __name__=='__main__':
     pytest.cmdline.main(['fisher_tests.py'])

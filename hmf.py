@@ -7,7 +7,7 @@ from scipy.integrate import cumtrapz
 import numpy as np
 from algebra_utils import trapz2
 
-#TODO determine if useful to add arXiv:astro-ph/9907024 functionality
+#NOTE if useful could add arXiv:astro-ph/9907024 functionality
 class ST_hmf(object):
     """Sheth Tormen Halo Mass Function"""
     def __init__(self,C,params,delta_bar=None):
@@ -199,6 +199,13 @@ class ST_hmf(object):
         if isinstance(min_mass,np.ndarray):
             if not min_mass.size==z.size:
                 raise ValueError('min_mass and z must be the same size')
+            elif min_mass.size==1:
+                #spline method fails in case where min_mass size is 1 so treat as scalar
+                min_mass = min_mass[0]
+                z = z[0]
+            return_array=True
+        else:
+            return_array=False
 
         G = self.Growth(z)
         if self.b_norm_overwride:
@@ -214,8 +221,8 @@ class ST_hmf(object):
 
             result = np.zeros(G.size)
 
-            #TODO fix in case where min_mass size is 1
-            integrated = RectBivariateSpline(self.mass_grid,G[::-1],-np.vstack((np.zeros((1,mf.shape[1])),cumtrapz((b_array*mf)[::-1,:],self.mass_grid[::-1],axis=0)))[::-1,::-1],kx=1,ky=1)
+            grid_integrated = -np.vstack((np.zeros((1,mf.shape[1])),cumtrapz((b_array*mf)[::-1,:],self.mass_grid[::-1],axis=0)))[::-1,::-1]
+            integrated = RectBivariateSpline(self.mass_grid,G[::-1],grid_integrated,kx=1,ky=1)
             for itr in xrange(0,G.size):
                 result[itr] = integrated(min_mass[itr],G[itr])
             return result
@@ -228,18 +235,28 @@ class ST_hmf(object):
             for i in xrange(mass.size):
                 b_array[i] = self.bias_G(mass[i],G,norm_in=norm)
 
-            return trapz2(b_array*mf,mass)
+            if return_array:
+                return np.array([trapz2(b_array*mf,mass)])
+            else:
+                return trapz2(b_array*mf,mass)
 
     def n_avg(self,min_mass,z):
         """ M is lower cutoff mass
             min_mass can be a function of z or a constant
             if min_mass is a function of z it should be an array of the same size as z
             z can be scalar or an array"""
-        if isinstance(min_mass,np.ndarray) and isinstance(z,np.ndarray):
-            if not min_mass.size==z.size:
+        if isinstance(z,np.ndarray):
+            if isinstance(min_mass,np.ndarray) and not min_mass.size==z.size:
                 raise ValueError('min_mass and z must be the same size')
+            if z.size==1:
+                #spline method fails in case where z size is 1 so treat as scalar
+                min_mass = min_mass[0]
+                z = z[0]
+            return_array=True
+        else:
+            return_array=False
         G = self.Growth(z)
-        #TODO this does not handle z being of length 1 correctly
+
         if isinstance(min_mass,np.ndarray) and isinstance(z,np.ndarray):
             mf = self.dndM_G(self.mass_grid,G)
             integrated = RectBivariateSpline(self.mass_grid,G[::-1],-np.vstack((np.zeros((1,mf.shape[1])),cumtrapz(mf[::-1,:],self.mass_grid[::-1],axis=0)))[::-1,::-1],kx=1,ky=1)
@@ -258,7 +275,10 @@ class ST_hmf(object):
             else:
                 mass = self.mass_grid[ self.mass_grid>=min_mass]
                 mf = self.dndM_G(mass,G)
-                return trapz2(mf,mass)
+                if return_array:
+                    return np.array([trapz2(mf,mass)])
+                else:
+                    return trapz2(mf,mass)
 #    def sigma_m(self,mass,z):
 #        """ RMS power on a scale of R(mass)
 #         rho = mass/volume=mass"""
@@ -268,7 +288,6 @@ class ST_hmf(object):
 #    def delta_c(self,z):
 #        """ critical threshold for spherical collapse, as given
 #        in the appendix of NFW 1997"""
-#        #TODO should have z dependence
 #        A = 0.15*(12.*np.pi)**(2/3.)
 #
 #        if (self.C.Omegam==1) and (self.C.OmegaL==0):
@@ -394,7 +413,6 @@ class ST_hmf(object):
 #        ax.set_ylabel(r'$f(M_h)}$', size=20)
 #
 #
-#        #TODO reintroduce this test
 #        ax.plot(M,f1)
 #        #ax.plot(M,d[:,2]/h, color='red')
 #

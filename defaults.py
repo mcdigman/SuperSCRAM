@@ -2,117 +2,50 @@
 import numpy as np
 from param_manager import PowerParamManager
 # default cosmology is Planck 2015 TT+lowP+lensing+ext (arxiv 1502.01589v3 page 32)
-#TODO set not derived paramters to none and derive
-cosmology = {   'Omegabh2' :0.02227,
-                'Omegach2' :0.1184,
-                'Omegab'   :0.0483037,#calculated
-                'Omegac'   : 0.25681, #calculated
-                'Omegamh2' : 0.1413,
-                'OmegaL'   : 0.6935,
-                'OmegaLh2' : 0.319732,#calculated
-                'Omegam'   : .3065,
-                'H0'       : 67.90,
-                'sigma8'   : .8154,
-                'h'        :.6790,#calculated
-                'Omegak'   : 0.0, # check on this value
-                'Omegakh2' : 0.0,
-                'Omegar'   : 0.0,
-                'ns'       : 0.9681,
-                'tau'      : 0.067,
-                '100thetamc': 1.04106,
-                'Yp'        :0.251,
-                'As'        : 2.143*10**-9,
-                'LogAs'     :-19.9619, #calculated
-                'w'         :-1.0,#not from planck
-                'de_model'  :'constant_w',#dark energy model
-                'zstar'     :1089.90,#redshift at last scattering
-                'mnu'       :0.
+cosmology = {   'Omegabh2':0.02227,
+                'Omegach2':0.1190390665,#calculated, paper give 0.1184
+                'Omegab'  :0.0483037300370249,#calculated
+                'Omegac'  : 0.258196269962975, #calculated
+                'Omegamh2': 0.1413090665,#calculated
+                'OmegaL'  : 0.6935,
+                'OmegaLh2': 0.3197319335,#calculated
+                'Omegam'  : .3065,
+                'H0'      : 67.90,
+                'sigma8'  : 0.8296437384606381,#calculated
+                'h'       :.6790,
+                'Omegak'  : 0.0,
+                'Omegakh2': 0.0,
+                'Omegar'  : 0.0,
+                'Omegarh2': 0.0,
+                'ns'      : 0.9681,
+                'tau'     : 0.067,
+                'Yp'      :0.251,
+                'As'      : 2.143*10**-9,
+                'LogAs'   :-19.9619, #calculated
+                'w'       :-1.0,#not from planck
+                'de_model':'constant_w',#dark energy model
+                #'zstar'   :1089.90,#redshift at last scattering
+                'mnu'     :0.
             }
 #cosmology from jdem 2008 working group paper arxiv:0901.0721v1
 cosmology_jdem = {  'ns'      : 0.963,
-                    'Omegamh2' : 0.1326,
-                    'Omegabh2' : 0.0227,
-                    'Omegakh2' : 0.,
-                    'OmegaLh2' : 0.3844,
-                    'dGamma'    : 0.,#parameter we don't need
-                    'dM'        :0.,#parameter we don't need
-                    'LogG0'     :0.,#parameter we don't need
-                    'LogAs'     :-19.9628,
-                    'w'         :-1.,
-                    'de_model'  :'constant_w',
-                    'mnu'       :0.
-                 }
-cosmology_cosmolike = { 'Omegabh2' :0.02227,
-                        'Omegach2' :0.1204,
-                        'Omegamh2' : 0.14267,
-                        'OmegaL'   : 0.685,
-                        'OmegaLh2'   : 0.310256,#calculdated
-                        'Omegam'   : .315,
-                        'H0'       : 67.3,
-                        'sigma8'   : .829,
-                        'h'        :.673,
-                        'Omegak'   : 0.0, # check on this value
-                        'Omegakh2' : 0.0,
-                        'Omegar'   : 0.0,
-                        'ns'       : 0.9603,
-                        'tau'      : 0.067,
-                        '100thetamc': 1.04106,
-                        'Yp'        :None,
-                        'As'        : 2.143*10**-9,
-                        'LogAs'     : np.log(2.143*10**-9),
-                        'w'         :-1.,
-                        'de_model'  :'constant_w',
-                        'mnu'       :0.
-                      }
-
-cosmology_chiang = {'Omegabh2' :0.023,
-                    'Omegach2' :0.1093,
-                    'Omegamh2' : 0.1323,
-                    'OmegaL'   : 0.73,
-                    'OmegaLh2' : 0.3577,
-                    'Omegam'   : .27,
-                    'H0'       : 70.,
-                    'sigma8'   : .7913,
-                    'h'        :0.7,
-                    'Omegak'   : 0.0, # check on this value
-                    'Omegakh2' : 0.0,
-                    'Omegar'   : 0.0,
-                    'ns'       : 0.95,
-                    'w'        : -1.,
-                    'de_model' : 'constant_w',
-                    'tau'      : None,
-                    '100thetamc':None,
-                    'Yp'        :None,
-                    'As'        : None,
-                    'LogAs'   : None,
+                    'Omegamh2': 0.1326,
+                    'Omegabh2': 0.0227,
+                    'Omegakh2': 0.,
+                    'OmegaLh2': 0.3844,
+                    'dGamma'  : 0.,#parameter we don't need
+                    'dM'      :0.,#parameter we don't need
+                    'LogG0'   :0.,#parameter we don't need
+                    'LogAs'   :-19.9628,
+                    'w'       :-1.,
+                    'de_model':'constant_w',
                     'mnu'     :0.
-                   }
-cosmology_cosmosis = {  'Omegabh2' :0.049,
-                        'Omegach2' :0.1188,
-                        'Omegamh2' : 0.14170,
-                        'OmegaL'   : .641,
-                        'OmegaLh2' : 0.287745,
-                        'Omegam'   : .31,
-                        'H0'       : 67,
-                        'sigma8'   : .81,
-                        'h'        :.67,
-                        'Omegak'   : 0.0, # check on this value
-                        'Omegakh2' : 0.0,
-                        'Omegar'   : 0.0,
-                        'tau'      : None, # eventually fix to real cosmosis values
-                        'Yp'       : None,
-                        'As'        : 2.143*10**-9,
-                        'ns'       : 0.9681,
-                        'LogAs'   : np.log(2.143*10**-9),
-                        'mnu'     :0. #guess
-                     }
+                 }
 lensing_params = {  'z_resolution'    :0.002, #fine resolution
                     'z_min_integral'  :0.0005, #lowest z
                     'z_max_integral'  :2,#highest z
-                    'pmodel_O'        :'halofit', #default method for finding p grid
-                    'pmodel_dO_ddelta':'halofit', #default method for finding dp/ddeltabar grid
-                    'pmodel_dO_dpar':'halofit',#default method for finding dp/dpar grid
-                    'n_gal'           :118000000*6.,#118000000 galaxies/rad^2=10 galaxies/arcmin^2
+                    'pmodel'        :'halofit', #default method for finding p grid
+                    'n_gal'           :None,#118000000*6.,#118000000 galaxies/rad^2=10 galaxies/arcmin^2
                     'delta_l'         :1., #binning window
                     'sigma2_e'        :0.27**2*2, #other noise term
                     'sigma2_mu'       :1.2, #noise term for magnification
@@ -121,16 +54,20 @@ lensing_params = {  'z_resolution'    :0.002, #fine resolution
                     'z_max_dist'      :np.inf,
                     'zbar'            :0.1, #mean of gaussian source distribution
                     'sigma'           :0.4, #stdev of gaussian source distribution
-                    'epsilon'         :0.0001} #small parameter
+                    'epsilon'         :0.0001,#small paramater
+                    'l_min'           :20,#start of minimum l bin
+                    'l_max'           :3000,#start of maximum l bin
+                    'n_l'             :20,#number of l bins
+                 }
 sw_observable_list = np.array(['len_shear_shear'])
 sw_survey_params = {    'needs_lensing'     : True,
                         'cross_bins'        : True}
-dn_params = {   'M_cut'         : 10**12.5,
-                'variable_cut'  : True}#(12.5)}
+dn_params = {'nz_select': 'CANDELS'}#'M_cut':(12.5)}
 lw_observable_list = np.array(['d_number_density'])
 lw_survey_params = {    'cross_bins': False}
 basis_params = {    'allow_caching'         :True,
                     'n_bessel_oversample'   :100000,
+                    #TODO n_bessel_ovsersample default may not be enough
                     # 'k_max'                 :10.,#TODO check
                     # 'k_min'                 :10**-4,
                     'x_grid_size':100000}#convergence related
@@ -188,7 +125,6 @@ camb_params = { 'npoints':1000,
                 'return_sigma8':False
               }
 #amara refregier 2006 parameter forecast stuff
-cosmopie_params = {'p_space':'overwride'}
 prior_fisher_params = { 'row_strip'     :np.array([3,5,6,7]),
                         'fisher_source' :'data/F_Planck_tau0.01.dat',
                         'n_full'        :45,
@@ -223,8 +159,7 @@ matter_power_params = { 'needs_halofit'  :True,
                         'a_min' : 0.05,
                         'a_max' : 1.0,
                         'a_step' : 0.05,
-                        'nonlinear_model':'halofit'
                       }
-lw_param_list = np.array([{'dn_params':dn_params,'n1_params':nz_params_wfirst_gal,'n2_params':nz_params_wfirst_gal}])
+lw_param_list = np.array([{'dn_params':dn_params,'n_params':nz_params_wfirst_gal}])
 
 power_params = PowerParamManager(matter_power_params,wmatcher_params,halofit_params,camb_params,fpt_params)

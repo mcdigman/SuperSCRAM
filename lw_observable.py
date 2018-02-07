@@ -31,4 +31,3 @@ class LWObservable(object):
     def get_survey_id(self):
         """return the id string associated with the survey"""
         return self.survey_id
-    #TODO maybe add get_perturbing vector

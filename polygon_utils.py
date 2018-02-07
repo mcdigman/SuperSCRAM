@@ -4,6 +4,9 @@ from numpy.core.umath_tests import inner1d
 from astropy.io import fits
 import spherical_geometry.vector as sgv
 from spherical_geometry.polygon import SphericalPolygon
+from copy import deepcopy
+import matplotlib.pyplot as plt
+from mpl_toolkits.basemap import Basemap
 #Note these are spherical polygons so all the sides are great circles (not lines of constant theta!)
 #So area will differ from integral if assuming constant theta
 #vertices must have same first and last coordinate so polygon is closed
@@ -18,6 +21,58 @@ def get_poly(theta_vertices,phi_vertices,theta_in,phi_in):
 
     sp_poly = SphericalPolygon(bounding_xyz,inside=inside_xyz)
     return sp_poly
+
+def get_difference(poly1,poly2,pixels=None):
+    """attempt to get the difference poly1-poly2 as poly1^~poly2
+        use a pixelation to attempt to find an outside point"""
+    m  = Basemap(projection='moll',lon_0=0)
+    if pixels is None:
+        pixels = get_healpix_pixelation(4)
+    bounding_xyz = list(poly2.points)
+    #contained = np.zeros(pixels.shape[0],dtype==bool)
+    #for itr in xrange(0,len(bounding_xyz)):
+    #    ra,dec = sgv.vector_to_radec(
+    #    contained = contained | contains_points(bounding_xyz[itr],pixels)
+    contained = contains_points(pixels,poly2)
+    poly2_complement = None
+    first_false = 100+np.argmin(contained[100:])
+    print "orig 1",contains_points(pixels[first_false:first_false+1],poly1),poly1.area()
+    print "orig 2",contains_points(pixels[first_false:first_false+1],poly2),poly2.area()
+    colors = ['red','green','blue']
+    for itr in xrange(0,len(bounding_xyz)):
+        first_false = 100+itr+np.argmin(contained[100+itr:])
+        theta_in = pixels[first_false,0]
+        phi_in = pixels[first_false,1]
+        inside_xyz = np.asarray(sgv.radec_to_vector(phi_in,theta_in-np.pi/2.,degrees=False))
+        loc_poly = SphericalPolygon(bounding_xyz[itr].copy(),inside_xyz.copy())
+        loc_poly.draw(m,color=colors[itr])
+        #contained_loc = contains_points(pixels,loc_poly)
+        #first_false2 = np.argmax(contained_loc)
+        #theta_in2 = pixels[first_false2,0]
+        #phi_in2 = pixels[first_false2,1]
+        #inside_xyz2 = np.asarray(sgv.radec_to_vector(phi_in2,theta_in2-np.pi/2.,degrees=False))
+        #loc_poly2 = SphericalPolygon(bounding_xyz[itr].copy(),inside_xyz2.copy())
+        #print np.all(~contained_loc[~contained_loc]&(contained[~contained_loc]))
+        cont = contains_points(pixels[first_false:first_false+1],loc_poly)
+        #print "cont ",cont,loc_poly.area()
+        print "comp ",itr,contains_points(pixels[first_false:first_false+1],loc_poly),loc_poly.area(),loc_poly.is_clockwise()
+        #print "loc ",itr,contains_points(pixels[first_false:first_false+1],loc_poly),loc_poly.area(),loc_poly.is_clockwise(),loc_poly.contains_point(inside_xyz),loc_poly.contains_point(list(loc_poly.inside)[0])
+        #print "loc2 ",itr,contains_points(pixels[first_false2:first_false2+1],loc_poly2),loc_poly2.area(),loc_poly2.is_clockwise(),loc_poly2.contains_point(inside_xyz),loc_poly2.contains_point(list(loc_poly2.inside)[0])
+        print "inside 1 ",list(loc_poly.inside)
+        if poly2_complement is None:
+            poly2_complement = deepcopy(loc_poly)
+        else:
+            poly2_complement = deepcopy(poly2_complement.intersection(loc_poly))
+        print "comp ",itr,contains_points(pixels[first_false:first_false+1],poly2_complement),poly2_complement.area(),poly2_complement.is_clockwise()
+        #print "inside c ",list(poly2_complement.inside)
+        #print "vert c ",list(poly2_complement.points)
+        for itr2 in xrange(0,len(list(poly2_complement.inside))):
+            print "loc cont inside c ",loc_poly.contains_point(list(poly2_complement.inside)[itr2])
+    print poly1.area(),poly2.area(),poly2_complement.area()
+    plt.show()
+    return poly1.intersection(poly2_complement)    
+
+
 
 #can safely resolve up to lmax~2*nside (although can keep going with loss of precision until lmax=3*nside-1), so if lmax=100,need nside~50
 #nside = 2^res, so res=6=>nside=64 should safely resolve lmax=100, for extra safety can choose res=7
@@ -65,7 +120,7 @@ def contains_points(pixels,sp_poly):
         inside_xyz = np.asarray(inside[itr1])
         for itr2 in xrange(0,bounding_xyz.shape[0]-1):
             intersects+= contains_intersect(bounding_xyz[itr2], bounding_xyz[itr2+1], inside_xyz, xyz_vals)
-        contained = (contained+np.mod(intersects,2)==0).astype(bool)
+        contained = contained | (np.mod(intersects,2)==0).astype(bool)
     return contained
 
 def contains_intersect(vertex1,vertex2,inside_point,test_points):
@@ -80,4 +135,8 @@ def contains_intersect(vertex1,vertex2,inside_point,test_points):
     #row wise dot product is inner1d
     sign3 = np.sign(inner1d(np.cross(cxd,inside_point),T))
     sign4 = np.sign(inner1d(np.cross(test_points,cxd),T))
-    return (sign1==sign2) & (sign1==sign3) & (sign1==sign4)
+    #handle vertex is exactly a test point cases
+    inside_vertex = np.all(vertex1==inside_point,axis=-1) | np.all(vertex2==inside_point,axis=-1)
+    test_vertex = np.all(vertex1==test_points,axis=-1) | np.all(vertex2==test_points,axis=-1)
+    inside_test = np.all(inside_point==test_points,axis=-1)
+    return (sign1==sign2) & (sign1==sign3) & (sign1==sign4) & ~test_vertex & ~inside_vertex & ~inside_test

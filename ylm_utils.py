@@ -109,8 +109,8 @@ def _alm_function(ll,mm,base,prefactor,cos_phi_m,sin_phi_m,args):
     if mm==0:
         args['a_lms'][(ll,mm)] = args['pixel_area']*prefactor*np.sum(base)
     else:
-        args['a_lms'][(ll,mm)] = (-1)**(mm)*np.sqrt(2.)*args['pixel_area']*prefactor*np.sum(base*cos_phi_m[mm])
-        args['a_lms'][(ll,-mm)] = (-1)**(mm)*np.sqrt(2.)*args['pixel_area']*prefactor*np.sum(base*sin_phi_m[mm])
+        args['a_lms'][(ll,mm)] = (-1)**(mm)*np.sqrt(2.)*args['pixel_area']*prefactor*np.dot(base,cos_phi_m[mm])
+        args['a_lms'][(ll,-mm)] = (-1)**(mm)*np.sqrt(2.)*args['pixel_area']*prefactor*np.dot(base,sin_phi_m[mm])
 
 #TODO be consistent with dict vs table
 def get_Y_r_dict(l_max,thetas,phis):

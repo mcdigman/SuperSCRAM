@@ -126,8 +126,8 @@ if __name__=="__main__":
             geo1 = PolygonGeo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max,defaults.polygon_params)
             geo2 = PolygonGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max,defaults.polygon_params)
         else:
-            geo1 = PolygonPixelGeo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max,res_healpix=res_choose)
-            geo2 = PolygonPixelGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max,res_healpix=res_choose)
+            geo1 = PolygonPixelGeo(zs,theta1s,phi1s,theta_in1,phi_in1,C,z_fine,l_max,res_choose)
+            geo2 = PolygonPixelGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max,res_choose)
     else:
         geo1 = RectGeo(zs,Theta1,Phi1,C,z_fine)
         geo2 = RectGeo(zs,Theta2,Phi2,C,z_fine)
@@ -135,9 +135,7 @@ if __name__=="__main__":
     loc_lens_params = defaults.lensing_params.copy()
     loc_lens_params['z_min_dist'] = np.min(zs)
     loc_lens_params['z_max_dist'] = np.max(zs)
-    loc_lens_params['pmodel_O'] = 'halofit'
-    loc_lens_params['pmodel_dO_ddelta'] = 'halofit'
-    loc_lens_params['pmodel_dO_dpar'] = 'halofit'
+    loc_lens_params['pmodel'] = 'halofit'
 
     #TODO put in defaults
     lenless_defaults = defaults.sw_survey_params.copy()
@@ -176,13 +174,13 @@ if __name__=="__main__":
 
     from nz_wfirst import NZWFirst
     nz_matcher = NZWFirst(nz_params)
-    loc_lens_params['n_gal'] = au.trapz2(nz_matcher.get_dN_dzdOmega(geo1.z_fine),geo1.z_fine)*geo1.angular_area()
+    #loc_lens_params['n_gal'] = au.trapz2(nz_matcher.get_dN_dzdOmega(geo1.z_fine),geo1.z_fine)*geo1.angular_area()
     loc_lens_params['smodel'] = 'nzmatcher'
-    survey_1 = SWSurvey(geo1,'survey1',C,l_sw,defaults.sw_survey_params,observable_list = defaults.sw_observable_list,cosmo_par_list = cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,len_params=loc_lens_params,nz_matcher=nz_matcher)
-    #survey_2 = SWSurvey(geo1,'survey2',C,l_sw,defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=loc_lens_params)
+    survey_1 = SWSurvey(geo1,'survey1',C,defaults.sw_survey_params,observable_list=defaults.sw_observable_list,cosmo_par_list=cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,len_params=loc_lens_params,nz_matcher=nz_matcher)
+    #survey_2 = SWSurvey(geo1,'survey2',C,defaults.sw_survey_params,observable_list = defaults.sw_observable_list,len_params=loc_lens_params)
 
-    #survey_1 = SWSurvey(geo1,'survey1',C,l_sw,defaults.sw_survey_params,observable_list = np.array([]),len_params=loc_lens_params)
-    #survey_2 = SWSurvey(geo1,'survey2',C,l_sw,lenless_defaults,observable_list = np.array([]),cosmo_par_list = np.array([],dtype=object),cosmo_par_epsilons=np.array([]),len_params=loc_lens_params,param_priors=param_priors)
+    #survey_1 = SWSurvey(geo1,'survey1',C,defaults.sw_survey_params,observable_list = np.array([]),len_params=loc_lens_params)
+    #survey_2 = SWSurvey(geo1,'survey2',C,lenless_defaults,observable_list = np.array([]),cosmo_par_list = np.array([],dtype=object),cosmo_par_epsilons=np.array([]),len_params=loc_lens_params,param_priors=param_priors)
 
     surveys_sw = np.array([survey_1])
 
@@ -202,13 +200,12 @@ if __name__=="__main__":
     basis = SphBasisK(r_max,C,k_cut,defaults.basis_params,l_ceil=100)
     lw_param_list = defaults.lw_param_list.copy()
     lw_observable_list = defaults.lw_observable_list.copy()
-    survey_3 = LWSurvey(geos,'lw_survey1',basis,C,defaults.lw_survey_params,observable_list=lw_observable_list,param_list = lw_param_list)
+    survey_3 = LWSurvey(geos,'lw_survey1',basis,C,defaults.lw_survey_params,observable_list=lw_observable_list,param_list=lw_param_list)
     surveys_lw = np.array([survey_3])
 
 
     print 'main: this is r_max: '+str(r_max)
-    #TODO do not need basis as an argument
-    SS = SuperSurvey(surveys_sw, surveys_lw,basis,C=C,get_a=False,do_unmitigated=True,do_mitigated=True)
+    SS = SuperSurvey(surveys_sw,surveys_lw,basis,C,defaults.prior_fisher_params.copy(),get_a=False,do_unmitigated=True,do_mitigated=True)
 
     t2 = time()
     print "main: total run time "+str(t2-t1)+" s"
@@ -218,12 +215,7 @@ if __name__=="__main__":
     #rel_weights2 = SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0]*np.dot(SS.multi_f.get_fisher(mf.f_spec_mit,mf.f_return_lw)[0].get_cov_cholesky(),SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0])
 
 
- #   ax.plot(rel_weights)
- #   plt.show()
 
-#     cov_ss = SS.cov_no_mit[0].get_gaussian_covar()#np.diag(SS.O_I_data[0]['shear_shear']['covariance'][0,0])
-#    c_ss = SS.O_I_data[0]
-   #chol_cov = get_inv_cholesky(cov_ss)
     #mat_retrieved = (np.identity(chol_cov.shape[0])+np.dot(np.dot(chol_cov,SS.cov_no_mit[0,0]),chol_cov.T))
     #eig_ret = np.linalg.eigvals(mat_retrieved)
     #SS_eig =  SS.cov_no_mit[0].get_SS_eig()[0]
@@ -273,7 +265,6 @@ if __name__=="__main__":
     #print "(S/N)^2 gaussian+mitigation: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss)+SS.cov_mit[0,0])),c_ss)
     #ax.loglog(l_sw,cov_ss)
     #ax.loglog(l,np.diag(SS.cov_mit[0,0])/c_ss**2*l/2)
-   # ax.loglog(l,(np.diag(SS.cov_mit[0,0])))
     #ax.loglog(l_sw,(np.diag(SS.cov_no_mit[0,0])/cov_ss))
     #ax.legend(['cov','mit','no mit'])
     #plt.show()

@@ -5,13 +5,35 @@ import power_response as shp
 import defaults
 import cosmopie as cp
 import matter_power_spectrum as mps
+COSMOLOGY_CHIANG = {'Omegabh2' :0.023,
+                    'Omegach2' :0.1093,
+                    'Omegamh2' : 0.1323,
+                    'OmegaL'   : 0.73,
+                    'OmegaLh2' : 0.3577,
+                    'Omegam'   : .27,
+                    'H0'       : 70.,
+                    'sigma8'   : .7913,
+                    'h'        :0.7,
+                    'Omegak'   : 0.0, # check on this value
+                    'Omegakh2' : 0.0,
+                    'Omegar'   : 0.0,
+                    'Omegarh2' : 0.0,
+                    'ns'       : 0.95,
+                    'w'        : -1.,
+                    'de_model' : 'constant_w',
+                    'tau'      : None,
+                    'Yp'        :None,
+                    'As'        : None,
+                    'LogAs'   : None,
+                    'mnu'     :0.
+                   }
 
 def test_power_derivative():
     """test that the power derivatives agree with chiang&wagner arxiv:1403.3411v2 figure 4-5"""
     power_params = defaults.power_params.copy()
     power_params.camb['force_sigma8'] = True
     power_params.camb['leave_h'] = False
-    C = cp.CosmoPie(cosmology=defaults.cosmology_chiang,p_space='basic')
+    C = cp.CosmoPie(cosmology=COSMOLOGY_CHIANG,p_space='basic')
     #d = np.loadtxt('camb_m_pow_l.dat')
     #k_in = d[:,0]
     epsilon = 0.00001
@@ -74,7 +96,7 @@ class PowerDerivativeComparison1(object):
         power_params = defaults.power_params.copy()
         power_params.camb['force_sigma8'] = True
         power_params.camb['leave_h'] = False
-        C = cp.CosmoPie(cosmology=defaults.cosmology_chiang,p_space='basic')
+        C = cp.CosmoPie(cosmology=COSMOLOGY_CHIANG,p_space='basic')
         #d = np.loadtxt('camb_m_pow_l.dat')
         #k_in = d[:,0]
         epsilon = 0.00001

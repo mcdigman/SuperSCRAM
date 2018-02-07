@@ -6,7 +6,29 @@ import cosmopie as cp
 import shear_power as sp
 import defaults
 import matter_power_spectrum as mps
-
+#base params: Omegam,h,OmegaL,sigma8,Omegab
+COSMOLOGY_COSMOSIS = {  'Omegab'   :0.049,
+                        'Omegabh2' :0.0219961,
+                        'Omegac'   :0.261,
+                        'Omegach2' :0.117163,
+                        'Omegamh2' :0.139159,
+                        'OmegaL'   :.69,
+                        'OmegaLh2' :0.309741,
+                        'Omegam'   :.31,
+                        'H0'       :67,
+                        'sigma8'   :.81,
+                        'h'        :.67,
+                        'Omegak'   :0.0,
+                        'Omegakh2' :0.0,
+                        'Omegar'   :0.0,
+                        'Omegarh2' :0.0,
+                        'tau'      :None, # eventually fix to real cosmosis values
+                        'Yp'       :None,
+                        'As'       :2.143*10**-9, #not correct As
+                        'ns'       :0.9681,
+                        'LogAs'    :np.log(2.143*10**-9),
+                        'mnu'      :0. #guess
+                     }
 #class TestCosmosisAgreement():
 
 class TestCosmosisAgreement1(unittest.TestCase):
@@ -17,7 +39,8 @@ class TestCosmosisAgreement1(unittest.TestCase):
         """test function"""
         TOLERANCE_MAX = 0.1
         TOLERANCE_MEAN = 0.05
-        C = cp.CosmoPie(cosmology=defaults.cosmology_cosmosis,p_space='overwride')
+        cosmo_fid = COSMOLOGY_COSMOSIS.copy()
+        C = cp.CosmoPie(cosmo_fid,p_space='jdem')
         k_in = np.loadtxt('test_inputs/proj_2/k_h.txt')*C.h
         C.k = k_in
         zs = np.loadtxt('test_inputs/proj_2/z.txt')
@@ -30,7 +53,11 @@ class TestCosmosisAgreement1(unittest.TestCase):
         params['zbar'] = 1.0
         params['sigma'] = 0.4
         params['smodel'] = 'gaussian'
-        sp1 = sp.ShearPower(C,zs,ls,omega_s,params, pmodel='cosmosis',mode='power')
+        params['l_min'] = np.min(ls)
+        params['l_max'] = np.max(ls)
+        params['n_l'] = ls.size
+        params['n_gal'] = 118000000*6.
+        sp1 = sp.ShearPower(C,zs,omega_s,params, pmodel='cosmosis',mode='power')
 
         sh_pow1 = sp.Cll_sh_sh(sp1).Cll()
         sh_pow1_gg = sp.Cll_g_g(sp1).Cll()
@@ -101,19 +128,17 @@ class TestCosmosisHalofitAgreement1(unittest.TestCase):
         """test function"""
         TOLERANCE_MAX = 0.2
         TOLERANCE_MEAN = 0.2
-        cp_params = defaults.cosmopie_params
-        cp_params['p_space'] = 'overwride'
         power_params = defaults.power_params.copy()
         power_params.camb['force_sigma8'] = True
         power_params.camb['maxkh'] = 1e5
         power_params.camb['kmax'] = 100.
         power_params.camb['npoints'] = 1000
-        C = cp.CosmoPie(cosmology=defaults.cosmology_cosmosis,p_space='overwride')
+        C = cp.CosmoPie(cosmology=COSMOLOGY_COSMOSIS,p_space='jdem')
         #d = np.loadtxt('test_inputs/proj_1/camb_m_pow_l.dat')
         #d = np.loadtxt('test_inputs/proj_1/p_k_lin.dat')
         #k_in = d[:,0]
         #P_in = d[:,1]
-        #k_in,P_in = camb_pow(defaults.cosmology_cosmosis)
+        #k_in,P_in = camb_pow(COSMOLOGY_COSMOSIS)
         P_in = mps.MatterPower(C,power_params)
         k_in = P_in.k
         C.k = k_in
@@ -127,13 +152,17 @@ class TestCosmosisHalofitAgreement1(unittest.TestCase):
         params['zbar'] = 1.0
         params['sigma'] = 0.40
         params['smodel'] = 'gaussian'
-        sp1 = sp.ShearPower(C,zs,ls,omega_s,params,pmodel='cosmosis',mode='power')
+        params['l_min'] = np.min(ls)
+        params['l_max'] = np.max(ls)
+        params['n_l'] = ls.size
+        params['n_gal'] = 118000000*6.
+        sp1 = sp.ShearPower(C,zs,omega_s,params,pmodel='cosmosis',mode='power')
         sh_pow1 = sp.Cll_sh_sh(sp1).Cll()
         sh_pow1_gg = sp.Cll_g_g(sp1).Cll()
         sh_pow1_sg = sp.Cll_sh_g(sp1).Cll()
         sh_pow1_mm = sp.Cll_mag_mag(sp1).Cll()
 
-        sp2 = sp.ShearPower(C,zs,ls,omega_s,params,pmodel='halofit',mode='power')
+        sp2 = sp.ShearPower(C,zs,omega_s,params,pmodel='halofit',mode='power')
         sh_pow2 = sp.Cll_sh_sh(sp2).Cll()
         sh_pow2_gg = sp.Cll_g_g(sp2).Cll()
         sh_pow2_sg = sp.Cll_sh_g(sp2).Cll()

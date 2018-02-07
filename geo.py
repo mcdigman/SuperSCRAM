@@ -1,4 +1,4 @@
-"""Specificatio for a survey geometry"""
+"""Specification for a survey geometry"""
 import numpy as np
 
 from scipy.integrate import dblquad
@@ -72,7 +72,6 @@ class Geo(object):
 #        mainly used for calculating area and a_lm at the moment"""
 #        raise NotImplementedError, "Subclasses of geo should implement surface_integral"
 
-    #TODO: consider option to return in degrees or fsky
     def angular_area(self):
         """get the angular area (in square radians) occupied by the geometry"""
         raise NotImplementedError('subclasses must implement angular_area')
@@ -133,8 +132,8 @@ class RectGeo(Geo):
         """do the integral with quadrature over a function(phi,theta)"""
         def _integrand(phi,theta):
             return function(phi,theta)*np.sin(theta)
-        I = dblquad(_integrand,self.Theta[0],self.Theta[1], lambda phi: self.Phi[0], lambda phi: self.Phi[1])[0]
-        return I
+        result = dblquad(_integrand,self.Theta[0],self.Theta[1], lambda phi: self.Phi[0], lambda phi: self.Phi[1])[0]
+        return result
 
     def a_lm(self,l,m):
         r""" returns \int d theta d phi \sin(theta) Y_lm(theta, phi) (the spherical harmonic decomposition a_lm for the window function)
@@ -149,37 +148,3 @@ class RectGeo(Geo):
             self.alm_table[(l,m)] = alm
 
         return alm
-
-
-##same pixels at every redshift.
-#class PixelGeo(Geo):
-#    """generic pixelated geometry"""
-#    def __init__(self,zs,pixels,C,z_fine):
-#        """pixelated geomtery
-#            inputs:
-#                zs: tomographic z bins
-#                pixels: pixels in format np.array([(theta,phi,area)]), area in steradians
-#                C: CosmoPie object
-#                z_fine: the fine z slices
-#        """
-#        self.pixels = pixels
-#
-#        Geo.__init__(self,zs,C,z_fine)
-#        self.alm_table[(0,0)] = np.sum(self.pixels[:,2])/np.sqrt(4.*np.pi)
-#
-#    #TODO consider vectorizing sum
-#    def surface_integral(self,function):
-#        """do the surface integral by summing over values at the discrete pixels"""
-#        total = 0.
-#        for i in xrange(0,self.pixels.shape[0]):
-#            total+=function(self.pixels[i,0],self.pixels[i,1])*self.pixels[i,2] #f(theta,phi)*A
-#        return total
-#
-#    #TODO should probably just use PolygonPixelGeo method
-#    def a_lm(self,l,m):
-#        """vectorized a_lm computation relies on vector Y_r"""
-#        alm = self.alm_table.get((l,m))
-#        if alm is None:
-#            alm = np.sum(Y_r(l,m,self.pixels[:,0],self.pixels[:,1])*self.pixels[:,2])
-#            self.alm_table[(l,m)] = alm
-#        return alm

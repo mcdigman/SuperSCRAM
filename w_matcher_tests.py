@@ -29,7 +29,7 @@ def cosmo_input():
     cosmo_start = defaults.cosmology.copy()
     cosmo_start['w'] = -1
     cosmo_start['de_model'] = 'constant_w'
-    C_start = cp.CosmoPie(cosmology=cosmo_start)
+    C_start = cp.CosmoPie(cosmology=cosmo_start,p_space='jdem')
     #base set
     #params = {'w_step':0.005,'w_min':-3.50,'w_max':0.1,'a_step':0.001,'a_min':0.000916674,'a_max':1.00}
     #mod se
@@ -62,9 +62,9 @@ def test_const_match(w0_test,cosmo_input):
     cosmo_match_c = cosmo_match_a.copy()
     cosmo_match_c['de_model'] = 'constant_w'
 
-    C_match_a = cp.CosmoPie(cosmology=cosmo_match_a)
-    C_match_b = cp.CosmoPie(cosmology=cosmo_match_b)
-    C_match_c = cp.CosmoPie(cosmology=cosmo_match_c)
+    C_match_a = cp.CosmoPie(cosmology=cosmo_match_a,p_space='jdem')
+    C_match_b = cp.CosmoPie(cosmology=cosmo_match_b,p_space='jdem')
+    C_match_c = cp.CosmoPie(cosmology=cosmo_match_c,p_space='jdem')
 
 
     w_a = wm.match_w(C_match_a,zs)
@@ -121,8 +121,8 @@ def test_jdem_w0wa_match(w0_test,wa_test,cosmo_input):
     for i in xrange(0,36):
         cosmo_match_jdem['ws36_'+str(i)] = w0_use+(1.-(a_jdem[i]-0.025/2.))*wa_use
 
-    C_match_w0wa = cp.CosmoPie(cosmology=cosmo_match_w0wa)
-    C_match_jdem = cp.CosmoPie(cosmology=cosmo_match_jdem)
+    C_match_w0wa = cp.CosmoPie(cosmology=cosmo_match_w0wa,p_space='jdem')
+    C_match_jdem = cp.CosmoPie(cosmology=cosmo_match_jdem,p_space='jdem')
 
     w_w0wa = wm.match_w(C_match_w0wa,zs)
     w_jdem = wm.match_w(C_match_jdem,zs)
@@ -155,8 +155,8 @@ def test_casarini_match(cosmo_input):
     cosmo_match_b['w'] = -0.6
 
 
-    C_match_a = cp.CosmoPie(cosmology=cosmo_match_a)
-    C_match_b = cp.CosmoPie(cosmology=cosmo_match_b)
+    C_match_a = cp.CosmoPie(cosmology=cosmo_match_a,p_space='jdem')
+    C_match_b = cp.CosmoPie(cosmology=cosmo_match_b,p_space='jdem')
 
 
 
@@ -230,7 +230,7 @@ if __name__=='__main__':
         cosmo_start = defaults.cosmology.copy()
         cosmo_start['w'] = -1
         cosmo_start['de_model'] = 'constant_w'
-        C_start = cp.CosmoPie(cosmology=cosmo_start)
+        C_start = cp.CosmoPie(cosmology=cosmo_start,p_space='jdem')
         params = {'w_step':0.01,'w_min':-3.50,'w_max':0.1,'a_step':0.001,'a_min':0.000916674,'a_max':1.00}
 
         do_convergence_test_w0wa = False
@@ -257,7 +257,7 @@ if __name__=='__main__':
             params_3 = params.copy()
             params_3['a_step'] = params['a_step']/10.
 
-            C_match_w0wa = cp.CosmoPie(cosmology=cosmo_match_w0wa)
+            C_match_w0wa = cp.CosmoPie(cosmology=cosmo_match_w0wa,p_space='jdem')
 
             a_grid = np.arange(1.00,0.001,-0.01)
             zs = 1./a_grid-1.
@@ -294,7 +294,7 @@ if __name__=='__main__':
             params_3['a_step'] = params_1['a_step']/10.
 
 
-            C_match_jdem = cp.CosmoPie(cosmology=cosmo_match_jdem)
+            C_match_jdem = cp.CosmoPie(cosmology=cosmo_match_jdem,p_space='jdem')
 
             a_grid = np.arange(1.00,0.001,-0.01)
             zs = 1./a_grid-1.
@@ -326,9 +326,9 @@ if __name__=='__main__':
 
 
             wmatcher_params = defaults.wmatcher_params.copy()
-            C_start = cp.CosmoPie(cosmology=cosmo_start)
-            C_match_a = cp.CosmoPie(cosmology=cosmo_match_a)
-            C_match_b = cp.CosmoPie(cosmology=cosmo_match_b)
+            C_start = cp.CosmoPie(cosmology=cosmo_start,p_space='jdem')
+            C_match_a = cp.CosmoPie(cosmology=cosmo_match_a,p_space='jdem')
+            C_match_b = cp.CosmoPie(cosmology=cosmo_match_b,p_space='jdem')
 
             wm = WMatcher(C_start,wmatcher_params)
             zs = np.arange(0.,1.51,0.05)

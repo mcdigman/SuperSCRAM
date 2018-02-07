@@ -50,11 +50,12 @@ class NZMatcherZSource(SourceDistribution):
     """source distribution using an NZMatcher object"""
     def __init__(self,zs,chis,C,params,nz_match):
         """nz_match: an NZMatcher object"""
+        self.nz_match = nz_match
         ps = nz_match.get_dN_dzdOmega(zs)
         ps = dz_to_dchi(ps,zs,chis,C,params)
         SourceDistribution.__init__(self,ps,zs,chis,C,params)
 
-def get_source_distribution(smodel,zs,chis,C,params,ps=np.array([]),nz_matcher=None):
+def get_source_distribution(smodel,zs,chis,C,params,ps=None,nz_matcher=None):
     """generate a source distribution from among the list of available source distributions"""
     if smodel=='gaussian':
         dist = GaussianZSource(zs,chis,C,params,zbar=params['zbar'],sigma=params['sigma'])
@@ -63,7 +64,7 @@ def get_source_distribution(smodel,zs,chis,C,params,ps=np.array([]),nz_matcher=N
     elif smodel=='cosmolike':
         dist = CosmoLikeZSource(zs,chis,C,params)
     elif smodel=='custom_z':
-        if ps.size==zs.size:
+        if ps is not None and ps.size==zs.size:
             dist = SourceDistribution(dz_to_dchi(ps,zs,chis,C,params),zs,chis,C,params)
         else:
             raise ValueError('input zs.size='+str(zs.size)+'and ps.size='+str(ps.size)+' do not match')

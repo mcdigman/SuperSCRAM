@@ -4,12 +4,6 @@ import numpy as np
 import scipy.linalg as spl
 
 DEBUG = False
-#TODO: In the long run, some of these functions would benefit from some low level optimizations, like doing cholesky decompositions
-#and inverses in place (or even lower level, like storing two cholesky decompositions in the same matrix and just masking the one we don't need when doing any given operation),
-#because the memory consumption of these matrices is the code's primary performance bottleneck.
-#scipy.linalg.cholesky's overwrite_a option is not reliable for doing things in place, so I would probably need
-#some lower level (lapack?) calls, and I would prefer to wait until the code specification is more stable/good unit tests have been writen.
-#potentially use ztrmm for triangular dot products
 
 #TODO inplace not tested for get_inv_cholesky, get_cholesky_inv,invert_triangular
 def get_inv_cholesky(A,lower=True,inplace=False,clean=True):
@@ -28,7 +22,6 @@ def get_inv_cholesky(A,lower=True,inplace=False,clean=True):
             assert np.all(A_copy==A)
     return result
 
-#TODO add safety checks,tests
 def get_cholesky_inv(A,lower=True,inplace=False,clean=True):
     """Get the cholesky decomposition of the inverse of a matrix A"""
     if DEBUG:
@@ -44,8 +37,6 @@ def get_cholesky_inv(A,lower=True,inplace=False,clean=True):
             assert np.all(A_copy==A)
     return result
 
-#TODO add safety checks
-#TODO handle clean
 def invert_triangular(A,lower=True,inplace=False,clean=True):
     """invert a triangular matrix,
         completely ignores opposite triangle"""
@@ -166,7 +157,6 @@ def cholesky_contract(A,vec1,vec2,cholesky_given=False,identical_inputs=False,lo
 
     return result
 
-#TODO: add more sanity check assertions, such as if lapack is actually installed
 def cholesky_inplace(A,inplace=True,fatal_errors=False,lower=True,clean=True):
     """ Do a cholesky decomposition, in place if inplace=True.
         For safety, the return value should still be assigned, i.e. A=cholesky_inplace(A,inplace=True).
@@ -194,7 +184,7 @@ def cholesky_inplace(A,inplace=True,fatal_errors=False,lower=True,clean=True):
     if not A.dtype==np.float_:
         raise ValueError('algebra_utils: cholesky_inplace currently only supports arrays with dtype=np.float_')
 
-    #TODO maybe workaround, determine actual threshold (46253 is just largest successful run)
+    #could write workaround, determine actual threshold (46253 is just largest successful run)
     if A.shape[0] > 46253:
         warn('algebra_utils: dpotrf may segfault for matrices this large, due to a bug in certain lapack/blas implementations')
     #result = spl.cholesky(A,lower=lower,overwrite_a=try_inplace)
@@ -222,7 +212,7 @@ def mirror_symmetrize(A,lower=True,inplace=False):
             A[itr,itr+1:n] = A[itr+1:n,itr]
         else:
             A[itr+1:n,itr] = A[itr,itr+1:n]
-    return A
+    return np.asfortranarray(A)
 
 def clean_triangle(A,lower=True,inplace=False):
     """set everything but lower/upper triangle in matrix to 0,in place if inplace
@@ -236,11 +226,9 @@ def clean_triangle(A,lower=True,inplace=False):
             A[itr,itr+1:n] = 0.
         else:
             A[itr+1:n,itr] = 0.
-    return A
+    return np.asfortranarray(A)
 
 #ie similar to np.trapz(A,xs,axis=0)
-#TODO test
-#TODO just take 1 input xs and dx
 #TODO what if xs is a matrix?
 def trapz2(A,xs=None,dx=None):
     """faster trapz than numpy built in for 2d matrices along 1st dimension"""
@@ -257,6 +245,9 @@ def trapz2(A,xs=None,dx=None):
         elif dx_use.ndim>1 or A.ndim>2:
             raise ValueError('currently only support 1 dimensional dx')
         else:
+            #alternate way 2x as fast if A has many elements, but more overhead if not
+            #dx_tot = (dx_use[:-1:]+dx_use[1::])
+            #result = (np.dot(dx_tot.T,A[1:-1:])+A[0]*dx_use[0]+A[-1]*dx_use[-1])/2.
             result = (np.dot(dx_use.T,A[:-1:])+np.dot(dx_use.T,A[1::]))/2.
     else:
         result = dx_use*np.sum(A,axis=0)-0.5*dx_use*(A[0]+A[-1])
@@ -279,7 +270,6 @@ def check_is_triangular(A,lower,atol_rel=1e-08,rtol=1e-05):
         return np.allclose(np.tril(A),A,atol=atol_loc3,rtol=rtol)
     else:
         return np.allclose(np.triu(A),A,atol=atol_loc3,rtol=rtol)
-
 
 def check_is_cholesky(A,B,atol_rel=1e-08,rtol=1e-05,lower=True,is_clean=True,B_symmetrized=True):
     """Check if A is the cholesky decomposition of B

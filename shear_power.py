@@ -3,7 +3,7 @@ Handles lensing observable power spectrum
 """
 from warnings import warn
 import numpy as np
-from scipy.interpolate import interp1d,InterpolatedUnivariateSpline,RectBivariateSpline
+from scipy.interpolate import interp1d,RectBivariateSpline
 
 from power_response import dp_ddelta
 from lensing_weight import QShear,QMag,QNum,QK
@@ -14,39 +14,42 @@ from algebra_utils import trapz2
 #TODO remove explicit cosmosis pmodel
 class ShearPower(object):
     """handles lensing power spectra"""
-    def __init__(self,C,zs,ls,omega_s,params,pmodel='halofit',ps=np.array([]),mode='power',nz_matcher=None):
+    def __init__(self,C,zs,omega_s,params,pmodel='halofit',ps=None,mode='power',nz_matcher=None):
         """
             inputs:
                 C: CosmoPie object
                 zs: z grid
-                ls: l bins to use
-                omega_s: angular area of window in radians
+                omega_s: angular area of window in sky fraction
                 pmodel: nonlinear power spectrum model to use, options 'linear','halofit','fastpt','cosmosis'
                 ps: lensing source distribution. Optional.
                 mode: whether to get power spectrum 'power' or dC/d\\bar{\\delta} 'dc_ddelta'
-                nz_matcher: an NZMatcher object
+                nz_matcher: an NZMatcher object, for getting source distribution and n_gal if not None
+                params: see line by line description in defaults.py
         """
         self.k_in = C.k
         self.C = C
         self.zs = zs
-        self.ls = ls
         self.params = params
+        self.l_starts = np.logspace(np.log(params['l_min']),np.log(params['l_max']),params['n_l'],base=np.exp(1.))
 
-        #self.omega_s = np.pi/(3.*np.sqrt(2))
-        #self.n_gal = 286401.
         #118000000 galaxies/rad^2 if 10/arcmin^2 and omega_s is area in radians of field
         self.omega_s = omega_s
-#        self.n_gal = params['n_gal']
         self.pmodel = pmodel
-#        self.sigma2_e = params['sigma2_e']
-#        self.sigma2_mu = params['sigma2_mu']
 
+        #assume input ls is constant log spaced and gives starts of bins, need middle of bins
+        log_ls = np.log(self.l_starts)
+        dl = np.diff(log_ls)[0]
+        self.l_mids = np.exp(log_ls[0]+dl*(1./2.+np.arange(0,log_ls.size)))
+        self.delta_ls = np.diff(np.exp(log_ls[0]+dl*np.arange(0,log_ls.size+1)))
 
-        #TODO PRIORITY maybe get n_gal from an NZMAtcher directly
-        self.n_map = {QShear:{QShear:(self.params['sigma2_e']/(2.*self.params['n_gal']))}}
-        #print self.n_map[QShear][QShear]
-#        self.n_k = self.k_in.size
-        self.n_l = self.ls.size
+        self.n_gal = self.params['n_gal']
+        if nz_matcher is not None:
+            self.n_gal = nz_matcher.get_N_projected(zs,self.omega_s*4.*np.pi)
+        if self.n_gal is None:
+            raise ValueError('must specify n_gal in params or give an nz_matcher object')
+
+        self.n_map = {QShear:{QShear:(self.params['sigma2_e']/(2.*self.n_gal))}}
+        self.n_l = self.l_starts.size
         self.n_z = self.zs.size
 
         self.p_dd_use = np.zeros((self.n_l,self.n_z))
@@ -84,7 +87,7 @@ class ShearPower(object):
                 warn('ShearPower may not support nonzero curvature consistently')
                 self.chi_As = self.C.D_comov_A(zs)
 
-        self.k_use = np.outer((self.ls+0.5),1./self.chi_As)
+        self.k_use = np.outer((self.l_mids+0.5),1./self.chi_As)
 
         #loop appears necessary due to uneven grid spacing in k_use
         for i in xrange(0,self.n_z):
@@ -98,8 +101,6 @@ class ShearPower(object):
 
         self.source_dist = get_source_distribution(self.params['smodel'],self.zs,self.chis,self.C,self.params,ps=ps,nz_matcher=nz_matcher)
         self.ps = self.source_dist.ps
-#        self.z_min_dist = params['z_min_dist']
-#        self.z_max_dist = params['z_max_dist']
 
         #used in getting Cll_q_q for a given ShearPower
         self.Cll_kernel = 1./self.chi_As**2*self.p_dd_use
@@ -118,33 +119,25 @@ class ShearPower(object):
 
     #take as an array of qs, ns, and rs instead of the matrices themselves
     #ns is [n_ac,n_ad,n_bd,n_bc]
-    def cov_g_diag(self,qs,ns_in,rs=np.full(4,1.),delta_ls=None,ls=None):
+    def cov_g_diag(self,qs,ns_in,rs=np.full(4,1.)):
         """Get diagonal elements of gaussian covariance between observables
             inputs:
                 qs: a list of 4 QWeight objects [q1,q2,q3,q4]
                 ns_in: an input list of shape noise [n13,n24,n14,n23] [0.,0.,0.,0.] if no noise
                 rs: correlation parameters, [r13,r24,r14,r23]. Optional.
-                ls: array of ls to use if not default. Optional.
-                delta_ls: array of differences of ls. Optional
         """
-        cov_diag = np.zeros(self.n_l)
-        if ls is None:
-            ls = self.ls
-        if delta_ls is None:
-            #calculate diff with a ghost cell
-            delta_ls = InterpolatedUnivariateSpline(np.arange(0,ls.size),ls,ext=2).derivative(1)(np.arange(0,ls.size))
+
         ns = np.zeros(ns_in.size)
-        #TODO handle varying bin sizes better
         ns[0] = ns_in[0]/trapz2((1.*(self.chis>=qs[0].chi_min)*(self.chis<=qs[0].chi_max)*self.ps),self.chis)
         ns[1] = ns_in[1]/trapz2((1.*(self.chis>=qs[0].chi_min)*(self.chis<=qs[0].chi_max)*self.ps),self.chis)
         ns[2] = ns_in[2]/trapz2((1.*(self.chis>=qs[1].chi_min)*(self.chis<=qs[1].chi_max)*self.ps),self.chis)
         ns[3] = ns_in[3]/trapz2((1.*(self.chis>=qs[1].chi_min)*(self.chis<=qs[1].chi_max)*self.ps),self.chis)
-
+        #could exploit/cache symmetries to reduce time
         c_ac = Cll_q_q(self,qs[0],qs[2],rs[0]).Cll()
         c_bd = Cll_q_q(self,qs[1],qs[3],rs[1]).Cll()
         c_ad = Cll_q_q(self,qs[0],qs[3],rs[2]).Cll()
         c_bc = Cll_q_q(self,qs[1],qs[2],rs[3]).Cll()
-        cov_diag = 1./(self.omega_s*(2.*self.ls+1.)*delta_ls)*((c_ac+ns[0])*(c_bd+ns[2])+(c_ad+ns[1])*(c_bc+ns[3]))
+        cov_diag = 1./(self.omega_s*(2.*self.l_mids+1.)*self.delta_ls)*((c_ac+ns[0])*(c_bd+ns[2])+(c_ad+ns[1])*(c_bc+ns[3]))
         #(C13*C24+ C13*N24+N13*C24 + C14*C23+C14*N23+N14*C23+N13*N24+N14*N23)
         return cov_diag
 
@@ -240,7 +233,7 @@ class Cll_sh_g(Cll_q_q):
 
 
 #class Cll_q_q_nolimber(Cll_q_q):
-#    def __init__(self,sp,q1s,q2s,corr_param=np.array([])):
+#    def __init__(self,sp,q1s,q2s,corr_param=None):
 #        integrand1 = np.zeros((sp.n_z,sp.n_l))
 #        #integrand2 = np.zeros((sp.n_z,sp.n_l))
 #        integrand_total = np.zeros((sp.n_z,sp.n_l))
@@ -256,9 +249,8 @@ class Cll_sh_g(Cll_q_q):
 #        self.integrand = integrand_total
 #        self.chis = sp.chis
 
-#TODO make this work with current q design
 #class Cll_q_q_order2(Cll_q_q):
-#    def __init__(self,sp,q1s,q2s,corr_param=np.array([])):
+#    def __init__(self,sp,q1s,q2s,corr_param=None):
 #        integrand1 = np.zeros((sp.n_z,sp.n_l))
 #        integrand2 = np.zeros((sp.n_z,sp.n_l))
 #        if corr_param.size!=0:

@@ -36,16 +36,16 @@ class GeoTestSet(object):
         d = np.loadtxt('camb_m_pow_l.dat')
         k = d[:,0]
         P = d[:,1]
-        self.C = CosmoPie(cosmology=defaults.cosmology,k=k,P_lin=P)
+        self.C = CosmoPie(defaults.cosmology,k=k,P_lin=P,p_space='jdem')
         self.zs = np.array([.01,1.01])
         self.z_fine = np.arange(defaults.lensing_params['z_min_integral'],np.max(self.zs),defaults.lensing_params['z_resolution'])
 
         self.poly_params = defaults.polygon_params.copy()
         self.poly_geo = pg.PolygonGeo(self.zs,params['thetas'],params['phis'],params['theta_in'],params['phi_in'],self.C,self.z_fine,params['l_max_poly'],self.poly_params)
         if params['do_pp_geo1']:
-            self.pp_geo1 = PolygonPixelGeo(self.zs,params['thetas'],params['phis'],params['theta_in'],params['phi_in'],self.C,self.z_fine,l_max=params['l_max_poly'],res_healpix=params['res_choose1'])
+            self.pp_geo1 = PolygonPixelGeo(self.zs,params['thetas'],params['phis'],params['theta_in'],params['phi_in'],self.C,self.z_fine,params['l_max_poly'],params['res_choose1'])
         if params['do_pp_geo2']:
-            self.pp_geo2 = PolygonPixelGeo(self.zs,params['thetas'],params['phis'],params['theta_in'],params['phi_in'],self.C,self.z_fine,l_max=params['l_max_poly'],res_healpix=params['res_choose2'])
+            self.pp_geo2 = PolygonPixelGeo(self.zs,params['thetas'],params['phis'],params['theta_in'],params['phi_in'],self.C,self.z_fine,params['l_max_poly'],params['res_choose2'])
         if params['do_RectGeo']:
             self.r_geo = RectGeo(self.zs,params['r_thetas'],params['r_phis'],self.C,self.z_fine)
         self.params = params
@@ -370,7 +370,7 @@ if __name__=='__main__':
     import polygon_union_geo as pug
     import matplotlib.pyplot as plt
     import matplotlib.colors as colors
-    from polygon_utils import get_healpix_pixelation
+    from polygon_utils import get_healpix_pixelation,get_difference
     from polygon_pixel_union_geo import PolygonPixelUnionGeo
     from mpl_toolkits.basemap import Basemap
     #pytest.cmdline.main(['polygon_geo_tests.py'])
@@ -423,7 +423,6 @@ if __name__=='__main__':
         try_plot = True
         do_poly = True
         if try_plot:
-                   #try:
             m = Basemap(projection='moll',lon_0=0)
             #m.drawparallels(np.arange(-90.,120.,30.))
             #m.drawmeridians(np.arange(0.,420.,60.))
@@ -460,10 +459,10 @@ if __name__=='__main__':
 
         poly_params = defaults.polygon_params.copy()
         poly_params['n_double'] = 80
-        l_max_in = 30
+        l_max_in = 10
         zs = np.array([0.01,1.01])
         z_fine = np.arange(0.01,1.05,0.01)
-        C = CosmoPie(defaults.cosmology)
+        C = CosmoPie(defaults.cosmology,p_space='jdem')
         thetas_wfirst = np.array([-50.,-35.,-35.,-19.,-19.,-19.,-15.8,-15.8,-40.,-40.,-55.,-78.,-78.,-78.,-55.,-55.,-50.,-50.])*np.pi/180.+np.pi/2.
         phis_wfirst = np.array([-19.,-19.,-11.,-11.,7.,25.,25.,43.,43.,50.,50.,50.,24.,5.,5.,7.,7.,-19.])*np.pi/180.
         phi_in_wfirst = 7./180.*np.pi
@@ -540,9 +539,15 @@ if __name__=='__main__':
 
         union_geo = pug.PolygonUnionGeo(np.array([poly_geo2]),np.array([mask_geo],dtype=object))
 
+        union_pos = union_geo.union_pos
+        union_mask = union_geo.union_mask
+        union_diff = get_difference(union_pos,union_mask)
+        pred_area = union_pos.area()*(1.-union_pos.overlap(union_mask))
+        calc_area = union_diff.area()
+
         do_plot1 = False
         if do_plot1:
-           # poly_geo.sp_poly.draw(m,color='red')
+            #poly_geo.sp_poly.draw(m,color='red')
             poly_geo2.sp_poly.draw(m,color='blue')
             mask_geo.sp_poly.draw(m,color='green')
             union_geo.union_mask.draw(m,color='red')
@@ -555,18 +560,18 @@ if __name__=='__main__':
             mask_geo.sp_poly.draw(m,color='red')
             union_geo.union_pos.sp_poly.draw(m,color='green')
             plt.show()
-
-        do_reconstruct =True
+        
+        do_reconstruct =False
         if do_reconstruct:
 
-            #pp_geo = PolygonPixelGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max=l_max_in,res_healpix=6)
+            #pp_geo = PolygonPixelGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max_in,6)
 
-            pp_geo2_lowres = PolygonPixelGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max=l_max_in,res_healpix=6)
-            pp_mask_geo_lowres = PolygonPixelGeo(zs,thetas_mask,phis_mask,theta_in_mask,phi_in_mask,C,z_fine,l_max=l_max_in,res_healpix=6)
+            pp_geo2_lowres = PolygonPixelGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max_in,6)
+            pp_mask_geo_lowres = PolygonPixelGeo(zs,thetas_mask,phis_mask,theta_in_mask,phi_in_mask,C,z_fine,l_max_in,6)
             pp_union_geo_lowres = PolygonPixelUnionGeo(np.array([pp_geo2_lowres]),np.array([pp_mask_geo_lowres]))
 
-            pp_geo2 = PolygonPixelGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max=l_max_in,res_healpix=6)
-            pp_mask_geo = PolygonPixelGeo(zs,thetas_mask,phis_mask,theta_in_mask,phi_in_mask,C,z_fine,l_max=l_max_in,res_healpix=6)
+            pp_geo2 = PolygonPixelGeo(zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max_in,6)
+            pp_mask_geo = PolygonPixelGeo(zs,thetas_mask,phis_mask,theta_in_mask,phi_in_mask,C,z_fine,l_max_in,6)
             pp_union_geo = PolygonPixelUnionGeo(np.array([pp_geo2]),np.array([pp_mask_geo]))
             #mask = ((pp_geo2.contained*1.-pp_mask_geo.contained*1.)>0)
             all_pixels = get_healpix_pixelation(res_choose=6)
@@ -612,6 +617,6 @@ if __name__=='__main__':
                 ax.set_aspect('equal')
                 #m.plot(x,y,'bo',markersize=1)
                 ax.set_title("PolygonPixelGeo mask")
-                union_geo.union_mask.draw(m,color='red')
-                #pp_geo2.sp_poly.draw(m,color='red')
+                #union_geo.intersect_pos.draw(m,color='red')
+                pp_geo2.sp_poly.draw(m,color='red')
             plt.show()

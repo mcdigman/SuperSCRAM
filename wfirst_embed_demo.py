@@ -3,7 +3,6 @@ from time import time
 
 import numpy as np
 
-
 from super_survey import SuperSurvey,make_ellipse_plot
 from lw_survey import LWSurvey
 from sw_survey import SWSurvey
@@ -12,6 +11,7 @@ from polygon_geo import PolygonGeo
 from sph_klim import SphBasisK
 from matter_power_spectrum import MatterPower
 from nz_wfirst import NZWFirst
+from premade_geos import WFIRSTGeo
 
 import defaults
 
@@ -21,7 +21,7 @@ if __name__=='__main__':
     time0 = time()
     #get dictionaries of parameters that various functions will need
     cosmo = defaults.cosmology.copy()
-    cosmo['de_model'] = 'w0wa'
+    cosmo['de_model'] = 'constant_w'
     cosmo['wa'] = 0.
     cosmo['w0'] = -1.
     cosmo['w'] = -1.
@@ -35,17 +35,20 @@ if __name__=='__main__':
     #hf_params = defaults.halofit_params.copy()
     poly_params = defaults.polygon_params.copy()
     lensing_params = defaults.lensing_params.copy()
+    lensing_params['l_max'] = 5000
+    lensing_params['l_min'] = 30
+    lensing_params['n_l'] = 40
     nz_params_wfirst_lens = defaults.nz_params_wfirst_lens.copy()
     sw_survey_params = defaults.sw_survey_params.copy()
     lw_survey_params = defaults.lw_survey_params.copy()
     sw_observable_list = defaults.sw_observable_list
     #TODO don't use defaults for setting up the core demo
     lw_observable_list = defaults.lw_observable_list
-    dn_params = defaults.dn_params.copy()
     mf_params = defaults.hmf_params.copy()
     n_params_wfirst = defaults.nz_params_wfirst_gal.copy()
     power_params = defaults.power_params.copy()
-    lw_param_list = np.array([{'dn_params':dn_params,'n1_params':n_params_wfirst,'n2_params':n_params_wfirst,'mf_params':mf_params}])
+    prior_params = defaults.prior_fisher_params.copy()
+    lw_param_list = np.array([{'dn_params':{'nz_select':'CANDELS'},'n_params':n_params_wfirst,'mf_params':mf_params}])
     #wmatcher_params['w_step']=0.05
     basis_params = defaults.basis_params.copy()
 
@@ -73,7 +76,8 @@ if __name__=='__main__':
     phi_in_wfirst = 7./180.*np.pi
     theta_in_wfirst = -35.*np.pi/180.+np.pi/2.
     print "main: begin constructing WFIRST PolygonGeo"
-    geo_wfirst = PolygonGeo(zs,thetas_wfirst,phis_wfirst,theta_in_wfirst,phi_in_wfirst,C,z_fine,l_max,poly_params)
+    #geo_wfirst = PolygonGeo(zs,thetas_wfirst,phis_wfirst,theta_in_wfirst,phi_in_wfirst,C,z_fine,l_max,poly_params)
+    geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,poly_params)
 
     #create the LSST geometry (for our purposes, a 20000 square degree survey encompassing the wfirst survey)
     #use the same redshift bin structure as for WFIRST because we only want LSST for galaxy counts, not lensing
@@ -107,44 +111,39 @@ if __name__=='__main__':
     print "main: begin constructing lensing source density for WFIRST"
     nz_wfirst_lens = NZWFirst(nz_params_wfirst_lens)
     #set some parameters for lensing
-    lensing_params['n_gal'] = nz_wfirst_lens.get_N_projected(z_fine,geo_wfirst.angular_area())
     lensing_params['smodel'] = 'nzmatcher'
     lensing_params['z_min_dist'] = np.min(zs)
     lensing_params['z_max_dist'] = np.max(zs)
-    lensing_params['pmodel_O'] = 'halofit'
-    lensing_params['pmodel_dO_ddelta'] = 'halofit'
-    lensing_params['pmodel_dO_dpar'] = 'halofit'
-
-    #l bins for lensing
-    l_sw = np.logspace(np.log(30),np.log(5000),base=np.exp(1.),num=40)
-    #create the actual sw survey
-    print "main: begin constructing SWSurvey for wfirst"
-    sw_survey_wfirst = SWSurvey(geo_wfirst,'wfirst',C,l_sw,sw_survey_params,observable_list = sw_observable_list,cosmo_par_list = cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,len_params=lensing_params,nz_matcher=nz_wfirst_lens)
-    surveys_sw = np.array([sw_survey_wfirst])
+    lensing_params['pmodel'] = 'halofit'
 
     #create the lw basis
     #z_max is the maximum radial extent of the basis
     z_max = zs[-1]+0.001
     r_max = C.D_comov(z_max)
     #k_cut is the maximum k balue for the bessel function zeros that define the basis
-    #x_cut = 70.
-    x_cut = 30.
-    #x_cut = 10.
+    x_cut = 70.
+    #x_cut = 90.
+    #x_cut = 20.
     k_cut = x_cut/r_max
     #l_max caps maximum l regardless of k
     print "main: begin constructing basis for long wavelength fluctuations"
     basis = SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_max)
 
+    #create the actual sw survey
+    print "main: begin constructing SWSurvey for wfirst"
+    sw_survey_wfirst = SWSurvey(geo_wfirst,'wfirst',C,sw_survey_params,observable_list=sw_observable_list,cosmo_par_list=cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,len_params=lensing_params,nz_matcher=nz_wfirst_lens)
+    surveys_sw = np.array([sw_survey_wfirst])
+
+
     #create the lw survey
     geos = np.array([geo_wfirst,geo_lsst],dtype=object)
     print "main: begin constructing LWSurvey for mitigation"
-    #TODO control cut out here
     survey_lw = LWSurvey(geos,'combined_survey',basis,C,lw_survey_params,observable_list=lw_observable_list,param_list=lw_param_list)
     surveys_lw = np.array([survey_lw])
 
     #create the SuperSurvey with mitigation
     print "main: begin constructing SuperSurvey"
-    SS = SuperSurvey(surveys_sw, surveys_lw,basis,C=C,get_a=False,do_unmitigated=True,do_mitigated=True)
+    SS = SuperSurvey(surveys_sw,surveys_lw,basis,C,prior_params,get_a=False,do_unmitigated=True,do_mitigated=True)
 
     time1 = time()
     print "main: finished construction tasks in "+str(time1-time0)+"s"
@@ -168,7 +167,7 @@ if __name__=='__main__':
 
     SS.print_standard_analysis()
     #make the ellipse plot
-    SS.make_standard_ellipse_plot()
+    #SS.make_standard_ellipse_plot()
 
 #    valfound_g = {}
 #    f_base_g = SS.f_set[0][2].get_fisher()
@@ -276,4 +275,4 @@ c_rot_eig_g = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[0][2].get_covar(),of_n
 #make_ellipse_plot(np.array([c_rot_eig_g[-2:,-2:],c_rot_eig_no_mit[-2:,-2:],c_rot_eig_mit[-2:,-2:]]),np.array([[0,1,0],[1,0,0],[0,0,1]]),np.array([1.,1.,1.]),np.array(['g','no mit','mit']),np.array([0.0002,0.0025]),np.array(['p2','p1']),dchi2,adaptive_mult=1.05)
 #make_ellipse_plot(np.array([c_rot_eig_g,c_rot_eig_no_mit,c_rot_eig_mit]),np.array([[0,1,0],[1,0,0],[0,0,1]]),np.array([1.,1.,1.]),np.array(['g','no mit','mit']),np.array([5.,5.,5.,5.,5.,5.,5.,]),np.array(['p7','p6','p5','p4','p3','p2','p1']),dchi2,adaptive_mult=1.05)
 #make_ellipse_plot(np.array([c_rot_eig_g[-2:,-2:],c_rot_eig_no_mit[-2:,-2:],c_rot_eig_mit[-2:,-2:]]),np.array([[0,1,0],[1,0,0],[0,0,1]]),np.array([1.,1.,1.]),np.array(['g','no mit','mit']),np.array([5.,5.]),np.array(['p2','p1']),dchi2,adaptive_mult=1.05)
-make_ellipse_plot(np.array([c_rot_eig_g[-2:,-2:],c_rot_eig_no_mit[-2:,-2:],c_rot_eig_mit[-2:,-2:]]),np.array([[0,1,0],[1,0,0],[0,0,1]]),np.array([1.,1.,1.]),np.array(['g','no mit','mit']),np.array([5.,5.]),np.array(['p2','p1']),dchi2,adaptive_mult=1.05,include_diag=False)
+#make_ellipse_plot(np.array([c_rot_eig_g[-2:,-2:],c_rot_eig_no_mit[-2:,-2:],c_rot_eig_mit[-2:,-2:]]),np.array([[0,1,0],[1,0,0],[0,0,1]]),np.array([1.,1.,1.]),np.array(['g','no mit','mit']),np.array([5.,5.]),np.array(['p2','p1']),dchi2,adaptive_mult=1.05,include_diag=False)

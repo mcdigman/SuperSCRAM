@@ -23,7 +23,7 @@ DEBUG = False
 
 class FisherMatrix(object):
     """General Fisher matrix object for fisher matrix and covariance manipulations"""
-    def __init__(self,input_matrix,input_type,initial_state = None,fix_input=False,silent=True):
+    def __init__(self,input_matrix,input_type,initial_state=None,fix_input=False,silent=True):
         """create a fisher matrix object
             input_matrix: an input matrix
             input_type: a code for matrix type of input_matrix, options REP_FISHER, REP_CHOL, REP_CHOL_INV, or REP_COVAR
@@ -75,13 +75,42 @@ class FisherMatrix(object):
         if not self.silent:
             print "FisherMatrix "+str(id(self))+": internal state changed from "+str(self.internal_state)+" to "+str(new_state)
 
-    def perturb_fisher(self,v):
-        """add perturbation the fisher matrix in the form v^Tv"""
+#    def perturb_fisher(self,v,sigma2=1.):
+#        """add perturbation the fisher matrix in the form sigma2*v^Tv"""
+#        if not self.silent:
+#            print "FisherMatrix ",id(self)," perturbing fisher matrix"
+#        #internal state must be fisher to add right now: could possibly be changed back
+#        self.switch_rep(REP_FISHER)
+#        self._internal_mat = spl.blas.dsyrk(sigma2,v,1.,self._internal_mat,overwrite_c=True,trans=True,lower=True)
+
+    def perturb_fisher(self,vs,sigma2s):
+        """add perturbation the fisher matrix in the form sigma2*v^Tv,
+        use Sherman-Morrison formula to avoid inverting/for numerical stability"""
         if not self.silent:
             print "FisherMatrix ",id(self)," perturbing fisher matrix"
         #internal state must be fisher to add right now: could possibly be changed back
-        self.switch_rep(REP_FISHER)
-        self._internal_mat = spl.blas.dsyrk(1.,v,1.,self._internal_mat,overwrite_c=True,trans=True,lower=True)
+        if self.internal_state==REP_FISHER or self.internal_state==REP_CHOL_INV:
+            self.switch_rep(REP_FISHER)
+            self._internal_mat = np.asfortranarray(self._internal_mat)
+            for itr in xrange(0,sigma2s.size):
+                self._internal_mat = spl.blas.dsyrk(sigma2s[itr],vs[itr:itr+1],1.,c=self._internal_mat,overwrite_c=True,trans=True,lower=True)
+                self._internal_mat = np.asfortranarray(self._internal_mat)
+
+        else:
+            self.switch_rep(REP_COVAR)
+            self._internal_mat = np.asfortranarray(self._internal_mat)
+            for itr in xrange(0,sigma2s.size):
+                v = vs[itr:itr+1]
+                lhs = spl.blas.dsymm(1.,self._internal_mat,v.T,lower=True,overwrite_c=False,side=False)
+                #use more numerically stable form for large sigma2s, although mathematically equivalent
+                if sigma2s[itr]>1.:
+                    mult = -1./(1./sigma2s[itr]+np.dot(v,lhs)[0,0])
+                else:
+                    mult = -sigma2s[itr]/(1.+sigma2s[itr]*np.dot(v,lhs)[0,0])
+                self._internal_mat = spl.blas.dsyrk(mult,lhs,1.,c=self._internal_mat,lower=True,trans=False,overwrite_c=True)
+                self._internal_mat = np.asfortranarray(self._internal_mat)
+
+
 
     def add_fisher(self,F_n):
         """Add a fisher matrix (ie a perturbation) to the internal fisher matrix"""
@@ -107,7 +136,6 @@ class FisherMatrix(object):
         else:
             self._internal_mat += C_n
 
-    #TODO handle F_alpha_beta with 0 eigenvalues separately
     #copy_output=True should guarantee the output will never be mutated by FisherMatrix (ie copy the output matrix if necessary)
     #copy_output=False will not copy the output matrix in general, which will be more memory efficient but might cause problems if the user is not careful
     def get_covar(self,inplace=False,copy_output=False,internal=False):
@@ -132,10 +160,13 @@ class FisherMatrix(object):
                 print "FisherMatrix "+str(id(self))+": covar cache miss"
             chol_cov = self.get_cov_cholesky(inplace=inplace,internal=True,copy_output=False)
             #dlauum calculates L^TL but have LL^T cholesky convention, rot90s flip to correct convention
-            result, info = spl.lapack.dlauum(np.rot90(chol_cov,2),lower=False,overwrite_c=inplace)
+            result, info = spl.lapack.dlauum(np.asfortranarray(np.rot90(chol_cov,2)),lower=False,overwrite_c=inplace)
+            chol_cov = None
             if info!=0:
                 raise RuntimeError('dlauum failed with error code '+str(info))
             result = np.rot90(result,2)
+
+        result = np.asfortranarray(result)
 
         #make sure guaranteed to change _internal_mat if inplace was true
         if inplace:
@@ -146,13 +177,11 @@ class FisherMatrix(object):
         if not internal:
             result = mirror_symmetrize(result,lower=True,inplace=True)
 
-        #TODO protect _internal_mat/allow override
         if copy_output:
             return result.copy()
         else:
             return result
 
-    #TODO trap return_fisher=True and identical_inputs=False, not sensible
     def contract_covar(self,v1,v2,identical_inputs=False,return_fisher=False,destructive=False):
         """calculates (v1.T).covariance.v2 for getting variance/projecting to another basis
             inputs:
@@ -161,7 +190,6 @@ class FisherMatrix(object):
                 return_fisher: if True, return a FisherMatrix object
                 destructive: if True, destroy the internal representation of self for a performance gain
         """
-
         if not self.silent:
             print "FisherMatrix "+str(id(self))+": contracting covariance"
         #result = cholesky_inv_contract(self.get_cov_cholesky().T,v1,v2,cholesky_given=True,identical_inputs=identical_inputs,lower=True)
@@ -173,9 +201,11 @@ class FisherMatrix(object):
                 right_res = spl.blas.dsymm(1.,self._internal_mat,v1,lower=True)
             else:
                 right_res = spl.blas.dsymm(1.,self._internal_mat,v2,lower=True)
+
             if destructive:
                 self._internal_mat = None
             result = np.dot(v1.T,right_res)
+            right_res = None
             if identical_inputs and not return_fisher:
                 result = mirror_symmetrize(result,lower=True,inplace=True)
         else:
@@ -186,6 +216,7 @@ class FisherMatrix(object):
                 res1 = spl.solve_triangular(chol_fisher,v1,lower=True,check_finite=DEBUG)
                 if not identical_inputs:
                     res2 = spl.solve_triangular(chol_fisher,v2,lower=True,check_finite=DEBUG)
+                chol_fisher = None
             elif self.internal_state==REP_CHOL_INV:
                 res1 = spl.solve_triangular(self._internal_mat,v1,lower=True,check_finite=DEBUG,trans=True)
                 if not identical_inputs:
@@ -201,18 +232,18 @@ class FisherMatrix(object):
                 self._internal_mat = None
 
             if identical_inputs:
-                result = spl.blas.dsyrk(1.,res1,lower=True,trans=True,overwrite_c=True)
+                result = spl.blas.dsyrk(1.,np.asfortranarray(res1),lower=True,trans=True,overwrite_c=True)
+                res1 = None
                 if not return_fisher:
                     result = mirror_symmetrize(result,lower=True,inplace=True)
             else:
                 result = np.dot(res1.T,res2)
-
+                res1 = None
+                res2 = None
         if return_fisher:
             return FisherMatrix(result,input_type=REP_COVAR,initial_state=REP_COVAR,fix_input=False,silent=self.silent)
         else:
             return result
-
-    #TODO maybe handle case where nearly singular when inverting in general
 
     #needed for projecting to another basis
     def contract_fisher(self,v1,v2,identical_inputs=False,return_fisher=False,destructive=False):
@@ -237,6 +268,7 @@ class FisherMatrix(object):
             if destructive:
                 self._internal_mat = None
             result = np.dot(v1.T,right_res)
+            right_res = None
             if identical_inputs and not return_fisher:
                 result = mirror_symmetrize(result,lower=True,inplace=True)
         else:
@@ -247,6 +279,7 @@ class FisherMatrix(object):
                 res1 = spl.solve_triangular(chol_cov,v1,lower=True,check_finite=DEBUG)
                 if not identical_inputs:
                     res2 = spl.solve_triangular(chol_cov,v2,lower=True,check_finite=DEBUG)
+                chol_cov = None
             elif self.internal_state==REP_CHOL_INV:
                 res1 = spl.blas.dtrmm(1.,self._internal_mat,v1,lower=True,trans_a=False)
                 if not identical_inputs:
@@ -262,11 +295,14 @@ class FisherMatrix(object):
                 self._internal_mat = None
 
             if identical_inputs:
-                result = spl.blas.dsyrk(1.,res1,lower=True,trans=True,overwrite_c=True)
+                result = spl.blas.dsyrk(1.,np.asfortranarray(res1),lower=True,trans=True,overwrite_c=True)
+                res1 = None
                 if not return_fisher:
                     result = mirror_symmetrize(result,lower=True,inplace=True)
             else:
                 result = np.dot(res1.T,res2)
+                res1 = None
+                res2 = None
         if destructive:
             self._internal_mat = None
 
@@ -288,7 +324,6 @@ class FisherMatrix(object):
         return result
 
     #this is not actually fisher cholesky, but the cholesky decomposition of the inverse of the covariance, which is not exactly the same ie LL^T vs L^TL decompositions
-    #TODO inplace should never be used unless internal, copy_output maybe also redundant
     def get_cov_cholesky_inv(self,inplace=False,copy_output=False,internal=False):
         """get inverse of lower triangular cholesky decomposition of covariance
                 inputs:
@@ -394,14 +429,17 @@ class FisherMatrix(object):
                 print "FisherMatrix "+str(id(self))+": retrieved fisher matrix from cache"
             result = self._internal_mat
         elif self.internal_state==REP_COVAR or self.internal_state==REP_CHOL:
-            result,info = spl.lapack.dpotri(self.get_cov_cholesky(copy_output=False,internal=True,inplace=inplace),lower=True,overwrite_c=inplace)
+            chol_cov = np.asfortranarray(self.get_cov_cholesky(copy_output=False,internal=True,inplace=inplace))
+            result,info = spl.lapack.dpotri(chol_cov,lower=True,overwrite_c=inplace)
+            chol_cov = None
             if info!=0:
                 raise RuntimeError('dpotri failed with error code '+str(info))
         else:
             if not self.silent:
                 print "FisherMatrix "+str(id(self))+": fisher matrix cache miss"
-            chol_res = self.get_cov_cholesky_inv(copy_output=False,internal=True,inplace=inplace)
+            chol_res = np.asfortranarray(self.get_cov_cholesky_inv(copy_output=False,internal=True,inplace=inplace))
             result,info = spl.lapack.dlauum(chol_res,lower=True,overwrite_c=inplace)
+            chol_res = None
             if info!=0:
                 raise RuntimeError('dlauum failed with error code '+str(info))
 

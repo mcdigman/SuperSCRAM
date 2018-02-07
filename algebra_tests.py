@@ -6,7 +6,7 @@ import numpy.linalg as npl
 import scipy.linalg as spl
 import pytest
 import algebra_utils as au
-from algebra_utils import cholesky_inplace,get_inv_cholesky,ch_inv,invert_triangular,get_mat_from_inv_cholesky,cholesky_inv_contract,get_cholesky_inv,cholesky_contract,check_is_cholesky,check_is_cholesky_inv,trapz2
+from algebra_utils import cholesky_inplace,get_inv_cholesky,ch_inv,invert_triangular,get_mat_from_inv_cholesky,cholesky_inv_contract,get_cholesky_inv,cholesky_contract,check_is_cholesky,check_is_cholesky_inv,trapz2,clean_triangle,mirror_symmetrize
 au.DEBUG = True
 #TODO add testing for inplace and clean parameters
 def get_test_mat(key):
@@ -124,6 +124,21 @@ def test_basic_setup_succeeded(test_mat):
     assert check_is_cholesky(chol1_u,A,lower=False,atol_rel=atol_rel_use,rtol=rtol_use)
     assert np.allclose(npl.pinv(A_i),A,atol=relax_atol,rtol=relax_rtol)
     assert np.allclose(npl.pinv(chol_i1),chol1,atol=relax_atol,rtol=relax_rtol)
+
+def test_clean_triangle(test_mat):
+    """test cleaning matrix to be triangular"""
+    A = test_mat.A.copy()
+    AL1 = np.tril(A.copy())
+    AL2 = clean_triangle(A.copy(),lower=True,inplace=False)
+    AL3 = clean_triangle(A.copy(),lower=True,inplace=True)
+    assert np.all(AL1==AL2)
+    assert np.all(AL1==AL3)
+    AU1 = np.triu(A.copy())
+    AU2 = clean_triangle(A.copy(),lower=False,inplace=False)
+    AU3 = clean_triangle(A.copy(),lower=False,inplace=True)
+    assert np.all(AU1==AU2)
+    assert np.all(AU1==AU3)
+
 
 def test_get_inv_cholesky_F_order_direct_lower(test_mat):
     """check get_inv_cholesky works with Fortran ordering, lower given"""
@@ -1205,6 +1220,49 @@ def test_trapz2_no_dx(trapz_test):
     integrated2 = trapz2(integrand)
 
     assert np.allclose(integrated1,integrated2,atol=atol_use,rtol=rtol_use)
+
+def test_mirror_symmetrize(test_mat):
+    """test cleaning matrix to be triangular"""
+    #A should already be symmetric, so test on the non symmetric triangles
+    A = test_mat.A.copy()
+    AHL = np.tril(A.copy())
+    AHU = np.triu(A.copy())
+    AL1 = mirror_symmetrize(A.copy(),lower=True,inplace=False)
+    AL2 = mirror_symmetrize(A.copy(),lower=True,inplace=True)
+    AL3 = mirror_symmetrize(AHL.copy(),lower=True,inplace=False)
+    AL4 = mirror_symmetrize(AHL.copy(),lower=True,inplace=True)
+    AL5 = mirror_symmetrize(AHU.copy(),lower=True,inplace=False)
+    AL6 = mirror_symmetrize(AHU.copy(),lower=True,inplace=True)
+    assert np.all(AL1==AL1.T)
+    assert np.all(AL2==AL2.T)
+    assert np.all(AL3==AL3.T)
+    assert np.all(AL4==AL4.T)
+    assert np.all(AL5==AL5.T)
+    assert np.all(AL6==AL6.T)
+    assert np.all(np.tril(AL1)==np.tril(A))
+    assert np.all(np.tril(AL2)==np.tril(A))
+    assert np.all(np.tril(AL3)==np.tril(AHL))
+    assert np.all(np.tril(AL4)==np.tril(AHL))
+    assert np.all(np.tril(AL5)==np.tril(AHU))
+    assert np.all(np.tril(AL6)==np.tril(AHU))
+    AU1 = mirror_symmetrize(A.copy(),lower=False,inplace=False)
+    AU2 = mirror_symmetrize(A.copy(),lower=False,inplace=True)
+    AU3 = mirror_symmetrize(AHL.copy(),lower=False,inplace=False)
+    AU4 = mirror_symmetrize(AHL.copy(),lower=False,inplace=True)
+    AU5 = mirror_symmetrize(AHU.copy(),lower=False,inplace=False)
+    AU6 = mirror_symmetrize(AHU.copy(),lower=False,inplace=True)
+    assert np.all(AU1==AU1.T)
+    assert np.all(AU2==AU2.T)
+    assert np.all(AU3==AU3.T)
+    assert np.all(AU4==AU4.T)
+    assert np.all(AU5==AU5.T)
+    assert np.all(AU6==AU6.T)
+    assert np.all(np.triu(AU1)==np.triu(A))
+    assert np.all(np.triu(AU2)==np.triu(A))
+    assert np.all(np.triu(AU3)==np.triu(AHL))
+    assert np.all(np.triu(AU4)==np.triu(AHL))
+    assert np.all(np.triu(AU5)==np.triu(AHU))
+    assert np.all(np.triu(AU6)==np.triu(AHU))
 
 if __name__=='__main__':
     pytest.cmdline.main(['algebra_tests.py'])
