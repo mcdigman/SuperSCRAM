@@ -4,8 +4,7 @@ import spherical_geometry.vector as sgv
 
 from polygon_geo import PolygonGeo
 from geo import Geo
-from copy import deepcopy
-from spherical_geometry.polygon import SphericalPolygon
+#from spherical_geometry.polygon import SphericalPolygon
 
 class PolygonUnionGeo(Geo):
     """get the geo represented by the union of geos minus anything covered by masks, all PolygonGeo objects"""

@@ -13,8 +13,8 @@ def get_inv_cholesky(A,lower=True,inplace=False,clean=True):
         completely ignores opposite triangle of A"""
     if DEBUG:
         A_copy = A.copy()
-
-    result = invert_triangular(cholesky_inplace(A,inplace=inplace,lower=lower,clean=False),lower=lower,inplace=inplace,clean=clean)
+    result = cholesky_inplace(A,inplace=inplace,lower=lower,clean=False)
+    result = invert_triangular(result,lower=lower,inplace=inplace,clean=clean)
 
     if DEBUG:
         assert check_is_cholesky_inv(result,A_copy,is_clean=clean,lower=lower,B_symmetrized=False)
@@ -26,7 +26,8 @@ def get_cholesky_inv(A,lower=True,inplace=False,clean=True):
     """Get the cholesky decomposition of the inverse of a matrix A"""
     if DEBUG:
         A_copy = A.copy()
-    result,info = spl.lapack.dtrtri(cholesky_inplace(np.asfortranarray(np.rot90(A,2)),lower=(not lower),inplace=inplace,clean=clean),lower=(not lower),overwrite_c=inplace)
+    result = cholesky_inplace(np.asfortranarray(np.rot90(A,2)),lower=(not lower),inplace=inplace,clean=clean)
+    result,info = spl.lapack.dtrtri(result,lower=(not lower),overwrite_c=inplace)
     if info!=0:
         raise RuntimeError('dtrtri failed with exit code '+str(info))
     result = np.asfortranarray(np.rot90(result,2))
@@ -83,8 +84,6 @@ def ch_inv(A,cholesky_given=False,lower=True,inplace=False,clean=True):
         clean: whether to symmetrize output
         completely ignores opposite triangle"""
 
-    #chol = np.linalg.cholesky(A)
-    #chol_inv = np.linalg.solve(np.linalg.cholesky(A),np.identity(A.shape[0]))
     if DEBUG:
         A_copy = A.copy()
 
@@ -163,7 +162,8 @@ def cholesky_inplace(A,inplace=True,fatal_errors=False,lower=True,clean=True):
         Cannot currently be done in place if the array is not F contiguous, but will compute decomposition anyway.
         in place will require less memory, and regardless this function should have less overhead than scipy/numpy (both in time and memory)
         If absolutely must be done in place, set fatal_errors=True.
-        if lower=True return lower triangular decomposition, otherwise upper triangular (note lower=True is numpy default,lower=False is scipy default).
+        if lower=True return lower triangular decomposition, 
+        otherwise upper triangular (note lower=True is numpy default,lower=False is scipy default).
         completely ignores opposite triangle of A
     """
     if DEBUG:
@@ -171,13 +171,14 @@ def cholesky_inplace(A,inplace=True,fatal_errors=False,lower=True,clean=True):
 
     try_inplace = inplace
     #assert np.all(A==A.T)
-    #dpotrf will still work on C contiguous arrays but will silently fail to do them in place regardless of overwrite_a, so raise a warning or error here
+    #dpotrf will still work on C contiguous arrays but will silently fail to do them in place 
+    #regardless of overwrite_a, so raise a warning or error here
     #using order='F' when creating the array or A.copy('F') when copying ensures fortran contiguous arrays.
     if (not A.flags['F_CONTIGUOUS']) and try_inplace:
         if fatal_errors:
             raise RuntimeError('algebra_utils: Cannot do cholesky decomposition in place on C continguous numpy array.')
         else:
-            warn('algebra_utils: Cannot do cholesky decomposition in place on C contiguous numpy array. will output to return value',RuntimeWarning)
+            warn('algebra_utils: Cannot do cholesky in place on C contiguous numpy array. will output to return value',RuntimeWarning)
             try_inplace = False
 
     #spl.cholesky won't do them in place

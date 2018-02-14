@@ -67,10 +67,13 @@ def get_Y_r_dict_central(l_max):
             Y_lms[(ll,mm)] = 0.
         for nn in xrange(0,np.int(ll/2.)+1):
             Y_lms[(ll,ll-2*nn-1)] = 0.
+            base = factorials[(2*ll-2*nn)]/factorials[ll-nn]*1./factorials[nn]
+            ratio = factorials[2*nn]/factorials[2*ll-2*nn]
+            #prefactor = (-1)**(nn)*mp.sqrt((2.*ll+1.)/(2.*mp.pi)
             if 2*nn==ll:
-                Y_lms[(ll,ll-2*nn)] = np.double((-1)**(nn)*mp.sqrt((2.*ll+1.)/(4.*mp.pi)*(factorials[2*nn]/factorials[2*ll-2*nn]))*2**-ll*(factorials[(2*ll-2*nn)]/factorials[ll-nn]*1./factorials[nn]))
+                Y_lms[(ll,ll-2*nn)] = np.double((-1)**(nn)*mp.sqrt((2.*ll+1.)/(4.*mp.pi)*ratio)*2**-ll*base)
             else:
-                Y_lms[(ll,ll-2*nn)] = np.double((-1)**(nn)*mp.sqrt((2.*ll+1.)/(2.*mp.pi)*(factorials[2*nn]/factorials[2*ll-2*nn]))*2**-ll*(factorials[(2*ll-2*nn)]/factorials[ll-nn]*1./factorials[nn]))
+                Y_lms[(ll,ll-2*nn)] = np.double((-1)**(nn)*mp.sqrt((2.*ll+1.)/(2.*mp.pi)*ratio)*2**-ll*base)
             if not np.isfinite(Y_lms[(ll,ll-2*nn)]):
                 raise ValueError('result not finite at l='+str(ll)+' m='+str(ll-2*nn)+' try decreasing l_max')
     return Y_lms

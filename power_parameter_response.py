@@ -5,14 +5,14 @@ import numpy as np
 import cosmopie as cp
 import matter_power_spectrum as mps
 #TODO there may be a little h handling bug somewhere, see test case 2
-def get_perturbed_cosmopies(C_fid,pars,epsilons,log_param_derivs=None,override_safe=False):
+def get_perturbed_cosmopies(C_fid,pars,epsilons,log_par_derivs=None,override_safe=False):
     """get set of 2 perturbed cosmopies, above and below (including camb linear power spectrum) for getting partial derivatives
         using central finite difference method
         inputs:
             C_fid: the fiducial CosmoPie
             pars: an array of the names of parameters to change
             epsilons: an array of step sizes correspondings to pars
-            log_param_derivs: if True for a given element of pars will do log derivative in the parameter
+            log_par_derivs: if True for a given element of pars will do log derivative in the parameter
             override_safe: if True do not borrow the growth factor or power spectrum from C_fid even if we could
     """
     cosmo_fid = C_fid.cosmology.copy()
@@ -22,17 +22,17 @@ def get_perturbed_cosmopies(C_fid,pars,epsilons,log_param_derivs=None,override_s
     power_params = P_fid.power_params.copy()
 
     #default assumption is ordinary derivative, can do log deriv in parameter also
-    #if log_param_derivs[i]==True, will do log deriv
-    if log_param_derivs is not None and log_param_derivs.size!=pars.size:
-        raise ValueError('invalid input log_param_derivs '+str(log_param_derivs))
-    elif log_param_derivs is None:
-        log_param_derivs = np.zeros(pars.size,dtype=bool)
+    #if log_par_derivs[i]==True, will do log deriv
+    if log_par_derivs is not None and log_par_derivs.size!=pars.size:
+        raise ValueError('invalid input log_par_derivs '+str(log_par_derivs))
+    elif log_par_derivs is None:
+        log_par_derivs = np.zeros(pars.size,dtype=bool)
 
     Cs_pert = np.zeros((pars.size,2),dtype=object)
 
     for i in xrange(0,pars.size):
-        cosmo_a = get_perturbed_cosmology(cosmo_fid,pars[i],epsilons[i],log_param_derivs[i])
-        cosmo_b = get_perturbed_cosmology(cosmo_fid,pars[i],-epsilons[i],log_param_derivs[i])
+        cosmo_a = get_perturbed_cosmology(cosmo_fid,pars[i],epsilons[i],log_par_derivs[i])
+        cosmo_b = get_perturbed_cosmology(cosmo_fid,pars[i],-epsilons[i],log_par_derivs[i])
 
         #set cosmopie power spectrum appropriately
         #avoid unnecessarily recomputing growth factors if they won't change. If growth factors don't change neither will w matching

@@ -17,7 +17,6 @@ from polygon_union_geo import PolygonUnionGeo
 from polygon_pixel_union_geo import PolygonPixelUnionGeo
 
 import fisher_matrix as fm
-
 class DNumberDensityObservable(LWObservable):
     """An observable for the difference in galaxy number density between two bins"""
     def __init__(self,geos,params,survey_id,C,basis,nz_params,mf_params):
@@ -50,11 +49,14 @@ class DNumberDensityObservable(LWObservable):
         #self.geo1 should be intersect of mitigation survey and original survey
         if np.isclose(geos[0].get_overlap_fraction(geos[1]),1.):
             self.geo1 = geos[0]
+        #elif np.isclose(geos[0].get_overlap_fraction(geos[1]),0.):
+        #    self.geo1 = PolygonUnionGeo(np.array([geos[0]]),np.array([geos[1]]))
         else:
             if isinstance(geos[0],PolygonGeo):
-                self.geo1 = PolygonUnionGeo(np.array([geos[0]]),np.array([self.geo2]))
+                raise RuntimeError('partial overlap not yet implemented')
+        #        self.geo1 = PolygonUnionGeo(np.array([geos[0]]),np.array([self.geo2]))
             elif isinstance(self.geos[0],PolygonPixelGeo):
-                self.geo2 = PolygonPixelUnionGeo(np.array([geos[0]]),np.array([self.geo2]))
+                self.geo1 = PolygonPixelUnionGeo(np.array([geos[0]]),np.array([self.geo2]))
             else:
                 raise ValueError('unrecognized type for geo1')
 
@@ -77,37 +79,45 @@ class DNumberDensityObservable(LWObservable):
 
         self.n_bins = self.geo2.fine_indices.shape[0]
 
-        self.Nab_i = np.zeros((self.n_bins,self.n_bins))
-        self.vs = np.zeros((self.n_bins,basis.get_size()))
 
         self.n_avgs = self.nzc.get_nz(self.geo2)
         self.M_cuts = self.nzc.get_M_cut(self.mf,self.geo2)
         self.dn_ddelta_bar = self.mf.bias_n_avg(self.M_cuts,self.z_fine)
         self.integrand = np.expand_dims(self.dn_ddelta_bar*self.r_fine**2,axis=1)
+        #note effect of mitigation converged to ~0.3% if cut off integral at for z>1.5, 10% for z>0.6,20% for z>0.5
+        r_vols = 3./np.diff(self.geo2.rbins**3)
+        n_avg_integrand = self.r_fine**2*self.n_avgs
+
+        self.Nab_i = np.zeros(self.n_bins)
+        self.vs = np.zeros((self.n_bins,basis.get_size()))
 
         #NOTE this whole loop could be pulled apart with a small change in sph_klim
         for itr in xrange(0,self.n_bins):
             bounds1 = self.geo2.fine_indices[itr]
-            range1 = np.array(range(bounds1[0],bounds1[1]))
+            range1 = np.arange(bounds1[0],bounds1[1])#np.array(range(bounds1[0],bounds1[1]))
 
             print "Dn: getting d1,d2"
             #multiplier for integrand
-            d1 = self.basis.D_O_I_D_delta_alpha(self.geo1,self.integrand,use_r=True,range_spec=range1)
-            d2 = self.basis.D_O_I_D_delta_alpha(self.geo2,self.integrand,use_r=True,range_spec=range1)
-
-            r_vol = 1./(self.r_fine[range1[-1]]**3-self.r_fine[range1[0]]**3)*3.
-            DO_a = (d2-d1)*r_vol
-            #TODO check number densities sensible
-            n_avg1 = trapz2((self.r_fine**2*self.n_avgs)[range1],self.r_fine[range1])*r_vol
-
             V1 = self.geo1.volumes[itr]
             V2 = self.geo2.volumes[itr]
-            Nab_itr = n_avg1*(1./V1+1./V2)
-            if Nab_itr==0.:
-                warn('Dn: variance had a value which was exactly 0; mitigation disabled for axis '+str(itr))
-                self.Nab_i[itr,itr] = 0.
+            assert V1>=0 and V2>=0
+
+
+            #r_vol = 1./(self.r_fine[range1[-1]]**3-self.r_fine[range1[0]]**3)*3.
+            #TODO check number densities sensible
+            n_avg = r_vols[itr]*trapz2(n_avg_integrand[range1],self.r_fine[range1])
+
+            if V1 == 0 or V2 == 0:
+                continue
+            elif n_avg==0.:
+                warn('Dn: variance had a value which was exactly 0; fixing inverse to np.inf '+str(itr))
+                self.Nab_i[itr] = np.inf
             else:
-                self.Nab_i[itr,itr] = 1./Nab_itr
+                d1 = self.basis.D_O_I_D_delta_alpha(self.geo1,self.integrand,use_r=True,range_spec=range1)
+                d2 = self.basis.D_O_I_D_delta_alpha(self.geo2,self.integrand,use_r=True,range_spec=range1)
+                DO_a = (d2-d1)*r_vols[itr]
+                Nab_itr = n_avg*(1./V1+1./V2)
+                self.Nab_i[itr] = 1./Nab_itr
                 self.vs[itr] = DO_a.flatten()
 
     def get_rank(self):
@@ -119,10 +129,10 @@ class DNumberDensityObservable(LWObservable):
 #        return self.vs
 
     def get_fisher(self):
-        """get the fisher matrix"""
-        Nab_f = fm.FisherMatrix(np.sqrt(self.Nab_i),input_type=fm.REP_CHOL_INV)
+        """get the fisher matrix, cholesky is sqrt"""
+        Nab_f = fm.FisherMatrix(np.diagflat(np.sqrt(self.Nab_i)),input_type=fm.REP_CHOL_INV)
         return Nab_f.project_fisher(self.vs)
 
     def get_perturbing_vector(self):
-        """get decomposition of fisher matrix as F=v^Tv"""
-        return self.vs,np.diag(self.Nab_i)
+        """get decomposition of fisher matrix as F=sigma2*v^Tv"""
+        return self.vs,self.Nab_i

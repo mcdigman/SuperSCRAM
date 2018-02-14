@@ -38,7 +38,7 @@ class GeoTestSet(object):
         P = d[:,1]
         self.C = CosmoPie(defaults.cosmology,k=k,P_lin=P,p_space='jdem')
         self.zs = np.array([.01,1.01])
-        self.z_fine = np.arange(defaults.lensing_params['z_min_integral'],np.max(self.zs),defaults.lensing_params['z_resolution'])
+        self.z_fine = np.arange(0.0005,np.max(self.zs),0.002)
 
         self.poly_params = defaults.polygon_params.copy()
         self.poly_geo = pg.PolygonGeo(self.zs,params['thetas'],params['phis'],params['theta_in'],params['phi_in'],self.C,self.z_fine,params['l_max_poly'],self.poly_params)
@@ -560,7 +560,7 @@ if __name__=='__main__':
             mask_geo.sp_poly.draw(m,color='red')
             union_geo.union_pos.sp_poly.draw(m,color='green')
             plt.show()
-        
+
         do_reconstruct =False
         if do_reconstruct:
 

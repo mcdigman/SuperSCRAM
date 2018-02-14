@@ -1,7 +1,5 @@
 """some utility functions for real spherical harmonic a_lm computations, used by PolygonGeo"""
 import numpy as np
-import scipy.linalg as spl
-from algebra_utils import mirror_symmetrize
 
 def rot_alm_z(d_alm_table_in,angles,ls):
     """rotate alms around z axis by angle gamma_alpha"""

@@ -220,8 +220,8 @@ class ST_hmf(object):
             b_array = self.bias_G(self.mass_grid,G,norm)
 
             result = np.zeros(G.size)
-
-            grid_integrated = -np.vstack((np.zeros((1,mf.shape[1])),cumtrapz((b_array*mf)[::-1,:],self.mass_grid[::-1],axis=0)))[::-1,::-1]
+            grid_integrated = -cumtrapz((b_array*mf)[::-1,:],self.mass_grid[::-1],axis=0)
+            grid_integrated = np.vstack((np.zeros((1,mf.shape[1])),grid_integrated))[::-1,::-1]
             integrated = RectBivariateSpline(self.mass_grid,G[::-1],grid_integrated,kx=1,ky=1)
             for itr in xrange(0,G.size):
                 result[itr] = integrated(min_mass[itr],G[itr])
@@ -259,7 +259,9 @@ class ST_hmf(object):
 
         if isinstance(min_mass,np.ndarray) and isinstance(z,np.ndarray):
             mf = self.dndM_G(self.mass_grid,G)
-            integrated = RectBivariateSpline(self.mass_grid,G[::-1],-np.vstack((np.zeros((1,mf.shape[1])),cumtrapz(mf[::-1,:],self.mass_grid[::-1],axis=0)))[::-1,::-1],kx=1,ky=1)
+            res_grid = -np.vstack((np.zeros((1,mf.shape[1])),cumtrapz(mf[::-1,:],self.mass_grid[::-1],axis=0)))[::-1,::-1]
+            integrated = RectBivariateSpline(self.mass_grid,G[::-1],res_grid,kx=1,ky=1)
+            res_grid = None
             result = np.zeros(G.size)
             for itr in xrange(0,G.size):
                 result[itr] = integrated(min_mass[itr],G[itr])
@@ -465,9 +467,12 @@ class ST_hmf(object):
 #        #check integrating dn/dM over all M actually gives n
 #        assert np.allclose(trapz(dndM.T,hmf.mass_grid,axis=1),hmf.n_avg(np.zeros(zs.size)+hmf.mass_grid[0],zs))
 #        #not sure why, but this is true
-#        #assert np.allclose(np.zeros(zs.size)+1.,np.trapz(hmf.f_sigma(hmf.mass_grid,Gs)*hmf.bias_G(hmf.mass_grid,Gs,hmf.bias_norm(Gs)),np.outer(hmf.nu_of_M(hmf.mass_grid),1./Gs**2),axis=0)*hmf.f_norm(Gs))
-#        b_norm_residual = np.trapz(hmf.f_sigma(hmf.mass_grid,Gs)*hmf.bias_G(hmf.mass_grid,Gs,hmf.bias_norm(Gs)),np.outer(hmf.nu_of_M(hmf.mass_grid),1./Gs**2),axis=0)
-#        b_norm_residual_alt = np.trapz(hmf.f_sigma(hmf.mass_grid,Gs)*hmf.bias_G(hmf.mass_grid,Gs,1.),np.outer(hmf.nu_of_M(hmf.mass_grid),1./Gs**2),axis=0)
+#        test_xs = np.outer(hmf.nu_of_M(hmf.mass_grid),1./Gs**2)
+#        test_integrand = hmf.f_sigma(hmf.mass_grid,Gs)*hmf.bias_G(hmf.mass_grid,Gs,hmf.bias_norm(Gs))
+#        test_term = np.trapz(test_integrand,test_xs,axis=0)*hmf.f_norm(Gs)
+#        #assert np.allclose(np.full(zs.size,1.),test_term)
+#        b_norm_residual = np.trapz(test_integrand,test_x),axis=0)
+#        b_norm_residual_alt = np.trapz(hmf.f_sigma(hmf.mass_grid,Gs)*hmf.bias_G(hmf.mass_grid,Gs,1.),test_xs,axis=0)
 #        #assert np.allclose(np.zeros(zs.size)+1.,b_norm_residual)
 #
 #    do_plot_test2 = True

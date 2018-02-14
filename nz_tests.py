@@ -56,8 +56,9 @@ if __name__=='__main__':
         t1 = time()
         dN_dz_res = nzc.get_dN_dzdOmega(z_fine)
         t2 = time()
-        density_res = trapz2(dN_dz_res,dx=0.01)
-        print "wfirst total galaxies/steradian: "+str(density_res)+" galaxies/2200 deg^2 = "+str(density_res*np.pi**2/180**2*2200)+" g/arcmin^2="+str(density_res*np.pi**2/180**2/3600.)
+        d_wfirst = trapz2(dN_dz_res,dx=0.01)
+        d_wfirst_deg = d_wfirst*np.pi**2/180**2
+        print "wfirst tot g/sr: "+str(d_wfirst)+" g/2200 deg^2 = "+str(d_wfirst_deg*2200)+" g/arcmin^2="+str(d_wfirst_deg/3600.)
         print "found in: "+str(t2-t1)+" s"
         nz = nzc.get_nz(geo1)
         t3 = time()
@@ -79,8 +80,9 @@ if __name__=='__main__':
     dN_dz_lsst = nz_lsst.get_dN_dzdOmega(z_fine)
     dN_dz_candel = nz2.get_dN_dzdOmega(z_fine)
     m_cuts_lsst = nz_lsst.get_M_cut(mf,geo1)
-    density_res_lsst = trapz2(dN_dz_lsst,dx=0.01)
-    print "lsst total galaxies/steradian: "+str(density_res_lsst)+" galaxies/20000 deg^2 = "+str(density_res_lsst*np.pi**2/180**2*20000)+" g/arcmin^2="+str(density_res_lsst*np.pi**2/180**2/3600.)
+    d_lsst = trapz2(dN_dz_lsst,dx=0.01)
+    d_lsst_deg = d_lsst*np.pi**2/180**2
+    print "lsst tot g/sr: "+str(d_lsst)+" g/20000 deg^2 = "+str(d_lsst_deg*20000)+" g/arcmin^2="+str(d_lsst_deg/3600.)
     do_plot = True
     if do_plot:
         import matplotlib.pyplot as plt

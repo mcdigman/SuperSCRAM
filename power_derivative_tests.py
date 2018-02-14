@@ -1,5 +1,6 @@
 r"""test that the shear shear power spectrum derivatives have some expected functional dependencies,
-specifically \partial C^{ij}/\partial \bar{\delta}(zs) \propto 1/(width of zs bin)*z^i*C^{ij}, where z^i ~ average z of closer z bin"""
+specifically \partial C^{ij}/\partial \bar{\delta}(zs) \propto 1/(width of zs bin)*z^i*C^{ij}, 
+where z^i ~ average z of closer z bin"""
 #pylint: disable=W0621
 import numpy as np
 import pytest
@@ -26,13 +27,14 @@ def util_set():
     len_params['l_min'] = 30
     len_params['l_max'] = 3000
     len_params['n_l'] = 1000
+    len_params['n_gal'] = 118000000*6.
 
     z_test_res1 = 0.001
-    zs_test1 = np.arange(len_params['z_min_integral'],len_params['z_max_integral'],z_test_res1)
+    zs_test1 = np.arange(0.0005,2.,z_test_res1)
 
-    dC_ddelta1 = ShearPower(C,zs_test1,omega_s,len_params,pmodel=len_params['pmodel'],mode='dc_ddelta')
+    dC_ddelta1 = ShearPower(C,zs_test1,omega_s,len_params,mode='dc_ddelta')
 
-    sp1 = ShearPower(C,zs_test1,omega_s,len_params,pmodel=len_params['pmodel'],mode='power')
+    sp1 = ShearPower(C,zs_test1,omega_s,len_params,mode='power')
     ls = sp1.l_starts
 
 
@@ -65,9 +67,9 @@ def test_dz(util_set):
     for z_ind in xrange(10,35,5):
         ind_min = 200
         ind_max = ind_min+z_ind
-        dC_ss_1 = Cll_q_q(dC_ddelta1,QShear1_1,QShear1_2).Cll(chi_min=dC_ddelta1.chis[ind_min],chi_max=dC_ddelta1.chis[ind_max])
-        results1_test[(z_ind-10)/5] = dC_ss_1/ss_1/(dC_ddelta1.zs[ind_max]-dC_ddelta1.zs[ind_min])#*(z_min1+z_max1)/2.#*(dC_ddelta1.zs[ind_max]+dC_ddelta1.zs[ind_min])/2.
-        results1_0[(z_ind-10)/5] = dC_ss_1/ss_1#*(z_min1+z_max1)/2.#*(dC_ddelta1.zs[ind_max]+dC_ddelta1.zs[ind_min])/2.
+        dC_ss_1 = Cll_q_q(dC_ddelta1,QShear1_1,QShear1_2).Cll(dC_ddelta1.rs[ind_min],dC_ddelta1.rs[ind_max])
+        results1_test[(z_ind-10)/5] = dC_ss_1/ss_1/(dC_ddelta1.zs[ind_max]-dC_ddelta1.zs[ind_min])
+        results1_0[(z_ind-10)/5] = dC_ss_1/ss_1
 
     results_norm1_test = results1_test/results1_test[0]
     results_norm1_0 = results1_0/results1_0[0]
@@ -91,10 +93,10 @@ def test_zavg(util_set):
     for itr in range(0,5):
         QShear1_itr =  QShear(dC_ddelta1,C.D_comov(z_test2[itr]),C.D_comov(z_test2[itr+1]))
         ss_itr = Cll_q_q(sp1,QShear1_itr,QShear1_2).Cll()
-        dC_ss_itr = Cll_q_q(dC_ddelta1,QShear1_itr,QShear1_2).Cll(chi_min=dC_ddelta1.chis[200],chi_max=dC_ddelta1.chis[210])
+        dC_ss_itr = Cll_q_q(dC_ddelta1,QShear1_itr,QShear1_2).Cll(r_min=dC_ddelta1.rs[200],r_max=dC_ddelta1.rs[210])
         results2_test[itr] = dC_ss_itr/ss_itr*np.average(z_test2[itr:itr+2])
         results3_0[itr] = dC_ss_itr*np.average(z_test2[itr:itr+2])
-        results2_0[itr] = dC_ss_itr/ss_itr#*np.average(z_test2[itr:itr+2])
+        results2_0[itr] = dC_ss_itr/ss_itr
     results_norm2_test = results2_test/results2_test[0]
     results_norm2_0 = results2_0/results2_0[0]
     mean_abs_error2_test = np.average(np.abs(1.-results_norm2_test),axis=1)

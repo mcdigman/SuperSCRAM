@@ -40,7 +40,9 @@ class PolygonGeo(Geo):
         self.bounding_xyz = np.asarray(sgv.radec_to_vector(self.bounding_phi,self.bounding_theta,degrees=False)).T
 
         #this gets correct internal angles with specified vertex order (copied from spherical_polygon clas)
-        self.internal_angles = 2.*np.pi-np.hstack([gca.angle(self.bounding_xyz[:-2], self.bounding_xyz[1:-1], self.bounding_xyz[2:], degrees=False),gca.angle(self.bounding_xyz[-2], self.bounding_xyz[0], self.bounding_xyz[1], degrees=False)])
+        angle_body = gca.angle(self.bounding_xyz[:-2], self.bounding_xyz[1:-1], self.bounding_xyz[2:], degrees=False)
+        angle_end = gca.angle(self.bounding_xyz[-2], self.bounding_xyz[0], self.bounding_xyz[1], degrees=False)
+        self.internal_angles = 2.*np.pi-np.hstack([angle_body,angle_end])
 
         Geo.__init__(self,zs,C,z_fine)
 
@@ -108,7 +110,6 @@ class PolygonGeo(Geo):
                 gamma_alpha2 =  np.arctan2(self.z_hats[itr1,1],self.z_hats[itr1,0])-np.pi/2.
                 assert np.isclose(np.mod(self.gamma_alphas[itr1],2.*np.pi),np.mod(gamma_alpha2,2.*np.pi))
                 self.omega_alphas[itr1] = -np.arctan2(self.xps[itr1,1],self.xps[itr1,0])
-                #self.omega_alphas[itr1] = np.mod(np.arccos(np.dot(pa1,np.array([np.cos(self.gamma_alphas[itr1]),np.sin(self.gamma_alphas[itr1]),0]))),2.*np.pi)
             else:
                 self.omega_alphas[itr1] = 0.
                 self.gamma_alphas[itr1] = np.arctan2(pa1[1],pa1[0])

@@ -133,10 +133,12 @@ def get_Y_r_dict_central(l_max):
             Y_lms[(ll,mm)] = 0.
         for nn in xrange(0,np.int(ll/2.)+1):
             Y_lms[(ll,ll-2*nn-1)] = 0.
+            base = np.sqrt((2.*ll+1.)/(2.*np.pi)*(factorials[2*nn]/factorials[2*ll-2*nn]))*2**-ll
+            ratio = factorials[(2*ll-2*nn)]/factorials[ll-nn]*1./factorials[nn]
             if 2*nn==ll:
-                Y_lms[(ll,ll-2*nn)] = (-1)**(nn)*np.sqrt((2.*ll+1.)/(4.*np.pi)*(factorials[2*nn]/factorials[2*ll-2*nn]))*2**-ll*(factorials[(2*ll-2*nn)]/factorials[ll-nn]*1./factorials[nn])
+                Y_lms[(ll,ll-2*nn)] = (-1)**(nn)*base*ratio/np.sqrt(2.)
             else:
-                Y_lms[(ll,ll-2*nn)] = (-1)**(nn)*np.sqrt((2.*ll+1.)/(2.*np.pi)*(factorials[2*nn]/factorials[2*ll-2*nn]))*2**-ll*(factorials[(2*ll-2*nn)]/factorials[ll-nn]*1./factorials[nn])
+                Y_lms[(ll,ll-2*nn)] = (-1)**(nn)*base*ratio
 
             if not np.isfinite(Y_lms[(ll,ll-2*nn)]):
                 raise ValueError('result not finite at l='+str(ll)+' m='+str(ll-2*nn)+' try decreasing l_max')

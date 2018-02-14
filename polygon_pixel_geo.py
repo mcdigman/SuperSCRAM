@@ -39,8 +39,9 @@ class PolygonPixelGeo(PixelGeo):
         print "PolygonPixelGeo: area calculated by SphericalPolygon: "+str(self.sp_poly.area())
         #check that the true area from angular defect formula and calculated area approximately match
         calc_area = np.sum(contained_pixels[:,2])
-        if not np.isclose(calc_area,self.sp_poly.area(),atol=10**-2,rtol=10**-3):
-            warn("PolygonPixelGeo: significant discrepancy between true area "+str(self.sp_poly.area())+" and calculated area"+str(np.sum(contained_pixels[:,2]))+" results may be poorly converged")
+        true_area = self.sp_poly.area()
+        if not np.isclose(calc_area,true_area,atol=10**-2,rtol=10**-3):
+            warn("discrepancy between area "+str(true_area)+" and est "+str(calc_area)+", may be poorly converged")
         PixelGeo.__init__(self,zs,contained_pixels,C,z_fine,l_max)
 
         #set a00 to value from pixels for consistency, not angle defect even though angle defect is more accurate
@@ -186,7 +187,7 @@ class PolygonPixelGeo(PixelGeo):
 #    k = d[:,0]; P=d[:,1]
 #    C = CosmoPie(cosmology=defaults.cosmology,k=k,P_lin=P)
 #    zs = np.array([.01,1.01])
-#    z_fine = np.arange(defaults.lensing_params['z_min_integral'],np.max(zs),defaults.lensing_params['z_resolution'])
+#    z_fine = np.arange(0.0005,np.max(zs),0.002)
 #
 #    l_max = 25
 #    n_run = 1

@@ -150,16 +150,16 @@ if __name__=='__main__':
     cum_n_z = cumtrapz(n_z,z_fine,initial=0.)
     cum_n_z = cum_n_z/cum_n_z[-1]
     z_bin_starts = np.zeros(tomo_bins_cosmo)
-    chi_bins = np.zeros((tomo_bins_cosmo,2))
+    r_bins = np.zeros((tomo_bins_cosmo,2))
     for i in xrange(0,tomo_bins_cosmo):
         z_bin_starts[i] = np.min(z_fine[cum_n_z>=1./tomo_bins_cosmo*i])
 
 #    for i in xrange(0,tomo_bins_cosmo):
 #        if i==tomo_bins_cosmo-1:
-#            chi_next = C.D_comov(np.max(z_fine))
+#            r_next = C.D_comov(np.max(z_fine))
 #        else:
-#            chi_next = C.D_comov(z_bin_starts[i+1])
-#        chi_bins[i] = np.array([C.D_comov(z_bin_starts[i]),chi_next])
+#            r_next = C.D_comov(z_bin_starts[i+1])
+#        r_bins[i] = np.array([C.D_comov(z_bin_starts[i]),r_next])
 
     P_in = mps.MatterPower(C,power_params)
     k_in = P_in.k
@@ -178,7 +178,7 @@ if __name__=='__main__':
     #geo1 = PolygonGeo(z_coarse,thetas,phis,theta_in,phi_in,C,z_fine.copy(),40,{'n_double':30})
     geo1 = CircleGeo(z_coarse,C,0.31275863997971481,100,z_fine.copy(),40,{'n_double':30})
     assert np.isclose((geo1.angular_area()*180**2/np.pi**2),1000.)
-    chi_bins = geo1.rbins
+    r_bins = geo1.rbins
 
 
     len_params = defaults.lensing_params.copy()
@@ -188,11 +188,12 @@ if __name__=='__main__':
     len_params['l_min'] = np.min(l_starts)
     len_params['l_max'] = np.max(l_starts)
     len_params['n_l'] = l_starts.size
+    len_params['pmodel'] = 'halofit'
     #test lensing observables
-    sp = ShearPower(C,z_fine,fsky_cosmo,len_params,pmodel='halofit',mode='power',ps=n_z)
+    sp = ShearPower(C,z_fine,fsky_cosmo,len_params,mode='power',ps=n_z)
     qs = np.zeros(tomo_bins_cosmo,dtype=object)
     for i in xrange(qs.size):
-        qs[i] = QShear(sp,chi_bins[i,0],chi_bins[i,1])
+        qs[i] = QShear(sp,r_bins[i,0],r_bins[i,1])
     Cll_sh_sh = np.zeros((tomo_bins_cosmo,tomo_bins_cosmo),dtype=object)
     ratio_means = np.zeros((tomo_bins_cosmo,tomo_bins_cosmo))
     for i in xrange(qs.size):
@@ -250,7 +251,7 @@ if __name__=='__main__':
     assert np.allclose(c_g_sw,c_g_cosmo_flat,atol=ATOL,rtol=RTOL)
 
     print "mean squared diff covariances:"+str(np.linalg.norm(1.-rat_c)/rat_c.size)
-    
+
 
     print "PASS: all assertions passed"
     do_plot = True

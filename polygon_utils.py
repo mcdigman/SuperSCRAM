@@ -5,8 +5,8 @@ from astropy.io import fits
 import spherical_geometry.vector as sgv
 from spherical_geometry.polygon import SphericalPolygon
 from copy import deepcopy
-import matplotlib.pyplot as plt
-from mpl_toolkits.basemap import Basemap
+#import matplotlib.pyplot as plt
+#from mpl_toolkits.basemap import Basemap
 #Note these are spherical polygons so all the sides are great circles (not lines of constant theta!)
 #So area will differ from integral if assuming constant theta
 #vertices must have same first and last coordinate so polygon is closed
@@ -22,9 +22,12 @@ def get_poly(theta_vertices,phi_vertices,theta_in,phi_in):
     sp_poly = SphericalPolygon(bounding_xyz,inside=inside_xyz)
     return sp_poly
 
+#TODO doesn't work due to bug in intersection
 def get_difference(poly1,poly2,pixels=None):
     """attempt to get the difference poly1-poly2 as poly1^~poly2
         use a pixelation to attempt to find an outside point"""
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.basemap import Basemap
     m  = Basemap(projection='moll',lon_0=0)
     if pixels is None:
         pixels = get_healpix_pixelation(4)
@@ -36,8 +39,8 @@ def get_difference(poly1,poly2,pixels=None):
     contained = contains_points(pixels,poly2)
     poly2_complement = None
     first_false = 100+np.argmin(contained[100:])
-    print "orig 1",contains_points(pixels[first_false:first_false+1],poly1),poly1.area()
-    print "orig 2",contains_points(pixels[first_false:first_false+1],poly2),poly2.area()
+    #print "orig 1",contains_points(pixels[first_false:first_false+1],poly1),poly1.area()
+    #print "orig 2",contains_points(pixels[first_false:first_false+1],poly2),poly2.area()
     colors = ['red','green','blue']
     for itr in xrange(0,len(bounding_xyz)):
         first_false = 100+itr+np.argmin(contained[100+itr:])
@@ -46,31 +49,25 @@ def get_difference(poly1,poly2,pixels=None):
         inside_xyz = np.asarray(sgv.radec_to_vector(phi_in,theta_in-np.pi/2.,degrees=False))
         loc_poly = SphericalPolygon(bounding_xyz[itr].copy(),inside_xyz.copy())
         loc_poly.draw(m,color=colors[itr])
-        #contained_loc = contains_points(pixels,loc_poly)
-        #first_false2 = np.argmax(contained_loc)
-        #theta_in2 = pixels[first_false2,0]
-        #phi_in2 = pixels[first_false2,1]
-        #inside_xyz2 = np.asarray(sgv.radec_to_vector(phi_in2,theta_in2-np.pi/2.,degrees=False))
-        #loc_poly2 = SphericalPolygon(bounding_xyz[itr].copy(),inside_xyz2.copy())
-        #print np.all(~contained_loc[~contained_loc]&(contained[~contained_loc]))
         cont = contains_points(pixels[first_false:first_false+1],loc_poly)
-        #print "cont ",cont,loc_poly.area()
-        print "comp ",itr,contains_points(pixels[first_false:first_false+1],loc_poly),loc_poly.area(),loc_poly.is_clockwise()
-        #print "loc ",itr,contains_points(pixels[first_false:first_false+1],loc_poly),loc_poly.area(),loc_poly.is_clockwise(),loc_poly.contains_point(inside_xyz),loc_poly.contains_point(list(loc_poly.inside)[0])
-        #print "loc2 ",itr,contains_points(pixels[first_false2:first_false2+1],loc_poly2),loc_poly2.area(),loc_poly2.is_clockwise(),loc_poly2.contains_point(inside_xyz),loc_poly2.contains_point(list(loc_poly2.inside)[0])
-        print "inside 1 ",list(loc_poly.inside)
+        print "loc contains: ",cont
         if poly2_complement is None:
             poly2_complement = deepcopy(loc_poly)
         else:
             poly2_complement = deepcopy(poly2_complement.intersection(loc_poly))
-        print "comp ",itr,contains_points(pixels[first_false:first_false+1],poly2_complement),poly2_complement.area(),poly2_complement.is_clockwise()
+        cont_comp = contains_points(pixels[first_false:first_false+1],poly2_complement)
+        print "comp contains: ",cont_comp
+        print "test: ",np.all(contains_points(pixels[contained],poly2_complement))
+        print "test: ",np.any(contains_points(pixels[~contained],poly2_complement))
+        print "insp: ",list(poly2_complement.inside)
+        #print "comp ",itr,contains_points(pixels[first_false:first_false+1],poly2_complement),poly2_complement.area(),poly2_complement.is_clockwise()
         #print "inside c ",list(poly2_complement.inside)
         #print "vert c ",list(poly2_complement.points)
-        for itr2 in xrange(0,len(list(poly2_complement.inside))):
-            print "loc cont inside c ",loc_poly.contains_point(list(poly2_complement.inside)[itr2])
-    print poly1.area(),poly2.area(),poly2_complement.area()
+        #for itr2 in xrange(0,len(list(poly2_complement.inside))):
+        #    print "loc cont inside c ",loc_poly.contains_point(list(poly2_complement.inside)[itr2])
+    #print poly1.area(),poly2.area(),poly2_complement.area()
     plt.show()
-    return poly1.intersection(poly2_complement)    
+    return poly1.intersection(poly2_complement)
 
 
 

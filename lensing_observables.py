@@ -8,13 +8,13 @@ import lensing_weight as len_w
 import power_parameter_response as ppr
 class LensingPowerBase(object):
     """Shared object to generate and store things that will be needed my multiple LensingObservable objects, such as the lensing weight functions"""
-    def __init__(self,geo,survey_id,C,cosmo_par_list,cosmo_par_epsilons,params,log_param_derivs=None,ps=None,nz_matcher=None):
+    def __init__(self,geo,survey_id,C,cosmo_par_list,cosmo_par_eps,params,log_par_derivs=None,ps=None,nz_matcher=None):
         r"""inputs:
             geo: a Geo object for the geometry
             survey_id: an identifier for the SWSurvey this object is associated with
             cosmo_par_list: a list of the names of cosmological parameters to compute \partial{O_I}\partial{\Theta_i} with respect to
-            cosmo_par_epsilons: array of epsilons to use when calculating partial derivatives specified by cosmo_par_list
-            log_param_derivs: a boolean array with dimension matching cosmo_par_list, will do \partial{O_I}\partial{ln(\Theta_i)} for any True element. Optional.
+            cosmo_par_eps: array of epsilons to use when calculating partial derivatives specified by cosmo_par_list
+            log_par_derivs: a boolean array with dimension matching cosmo_par_list, will do \partial{O_I}\partial{ln(\Theta_i)} for any True element. Optional.
             ps: an in input lensing source distribution. Optional.
             params: parameters
             nz_matcher: an NZMatcher object
@@ -23,20 +23,20 @@ class LensingPowerBase(object):
         self.geo = geo
         self.params = params
         self.cosmo_par_list = cosmo_par_list
-        self.cosmo_par_epsilons = cosmo_par_epsilons
+        self.cosmo_par_eps = cosmo_par_eps
         self.survey_id = survey_id
         self.nz_matcher = nz_matcher
 
-        omega_s = self.geo.angular_area()/(4.*np.pi)
-        self.C_pow = sp.ShearPower(C,self.geo.z_fine,omega_s,params,pmodel=params['pmodel'],mode='power',ps=ps,nz_matcher=self.nz_matcher)
-        self.dC_ddelta = sp.ShearPower(C,self.geo.z_fine,omega_s,params,pmodel=params['pmodel'],mode='dc_ddelta',ps=ps,nz_matcher=self.nz_matcher)
+        f_sky = self.geo.angular_area()/(4.*np.pi)
+        self.C_pow = sp.ShearPower(C,self.geo.z_fine,f_sky,params,'power',ps,self.nz_matcher)
+        self.dC_ddelta = sp.ShearPower(C,self.geo.z_fine,f_sky,params,'dc_ddelta',ps,self.nz_matcher)
 
         self.dC_dpars = np.zeros((cosmo_par_list.size,2),dtype=object)
-        self.Cs_pert = ppr.get_perturbed_cosmopies(C,cosmo_par_list,cosmo_par_epsilons,log_param_derivs)
+        self.Cs_pert = ppr.get_perturbed_cosmopies(C,cosmo_par_list,cosmo_par_eps,log_par_derivs)
 
         for i in xrange(0,cosmo_par_list.size):
-            self.dC_dpars[i,0] = sp.ShearPower(self.Cs_pert[i,0],self.geo.z_fine,omega_s,params,pmodel=params['pmodel'],mode='power',nz_matcher=self.nz_matcher)
-            self.dC_dpars[i,1] = sp.ShearPower(self.Cs_pert[i,1],self.geo.z_fine,omega_s,params,pmodel=params['pmodel'],mode='power',nz_matcher=self.nz_matcher)
+            self.dC_dpars[i,0] = sp.ShearPower(self.Cs_pert[i,0],self.geo.z_fine,f_sky,params,'power',ps,self.nz_matcher)
+            self.dC_dpars[i,1] = sp.ShearPower(self.Cs_pert[i,1],self.geo.z_fine,f_sky,params,'power',ps,self.nz_matcher)
 
 #TODO observables should know their name
 class LensingObservable(SWObservable):
@@ -48,10 +48,13 @@ class LensingObservable(SWObservable):
             q1_handle,q2_handle: function handles for QWeight objects, ie len_w.QShear
         """
         self.len_pow = len_pow
-        self.r1 = r1
-        self.r2 = r2
+        self.r1 = r1.copy()
+        self.r2 = r2.copy()
         self.q1_handle = q1_handle
         self.q2_handle = q2_handle
+        assert self.r1[0]>100.
+        assert self.r2[0]>100.
+        print "r1,q",self.r1,self.q1_handle
         self.q1_pow = self.q1_handle(self.len_pow.C_pow,self.r1[0],self.r1[1])
         self.q2_pow = self.q2_handle(self.len_pow.C_pow,self.r2[0],self.r2[1])
         self.q1_dC = self.q1_handle(self.len_pow.dC_ddelta,self.r1[0],self.r1[1])
@@ -79,7 +82,7 @@ class LensingObservable(SWObservable):
         for itr in xrange(0,dO_dpars.shape[1]):
             Cll_low = sp.Cll_q_q(self.len_pow.dC_dpars[itr,0],self.q1_dpars[itr,0],self.q2_dpars[itr,0]).Cll()
             Cll_high = sp.Cll_q_q(self.len_pow.dC_dpars[itr,1],self.q1_dpars[itr,1],self.q2_dpars[itr,1]).Cll()
-            dO_dpars[:,itr] = (Cll_high-Cll_low)/(2.*self.len_pow.cosmo_par_epsilons[itr])
+            dO_dpars[:,itr] = (Cll_high-Cll_low)/(2.*self.len_pow.cosmo_par_eps[itr])
         return dO_dpars
 
 class ShearShearLensingObservable(LensingObservable):

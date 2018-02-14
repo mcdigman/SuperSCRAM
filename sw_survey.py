@@ -14,13 +14,13 @@ DEBUG = False
 #TODO evaluate if param_list as used by LWSurvey more elegant
 class SWSurvey(object):
     """Short wavelength survey: manage short wavelength observables and get their non SSC covariances and derivatives"""
-    def __init__(self,geo,survey_id,C,params,cosmo_par_list=None,cosmo_par_epsilons=None,observable_list=None,len_params=None,ps=None,nz_matcher=None):
+    def __init__(self,geo,survey_id,C,params,cosmo_par_list=None,cosmo_par_eps=None,observable_list=None,len_params=None,ps=None,nz_matcher=None):
         """ inputs:
                 geo: a Geo object
                 survey_id: some identifier for the survey
                 C: a CosmoPie object
                 cosmo_par_list: list of cosmological parameters that should be varied
-                cosmo_par_epsilons: amount to vary cosmological paramters by when getting partial derivatives
+                cosmo_par_eps: amount to vary cosmological paramters by when getting partial derivatives
                 params, len_params: parameters
                 observable_list: list of observable names to get
                 ps: lensing source distribution. optional
@@ -35,17 +35,17 @@ class SWSurvey(object):
         self.survey_id = survey_id
         if cosmo_par_list is None:
             self.cosmo_par_list = np.array([])
-            self.cosmo_par_epsilons = np.array([])
+            self.cosmo_par_eps = np.array([])
         else:
-            if cosmo_par_epsilons is None or cosmo_par_epsilons.size!=cosmo_par_list.size:
-                raise ValueError('cosmo_par_epsilons must be set and same size if cosmo_par_list is set')
+            if cosmo_par_eps is None or cosmo_par_eps.size!=cosmo_par_list.size:
+                raise ValueError('cosmo_par_eps must be set and same size if cosmo_par_list is set')
 
             self.cosmo_par_list = cosmo_par_list
-            self.cosmo_par_epsilons = cosmo_par_epsilons
+            self.cosmo_par_eps = cosmo_par_eps
         self.nz_matcher = nz_matcher
         self.len_params = len_params
         if self.needs_lensing:
-            self.len_pow = lo.LensingPowerBase(self.geo,survey_id,C,self.cosmo_par_list,self.cosmo_par_epsilons,self.len_params,ps=ps,nz_matcher=self.nz_matcher)
+            self.len_pow = lo.LensingPowerBase(self.geo,survey_id,C,self.cosmo_par_list,self.cosmo_par_eps,self.len_params,None,ps,self.nz_matcher)
         else:
             self.len_pow = None
         self.n_param = self.cosmo_par_list.size
@@ -147,6 +147,9 @@ class SWSurvey(object):
             if self.params['needs_lensing'] and re.match('^len',key):
                 r1 = names[key]['r1']
                 r2 = names[key]['r2']
+                assert r1[0]>100.
+                assert r2[0]>100.
+
                 if re.match('^len_shear_shear',key):
                     observables[itr] = lo.ShearShearLensingObservable(self.len_pow,r1,r2)
                 elif re.match('^len_galaxy_galaxy',key):
@@ -174,6 +177,7 @@ def generate_observable_names(geo,observable_list,cross_bins):
         if re.match('^len',name):
             for i in xrange(0,rbins.shape[0]):
                 r1 = rbins[i]
+                assert r1[0]>100.
                 if cross_bins:
                     for j in xrange(0,rbins.shape[0]):
                         #Only take r1<=r2
@@ -181,6 +185,7 @@ def generate_observable_names(geo,observable_list,cross_bins):
                             pass
                         else:
                             r2 = rbins[j]
+                            assert r2[0]>100.
                             name_str = name+'_'+str(i)+'_'+str(j)
                             names[name_str] = {'r1':r1,'r2':r2}
 

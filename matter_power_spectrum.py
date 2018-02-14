@@ -26,7 +26,8 @@ class MatterPower(object):
         matter_power_params,camb_params,wmatcher_params,halofit_params,fpt: dictionaries of parameters
         wm_in: input WMatcher object. Optional.
         P_fid: Fiducial  power spectrum. Optional.
-        camb_safe: If True and P_fid is not None, will borrow camb_grid from P_fid if possible. Useful if only linear growth factor different from P_fid.
+        camb_safe: If True and P_fid is not None, will borrow camb_grid from P_fid if possible. 
+                Useful if only linear growth factor different from P_fid.
         de_perturbative: If True, get power spectra for constant w even if w(z) in C_in is not constant
         """
 
@@ -107,8 +108,9 @@ class MatterPower(object):
                 n_w_above = np.ceil((1.+np.max(self.w_match_grid+self.params['w_edge']+self.params['w_step']))/self.params['w_step'])
                 self.w_min = -1.-n_w_below*self.params['w_step']
                 self.w_max = -1.+n_w_above*self.params['w_step']
-                if np.any(np.abs(np.diff(self.w_match_grid))<self.params['w_step']):
-                    warn('given step size may '+str(self.params['w_step'])+' may be insufficient to resolve grid with min spacing '+str(np.min(np.abs(np.diff(self.w_match_grid)))))
+                min_step = np.min(np.abs(np.diff(self.w_match_grid)))
+                if min_step<self.params['w_step']:
+                    warn('step size '+str(self.params['w_step'])+' may be insufficient for grid with min step '+str(min_step))
                 self.camb_w_grid = np.arange(self.w_min,self.w_max,self.params['w_step'])
                 #make sure the grid has at least some minimum number of values
                 if self.camb_w_grid.size<self.params['min_n_w']:
@@ -128,7 +130,7 @@ class MatterPower(object):
                     camb_cosmos['w'] = self.camb_w_grid[i]
                     print "camb with w=",self.camb_w_grid[i]
                     k_i,self.camb_w_pows[:,i],self.camb_sigma8s[i] = camb_pow(camb_cosmos,camb_params=self.camb_params)
-                    #self.camb_sigma8s[i] = sigma8_use*self.wm.match_scale(np.array([0.]),self.camb_w_grid[i])[0]#camb_sigma8(camb_cosmos,self.camb_params)
+                    #self.camb_sigma8s[i] = sigma8_use*self.wm.match_scale(np.array([0.]),self.camb_w_grid[i])[0]
                     #alt_camb_sigma8s = camb_sigma8(camb_cosmos,self.camb_params)
                     #print self.camb_sigma8s[i],alt_camb_sigma8s[i]
                     #This interpolation shift shouldn't really be needed because self.k is generated with the same value of H0
@@ -204,7 +206,8 @@ class MatterPower(object):
                     cosmo_hf_i = self.cosmology.copy()
                     cosmo_hf_i['de_model'] = 'constant_w'
                     cosmo_hf_i['w'] = w_match_grid[i]
-                    hf_C_calc = cp.CosmoPie(cosmo_hf_i,self.C.p_space,silent=True,G_safe=True,G_in=InterpolatedUnivariateSpline(self.C.z_grid,self.wm.growth_interp(w_match_grid[i],self.C.a_grid),ext=2,k=2))
+                    G_hf = InterpolatedUnivariateSpline(self.C.z_grid,self.wm.growth_interp(w_match_grid[i],self.C.a_grid),ext=2,k=2)
+                    hf_C_calc = cp.CosmoPie(cosmo_hf_i,self.C.p_space,silent=True,G_safe=True,G_in=G_hf)
                     hf_C_calc.k = self.k
                     hf_calc = halofit.HalofitPk(hf_C_calc,Pbases[:,i],self.power_params.halofit,self.camb_params['leave_h'])
                     P_nonlin[:,i] = 2.*np.pi**2*(hf_calc.D2_NL(self.k,zs[i]).T/self.k**3)

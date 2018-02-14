@@ -6,7 +6,9 @@ import numpy.linalg as npl
 import scipy.linalg as spl
 import pytest
 import algebra_utils as au
-from algebra_utils import cholesky_inplace,get_inv_cholesky,ch_inv,invert_triangular,get_mat_from_inv_cholesky,cholesky_inv_contract,get_cholesky_inv,cholesky_contract,check_is_cholesky,check_is_cholesky_inv,trapz2,clean_triangle,mirror_symmetrize
+from algebra_utils import cholesky_inplace,get_inv_cholesky,ch_inv,invert_triangular,get_mat_from_inv_cholesky
+from algebra_utils import cholesky_inv_contract,get_cholesky_inv,cholesky_contract,check_is_cholesky
+from algebra_utils import check_is_cholesky_inv,trapz2,clean_triangle,mirror_symmetrize
 au.DEBUG = True
 #TODO add testing for inplace and clean parameters
 def get_test_mat(key):
@@ -105,10 +107,9 @@ tighten_atol = 1e-9
 atol_rel_use = 1e-7
 rtol_use = 1e-6
 
-    #inv loses precision so have to relax tolerance dramatically for tests involving direct inverse
-    #this shows the superiority of using the cholesky inverse
-    #note this loss of precision could cause some random matrices to fail while others pass
-    #TODO: better precision testing of code could improve battery
+#inv loses precision so have to relax tolerance dramatically for tests involving direct inverse
+#this shows the superiority of using the cholesky inverse
+#note this loss of precision could cause some random matrices to fail while others pass
 def test_basic_setup_succeeded(test_mat):
     """test self consistency of setup"""
     chol_i1 = test_mat.chol_i.copy()

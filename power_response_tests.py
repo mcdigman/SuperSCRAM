@@ -118,7 +118,7 @@ class PowerDerivativeComparison1(object):
         k_chiang_fpt = d_chiang_fpt[:,0]*C.cosmology['h']
         dc_chiang_fpt = d_chiang_fpt[:,1]
         dc_ch3 = interp1d(k_chiang_fpt,dc_chiang_fpt,bounds_error=False)(k_a)
-        do_plots = True
+        do_plots = False
         if do_plots:
             import matplotlib.pyplot as plt
         zbar = np.array([3.])

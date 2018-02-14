@@ -101,11 +101,14 @@ class SuperSurvey(object):
 #        rat_mit_g[np.isnan(rat_mit_g)] = 0.
 #        rat_mit_no_mit = areas_mit/areas_no_mit
 #        rat_mit_no_mit[np.isnan(rat_mit_no_mit)] = 0.
-
-        print "alignment of most contaminated direction before and most contaminated direction after mitigation: "+str(np.dot(self.eig_set[1,0][1][:,-1],self.eig_set[1,1][1][:,-1]))
-        print "alignment of most contaminated direction before mitigation and most improved direction: "+str(np.dot(self.eig_set[1,0][1][:,-1],self.eig_set_ssc[1,1][1][:,0]))
-        print "alignment of second most contaminated direction before and second most contaminated direction after mitigation: "+str(np.dot(self.eig_set[1,0][1][:,-2],self.eig_set[1,1][1][:,-2]))
-        print "alignment of second most contaminated direction before mitigation and second most improved direction: "+str(np.dot(self.eig_set[1,0][1][:,-2],self.eig_set_ssc[1,1][1][:,1]))
+        align1 = np.dot(self.eig_set[1,0][1][:,-1],self.eig_set[1,1][1][:,-1])
+        align2 = np.dot(self.eig_set[1,0][1][:,-1],self.eig_set_ssc[1,1][1][:,0])
+        align3 = np.dot(self.eig_set[1,0][1][:,-2],self.eig_set[1,1][1][:,-2])
+        align4 = np.dot(self.eig_set[1,0][1][:,-2],self.eig_set_ssc[1,1][1][:,1])
+        print "alignment of most contaminated direction before and most contaminated direction after mitigation: "+str(align1)
+        print "alignment of most contaminated direction before mitigation and most improved direction: "+str(align2)
+        print "alignment of second most contaminated direction before and second most contaminated direction after mitigation: "+str(align3)
+        print "alignment of second most contaminated direction before mitigation and second most improved direction: "+str(align4)
 
 
 
@@ -227,7 +230,6 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
             param2 = cosmo_par_list[itr2]
             fid_point = np.array([0.,0.])
 
-            #TODO check sense of rotation
             es = np.zeros(n_c,dtype=object)
             ybox_width = 0.
             for itr3  in xrange(0,n_c):

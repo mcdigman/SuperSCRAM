@@ -45,9 +45,11 @@ if __name__=='__main__':
     l_max = 140
     #x_cut = 30
     #l_max = 30
+    #x_cut = 150
+    #l_max = 10
 
     param_use = 7
-    do_plot = True
+    do_plot = False
     if param_use==1:
         #matches to  0.918455921357 for l_max=340,x_cut=360, not monotonic
         theta0 = np.pi/2.-np.pi*0.21644180767757945
@@ -171,7 +173,7 @@ if __name__=='__main__':
 
     print "main: building basis"
     basis_params = defaults.basis_params.copy()
-    basis_params['n_bessel_oversample']*=4
+    basis_params['n_bessel_oversample']*=1
     basis_params['x_grid_size']*=10
 
     r_max = C.D_comov(z_max)
@@ -181,7 +183,7 @@ if __name__=='__main__':
     variances = np.zeros(k_tests.size)
 
     basis = SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_max)
-
+    #TODO priority check if z_fine matters make self consistent if so
     for i in xrange(0,k_tests.size):
         print "r_max,k_cut",r_max,k_tests[i]
         n_basis[i] = np.sum(basis.C_id[:,1]<=k_tests[i])
@@ -192,31 +194,6 @@ if __name__=='__main__':
         import matplotlib.pyplot as plt
         plt.plot(n_basis,variances)
         plt.show()
-#
-#    print "main: building sw survey"
-#    #cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w'])
-#    #cosmo_par_epsilons = np.array([0.002,0.0005,0.0001,0.0005,0.1,0.01])
-#    cosmo_par_list = np.array([])
-#    cosmo_par_epsilons = np.array([])
-#    loc_lens_params = defaults.lensing_params.copy()
-#    loc_lens_params['z_min_dist'] = np.min(z_coarse)
-#    loc_lens_params['z_max_dist'] = np.max(z_coarse)
-#    loc_lens_params['pmodel'] = 'halofit'
-#
-#    sw_survey_1 = SWSurvey(geo1,'survey1',C,defaults.sw_survey_params,observable_list = defaults.sw_observable_list,cosmo_par_list = cosmo_par_list,cosmo_par_epsilons=cosmo_par_epsilons,len_params=loc_lens_params)
-#    surveys_sw = np.array([sw_survey_1])
-
-#    do_mit = False
-#    if do_mit:
-#        print "main: building lw survey"
-#        geos = np.array([geo1,geo2])
-#        lw_survey_1 = LWSurvey(geos,'lw_survey1',basis,C=C,params=defaults.lw_survey_params,observable_list=defaults.lw_observable_list,dn_params=defaults.dn_params)
-#        surveys_lw = np.array([lw_survey_1])
-#    else:
-#        geos = np.array([geo1,geo2])
-#        surveys_lw = np.array([])
-#    print "main: building super survey"
-#    SS = SuperSurvey(surveys_sw, surveys_lw,basis,C,defaults.prior_fisher_params.copy(),get_a=True,do_unmitigated=True,do_mitigated=do_mit)
     print "main: getting variance"
     variance_res = basis.get_variance(geo1)
     time1 = time()

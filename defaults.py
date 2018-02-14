@@ -41,9 +41,9 @@ cosmology_jdem = {  'ns'      : 0.963,
                     'de_model':'constant_w',
                     'mnu'     :0.
                  }
-lensing_params = {  'z_resolution'    :0.002, #fine resolution
-                    'z_min_integral'  :0.0005, #lowest z
-                    'z_max_integral'  :2,#highest z
+lensing_params = {  #'z_resolution'    :0.002, #fine resolution
+                    #'z_min_integral'  :0.0005, #lowest z
+                    #'z_max_integral'  :2,#highest z
                     'pmodel'        :'halofit', #default method for finding p grid
                     'n_gal'           :None,#118000000*6.,#118000000 galaxies/rad^2=10 galaxies/arcmin^2
                     'delta_l'         :1., #binning window
@@ -65,12 +65,11 @@ sw_survey_params = {    'needs_lensing'     : True,
 dn_params = {'nz_select': 'CANDELS'}#'M_cut':(12.5)}
 lw_observable_list = np.array(['d_number_density'])
 lw_survey_params = {    'cross_bins': False}
-basis_params = {    'allow_caching'         :True,
-                    'n_bessel_oversample'   :100000,
-                    #TODO n_bessel_ovsersample default may not be enough
-                    # 'k_max'                 :10.,#TODO check
-                    # 'k_min'                 :10**-4,
-                    'x_grid_size':100000}#convergence related
+basis_params = {   'n_bessel_oversample'   :400000,
+                   #TODO n_bessel_ovsersample default may not be enough
+                   # 'k_max'                 :10.,#TODO check
+                   # 'k_min'                 :10**-4,
+                   'x_grid_size':100000}#convergence related
 polygon_params = {'res_healpix':6,'n_double':30}
 nz_params = {   'data_source'   :'./data/CANDELS-GOODSS2.dat',
                 'i_cut'         :24,
@@ -160,6 +159,6 @@ matter_power_params = { 'needs_halofit'  :True,
                         'a_max' : 1.0,
                         'a_step' : 0.05,
                       }
-lw_param_list = np.array([{'dn_params':dn_params,'n_params':nz_params_wfirst_gal}])
+lw_param_list = np.array([{'dn_params':dn_params,'n_params':nz_params_wfirst_gal,'mf_params':hmf_params}])
 
 power_params = PowerParamManager(matter_power_params,wmatcher_params,halofit_params,camb_params,fpt_params)

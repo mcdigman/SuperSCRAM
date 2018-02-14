@@ -2,7 +2,8 @@
 import numpy as np
 import fisher_matrix as fm
 #jdem order is ns,Omegamh2,Omegabh2,Omegakh2,OmegaLh2,deltaGamma,deltaM,deltaG0,LogAs,ws36_0,ws36_1,...
-JDEM_LABELS = np.hstack([np.array(['ns','Omegamh2','Omegabh2','Omegakh2','OmegaLh2','deltaGamma','deltaM','deltaG0','LogAs']),np.array(['ws36_'+str(_i) for _i in xrange(0,36)])])
+JDEM_LABELS = np.hstack([np.array(['ns','Omegamh2','Omegabh2','Omegakh2','OmegaLh2','deltaGamma','deltaM','deltaG0','LogAs']),
+                         np.array(['ws36_'+str(_i) for _i in xrange(0,36)])])
 class PriorFisher(object):
     """class to manage reading in prior fisher matrix"""
     def __init__(self,de_model,params,fisher_in=None,labels_in=None):

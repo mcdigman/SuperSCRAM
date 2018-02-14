@@ -2,7 +2,7 @@
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline,RectBivariateSpline
 
-def dp_ddelta(P_a,zbar,C,pmodel='linear',epsilon=0.0001):
+def dp_ddelta(P_a,zbar,C,pmodel,epsilon=0.0001):
     """get separate universe response of the power spectrum to a density fluctuation
         inputs:
             k_a: the k vector
@@ -20,7 +20,8 @@ def dp_ddelta(P_a,zbar,C,pmodel='linear',epsilon=0.0001):
         if isinstance(zbar,np.ndarray) and zbar.size>1:
             pza = P_a.get_matter_power(zbar,pmodel='linear')
             #degree must be at least 2 for derivative, apparently
-            #TODO no particular reason to use rectbivariate spline instead of a bunch of univariate splines here, maybe just make a method for getting the derivative without splines
+            #TODO no particular reason to use rectbivariate spline instead of a bunch of univariate splines here, 
+            #maybe just make a method for getting the derivative without splines
             dpdk = RectBivariateSpline(k_a,zbar,pza,kx=2,ky=1)(k_a,zbar,dx=1)
             dp = 47./21.*pza-1./3.*(k_a*dpdk.T).T
         #TODO support scalar zbar everywhere

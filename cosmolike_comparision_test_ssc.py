@@ -135,17 +135,17 @@ if __name__=='__main__':
     n_z = cosmo_nz[:,1]
     cum_n_z = cumtrapz(n_z,z_fine,initial=0.)
     z_bin_starts = np.zeros(tomo_bins_cosmo)
-    chi_bins = np.zeros((tomo_bins_cosmo,2))
+    r_bins = np.zeros((tomo_bins_cosmo,2))
     z_fine[0] +=0.00001
     for i in xrange(0,tomo_bins_cosmo):
         z_bin_starts[i] = np.min(z_fine[cum_n_z>=1./tomo_bins_cosmo*i])
 
     for i in xrange(0,tomo_bins_cosmo):
         if i==tomo_bins_cosmo-1:
-            chi_next = C.D_comov(np.max(z_fine))
+            r_next = C.D_comov(np.max(z_fine))
         else:
-            chi_next = C.D_comov(z_bin_starts[i+1])
-        chi_bins[i] = np.array([C.D_comov(z_bin_starts[i]),chi_next])
+            r_next = C.D_comov(z_bin_starts[i+1])
+        r_bins[i] = np.array([C.D_comov(z_bin_starts[i]),r_next])
 
     r_max = C.D_comov(np.max(z_fine))
     #theta0=0.

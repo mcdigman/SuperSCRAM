@@ -30,8 +30,14 @@ class Geo(object):
 
         tot_area = self.angular_area()
         self.volumes = np.zeros(self.zs.size-1) #volume of each tomography bin
-        for i in xrange(0,self.volumes.size):
-            self.volumes[i] += (self.rs[i+1]**3-self.rs[i]**3)/3.*tot_area
+        if tot_area > 0.:#check area is not negative
+            for i in xrange(0,self.volumes.size):
+                self.volumes[i] += (self.rs[i+1]**3-self.rs[i]**3)/3.*tot_area
+        else:
+            if tot_area<-1.e-14: #don't raise exception for rounding error just let volume be 0
+                raise ValueError('total area '+str(tot_area)+' cannot be negative')
+            else:
+                tot_area = 0.
         self.v_total = np.sum(self.volumes) #total volume of geo
 
         #list r and  z bins as [rmin,rmax] pairs (min in bin, max in bin) for convenience
@@ -65,6 +71,20 @@ class Geo(object):
         #for caching a_lm
         self.alm_table = {}
         self._l_max = -1
+
+
+        #lock all internals
+        self.zs.flags['WRITEABLE'] = False
+        self.z_fine.flags['WRITEABLE'] = False
+        self.zbins_fine.flags['WRITEABLE'] = False
+        self.zbins.flags['WRITEABLE'] = False
+        self.rs.flags['WRITEABLE'] = False
+        self.r_fine.flags['WRITEABLE'] = False
+        self.rbins_fine.flags['WRITEABLE'] = False
+        self.rbins.flags['WRITEABLE'] = False
+        self.fine_indices.flags['WRITEABLE'] = False
+        self.dzdr.flags['WRITEABLE'] = False
+        self.volumes.flags['WRITEABLE'] = False
 
 
 #    def surface_integral(self,function):
