@@ -108,6 +108,7 @@ hmf_params = {      'log10_min_mass'    :   6,
                     'z_resolution'      : 0.01,
                     'z_min'             : 0.,
                     'z_max'             : 4.05,
+                    'n_z'               : 405,
                     'b_norm_overwride'    : False,
                     'f_norm_overwride'    : False}
 fpt_params = {  'C_window':0.75,

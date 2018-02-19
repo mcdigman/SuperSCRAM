@@ -15,6 +15,8 @@ class NZCandel(NZMatcher):
 
         #load data and select nz
         self.data = np.loadtxt(self.params['data_source'])
+        #strip the redshifts which are exactly 0, which are mostly redshift failures
+        self.data = self.data[self.data[:,1]>0.,:]
         #use separate internal grid for calculations because smoothing means galaxies beyond max z_fine can create edge effects
         z_grid = np.arange(0.,np.max(self.data[:,1])+self.params['smooth_sigma']*self.params['n_right_extend'],self.params['z_resolution'])
         self.chosen = (self.data[:,5]<self.params['i_cut'])

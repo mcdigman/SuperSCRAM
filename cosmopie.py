@@ -52,13 +52,17 @@ class CosmoPie(object):
         self.Omegabh2 = self.cosmology['Omegabh2']
         self.Omegach2 = self.cosmology['Omegach2']
         self.Omegamh2 = self.cosmology['Omegamh2']
-        self.OmegaL   = self.cosmology['OmegaL']
+        self.OmegaLh2 = self.cosmology['OmegaLh2']
+        self.Omegakh2 = self.cosmology['Omegakh2']
+        self.Omegab   = self.cosmology['Omegab']
+        self.Omegac   = self.cosmology['Omegac']
         self.Omegam   = self.cosmology['Omegam']
+        self.Omegar   = self.cosmology['Omegar']
+        self.OmegaL   = self.cosmology['OmegaL']
+        self.Omegak   = self.cosmology['Omegak']
         self.ns = self.cosmology['ns']
         self.H0       = self.cosmology['H0']
         self.h        = self.cosmology['h']
-        self.Omegak   = self.cosmology['Omegak']
-        self.Omegar   = self.cosmology['Omegar']
 
         #get multipliers in H(z) for OmegaL with an equation of state w(z)
         self.de_model = self.cosmology.get('de_model')
@@ -76,17 +80,18 @@ class CosmoPie(object):
             self.de_object = DarkEnergyW0Wa(self.cosmology['w0'],self.cosmology['wa'])
 #            #cf ie https://ned.ipac.caltech.edu/level5/March08/Frieman/Frieman2.html#note1, arXiv:1605.01475
         elif self.de_model=='jdem':
-            ws_in = np.array([self.cosmology['ws36_'+str(i)] for i in range(0,36)])
+            ws_in = np.array([self.cosmology['ws36_'+str(i).zfill(2)] for i in range(0,36)])
             self.de_object = DarkEnergyJDEM(ws_in,a_step,self.cosmology['w'])
         else:
             raise ValueError('unrecognized dark energy model \''+str(self.de_model)+'\'')
 
 
         # solar mass
-        self.M_sun = 1.9885*1e30 # kg
+        #self.M_sun = 1.9885*1e30 # kg
+        self.M_sun = 1.98847541534*1e30 
 
         # parsec
-        self.pc = 3.08567758149*1e16 # m
+        self.pc = 3.08567758147*1e16 # m
 
         # Newton's constant (CODATA value)
         self.GN = 6.67408*10**(-11) # m^3/kg/s^2
@@ -240,16 +245,17 @@ class CosmoPie(object):
          user needs to adjust for growth factor upon return """
         if self.P_lin is None:
             raise ValueError('You need to provide a linear power spectrum through set_power to get sigma valeus')
-
+        z = np.asanyarray(z)
+        k = self.P_lin.k 
         if isinstance(R,np.ndarray):
-            kr = np.outer(self.P_lin.k,R)
+            kr = np.outer(k,R)
         else:
             kr = self.P_lin.k*R
         W = 3.0*(np.sin(kr)/kr**3-np.cos(kr)/kr**2)
         #P=self.G_norm(z)**2*self.P_lin
-        #TODO should be z dependence?
-        P = self.P_lin.get_matter_power(np.array([0.]),pmodel='linear')[:,0]
-        result = trapz2(((W*W).T*P*self.P_lin.k**3).T,np.log(self.P_lin.k)).T/2./np.pi**2
+        #TODO should scale to input sigma8 if set?
+        P = self.P_lin.get_matter_power(z,pmodel='linear')[:,0]
+        result = np.trapz(((W*W).T*P*k**3).T,np.log(k),axis=0).T/2./np.pi**2
 
         return np.sqrt(result)
 
@@ -283,7 +289,7 @@ class CosmoPie(object):
     def rho_crit(self,z):
         """return critical density in units of solar mass and h^2 """
         factor = 1e12/self.M_sun*self.pc
-        #print 'rho crit [g/cm^3] at z =', z, 3*self.H(z)**2/8./np.pi/self.GN*1e9/(3.086*10**24)**2/10**2
+        #print 'rho crit [g/cm^3] at z =', z, 3*self.H(z)**2/8./np.pi/self.GN*1e9/(self.pc*10**8)**2/10**2
         return 3*self.H(z)**2/8./np.pi/self.GN*factor/self.h**2
 
     def get_P_lin(self):
@@ -312,7 +318,7 @@ class CosmoPie(object):
 
     # -----------------------------------------------------------------------------
 
-JDEM_LIST = ['ws36_'+str(itr_36) for itr_36 in xrange(0,36)]
+JDEM_LIST = ['ws36_'+str(itr_36).zfill(2) for itr_36 in xrange(0,36)]
 P_SPACES = {'jdem': ['ns','Omegamh2','Omegabh2','Omegakh2','OmegaLh2','dGamma','dM','LogG0','LogAs'],
             'lihu' : ['ns','Omegach2','Omegabh2','Omegakh2','h','LogAs'],
             'basic': ['ns','Omegamh2','Omegabh2','Omegakh2','h','sigma8'],

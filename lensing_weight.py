@@ -27,7 +27,6 @@ class QShear(QWeight):
                 mult: a constant multiplier for the weight function
                 r_min,r_max: minimum and maximum comoving distances
         """
-        #TODO PRIORITY figure out why anything depends on the source distribution cutoff
         qs = 3./2.*(sp.C.H0/sp.C.c)**2*sp.C.Omegam*sp.r_As/sp.sc_as*_gs(sp,r_min,r_max)*mult
         QWeight.__init__(self,sp.rs,qs,r_min,r_max)
 
@@ -70,7 +69,6 @@ class QNum(QWeight):
     """weight function for galaxy lensing, as in ie arXiv:1302.2401v2"""
     def __init__(self,sp,r_min=0.,r_max=np.inf):
         """see QShear"""
-        raise RuntimeError('why is anything accessing this?')
         q = np.zeros((sp.n_z,sp.n_l))
         self.b = _bias(sp)
         for i in xrange(0,sp.n_z):

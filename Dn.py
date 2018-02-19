@@ -82,7 +82,7 @@ class DNumberDensityObservable(LWObservable):
 
         self.n_avgs = self.nzc.get_nz(self.geo2)
         self.M_cuts = self.nzc.get_M_cut(self.mf,self.geo2)
-        self.dn_ddelta_bar = self.mf.bias_n_avg(self.M_cuts,self.z_fine)
+        self.dn_ddelta_bar = self.mf.bias_n_avg(self.M_cuts,self.z_fine)/C.h**3 #TODO PRIORITY fix so not negative
         self.integrand = np.expand_dims(self.dn_ddelta_bar*self.r_fine**2,axis=1)
         #note effect of mitigation converged to ~0.3% if cut off integral at for z>1.5, 10% for z>0.6,20% for z>0.5
         r_vols = 3./np.diff(self.geo2.rbins**3)
@@ -90,6 +90,11 @@ class DNumberDensityObservable(LWObservable):
 
         self.Nab_i = np.zeros(self.n_bins)
         self.vs = np.zeros((self.n_bins,basis.get_size()))
+        #self.n_avg_c = np.zeros(self.n_bins)
+        #self.b_ns = np.zeros(self.n_bins)
+        #self.b_avgs = np.zeros(self.n_bins)
+        #self.m_avgs = np.zeros(self.n_bins)
+        #self.biases = np.diag(self.mf.bias(self.M_cuts,self.z_fine))
 
         #NOTE this whole loop could be pulled apart with a small change in sph_klim
         for itr in xrange(0,self.n_bins):
@@ -105,7 +110,18 @@ class DNumberDensityObservable(LWObservable):
 
             #r_vol = 1./(self.r_fine[range1[-1]]**3-self.r_fine[range1[0]]**3)*3.
             #TODO check number densities sensible
+            #TODO why does increasing n_avg DECREASE the information?
+            #TODO should be a bin which goes to 0
             n_avg = r_vols[itr]*trapz2(n_avg_integrand[range1],self.r_fine[range1])
+            #b_n = r_vols[itr]*trapz2(n_avg_integrand[range1],self.r_fine[range1])
+            #bias = r_vols[itr]*trapz2(n_avg_integrand[range1],self.r_fine[range1])
+            #self.n_avg_c[itr] = n_avg
+         
+
+            #self.b_ns[itr] = r_vols[itr]*trapz2(self.integrand[range1],self.r_fine[range1])
+            #self.b_avgs[itr] = r_vols[itr]*trapz2(self.biases[range1]*self.r_fine[range1]**2,self.r_fine[range1])
+            #self.m_avgs[itr] = r_vols[itr]*trapz2(self.M_cuts[range1]*self.r_fine[range1]**2,self.r_fine[range1])
+            
 
             if V1 == 0 or V2 == 0:
                 continue

@@ -33,6 +33,7 @@ class LensingPowerBase(object):
 
         self.dC_dpars = np.zeros((cosmo_par_list.size,2),dtype=object)
         self.Cs_pert = ppr.get_perturbed_cosmopies(C,cosmo_par_list,cosmo_par_eps,log_par_derivs)
+        self.nzs_pert = np.zeros((cosmo_par_list.size,2),dtype=object)
 
         for i in xrange(0,cosmo_par_list.size):
             self.dC_dpars[i,0] = sp.ShearPower(self.Cs_pert[i,0],self.geo.z_fine,f_sky,params,'power',ps,self.nz_matcher)
@@ -52,9 +53,6 @@ class LensingObservable(SWObservable):
         self.r2 = r2.copy()
         self.q1_handle = q1_handle
         self.q2_handle = q2_handle
-        assert self.r1[0]>100.
-        assert self.r2[0]>100.
-        print "r1,q",self.r1,self.q1_handle
         self.q1_pow = self.q1_handle(self.len_pow.C_pow,self.r1[0],self.r1[1])
         self.q2_pow = self.q2_handle(self.len_pow.C_pow,self.r2[0],self.r2[1])
         self.q1_dC = self.q1_handle(self.len_pow.dC_ddelta,self.r1[0],self.r1[1])

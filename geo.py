@@ -11,7 +11,8 @@ from sph_functions import Y_r
 #2) Have a definite fine z bin structure (for integrating over z)
 #3) Be able to compute some kind of surface integral
 #Most of the behavior should be defined in subclasses
-
+#TODO watch out for dangerous behavior with changing cosmology and r bin structure,
+#ie Geo is a function of cosmology due to that
 class Geo(object):
     """Abstract class for a survey geometry"""
     def __init__(self,z_coarse,C,z_fine):
@@ -64,7 +65,8 @@ class Geo(object):
             self.fine_indices[i,0] = self.fine_indices[i-1,1]
         self.fine_indices[-1,1] = self.z_fine.size
 
-        self.dzdr = InterpolatedUnivariateSpline(self.r_fine,self.z_fine,ext=2).derivative()(self.r_fine)
+        #self.dzdr = InterpolatedUnivariateSpline(self.r_fine,self.z_fine,ext=2,k=5).derivative()(self.r_fine)
+        self.dzdr = self.C.Ez(z_fine)/C.DH
         #smalles possible difference for a sum
         #self.eps = np.finfo(float).eps
 

@@ -218,7 +218,7 @@ class MultiFisher(object):
         return result
 
     #TODO handle caching better to avoid this logic
-    def get_eig_set(self,fisher_set,ssc_metric=False):
+    def get_eig_set(self,fisher_set,ssc_metric=False,include_sw=False):
         """Get 2d array of eigensystems for C^{ij}metric^{-1 ij}v=lambda v 
             with 1st dimension [no mitigation, with mitigation] 2nd dimension [sw,par]
             inputs:
@@ -232,9 +232,9 @@ class MultiFisher(object):
             metrics = np.array([fisher_set[1][1],f_set_par[1]])
         else:
             metrics = np.array([fisher_set[0][1],f_set_par[0]])
-
-        result[0,0] = fisher_set[1][1].get_cov_eig_metric(metrics[0])
-        result[0,1] = fisher_set[2][1].get_cov_eig_metric(metrics[0])
+        if include_sw:
+            result[0,0] = fisher_set[1][1].get_cov_eig_metric(metrics[0])
+            result[0,1] = fisher_set[2][1].get_cov_eig_metric(metrics[0])
         result[1,0] = f_set_par[1].get_cov_eig_metric(metrics[1])
         result[1,1] = f_set_par[2].get_cov_eig_metric(metrics[1])
         return result

@@ -98,7 +98,7 @@ def test_de(prior_fisher):
         assert processed.shape[1]==41
         assert np.all(processed_labels[0:5]==np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs']))
         for i in xrange(0,36):
-            assert processed_labels[5+i]=='ws36_'+str(i)
+            assert processed_labels[5+i]=='ws36_'+str(i).zfill(2)
         assert np.all(processed==stripped)
         assert np.all(processed_labels==stripped_labels)
     elif prior_fisher.fisher_prior.de_model=='none':

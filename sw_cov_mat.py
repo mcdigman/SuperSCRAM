@@ -5,7 +5,7 @@ from warnings import warn
 import numpy as np
 import lensing_observables as lo
 
-DEBUG = False
+DEBUG = True
 
 class SWCovMat(object):
     """Object to handle retrieving the non SSC short wavelength covariance matrices"""

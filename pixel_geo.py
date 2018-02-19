@@ -6,15 +6,17 @@ import ylm_utils as ylmu
 #same pixels at every redshift.
 class PixelGeo(Geo):
     """generic pixelated geometry"""
-    def __init__(self,zs,pixels,C,z_fine,l_max):
+    def __init__(self,zs,pixels,C,z_fine,l_max,hard_l_max=np.inf):
         """pixelated geomtery
             inputs:
                 zs: tomographic z bins
                 pixels: pixels in format np.array([(theta,phi,area)]), area in steradians
                 C: CosmoPie object
                 z_fine: the fine z slices
+                hard_l_max: absolute maximum possible l to resolve
         """
         self.pixels = pixels
+        self.hard_l_max = hard_l_max
 
 
         Geo.__init__(self,zs,C,z_fine)
@@ -55,4 +57,6 @@ class PixelGeo(Geo):
 
     def get_a_lm_table(self,l_max):
         """get table of a(l,m) below l_max"""
+        if l_max>self.hard_l_max:
+            raise ValueError('requested l '+str(l_max)+' exceeds resolvable l limit '+str(self.hard_l_max))
         return ylmu.get_a_lm_table(l_max,self.pixels[:,0],self.pixels[:,1],self.pixels[0,2])

@@ -38,7 +38,7 @@ if __name__=="__main__":
     cosmo_fid['de_model'] = 'constant_w'
     if cosmo_fid['de_model']=='jdem':
         for i in xrange(0,36):
-            cosmo_fid['ws36_'+str(i)] = cosmo_fid['w']
+            cosmo_fid['ws36_'+str(i).zfill(2)] = cosmo_fid['w']
 
     C = cp.CosmoPie(cosmology=cosmo_fid,p_space='jdem')
     #C=cp.CosmoPie(cosmology=defaults.cosmology,p_space='basic')
@@ -205,7 +205,7 @@ if __name__=="__main__":
 
 
     print 'main: this is r_max: '+str(r_max)
-    SS = SuperSurvey(surveys_sw,surveys_lw,basis,C,defaults.prior_fisher_params.copy(),get_a=False,do_unmitigated=True,do_mitigated=True)
+    SS = SuperSurvey(surveys_sw,surveys_lw,basis,C,defaults.prior_fisher_params.copy(),get_a=False,do_unmitigated=True,do_mitigated=True,include_sw=True)
 
     t2 = time()
     print "main: total run time "+str(t2-t1)+" s"

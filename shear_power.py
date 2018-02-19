@@ -3,22 +3,22 @@ Handles lensing observable power spectrum
 """
 from warnings import warn
 import numpy as np
-from scipy.interpolate import RectBivariateSpline
+from scipy.interpolate import RectBivariateSpline,InterpolatedUnivariateSpline
 
 from power_response import dp_ddelta
 from lensing_weight import QShear#,QMag,QNum,QK
 from lensing_source_distribution import get_source_distribution
 from algebra_utils import trapz2
+from extrap_utils import power_law_extend
 
 #TODO check integral boundaries ok
-#TODO remove explicit cosmosis pmodel
 class ShearPower(object):
     """handles lensing power spectra"""
-    def __init__(self,C,zs,f_sky,params,mode='power',ps=None,nz_matcher=None):
+    def __init__(self,C,z_fine,f_sky,params,mode='power',ps=None,nz_matcher=None):
         """
             inputs:
                 C: CosmoPie object
-                zs: z grid
+                z_fine: z grid
                 f_sky: angular area of window in sky fraction
                 mode: whether to get power spectrum 'power' or dC/d\\bar{\\delta} 'dc_ddelta'
                 ps: lensing source distribution. Optional.
@@ -26,8 +26,11 @@ class ShearPower(object):
                 params: see line by line description in defaults.py
         """
         self.k_in = C.k
+        self.k_max = np.max(self.k_in)
+        self.k_min = np.min(self.k_in)
         self.C = C
-        self.zs = zs
+        #self.zs = zs
+        self.zs = z_fine
         self.params = params
         self.ps_in = ps
         self.nz_matcher = nz_matcher
@@ -44,9 +47,7 @@ class ShearPower(object):
 
         self.n_gal = self.params['n_gal']
         if self.nz_matcher is not None:
-            #range_z = (zs>=self.params['z_min_dist']) & (zs<=self.params['z_max_dist'])
-            #self.n_gal = self.nz_matcher.get_N_projected(zs[range_z],self.f_sky*4.*np.pi)
-            self.n_gal = self.nz_matcher.get_N_projected(zs,self.f_sky*4.*np.pi)
+            self.n_gal = self.nz_matcher.get_N_projected(self.zs,self.f_sky*4.*np.pi)
         if self.n_gal is None:
             raise ValueError('must specify n_gal in params or give an nz_matcher object')
 
@@ -61,32 +62,30 @@ class ShearPower(object):
 
         #some methods require special handling
         if self.mode=='power':
-            if self.pmodel=='halofit':
-                self.pow_interp = RectBivariateSpline(self.k_in,self.zs,self.C.P_lin.get_matter_power(self.zs,pmodel='halofit'),kx=2,ky=2)
-            elif self.pmodel=='fastpt':
-                self.pow_interp = RectBivariateSpline(self.k_in,self.zs,self.C.P_lin.get_matter_power(self.zs,pmodel='fastpt'),kx=2,ky=2)
-            elif self.pmodel=='linear':
-                self.pow_interp = RectBivariateSpline(self.k_in,self.zs,self.C.P_lin.get_matter_power(self.zs,pmodel='linear'),kx=2,ky=2)
-            else:
-                raise ValueError('unrecognized pmodel\''+str(self.pmodel)+'\' for mode \''+str(self.mode)+'\'')
+            p_grid = self.C.P_lin.get_matter_power(self.zs,pmodel=self.pmodel)
         elif self.mode=='dc_ddelta':
-            self.pow_interp = RectBivariateSpline(self.k_in,zs,dp_ddelta(self.C.P_lin,zs,self.C,self.pmodel,self.params['epsilon'])[0],kx=2,ky=2)
+            p_grid = dp_ddelta(self.C.P_lin,self.zs,self.C,self.pmodel,self.params['epsilon'])[0]
         else:
             raise ValueError('unrecognized mode \''+str(self.mode)+'\'')
+        #self.pow_interp = RectBivariateSpline(self.k_in,self.zs,p_grid,kx=2,ky=2)
         #TODO should be same rs as everthing else
-        self.rs = self.C.D_comov(zs)
+        self.rs = self.C.D_comov(self.zs)
         #TODO if using Omegak not 0, make sure rs and r_As used consistently
         if self.C.Omegak==0:
             self.r_As = self.rs
         else:
             warn('ShearPower may not support nonzero curvature consistently')
-            self.r_As = self.C.D_comov_A(zs)
+            self.r_As = self.C.D_comov_A(self.zs)
 
         self.k_use = np.outer((self.l_mids+0.5),1./self.r_As)
 
         #loop appears necessary due to uneven grid spacing in k_use
         for i in xrange(0,self.n_z):
-            self.p_dd_use[:,i] = self.pow_interp(self.k_use[:,i],zs[i])[:,0]
+            self.p_dd_use[:,i] = power_law_extend(self.k_in,p_grid[:,i],self.k_use[:,i],k=2)
+            k_range = (self.k_use[:,i]<=self.k_max) & (self.k_use[:,i]>=self.k_min)
+            k_loc = self.k_use[:,i][k_range]
+            #self.p_dd_use[:,i][k_range] = InterpolatedUnivariateSpline(self.k_in,p_grid[:,i],k=2,ext=2)(k_loc)
+            #self.p_dd_use[:,i] = self.pow_interp(self.k_use[:,i],self.zs[i])[:,0]
 
         self.sc_as = 1/(1+self.zs)
 
@@ -115,7 +114,7 @@ class ShearPower(object):
         return self.p_gd_use/np.sqrt(self.p_dd_use*self.p_gg_use)
 
     def get_n_shape(self,class_1,class_2):
-        """get shape noise associated with 2 types of observables"""
+        """get shape noise associated with 2 types of observables over entire z range"""
         try:
             return self.n_map[class_1][class_2]
         except KeyError:

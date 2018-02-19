@@ -38,18 +38,18 @@ class NZMatcher(object):
                 geo: a Geo object
         """
         mass = mf.mass_grid
-        nz = self.get_nz(geo)
+        nz = self.get_nz(geo)*mf.C.h**3
         m_cuts = np.zeros(geo.z_fine.size)
         #TODO maybe can be faster
         #TODO check this
         Gs = mf.Growth(geo.z_fine)
         dns = mf.dndM_G(mass,Gs)
         for itr in xrange(0,geo.z_fine.size):
-            dn = dns[:,itr]
-            n_avgs = np.hstack((-(cumtrapz(dn[::-1],mass[::-1]))[::-1],0.))
+            n_avgs = mf.n_avg(mass,geo.z_fine[itr])
             n_avg_index = np.argmin(n_avgs>=nz[itr]) #TODO check edge cases
             #TODO only need 1 interpolating function
             if n_avg_index==0:
+                print "XXXXX",np.sum(n_avgs>=nz[itr]),nz[itr]
                 m_cuts[itr] = mass[n_avg_index]
             else:
                 m_interp = interp1d(n_avgs[n_avg_index-1:n_avg_index+1],mass[n_avg_index-1:n_avg_index+1])(nz[itr])

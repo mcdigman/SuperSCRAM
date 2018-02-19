@@ -67,7 +67,7 @@ if __name__=='__main__':
         t4 = time()
         print "m cuts found in: "+str(t4-t3)+" s"
         n_halo = np.zeros(m_cuts.size)
-        n_halo = mf.n_avg(m_cuts,z_fine)
+        n_halo = mf.n_avg(m_cuts,z_fine)/C.h**3
         print "avg reconstruction error: "+str(np.average((n_halo-nz)/nz))
         ts[i+1] = time()
     #tf = time()

@@ -9,7 +9,7 @@ import multi_fisher as mf
 class SuperSurvey(object):
     """ This class holds and returns information for all surveys
     """
-    def __init__(self,surveys_sw,surveys_lw,basis,C,prior_params,get_a=False,do_mitigated=True,do_unmitigated=True):
+    def __init__(self,surveys_sw,surveys_lw,basis,C,prior_params,get_a=False,do_mitigated=True,do_unmitigated=True,include_sw=False):
         r"""master class for mitigation analysis
             inputs:
                 surveys_sw: an array of SWSurveys
@@ -19,7 +19,8 @@ class SuperSurvey(object):
                 prior_params: parameters needed for PriorFisher
                 get_a: get (v.T).C_lw.v where v=\frac{\partial\bar{\delta}}{\delta_\alpha}
                 do_mitigated: if False don't get mitigated covariances
-                do_unmitigate: if False don't get unmitigated covariances"""
+                do_unmitigate: if False don't get unmitigated covariances
+                include_sw: if False don't get eigenvalues for sw covariances"""
         t1 = time()
 
         self.get_a = get_a
@@ -51,8 +52,8 @@ class SuperSurvey(object):
 
         self.f_set_nopriors = self.multi_f.get_fisher_set(include_priors=False)
         self.f_set = self.multi_f.get_fisher_set(include_priors=True)
-        self.eig_set = self.multi_f.get_eig_set(self.f_set_nopriors)
-        self.eig_set_ssc = self.multi_f.get_eig_set(self.f_set_nopriors,ssc_metric=True)
+        self.eig_set = self.multi_f.get_eig_set(self.f_set_nopriors,include_sw=include_sw)
+        self.eig_set_ssc = self.multi_f.get_eig_set(self.f_set_nopriors,ssc_metric=True,include_sw=include_sw)
         #TODO get this before changing shape in multi_fisher
         if self.get_a:
             self.a_vals = self.multi_f.get_a_lw()

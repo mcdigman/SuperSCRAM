@@ -147,8 +147,6 @@ class SWSurvey(object):
             if self.params['needs_lensing'] and re.match('^len',key):
                 r1 = names[key]['r1']
                 r2 = names[key]['r2']
-                assert r1[0]>100.
-                assert r2[0]>100.
 
                 if re.match('^len_shear_shear',key):
                     observables[itr] = lo.ShearShearLensingObservable(self.len_pow,r1,r2)
@@ -175,9 +173,9 @@ def generate_observable_names(geo,observable_list,cross_bins):
     names = {}
     for name in observable_list:
         if re.match('^len',name):
+            n_fill = np.int(np.ceil(np.log10(rbins.shape[0]))) #pad with zeros so names sort correctly
             for i in xrange(0,rbins.shape[0]):
                 r1 = rbins[i]
-                assert r1[0]>100.
                 if cross_bins:
                     for j in xrange(0,rbins.shape[0]):
                         #Only take r1<=r2
@@ -185,8 +183,7 @@ def generate_observable_names(geo,observable_list,cross_bins):
                             pass
                         else:
                             r2 = rbins[j]
-                            assert r2[0]>100.
-                            name_str = name+'_'+str(i)+'_'+str(j)
+                            name_str = name+'_'+str(i).zfill(n_fill)+'_'+str(j).zfill(n_fill)
                             names[name_str] = {'r1':r1,'r2':r2}
 
                 else:

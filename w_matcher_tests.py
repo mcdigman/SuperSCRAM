@@ -54,7 +54,7 @@ def test_const_match(w0_test,cosmo_input):
     cosmo_match_a['wa'] = 0.
     cosmo_match_a['w'] = w_use_int
     for i in xrange(0,36):
-        cosmo_match_a['ws36_'+str(i)] = w_use_int
+        cosmo_match_a['ws36_'+str(i).zfill(2)] = w_use_int
 
     cosmo_match_b = cosmo_match_a.copy()
     cosmo_match_b['de_model'] = 'w0wa'
@@ -119,7 +119,7 @@ def test_jdem_w0wa_match(w0_test,wa_test,cosmo_input):
     cosmo_match_jdem['w'] = w0_use+0.9*wa_use
     a_jdem = 1.-0.025*np.arange(0,36)
     for i in xrange(0,36):
-        cosmo_match_jdem['ws36_'+str(i)] = w0_use+(1.-(a_jdem[i]-0.025/2.))*wa_use
+        cosmo_match_jdem['ws36_'+str(i).zfill(2)] = w0_use+(1.-(a_jdem[i]-0.025/2.))*wa_use
 
     C_match_w0wa = cp.CosmoPie(cosmology=cosmo_match_w0wa,p_space='jdem')
     C_match_jdem = cp.CosmoPie(cosmology=cosmo_match_jdem,p_space='jdem')
@@ -283,8 +283,8 @@ if __name__=='__main__':
 
 
             for i in xrange(0,36):
-                cosmo_match_jdem['ws36_'+str(i)] = -1.
-            cosmo_match_jdem['ws36_'+str(1)] = -1.5
+                cosmo_match_jdem['ws36_'+str(i).zfill(2)] = -1.
+            cosmo_match_jdem['ws36_'+str(1).zfill(2)] = -1.5
 
             params_1 = params.copy()
             params_1['w_step'] = 0.01

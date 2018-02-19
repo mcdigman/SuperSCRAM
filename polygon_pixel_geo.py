@@ -26,6 +26,7 @@ class PolygonPixelGeo(PixelGeo):
         self.C = C
         self.z_fine = z_fine
         self.res_healpix = res_healpix
+        hard_l_max = 3.*2**self.res_healpix-1.
         self.all_pixels = get_healpix_pixelation(res_choose=self.res_healpix)
         self.sp_poly = get_poly(thetas,phis,theta_in,phi_in)
         if isnan(self.sp_poly.area()):
@@ -42,7 +43,7 @@ class PolygonPixelGeo(PixelGeo):
         true_area = self.sp_poly.area()
         if not np.isclose(calc_area,true_area,atol=10**-2,rtol=10**-3):
             warn("discrepancy between area "+str(true_area)+" and est "+str(calc_area)+", may be poorly converged")
-        PixelGeo.__init__(self,zs,contained_pixels,C,z_fine,l_max)
+        PixelGeo.__init__(self,zs,contained_pixels,C,z_fine,l_max,hard_l_max)
 
         #set a00 to value from pixels for consistency, not angle defect even though angle defect is more accurate
     #    self.alm_table[(0,0)] = calc_area/np.sqrt(4.*np.pi)

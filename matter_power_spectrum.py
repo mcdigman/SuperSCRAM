@@ -46,6 +46,7 @@ class MatterPower(object):
         self.extend_limit = np.max([self.extend_limit,1./self.extend_limit])+0.001
         if P_lin is None or k_in is None:
             k_camb,self.P_lin,self.sigma8_in = camb_pow(self.cosmology,camb_params=self.camb_params)
+            self.k_camb = k_camb
             #TODO check handling fixing sigma8 right
             if k_in is None:
                 self.k = k_camb
