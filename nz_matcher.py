@@ -2,7 +2,7 @@
 by abundance matching a cutoff mass M to the halo mass function"""
 
 import numpy as np
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
 from scipy.integrate import cumtrapz
 import algebra_utils as au
 
@@ -29,7 +29,14 @@ class NZMatcher(object):
     def get_nz(self,geo):
         """get n(z) for the input geometry's fine z grid"""
         dN_dz = self.get_dN_dzdOmega(geo.z_fine)
-        return 1./geo.r_fine**2*dN_dz*geo.dzdr
+        #don't divide by 0
+        if geo.r_fine[0]==0:
+            r_fine = geo.r_fine.copy()
+            r_fine[0]+=r_fine[1]*0.0001
+        else:
+            r_fine = geo.r_fine
+        result = 1./r_fine**2*(dN_dz*geo.dzdr)
+        return result
 
     def get_M_cut(self,mf,geo):
         """get the abundance matched mass cutoff from the halo mass function
@@ -42,18 +49,29 @@ class NZMatcher(object):
         m_cuts = np.zeros(geo.z_fine.size)
         #TODO maybe can be faster
         #TODO check this
-        Gs = mf.Growth(geo.z_fine)
-        dns = mf.dndM_G(mass,Gs)
+        #note could do bisection search if not accurate enough
+        #Gs = mf.Growth(geo.z_fine)
+        #dns = mf.dndM_G(mass,Gs)
+        #n_avgs_alt = mf.n_avg(mass,geo.z_fine)
         for itr in xrange(0,geo.z_fine.size):
+            #no number density to match
+            if nz[itr]==0.:
+                m_cuts[itr] = mass[-1]
+                continue
             n_avgs = mf.n_avg(mass,geo.z_fine[itr])
-            n_avg_index = np.argmin(n_avgs>=nz[itr]) #TODO check edge cases
-            #TODO only need 1 interpolating function
-            if n_avg_index==0:
-                print "XXXXX",np.sum(n_avgs>=nz[itr]),nz[itr]
-                m_cuts[itr] = mass[n_avg_index]
+            n_i = np.argmin(n_avgs>=nz[itr]) 
+            
+            if n_i==0:
+                    print "FLOORED",geo.z_fine[itr],nz[itr],n_avgs[0],n_i
+                    m_cuts[itr] = mass[0]
+            elif m_cuts[itr]>=mass[-1] or n_i==mass.size-1:
+                m_cuts[itr] = mass[-1]
             else:
-                m_interp = interp1d(n_avgs[n_avg_index-1:n_avg_index+1],mass[n_avg_index-1:n_avg_index+1])(nz[itr])
+                log_norm_n = np.log(n_avgs[n_i-1:n_i+1]/n_avgs[0])
+                log_norm_nz = np.log(nz[itr]/n_avgs[0])
+                m_interp = np.exp(interp1d(log_norm_n,np.log(mass[n_i-1:n_i+1]))(log_norm_nz))
                 m_cuts[itr] = m_interp
+            #assert np.isclose(m_interp2,m_cuts[itr])
         return m_cuts
 
 def get_gaussian_smoothed_dN_dz(z_grid,zs_chosen,params,normalize):
@@ -61,7 +79,8 @@ def get_gaussian_smoothed_dN_dz(z_grid,zs_chosen,params,normalize):
         with galaxies at locations specified by zs_chosen,
         mirror boundary at z=0 if mirror_boundary=True,
         if normalize=True then normalize so density integrates to total number of galaxies
-        (in limit as maximum z_grid is much larger than maximum zs_chosen normalizing should have no effect)"""
+        (in limit as maximum z_grid is much larger than maximum zs_chosen normalizing should have no effect)
+        if suppress=True cut off z below z_cut, to avoid numerical issues elsewhere"""
     dN_dz = np.zeros(z_grid.size)
     sigma = params['smooth_sigma']
     for itr in xrange(0,zs_chosen.size):
@@ -71,6 +90,11 @@ def get_gaussian_smoothed_dN_dz(z_grid,zs_chosen,params,normalize):
             dN_dz += np.exp(-(z_grid-zs_chosen[itr])**2/(2.*sigma**2))
 
     dN_dz = dN_dz/(sigma*np.sqrt(2.*np.pi))
+    dn_store = dN_dz.copy()
+    #if params['suppress']:
+    #    dN_dz[z_grid<params['z_cut']] = 0.
+
     if normalize:
-        dN_dz = zs_chosen.size*dN_dz/(au.trapz2(dN_dz,dx=params['z_resolution'])*params['area_sterad'])
+        dN_dz = zs_chosen.size*dN_dz/(au.trapz2(dN_dz,z_grid))
+    dN_dz = dN_dz/params['area_sterad']
     return dN_dz

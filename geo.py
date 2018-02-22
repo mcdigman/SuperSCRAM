@@ -59,7 +59,7 @@ class Geo(object):
         #create list of indices of coarse bin starts in fine grid
         #TODO check handling bin edges correctly
         self.fine_indices = np.zeros((self.zs.size-1,2),dtype=np.int)
-        self.fine_indices[0,0] = 0
+        self.fine_indices[0,0] = np.argmax(self.z_fine>=self.zs[0])
         for i in xrange(1,self.zs.size-1):
             self.fine_indices[i-1,1] = np.argmax(self.z_fine>=self.zs[i])
             self.fine_indices[i,0] = self.fine_indices[i-1,1]

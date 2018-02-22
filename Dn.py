@@ -82,24 +82,25 @@ class DNumberDensityObservable(LWObservable):
 
         self.n_avgs = self.nzc.get_nz(self.geo2)
         self.M_cuts = self.nzc.get_M_cut(self.mf,self.geo2)
-        self.dn_ddelta_bar = self.mf.bias_n_avg(self.M_cuts,self.z_fine)/C.h**3 #TODO PRIORITY fix so not negative
+        self.dn_ddelta_bar = self.mf.bias_n_avg(self.M_cuts,self.z_fine)/C.h**3
         self.integrand = np.expand_dims(self.dn_ddelta_bar*self.r_fine**2,axis=1)
         #note effect of mitigation converged to ~0.3% if cut off integral at for z>1.5, 10% for z>0.6,20% for z>0.5
-        r_vols = 3./np.diff(self.geo2.rbins**3)
-        n_avg_integrand = self.r_fine**2*self.n_avgs
+        self.r_vols = 3./np.diff(self.geo2.rbins**3)
+        self.n_avg_integrand = self.r_fine**2*self.n_avgs
 
         self.Nab_i = np.zeros(self.n_bins)
         self.vs = np.zeros((self.n_bins,basis.get_size()))
         #self.n_avg_c = np.zeros(self.n_bins)
-        #self.b_ns = np.zeros(self.n_bins)
+        self.b_ns = np.zeros(self.n_bins)
         #self.b_avgs = np.zeros(self.n_bins)
         #self.m_avgs = np.zeros(self.n_bins)
         #self.biases = np.diag(self.mf.bias(self.M_cuts,self.z_fine))
+        self.n_avg_bin = np.zeros(self.n_bins)
 
         #NOTE this whole loop could be pulled apart with a small change in sph_klim
         for itr in xrange(0,self.n_bins):
             bounds1 = self.geo2.fine_indices[itr]
-            range1 = np.arange(bounds1[0],bounds1[1])#np.array(range(bounds1[0],bounds1[1]))
+            range1 = np.arange(bounds1[0],bounds1[1])
 
             print "Dn: getting d1,d2"
             #multiplier for integrand
@@ -112,15 +113,18 @@ class DNumberDensityObservable(LWObservable):
             #TODO check number densities sensible
             #TODO why does increasing n_avg DECREASE the information?
             #TODO should be a bin which goes to 0
-            n_avg = r_vols[itr]*trapz2(n_avg_integrand[range1],self.r_fine[range1])
-            #b_n = r_vols[itr]*trapz2(n_avg_integrand[range1],self.r_fine[range1])
-            #bias = r_vols[itr]*trapz2(n_avg_integrand[range1],self.r_fine[range1])
+            n_avg = self.r_vols[itr]*trapz2(self.n_avg_integrand[range1],self.r_fine[range1])
+            self.n_avg_bin[itr] = n_avg
+
+            assert n_avg>=0
+            #b_n = self.r_vols[itr]*trapz2(self.n_avg_integrand[range1],self.r_fine[range1])
+            #bias = self.r_vols[itr]*trapz2(self.n_avg_integrand[range1],self.r_fine[range1])
             #self.n_avg_c[itr] = n_avg
          
 
-            #self.b_ns[itr] = r_vols[itr]*trapz2(self.integrand[range1],self.r_fine[range1])
-            #self.b_avgs[itr] = r_vols[itr]*trapz2(self.biases[range1]*self.r_fine[range1]**2,self.r_fine[range1])
-            #self.m_avgs[itr] = r_vols[itr]*trapz2(self.M_cuts[range1]*self.r_fine[range1]**2,self.r_fine[range1])
+            #self.b_ns[itr] = self.r_vols[itr]*trapz2(self.integrand[range1],self.r_fine[range1])
+            #self.b_avgs[itr] = self.r_vols[itr]*trapz2(self.biases[range1]*self.r_fine[range1]**2,self.r_fine[range1])
+            #self.m_avgs[itr] = self.r_vols[itr]*trapz2(self.M_cuts[range1]*self.r_fine[range1]**2,self.r_fine[range1])
             
 
             if V1 == 0 or V2 == 0:
@@ -129,9 +133,10 @@ class DNumberDensityObservable(LWObservable):
                 warn('Dn: variance had a value which was exactly 0; fixing inverse to np.inf '+str(itr))
                 self.Nab_i[itr] = np.inf
             else:
+                self.b_ns[itr] = self.r_vols[itr]*trapz2(self.integrand[range1],self.r_fine[range1])
                 d1 = self.basis.D_O_I_D_delta_alpha(self.geo1,self.integrand,use_r=True,range_spec=range1)
                 d2 = self.basis.D_O_I_D_delta_alpha(self.geo2,self.integrand,use_r=True,range_spec=range1)
-                DO_a = (d2-d1)*r_vols[itr]
+                DO_a = (d2-d1)*self.r_vols[itr]
                 Nab_itr = n_avg*(1./V1+1./V2)
                 self.Nab_i[itr] = 1./Nab_itr
                 self.vs[itr] = DO_a.flatten()

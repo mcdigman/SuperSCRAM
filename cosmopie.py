@@ -240,13 +240,18 @@ class CosmoPie(object):
 
     #could move this to MatterPower or something
     def sigma_r(self,z,R):
-        r""" returns RMS power on scale R
+        r""" returns RMS power on scale R (in Mpc)
          sigma^2(R)= \int dlogk/(2 np.pi^2) W^2 P(k) k^3
          user needs to adjust for growth factor upon return """
         if self.P_lin is None:
             raise ValueError('You need to provide a linear power spectrum through set_power to get sigma valeus')
         z = np.asanyarray(z)
         k = self.P_lin.k 
+        if np.min(R)<10./np.max(k):
+            #ensure resolution to at least 1./10 radius so converges to ~0.5%
+            #could be less aggressive and require ~3 for ~5% convergence
+            raise ValueError('input R '+str(np.min(R))+' too small for 1./(max k) '+str(1./np.max(k)))
+
         if isinstance(R,np.ndarray):
             kr = np.outer(k,R)
         else:

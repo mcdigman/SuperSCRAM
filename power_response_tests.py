@@ -5,6 +5,8 @@ import power_response as shp
 import defaults
 import cosmopie as cp
 import matter_power_spectrum as mps
+import pytest 
+
 COSMOLOGY_CHIANG = {'Omegabh2' :0.023,
                     'Omegach2' :0.1093,
                     'Omegamh2' : 0.1323,
@@ -33,15 +35,35 @@ def test_power_derivative():
     power_params = defaults.power_params.copy()
     power_params.camb['force_sigma8'] = True
     power_params.camb['leave_h'] = False
+    power_params.camb['npoints'] = 1000
     C = cp.CosmoPie(cosmology=COSMOLOGY_CHIANG,p_space='basic')
     #d = np.loadtxt('camb_m_pow_l.dat')
     #k_in = d[:,0]
-    epsilon = 0.00001
+    epsilon = 0.01
     #k_a,P_a = cpow.camb_pow(cosmo_a)
     P_a = mps.MatterPower(C,power_params)
     k_a = P_a.k
     C.k = k_a
     k_a_h = P_a.k/C.cosmology['h']
+    
+    pmodels = ['linear','halofit','fastpt']
+    for pmodel in pmodels: 
+        z0 = 0.
+        hold0 = shp.dp_ddelta(P_a,z0,C,pmodel,epsilon) 
+        z1 = np.array([0.])
+        hold1 = shp.dp_ddelta(P_a,z1,C,pmodel,epsilon) 
+        z2 = np.array([0.,0.001])
+        hold2 = shp.dp_ddelta(P_a,z2,C,pmodel,epsilon) 
+        z3 = np.arange(0.,1.,0.001)
+        hold3 = shp.dp_ddelta(P_a,z3,C,pmodel,epsilon) 
+        assert np.allclose(hold0[0],hold1[0][:,0])
+        assert np.allclose(hold1[0][:,0],hold2[0][:,0])
+        assert np.allclose(hold1[0][:,0],hold3[0][:,0])
+        assert np.allclose(hold2[0][:,1],hold3[0][:,1])
+        assert np.allclose(hold1[1][:,0],hold1[1][:,0])
+        assert np.allclose(hold1[1][:,0],hold2[1][:,0])
+        assert np.allclose(hold1[1][:,0],hold3[1][:,0])
+        assert np.allclose(hold2[1][:,1],hold3[1][:,1])
 
     d_chiang_halo = np.loadtxt('test_inputs/dp_1/dp_chiang_halofit.dat')
     k_chiang_halo = d_chiang_halo[:,0]*C.cosmology['h']
@@ -62,9 +84,9 @@ def test_power_derivative():
     dcalt3,p3a = shp.dp_ddelta(P_a,zbar,C=C,pmodel='fastpt',epsilon=epsilon)
 
     mask_mult = (k_a_h>0.)*(k_a_h<0.4)
-    rat_halofit = (dc_ch1/abs(dcalt2/p2a))[mask_mult]
-    rat_linear = (dc_ch2/abs(dcalt1/p1a))[mask_mult]
-    rat_fpt = (dc_ch3/abs(dcalt3/p3a))[mask_mult]
+    rat_halofit = (dc_ch1/abs(dcalt2/p2a)[:,0])[mask_mult]
+    rat_linear = (dc_ch2/abs(dcalt1/p1a)[:,0])[mask_mult]
+    rat_fpt = (dc_ch3/abs(dcalt3/p3a)[:,0])[mask_mult]
 
 
     #TODO what is wrong with halofit
@@ -86,25 +108,24 @@ def test_power_derivative():
     assert np.all(np.abs(linear_bins-1.)<0.02)
     assert np.all(np.abs(fpt_bins-1.)<0.02)
 
+
 class PowerDerivativeComparison1(object):
     """replicate chiang&wagner arxiv:1403.3411v2 figure 4-5
     note that the mean averaged over 1 oscillation should match as should the phase of the oscillations,
     but the amplitude of the oscillations does not match because we are not convolving with a window function"""
     def __init__(self):
         """ do power derivative comparison"""
-        #camb_params = defaults.camb_params.copy()
         power_params = defaults.power_params.copy()
         power_params.camb['force_sigma8'] = True
         power_params.camb['leave_h'] = False
+        power_params.camb['npoints'] = 1000
         C = cp.CosmoPie(cosmology=COSMOLOGY_CHIANG,p_space='basic')
-        #d = np.loadtxt('camb_m_pow_l.dat')
-        #k_in = d[:,0]
-        epsilon = 0.00001
-        #k_a,P_a = cpow.camb_pow(cosmo_a)
+        epsilon = 0.01
         P_a = mps.MatterPower(C,power_params)
         k_a = P_a.k
         C.k = k_a
         k_a_h = P_a.k/C.cosmology['h']
+
 
         d_chiang_halo = np.loadtxt('test_inputs/dp_1/dp_chiang_halofit.dat')
         k_chiang_halo = d_chiang_halo[:,0]*C.cosmology['h']
@@ -118,7 +139,7 @@ class PowerDerivativeComparison1(object):
         k_chiang_fpt = d_chiang_fpt[:,0]*C.cosmology['h']
         dc_chiang_fpt = d_chiang_fpt[:,1]
         dc_ch3 = interp1d(k_chiang_fpt,dc_chiang_fpt,bounds_error=False)(k_a)
-        do_plots = False
+        do_plots = True
         if do_plots:
             import matplotlib.pyplot as plt
         zbar = np.array([3.])
@@ -171,11 +192,9 @@ class PowerDerivativeComparison1(object):
             ax.plot(k_a_h,dc_ch3)
             plt.legend(['linear','halofit','fastpt','halo_chiang',"lin_chiang","fpt_chiang"],loc=4)
         mask_mult = (k_a_h>0.)*(k_a_h<0.4)
-        rat_halofit = (dc_ch1/abs(dcalt2/p2a))[mask_mult]
-        rat_linear = (dc_ch2/abs(dcalt1/p1a))[mask_mult]
-        rat_fpt = (dc_ch3/abs(dcalt3/p3a))[mask_mult]
-        #ax.plot(abs(dcalt1/p1a)-dc_ch2)
-
+        rat_halofit = (dc_ch1/abs(dcalt2/p2a)[:,0])[mask_mult]
+        rat_linear = (dc_ch2/abs(dcalt1/p1a)[:,0])[mask_mult]
+        rat_fpt = (dc_ch3/abs(dcalt3/p3a)[:,0])[mask_mult]
 
         zbar = np.array([0.])
         dcalt1,p1a = shp.dp_ddelta(P_a,zbar,C=C,pmodel='linear',epsilon=epsilon)
@@ -193,7 +212,6 @@ class PowerDerivativeComparison1(object):
         #plt.legend(['linear','halofit','fastpt'],loc=4)
         if do_plots:
             plt.show()
-        #TODO what is wrong with halofit
         k_a_halofit = k_a_h[mask_mult][~np.isnan(rat_halofit)]
         k_a_linear = k_a_h[mask_mult][~np.isnan(rat_linear)]
         k_a_fpt = k_a_h[mask_mult][~np.isnan(rat_fpt)]
@@ -235,4 +253,9 @@ class PowerDerivativeComparison1(object):
         #plt.plot(k_a_h[mask_mult][~np.isnan(rat_linear)],rat_linear[~np.isnan(rat_linear)])
         #plt.show()
 if __name__=='__main__':
-    PowerDerivativeComparison1()
+    do_pytest = False
+    if do_pytest:
+        pytest.cmdline.main(['power_response_tests.py'])
+    do_plot_test1 = True
+    if do_plot_test1:
+        PowerDerivativeComparison1()

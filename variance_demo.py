@@ -15,7 +15,8 @@ if __name__=='__main__':
                     'kmax':1.476511342960e+02,
                     'leave_h':False,
                     'force_sigma8':True,
-                    'return_sigma8':False
+                    'return_sigma8':False,
+                    'accuracy':2
                   }
     print "main: building cosmology"
     power_params = defaults.power_params.copy()

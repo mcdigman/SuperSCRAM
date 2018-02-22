@@ -77,21 +77,27 @@ nz_params = {   'data_source'   :'./data/CANDELS-GOODSS2.dat',
                 'smooth_sigma'  :0.04,
                 'n_right_extend':4,
                 'z_resolution'  :0.0001,
-                'mirror_boundary':True}
+                'mirror_boundary':True,
+                'suppress'      :True,
+                'z_cut'         :0.04}
 nz_params_wfirst_gal = {    'data_source'   :'./data/CANDELS-GOODSS2.dat',
-                            'i_cut'         :26,
+                            'i_cut'         :24,
                             'area_sterad'   :0.0409650328530259/3282.80635,
                             'smooth_sigma'  :0.04,
                             'n_right_extend':4,
                             'z_resolution'  :0.001,
-                            'mirror_boundary':True
+                            'mirror_boundary':True,
+                            'suppress'      :True,
+                            'z_cut'         :0.04
                        }
 nz_params_wfirst_lens = {   'data_source'   :'./data/H-5x140s.dat',
                             'area_sterad'   : 0.040965*np.pi**2/180**2,
                             'smooth_sigma'  :0.01,
                             'n_right_extend':16,
                             'z_resolution'  :0.001,
-                            'mirror_boundary':True
+                            'mirror_boundary':True,
+                            'suppress'      :True,
+                            'z_cut'         :0.04
                         }
 nz_params_lsst = {  'data_source'   :'./data/CANDELS-GOODSS2.dat',
                     'i_cut'         :25.3,#lsst assumes they will get 10 billion galaxies with i<26 in 20000 deg^2, 4 billion lensing quality with i<25.3
@@ -99,7 +105,9 @@ nz_params_lsst = {  'data_source'   :'./data/CANDELS-GOODSS2.dat',
                     'smooth_sigma'  :0.05,
                     'n_right_extend':4,
                     'z_resolution'  :0.0001,
-                    'mirror_boundary':True
+                    'mirror_boundary':True,
+                    'suppress'      :True,
+                    'z_cut'         :0.04
                  }
 
 hmf_params = {      'log10_min_mass'    :   6,
@@ -122,7 +130,8 @@ camb_params = { 'npoints':1000,
                 'kmax':10.0,#20 #may need to be higher for some purposes,like 100, but makes things slower
                 'leave_h':False,
                 'force_sigma8':False,
-                'return_sigma8':False
+                'return_sigma8':False,
+                'accuracy':1
               }
 #amara refregier 2006 parameter forecast stuff
 prior_fisher_params = { 'row_strip'     :np.array([3,5,6,7]),

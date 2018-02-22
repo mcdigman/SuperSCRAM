@@ -177,7 +177,7 @@ class TestCosmosisHalofitAgreement1(unittest.TestCase):
         gg_rat = (sh_pow2_gg-sh_pow1_gg)/sh_pow2_gg
         sg_rat = (sh_pow2_sg-sh_pow1_sg)/sh_pow2_sg
         mm_rat = (sh_pow2_mm-sh_pow1_mm)/sh_pow2_mm
-
+        print sh_pow2
         mean_ss_err = np.mean(abs(ss_rat)[abs(ss_rat)<np.inf])
         mean_gg_err = np.mean(abs(gg_rat)[abs(gg_rat)<np.inf])
         mean_sg_err = np.mean(abs(sg_rat)[abs(sg_rat)<np.inf])

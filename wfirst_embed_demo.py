@@ -16,7 +16,7 @@ import defaults
 
 
 if __name__=='__main__':
-    print "main: begin WFIRS2"
+    print "main: begin WFIRST"
     time0 = time()
     #get dictionaries of parameters that various functions will need
     cosmo = defaults.cosmology.copy()
@@ -27,9 +27,9 @@ if __name__=='__main__':
     p_space = 'jdem'
     camb_params = defaults.camb_params.copy()
     camb_params['force_sigma8'] = False
-    camb_params['maxkh'] = 10.
-    camb_params['kmax'] = 10.
-    camb_params['npoints'] = 1000
+    camb_params['maxkh'] = 100.
+    camb_params['kmax'] = 30.
+    camb_params['npoints'] = 2000
     #fpt_params = defaults.fpt_params.copy()
     #wmatcher_params = defaults.wmatcher_params.copy()
     #halofit_params = defaults.halofit_params.copy()
@@ -41,22 +41,26 @@ if __name__=='__main__':
     len_params['l_min'] = 30
     len_params['n_l'] = 20
     nz_params_wfirst_lens = defaults.nz_params_wfirst_lens.copy()
+    nz_params_wfirst_lens['smooth_sigma'] = 0.1
+    nz_params_wfirst_lens['n_right_extend'] = 5
     sw_params = defaults.sw_survey_params.copy()
     lw_params = defaults.lw_survey_params.copy()
     sw_observable_list = defaults.sw_observable_list
     #TODO don't use defaults for setting up the core demo
     lw_observable_list = defaults.lw_observable_list
     mf_params = defaults.hmf_params.copy()
-    mf_params['n_grid'] = 5000
-    mf_params['log10_min_mass'] = 6.
+    mf_params['n_grid'] = 10000
+    mf_params['log10_min_mass'] = 10.
     #TODO no sense going down to galaxies this small
     n_params_wfirst = defaults.nz_params_wfirst_gal.copy()
     n_params_wfirst['z_resolution'] = 0.0001
-    n_params_wfirst['n_right_extend'] = 2
-    n_params_wfirst['smooth_sigma'] = 0.005
+    n_params_wfirst['n_right_extend'] = 5
+    n_params_wfirst['smooth_sigma'] = 0.1
+    n_params_wfirst['i_cut'] = 25.3 #gold standard subset of LSST
 
     power_params = defaults.power_params.copy()
     power_params.camb = camb_params
+    power_params.camb['accuracy'] = 2
     prior_params = defaults.prior_fisher_params.copy()
     lw_param_list = np.array([{'dn_params':{'nz_select':'CANDELS'},'n_params':n_params_wfirst,'mf_params':mf_params}])
     #wmatcher_params['w_step']=0.05
@@ -75,15 +79,15 @@ if __name__=='__main__':
     #zs are the bounding redshifts of the tomographic bins
     #zs = np.array([0.2,0.43,.63,0.9, 1.3])
     #TODO check no off by one errors in final bin
-    zs = np.arange(0.2,3.21,0.2)
+    zs = np.arange(0.2,3.01,0.2)
     #zs = np.array([0.2,0.4,0.6])
     #z_fine are the resolution redshift slices to be integrated over
-    z_fine = np.linspace(0.001,np.max(zs),1500)
+    z_fine = np.linspace(0.001,np.max(zs),6000)
 
     #z_fine[0] = 0.0001
 
     #l_max is the highest l that should be precomputed
-    l_max = 30
+    l_max = 85
 
     print "main: begin constructing WFIRST PolygonGeo"
     geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,poly_params)
@@ -119,10 +123,10 @@ if __name__=='__main__':
     z_max = zs[-1]+0.001
     r_max = C.D_comov(z_max)
     #k_cut is the maximum k value for the bessel function zeros that define the basis
-    #x_cut = 80.
+    x_cut = 80.
     #x_cut = 100.
     #x_cut = 85
-    x_cut = 30.
+    #x_cut = 30.
     k_cut = x_cut/r_max
     #l_max caps maximum l regardless of k
     print "main: begin constructing basis for long wavelength fluctuations"
@@ -216,4 +220,9 @@ Dn = survey_lw.observables[0]
 #make_ellipse_plot(cov_set_1,colors,opacities,names,boxes,pnames,dchi2,1.05)
 #make_ellipse_plot(cov_set_2,colors,opacities,names,boxes[-2:],pnames[-2:],dchi2,1.05)
 #make_ellipse_plot(cov_set_2,colors,opacities,names,boxes[-2:],pnames[-2:],dchi2,1.05,False)
+a_lw = SS.multi_f.get_a_lw(destructive=True)
+v_db = np.diag(a_lw[0])
+n_exp = geo_wfirst.volumes*Dn.n_avg_bin
+b_exp = Dn.b_ns/Dn.n_avg_bin
+v_db_b2 = b_exp**2*v_db
 

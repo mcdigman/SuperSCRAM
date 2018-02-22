@@ -3,7 +3,7 @@ Handles lensing observable power spectrum
 """
 from warnings import warn
 import numpy as np
-from scipy.interpolate import RectBivariateSpline,InterpolatedUnivariateSpline
+from scipy.interpolate import InterpolatedUnivariateSpline,interp1d
 
 from power_response import dp_ddelta
 from lensing_weight import QShear#,QMag,QNum,QK
@@ -67,7 +67,6 @@ class ShearPower(object):
             p_grid = dp_ddelta(self.C.P_lin,self.zs,self.C,self.pmodel,self.params['epsilon'])[0]
         else:
             raise ValueError('unrecognized mode \''+str(self.mode)+'\'')
-        #self.pow_interp = RectBivariateSpline(self.k_in,self.zs,p_grid,kx=2,ky=2)
         #TODO should be same rs as everthing else
         self.rs = self.C.D_comov(self.zs)
         #TODO if using Omegak not 0, make sure rs and r_As used consistently
@@ -81,10 +80,10 @@ class ShearPower(object):
 
         #loop appears necessary due to uneven grid spacing in k_use
         for i in xrange(0,self.n_z):
-            self.p_dd_use[:,i] = power_law_extend(self.k_in,p_grid[:,i],self.k_use[:,i],k=2)
+            #self.p_dd_use[:,i] = power_law_extend(self.k_in,p_grid[:,i],self.k_use[:,i],k=2)
             k_range = (self.k_use[:,i]<=self.k_max) & (self.k_use[:,i]>=self.k_min)
             k_loc = self.k_use[:,i][k_range]
-            #self.p_dd_use[:,i][k_range] = InterpolatedUnivariateSpline(self.k_in,p_grid[:,i],k=2,ext=2)(k_loc)
+            self.p_dd_use[:,i][k_range] = interp1d(self.k_in,p_grid[:,i])(k_loc)
             #self.p_dd_use[:,i] = self.pow_interp(self.k_use[:,i],self.zs[i])[:,0]
 
         self.sc_as = 1/(1+self.zs)
@@ -123,19 +122,20 @@ class ShearPower(object):
 
     #take as an array of qs, ns, and rcs instead of the matrices themselves
     #ns is [n_ac,n_ad,n_bd,n_bc]
-    def cov_g_diag(self,qs,ns_in,rcs=np.full(4,1.)):
+    def cov_g_diag(self,qs,ns_in,rcs=None):
         """Get diagonal elements of gaussian covariance between observables
             inputs:
                 qs: a list of 4 QWeight objects [q1,q2,q3,q4]
                 ns_in: an input list of shape noise [n13,n24,n14,n23] [0.,0.,0.,0.] if no noise
                 rcs: correlation parameters, [r13,r24,r14,r23]. Optional.
         """
-
+        if rcs is None:
+            rcs = np.full(4,1.)
         ns = np.zeros(ns_in.size)
-        ns[0] = ns_in[0]/trapz2((1.*(self.rs>=qs[0].r_min)*(self.rs<=qs[0].r_max)*self.ps),self.rs)
-        ns[1] = ns_in[1]/trapz2((1.*(self.rs>=qs[0].r_min)*(self.rs<=qs[0].r_max)*self.ps),self.rs)
-        ns[2] = ns_in[2]/trapz2((1.*(self.rs>=qs[1].r_min)*(self.rs<=qs[1].r_max)*self.ps),self.rs)
-        ns[3] = ns_in[3]/trapz2((1.*(self.rs>=qs[1].r_min)*(self.rs<=qs[1].r_max)*self.ps),self.rs)
+        ns[0] = ns_in[0]/trapz2((((self.rs>=qs[0].r_min)&(self.rs<=qs[0].r_max))*self.ps),self.rs)
+        ns[1] = ns_in[1]/trapz2((((self.rs>=qs[0].r_min)&(self.rs<=qs[0].r_max))*self.ps),self.rs)
+        ns[2] = ns_in[2]/trapz2((((self.rs>=qs[1].r_min)&(self.rs<=qs[1].r_max))*self.ps),self.rs)
+        ns[3] = ns_in[3]/trapz2((((self.rs>=qs[1].r_min)&(self.rs<=qs[1].r_max))*self.ps),self.rs)
         #could exploit/cache symmetries to reduce time
         c_ac = Cll_q_q(self,qs[0],qs[2],rcs[0]).Cll()
         c_bd = Cll_q_q(self,qs[1],qs[3],rcs[1]).Cll()
@@ -163,7 +163,7 @@ class ShearPower(object):
 
 class Cll_q_q(object):
     """class for a generic lensing power spectrum"""
-    def __init__(self,sp,q1s,q2s,corr_param=1.):
+    def __init__(self,sp,q1s,q2s,corr_param=1.,r_cut=np.inf):
         """
             inputs:
                 sp: a ShearPower object
@@ -171,15 +171,16 @@ class Cll_q_q(object):
                 q2s: a QWeight object
                 corr_param: correlation parameter, could be an array
         """
-        self.integrand = np.zeros((sp.n_z,sp.n_l))
         self.rs = sp.rs
         self.integrand = (corr_param*q1s.qs.T*q2s.qs.T*sp.Cll_kernel).T
 
-    def Cll(self,r_min=0,r_max=np.inf):
+    def Cll(self,r_min=0.,r_max=np.inf):
         """get lensing power spectrum integrated in a specified range"""
-        high_mask = (self.rs<=r_max)*1.
-        low_mask = (self.rs>=r_min)*1.
-        return trapz2((high_mask*low_mask*self.integrand.T).T,self.rs)
+        if r_min==0. and r_max==np.inf:
+            return trapz2(self.integrand,self.rs)
+        else:
+            mask = ((self.rs<=r_max)&(self.rs>=r_min))
+            return trapz2((mask*self.integrand.T).T,self.rs)
 
     def Cll_integrand(self):
         """get the integrand of the lensing power spectrum, if want to multiply by something else before integrating"""

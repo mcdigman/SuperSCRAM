@@ -58,16 +58,17 @@ class ST_hmf(object):
         # calculated at z=0
         self.nu_array = (self.delta_c/self.sigma)**2
         sigma_inv = self.sigma**(-1)
-        dsigma_dM = np.diff(np.log(sigma_inv))/(np.diff(self.M_grid))
+        self.dsigma_dM = np.diff(np.log(sigma_inv))/(np.diff(self.M_grid))
 
-        self.sigma_of_M = interp1d(self.M_grid[:-1],self.sigma[:-1])
-        self.nu_of_M = interp1d(self.M_grid[:-1], self.nu_array[:-1])
-        self.M_of_nu = interp1d(self.nu_array[:-1],self.M_grid[:-1])
-        self.dsigma_dM_of_M = interp1d(self.M_grid[:-1],dsigma_dM)
+        self.sigma_of_M = interp1d(self.M_grid,self.sigma)
+        self.nu_of_M = interp1d(self.M_grid, self.nu_array)
+        self.M_of_nu = interp1d(self.nu_array,self.M_grid)
+        self.dsigma_dM_of_M = interp1d(self.M_grid[:-1],self.dsigma_dM)
 
-        #grid for precomputing z dependent quantities
-        self.z_grid = np.linspace(self.params['z_min'],self.params['z_max'],self.params['n_z'])
-        self.G_grid = C.G_norm(self.z_grid)
+        if self.params['b_norm_overwride'] or self.params['f_norm_overwride']:
+            #grid for precomputing z dependent quantities
+            self.z_grid = np.linspace(self.params['z_min'],self.params['z_max'],self.params['n_z'])
+            self.G_grid = C.G_norm(self.z_grid)
 
         #TODO why does this change the code's overall behavior?
         #TODO remove this logic if nothing needs
@@ -229,12 +230,21 @@ class ST_hmf(object):
                 result[i] = trapz2(mf_i*b_i,mass)
         else:
             if isinstance(min_mass,np.ndarray):
-                result = np.zeros(min_mass.size)
-                for i in xrange(0,min_mass.size):
-                    mass = _mass_cut(self.mass_grid,min_mass[i])
-                    mf = self.dndM_G(mass,G)
-                    b_array = self.bias_G(mass,G,norm_in=norm)
-                    result[i] = trapz2(b_array*mf,mass)
+                mf = self.dndM_G(self.mass_grid,G)
+                b_array = self.bias_G(self.mass_grid,G)
+                mf_b = mf*b_array
+                mf_b_int = -cumtrapz(mf_b[::-1],self.mass_grid[::-1],initial=0.)[::-1]
+
+                if np.all(min_mass==self.mass_grid): 
+                    #no need to extrapolate if already is result
+                    result = mf_b_int
+                else:
+                    cut_itrs = np.zeros(min_mass.size,dtype=np.int)
+                    for i in xrange(0,min_mass.size):
+                        cut_itrs[i] = np.argmax(self.mass_grid>=min_mass[i])
+                    dm = self.mass_grid[cut_itrs]-min_mass
+                    mf_b_ext = self.dndM_G(min_mass,G)*self.bias_G(min_mass,G)+mf_b[cut_itrs]
+                    result = mf_b_int[cut_itrs]+(mf_b_ext)*dm/2.
             else:
                 mass = _mass_cut(self.mass_grid,min_mass)
                 mf = self.dndM_G(mass,G)
@@ -269,17 +279,24 @@ class ST_hmf(object):
                 result[i] = trapz2(mf_i,mass)
         else:
             if isinstance(min_mass,np.ndarray):
-                result = np.zeros(min_mass.size)
-                for i in xrange(0,min_mass.size):
-                    mass = _mass_cut(self.mass_grid,min_mass[i]) 
-                    mf = self.dndM_G(mass,G)
-                    result[i] = trapz2(mf,mass)
+                mf = self.dndM_G(self.mass_grid,G)
+                mf_int = -cumtrapz(mf[::-1],self.mass_grid[::-1],initial=0.)[::-1]
+                if np.all(min_mass==self.mass_grid):
+                    #no need to extrapolate if already is result
+                    result = mf_int
+                else:
+                    cut_itrs = np.zeros(min_mass.size,dtype=np.int)
+                    for i in xrange(0,min_mass.size):
+                        cut_itrs[i] = np.argmax(self.mass_grid>=min_mass[i])
+                    dm = self.mass_grid[cut_itrs]-min_mass
+                    mf_ext = self.dndM_G(min_mass,G)+mf[cut_itrs]
+                    result = mf_int[cut_itrs]+(mf_ext)*dm/2.
             else:
                 mass = _mass_cut(self.mass_grid,min_mass)
                 mf = self.dndM_G(mass,G)
                 result = trapz2(mf,mass)
 
-        if DEBUG:
+        if False:#DEBUG:
             assert np.all(result>=0.)
         return result
 
@@ -307,6 +324,31 @@ class ST_hmf(object):
         d_c = d_crit#/self.C.G_norm(z)
         return d_c
 
+    def _dndM_grid_cut(self,mf,G,mass_grid,min_mass):
+        """helper function to trim mf grid and interpolated a
+           at G to minimum min_mass"""
+        itr_cut = np.argmax(mass_grid>=min_mass)
+        if itr_cut==0 or mass_grid[itr_cut]==min_mass:
+            mass = mass_grid[itr_cut::]
+            mf_out = mf[itr_cut::]
+        else:
+            mass = np.hstack([min_mass,mass_grid[itr_cut::]])
+            dndM_min = self.dndM_G(min_mass,G)
+            mf_out = np.hstack([dndM_min,mf[itr_cut::]])
+        return mass,mf_out
+
+    def _trapz_extend_mf(self,int_grid,mf,G,mass_grid,min_mass):
+        """helper function to extend last grid cell of int_grid 
+           at G to a minimum mass using trapezoidal rule"""
+        itr_cut = np.argmax(mass_grid>=min_mass)
+        if itr_cut==0 or mass_grid[itr_cut]==min_mass:
+            result = int_grid[itr_cut]
+        else:
+            dm = mass_grid[itr_cut]-min_mass
+            extend = (mf[itr_cut]+self.dndM_G(min_mass,G))*dm/2.
+            result = int_grid[itr_cut]+extend
+        return result
+
 def _mass_cut(mass_grid,min_mass):
     """helper function to trim mass ranges to minimum min_mass"""
     itr_cut = np.argmax(mass_grid>=min_mass)
@@ -315,6 +357,7 @@ def _mass_cut(mass_grid,min_mass):
     else:
         mass = np.hstack([min_mass,mass_grid[itr_cut::]])
     return mass
+
 #
 #    def delta_v(self,z):
 #        """over density for virialized halo"""
