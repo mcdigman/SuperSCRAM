@@ -23,5 +23,5 @@ class NZCandel(NZMatcher):
         #cut off faint galaxies
         self.zs_chosen = self.data[self.chosen,1]
         print "nz_candel: "+str(self.zs_chosen.size)+" available galaxies"
-        dN_dz = get_gaussian_smoothed_dN_dz(z_grid,self.zs_chosen,params,normalize=False)*0.00004
+        dN_dz = get_gaussian_smoothed_dN_dz(z_grid,self.zs_chosen,params,normalize=True)#*0.00004
         NZMatcher.__init__(self,z_grid,dN_dz)

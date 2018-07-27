@@ -1,6 +1,8 @@
 """
 General class for Fisher matrix and covariance matrix manipulations
 """
+from __future__ import absolute_import,division,print_function
+from builtins import range
 import numpy as np
 import scipy.linalg as spl
 from algebra_utils import get_inv_cholesky,invert_triangular,cholesky_inplace,get_cholesky_inv,mirror_symmetrize,clean_triangle
@@ -49,7 +51,7 @@ class FisherMatrix(object):
         if not initial_state==self.internal_state:
             self.switch_rep(initial_state)
         if not self.silent:
-            print "FisherMatrix "+str(id(self))+" created fisher matrix"
+            print("FisherMatrix "+str(id(self))+" created fisher matrix")
 
     def switch_rep(self,new_state):
         """Switches the internal representation of the fisher matrix to new_state
@@ -57,10 +59,10 @@ class FisherMatrix(object):
         old_state = self.internal_state
         self._internal_mat = np.asfortranarray(self._internal_mat)
         if not self.silent:
-            print "FisherMatrix "+str(id(self))+": changing internal state from "+str(self.internal_state)+" to "+str(new_state)
+            print("FisherMatrix "+str(id(self))+": changing internal state from "+str(self.internal_state)+" to "+str(new_state))
         if old_state==new_state:
             if not self.silent:
-                print "FisherMatrix "+str(id(self))+": internal state "+str(self.internal_state)+" unchanged"
+                print("FisherMatrix "+str(id(self))+": internal state "+str(self.internal_state)+" unchanged")
         elif new_state==REP_CHOL:
             self._internal_mat = self.get_cov_cholesky(inplace=True,copy_output=False,internal=True)
         elif new_state==REP_CHOL_INV:
@@ -73,13 +75,13 @@ class FisherMatrix(object):
             raise ValueError("FisherMatrix "+str(id(self))+": unrecognized new state "+str(new_state)+" in state "+str(old_state))
         self.internal_state = new_state
         if not self.silent:
-            print "FisherMatrix "+str(id(self))+": internal state changed from "+str(self.internal_state)+" to "+str(new_state)
+            print("FisherMatrix "+str(id(self))+": internal state changed from "+str(self.internal_state)+" to "+str(new_state))
 
     def perturb_fisher(self,vs,sigma2s):
         """add perturbation the fisher matrix in the form sigma2*v^Tv,
         use Sherman-Morrison formula to avoid inverting/for numerical stability"""
         if not self.silent:
-            print "FisherMatrix ",id(self)," perturbing fisher matrix"
+            print("FisherMatrix ",id(self)," perturbing fisher matrix")
         #internal state must be fisher to add right now: could possibly be changed back
         if np.any(sigma2s<0.):
             raise ValueError('perturbation must be positive semidefinite '+str(sigma2s))
@@ -91,7 +93,7 @@ class FisherMatrix(object):
         else:
             self.switch_rep(REP_COVAR)
             self._internal_mat = np.asfortranarray(self._internal_mat)
-            for itr in xrange(0,sigma2s.size):
+            for itr in range(0,sigma2s.size):
                 v = vs[itr:itr+1]
                 lhs = spl.blas.dsymm(1.,self._internal_mat,v.T,lower=True,overwrite_c=False,side=False)
                 #use more numerically stable form for large sigma2s, although mathematically equivalent
@@ -105,27 +107,27 @@ class FisherMatrix(object):
                 self._internal_mat = spl.blas.dsyrk(mult,lhs,1.,c=self._internal_mat,lower=True,trans=False,overwrite_c=True)
 
         if not self.silent:
-            print "FisherMatrix ",id(self)," finished perturbing fisher matrix"
+            print("FisherMatrix ",id(self)," finished perturbing fisher matrix")
 
 
 
     def add_fisher(self,F_n):
         """Add a fisher matrix (ie a perturbation) to the internal fisher matrix"""
         if not self.silent:
-            print "FisherMatrix ",id(self)," adding fisher matrix"
+            print("FisherMatrix ",id(self)," adding fisher matrix")
         #internal state must be fisher to add right now: could possibly be changed back
         self.switch_rep(REP_FISHER)
         if F_n.__class__ is FisherMatrix:
-            print "FisherMatrix: accumulating in internal state "+str(F_n.internal_state)
+            print("FisherMatrix: accumulating in internal state "+str(F_n.internal_state))
             self._internal_mat += F_n.get_fisher(copy_output=False,internal=True,inplace=False)
         else:
-            print "FisherMatrix: accumulating directly"
+            print("FisherMatrix: accumulating directly")
             self._internal_mat += F_n
 
     def add_covar(self,C_n):
         """add a covariance matrix, C_n is numpy array  or FisherMatrix object"""
         if not self.silent:
-            print "FisherMatrix ",id(self)," added covariance matrix"
+            print("FisherMatrix ",id(self)," added covariance matrix")
         #internal state must be covar to add right now: could possibly be changed
         self.switch_rep(REP_COVAR)
         if C_n.__class__ is FisherMatrix:
@@ -149,14 +151,14 @@ class FisherMatrix(object):
             self.switch_rep(REP_COVAR)
 
         if not self.silent:
-            print "FisherMatrix "+str(id(self))+": getting covariance"
+            print("FisherMatrix "+str(id(self))+": getting covariance")
         if self.internal_state==REP_COVAR:
             if not self.silent:
-                print "FisherMatrix "+str(id(self))+": covar retrieved from cache"
+                print("FisherMatrix "+str(id(self))+": covar retrieved from cache")
             result = self._internal_mat
         else:
             if not self.silent:
-                print "FisherMatrix "+str(id(self))+": covar cache miss"
+                print("FisherMatrix "+str(id(self))+": covar cache miss")
             chol_cov = self.get_cov_cholesky(inplace=inplace,internal=True,copy_output=False)
             #dlauum calculates L^TL but have LL^T cholesky convention, rot90s flip to correct convention
             result, info = spl.lapack.dlauum(np.asfortranarray(np.rot90(chol_cov,2)),lower=False,overwrite_c=inplace)
@@ -190,7 +192,7 @@ class FisherMatrix(object):
                 destructive: if True, destroy the internal representation of self for a performance gain
         """
         if not self.silent:
-            print "FisherMatrix "+str(id(self))+": contracting covariance"
+            print("FisherMatrix "+str(id(self))+": contracting covariance")
         if return_fisher and not identical_inputs:
             raise ValueError('cannot get FisherMatrix object if inputs not identical')
 
@@ -254,7 +256,7 @@ class FisherMatrix(object):
                 destructive: if True, destroy the internal representation of self for a performance gain
         """
         if not self.silent:
-            print "FisherMatrix "+str(id(self))+": contracting fisher"
+            print("FisherMatrix "+str(id(self))+": contracting fisher")
 
         if return_fisher and not identical_inputs:
             raise ValueError('cannot get FisherMatrix object if inputs not identical')
@@ -337,11 +339,11 @@ class FisherMatrix(object):
 
         if self.internal_state==REP_CHOL_INV:
             if not self.silent:
-                print "FisherMatrix ",id(self)," cholesky decomposition inv retrieved from cache"
+                print("FisherMatrix ",id(self)," cholesky decomposition inv retrieved from cache")
             result = self._internal_mat
         else:
             if not self.silent:
-                print "FisherMatrix ",id(self)," cholesky decomposition inv cache miss"
+                print("FisherMatrix ",id(self)," cholesky decomposition inv cache miss")
             if self.internal_state==REP_CHOL:
                 result = invert_triangular(self._internal_mat,lower=True,inplace=inplace,clean=False)
             elif self.internal_state==REP_FISHER:
@@ -378,26 +380,26 @@ class FisherMatrix(object):
 
         if self.internal_state==REP_CHOL:
             if not self.silent:
-                print "FisherMatrix ",str(id(self))+": cholesky stored, size: "+str(self._internal_mat.nbytes/10**6)+" megabytes"
+                print("FisherMatrix ",str(id(self))+": cholesky stored, size: "+str(self._internal_mat.nbytes/10**6)+" megabytes")
             result = self._internal_mat
         else:
             if self.internal_state==REP_CHOL_INV :
                 if not self.silent:
-                    print "FisherMatrix "+str(id(self)),": getting cholesky of covariance from its inverse, size: "+str(self._internal_mat.nbytes/10**6)+" mb"
+                    print("FisherMatrix "+str(id(self)),": getting cholesky of covariance from its inverse, size: "+str(self._internal_mat.nbytes/10**6)+" mb")
                 result = invert_triangular(self._internal_mat,lower=True,inplace=inplace,clean=False)
             elif self.internal_state==REP_COVAR:
                 if not self.silent:
-                    print "FisherMatrix "+str(id(self)),": getting cholesky from covariance directly: "+str(self._internal_mat.nbytes/10**6)+" mb"
+                    print("FisherMatrix "+str(id(self)),": getting cholesky from covariance directly: "+str(self._internal_mat.nbytes/10**6)+" mb")
                 result = cholesky_inplace(self._internal_mat,inplace=inplace,lower=True,clean=False)
             elif self.internal_state==REP_FISHER:
                 if not self.silent:
-                    print "FisherMatrix "+str(id(self)),": getting cholesky of covariance from fisher, size: "+str(self._internal_mat.nbytes/10**6)+" mb"
+                    print("FisherMatrix "+str(id(self)),": getting cholesky of covariance from fisher, size: "+str(self._internal_mat.nbytes/10**6)+" mb")
                 result = get_cholesky_inv(self._internal_mat,lower=True,inplace=inplace,clean=False)
             else:
                 raise ValueError("FisherMatrix "+str(id(self))+": unrecognized internal state "+str(self.internal_state))
 
             if not self.silent:
-                print "FisherMatrix "+str(id(self)),": found cholesky decomposition of covariance matrix, size: "+str(result.nbytes/10**6)+" megabytes"
+                print("FisherMatrix "+str(id(self)),": found cholesky decomposition of covariance matrix, size: "+str(result.nbytes/10**6)+" megabytes")
 
         if inplace:
             self._internal_mat = result
@@ -425,7 +427,7 @@ class FisherMatrix(object):
 
         if self.internal_state==REP_FISHER:
             if not self.silent:
-                print "FisherMatrix "+str(id(self))+": retrieved fisher matrix from cache"
+                print("FisherMatrix "+str(id(self))+": retrieved fisher matrix from cache")
             result = self._internal_mat
         elif self.internal_state==REP_COVAR or self.internal_state==REP_CHOL:
             chol_cov = np.asfortranarray(self.get_cov_cholesky(copy_output=False,internal=True,inplace=inplace))
@@ -435,7 +437,7 @@ class FisherMatrix(object):
                 raise RuntimeError('dpotri failed with error code '+str(info))
         else:
             if not self.silent:
-                print "FisherMatrix "+str(id(self))+": fisher matrix cache miss"
+                print("FisherMatrix "+str(id(self))+": fisher matrix cache miss")
             chol_res = np.asfortranarray(self.get_cov_cholesky_inv(copy_output=False,internal=True,inplace=inplace))
             result,info = spl.lapack.dlauum(chol_res,lower=True,overwrite_c=inplace)
             chol_res = None

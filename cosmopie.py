@@ -247,7 +247,7 @@ class CosmoPie(object):
             raise ValueError('You need to provide a linear power spectrum through set_power to get sigma valeus')
         z = np.asanyarray(z)
         k = self.P_lin.k 
-        if np.min(R)<10./np.max(k):
+        if np.min(R)<3./np.max(k):
             #ensure resolution to at least 1./10 radius so converges to ~0.5%
             #could be less aggressive and require ~3 for ~5% convergence
             raise ValueError('input R '+str(np.min(R))+' too small for 1./(max k) '+str(1./np.max(k)))

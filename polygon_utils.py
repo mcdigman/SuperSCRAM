@@ -38,9 +38,13 @@ def get_difference(poly1,poly2,pixels=None):
     #    contained = contained | contains_points(bounding_xyz[itr],pixels)
     contained = contains_points(pixels,poly2)
     poly2_complement = None
+    #poly2_complement = poly2.invert_polygon()
+    #contained_c = contains_points(pixels,poly2_complement)
+    #assert not np.any(contained & contained_c)
     first_false = 100+np.argmin(contained[100:])
     #print "orig 1",contains_points(pixels[first_false:first_false+1],poly1),poly1.area()
     #print "orig 2",contains_points(pixels[first_false:first_false+1],poly2),poly2.area()
+    print poly2
     colors = ['red','green','blue']
     for itr in xrange(0,len(bounding_xyz)):
         first_false = 100+itr+np.argmin(contained[100+itr:])

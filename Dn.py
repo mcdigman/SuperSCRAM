@@ -4,6 +4,8 @@ between two survey geometries, as described in the paper"""
 
 from warnings import warn
 import numpy as np
+from scipy.ndimage import gaussian_filter1d
+from scipy.integrate import cumtrapz
 
 from hmf import ST_hmf
 from nz_candel import NZCandel
@@ -15,8 +17,11 @@ from polygon_geo import PolygonGeo
 from polygon_pixel_geo import PolygonPixelGeo
 from polygon_union_geo import PolygonUnionGeo
 from polygon_pixel_union_geo import PolygonPixelUnionGeo
-
+#LSST sigma/(1+z)<0.05 required 0.02 goal for i<25.3 (lsst science book 3.8.1)
 import fisher_matrix as fm
+#TODO evaluate adding more tomographic bins 
+#NOTE if doing photozs tomo must go to z=0 or photoz uncertainty 
+#can actually add information because it provides information at z=0
 class DNumberDensityObservable(LWObservable):
     """An observable for the difference in galaxy number density between two bins"""
     def __init__(self,geos,params,survey_id,C,basis,nz_params,mf_params):
@@ -40,7 +45,7 @@ class DNumberDensityObservable(LWObservable):
 
         #self.geo2 should be area in mitigation survey but not in original survey
         if isinstance(geos[0],PolygonGeo):
-            self.geo2 = PolygonUnionGeo(np.array([geos[1]]),np.array([geos[0]]))
+            self.geo2 = PolygonUnionGeo(np.array([geos[1]]),np.array([geos[0]]),zs=geos[1].zs,z_fine=geos[1].z_fine)
         elif isinstance(self.geos[0],PolygonPixelGeo):
             self.geo2 = PolygonPixelUnionGeo(np.array([geos[1]]),np.array([geos[0]]))
         else:
@@ -65,7 +70,11 @@ class DNumberDensityObservable(LWObservable):
         self.z_fine = self.geo2.z_fine
         assert np.all(self.r_fine==geos[1].r_fine)
         assert np.all(self.z_fine==geos[1].z_fine)
+        assert np.all(geos[0].z_fine==geos[1].z_fine)
+        assert np.all(geos[0].r_fine==geos[1].r_fine)
+        dz = self.z_fine[2]-self.z_fine[1]
 
+        print mf_params
         self.mf = ST_hmf(self.C,params=mf_params)
 
         if self.nz_select == 'CANDELS':
@@ -81,6 +90,7 @@ class DNumberDensityObservable(LWObservable):
 
 
         self.n_avgs = self.nzc.get_nz(self.geo2)
+        self.dNdzs = self.n_avgs/self.geo2.dzdr*self.r_fine**2
         self.M_cuts = self.nzc.get_M_cut(self.mf,self.geo2)
         self.dn_ddelta_bar = self.mf.bias_n_avg(self.M_cuts,self.z_fine)/C.h**3
         self.integrand = np.expand_dims(self.dn_ddelta_bar*self.r_fine**2,axis=1)
@@ -96,7 +106,22 @@ class DNumberDensityObservable(LWObservable):
         #self.m_avgs = np.zeros(self.n_bins)
         #self.biases = np.diag(self.mf.bias(self.M_cuts,self.z_fine))
         self.n_avg_bin = np.zeros(self.n_bins)
+        self.bias = self.dn_ddelta_bar/self.n_avgs
+        self.sigma0 = 0.001
+        self.z_extra = np.hstack([self.z_fine,np.arange(self.z_fine[-1]+dz,self.z_fine[-1]+5.*self.sigma0*(1.+self.z_fine[-1]),dz)])
+        self.integrands_smooth = np.zeros((self.z_fine.size,self.n_bins))
+        ####
+        self.r_vols1 = 3./np.diff(geos[0].rbins**3)
+        self.n_avg_bin1 = np.zeros(geos[0].zbins.shape[0])
+        self.b_ns1 = np.zeros(geos[0].zbins.shape[0])
+        for itr in xrange(0,geos[0].zbins.shape[0]):
+            bounds1 = geos[0].fine_indices[itr]
+            range1 = np.arange(bounds1[0],bounds1[1])
+            self.n_avg_bin1[itr] = self.r_vols1[itr]*trapz2(self.n_avg_integrand[range1],self.r_fine[range1])
+            #TODO should be avg true bias or avg observed bias?
+            self.b_ns1[itr] = self.r_vols1[itr]*trapz2(self.integrand[range1],self.r_fine[range1])
 
+        
         #NOTE this whole loop could be pulled apart with a small change in sph_klim
         for itr in xrange(0,self.n_bins):
             bounds1 = self.geo2.fine_indices[itr]
@@ -104,7 +129,8 @@ class DNumberDensityObservable(LWObservable):
 
             print "Dn: getting d1,d2"
             #multiplier for integrand
-            V1 = self.geo1.volumes[itr]
+            #TODO temporary hack
+            V1 = self.geo2.volumes[itr]*self.geo1.angular_area()/self.geo2.angular_area()
             V2 = self.geo2.volumes[itr]
             assert V1>=0 and V2>=0
 
@@ -134,12 +160,35 @@ class DNumberDensityObservable(LWObservable):
                 self.Nab_i[itr] = np.inf
             else:
                 self.b_ns[itr] = self.r_vols[itr]*trapz2(self.integrand[range1],self.r_fine[range1])
-                d1 = self.basis.D_O_I_D_delta_alpha(self.geo1,self.integrand,use_r=True,range_spec=range1)
-                d2 = self.basis.D_O_I_D_delta_alpha(self.geo2,self.integrand,use_r=True,range_spec=range1)
+                #need a bit extra z so does not reflect back from right boundary
+                dN_wind = np.zeros(self.z_extra.size)
+                dN_wind[range1] = self.dNdzs[range1]
+                sigma = self.sigma0*(1.+self.geo2.zs[itr])/(self.z_fine[2]-self.z_fine[1])
+                dN_smooth = gaussian_filter1d(dN_wind,sigma,mode='mirror',truncate=10.)
+                dN_smooth = dN_smooth[0:self.z_fine.size] 
+                print "tot acc",np.trapz(dN_smooth,self.z_fine)/np.trapz(dN_wind,self.z_extra)
+                print "outside",np.trapz(dN_smooth[range1],self.z_fine[range1])/np.trapz(dN_wind,self.z_extra)
+                n_smooth = dN_smooth/self.r_fine**2*self.geo2.dzdr
+                bn_smooth = n_smooth*self.bias
+                integrand_smooth = np.expand_dims(bn_smooth*self.r_fine**2,axis=1)
+                self.integrands_smooth[:,itr] = integrand_smooth[:,0]
+                #integrand_smooth = np.zeros((self.n_avgs.size,1))#self.integrand[range1]
+                #integrand_smooth[range1] = self.integrand[range1]
+                #print "COSW",trapz2(n_smooth[range1],self.r_fine[range1])/trapz2(self.n_avgs[range1],self.r_fine[range1])
+                #print "COSQ",trapz2(n_smooth,self.r_fine)/trapz2(self.n_avgs[range1],self.r_fine[range1])
+                #n_smooth = np.expand_dims(n_smooth,axis=1)
+                #d1 = self.basis.D_O_I_D_delta_alpha(self.geo1,self.integrand,use_r=True,range_spec=range1)
+                #d2 = self.basis.D_O_I_D_delta_alpha(self.geo2,self.integrand,use_r=True,range_spec=range1)
+                d1 = self.basis.D_O_I_D_delta_alpha(self.geo1,integrand_smooth,use_r=True)
+                d2 = self.basis.D_O_I_D_delta_alpha(self.geo2,integrand_smooth,use_r=True)
                 DO_a = (d2-d1)*self.r_vols[itr]
                 Nab_itr = n_avg*(1./V1+1./V2)
                 self.Nab_i[itr] = 1./Nab_itr
                 self.vs[itr] = DO_a.flatten()
+            d1s_alt = self.basis.D_O_I_D_delta_alpha(self.geo1,self.integrands_smooth,use_r=True)
+            d2s_alt = self.basis.D_O_I_D_delta_alpha(self.geo2,self.integrands_smooth,use_r=True)
+            self.DO_a_alt = ((d2s_alt-d1s_alt).T*self.r_vols).T
+            self.vs_alt = self.DO_a_alt.flatten()
 
     def get_rank(self):
         """get the rank of the perturbation, ie the number of vectors summed in F=v^Tv"""

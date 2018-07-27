@@ -110,7 +110,7 @@ nz_params_lsst = {  'data_source'   :'./data/CANDELS-GOODSS2.dat',
                     'z_cut'         :0.04
                  }
 
-hmf_params = {      'log10_min_mass'    :   6,
+hmf_params = {      'log10_min_mass'    :   11, #saturated mitigation achieved with cutoff ~11
                     'log10_max_mass'    :   18,
                     'n_grid'            :   500,
                     'z_resolution'      : 0.01,

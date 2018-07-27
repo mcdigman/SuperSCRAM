@@ -2,7 +2,8 @@
     Halo mass function classes
 '''
 from time import time
-from scipy.interpolate import interp1d,RectBivariateSpline,InterpolatedUnivariateSpline
+#from warnings import warn
+from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
 from scipy.integrate import cumtrapz
 import numpy as np
 from algebra_utils import trapz2
@@ -24,14 +25,14 @@ class ST_hmf(object):
 
         self.params = params
         # log 10 of the minimum and maximum halo mass
-        self.min = params['log10_min_mass']
-        self.max = params['log10_max_mass']
+        self.min_mass = params['log10_min_mass']
+        self.max_mass = params['log10_max_mass']
         # number of grid points in M
         n_grid = self.params['n_grid']
         # I add an additional point because I will take derivatives latter
         # and the finite difference scheme misses that last grid point.
-        self.dlog_M = (self.max-self.min)/float(n_grid)
-        self.M_grid = 10**np.linspace(self.min,self.max+self.dlog_M, n_grid+1)
+        self.dlog_M = (self.max_mass-self.min_mass)/float(n_grid)
+        self.M_grid = 10**np.linspace(self.min_mass,self.max_mass+self.dlog_M, n_grid+1)
         self.mass_grid = self.M_grid[0:-1]
 
 
@@ -57,13 +58,14 @@ class ST_hmf(object):
 
         # calculated at z=0
         self.nu_array = (self.delta_c/self.sigma)**2
-        sigma_inv = self.sigma**(-1)
-        self.dsigma_dM = np.diff(np.log(sigma_inv))/(np.diff(self.M_grid))
+        #sigma_inv = self.sigma**(-1)
+        #self.dsigma_dM = np.diff(np.log(sigma_inv))/(np.diff(self.M_grid))
+        self.dsigma_dM = np.gradient(np.log(1./self.sigma),self.M_grid)
 
-        self.sigma_of_M = interp1d(self.M_grid,self.sigma)
+        self.sigma_of_M = interp1d(np.log(self.M_grid),self.sigma)
         self.nu_of_M = interp1d(self.M_grid, self.nu_array)
         self.M_of_nu = interp1d(self.nu_array,self.M_grid)
-        self.dsigma_dM_of_M = interp1d(self.M_grid[:-1],self.dsigma_dM)
+        self.dsigma_dM_of_M = interp1d(np.log(self.M_grid),np.log(self.dsigma_dM))
 
         if self.params['b_norm_overwride'] or self.params['f_norm_overwride']:
             #grid for precomputing z dependent quantities
@@ -87,12 +89,15 @@ class ST_hmf(object):
             accepts either a numpy array or a scalar input for G"""
         if isinstance(G,np.ndarray):
             nu = np.outer(self.nu_array,1./G**2)
-            sigma_inv = np.outer(1./self.sigma,1./G**2)
+        #    sigma_inv = np.outer(1./self.sigma,1./G**2)
         else:
             nu = self.nu_array/G**2
-            sigma_inv = 1./self.sigma*1./G**2
-        f = self.A*np.sqrt(2*self.a/np.pi)*(1. + (1./self.a/nu)**self.p)*np.sqrt(nu)*np.exp(-self.a*nu/2.)
-        norm = np.trapz(f,np.log(sigma_inv),axis=0)
+        #    sigma_inv = 1./self.sigma*1./G**2
+        #f = self.A*np.sqrt(2.*self.a/np.pi)*(1.+(1./self.a/nu)**self.p)*np.sqrt(nu)*np.exp(-self.a*nu/2.)
+        f = self.f_nu(nu)
+
+        #norm = np.trapz(f,np.log(sigma_inv),axis=0)
+        norm = trapz2(f,np.log(1./self.sigma))
         return norm
 
     def bias_norm(self,G):
@@ -147,8 +152,8 @@ class ST_hmf(object):
             implements equation 3 in   arXiv:astro-ph/0607150
             supports M and G to be numpy arrays or scalars"""
         f = self.f_sigma(M,G)
-        sigma = self.sigma_of_M(M)
-        dsigma_dM = self.dsigma_dM_of_M(M)
+        sigma = self.sigma_of_M(np.log(M))
+        dsigma_dM = np.exp(self.dsigma_dM_of_M(np.log(M)))
         if isinstance(G,np.ndarray) and isinstance(M,np.ndarray):
             mf = (self.rho_bar/M*dsigma_dM*f.T).T
         else:
@@ -296,7 +301,7 @@ class ST_hmf(object):
                 mf = self.dndM_G(mass,G)
                 result = trapz2(mf,mass)
 
-        if False:#DEBUG:
+        if DEBUG:
             assert np.all(result>=0.)
         return result
 
@@ -311,43 +316,19 @@ class ST_hmf(object):
         """ critical threshold for spherical collapse, as given
         in the appendix of NFW 1997"""
         A = 0.15*(12.*np.pi)**(2/3.)
-
-        if (self.C.Omegam==1) and (self.C.OmegaL==0):
+        omm = self.C.Omegam_z(z)
+        omL = self.C.OmegaL_z(z)
+        if (omm==1.) and (omL==0.):
             d_crit = A
-        elif (self.C.Omegam < 1) and (self.C.OmegaL==0):
-            d_crit = A*self.Omegam**(0.0185)
-        elif (self.C.Omegam + self.C.OmegaL)==1.0:
-            d_crit = A*self.C.Omegam**(0.0055)
+        elif (omm < 1.) and (omL==0.):
+            d_crit = A*omm**(0.0185)
+        elif (omm + omL)==1.0:
+            d_crit = A*omm**(0.0055)
         else:
-            d_crit = A*self.C.Omegam**(0.0055)
-            warn('inexact equality to 1~='+str(self.C.Omegam)+"+"+str(self.C.OmegaL)+"="+str(self.C.OmegaL+self.C.Omegam))
+            d_crit = A*omm**(0.0055)
+            #warn('inexact equality to 1~='+str(omm)+"+"+str(omL)+"="+str(omL+omm))
         d_c = d_crit#/self.C.G_norm(z)
         return d_c
-
-    def _dndM_grid_cut(self,mf,G,mass_grid,min_mass):
-        """helper function to trim mf grid and interpolated a
-           at G to minimum min_mass"""
-        itr_cut = np.argmax(mass_grid>=min_mass)
-        if itr_cut==0 or mass_grid[itr_cut]==min_mass:
-            mass = mass_grid[itr_cut::]
-            mf_out = mf[itr_cut::]
-        else:
-            mass = np.hstack([min_mass,mass_grid[itr_cut::]])
-            dndM_min = self.dndM_G(min_mass,G)
-            mf_out = np.hstack([dndM_min,mf[itr_cut::]])
-        return mass,mf_out
-
-    def _trapz_extend_mf(self,int_grid,mf,G,mass_grid,min_mass):
-        """helper function to extend last grid cell of int_grid 
-           at G to a minimum mass using trapezoidal rule"""
-        itr_cut = np.argmax(mass_grid>=min_mass)
-        if itr_cut==0 or mass_grid[itr_cut]==min_mass:
-            result = int_grid[itr_cut]
-        else:
-            dm = mass_grid[itr_cut]-min_mass
-            extend = (mf[itr_cut]+self.dndM_G(min_mass,G))*dm/2.
-            result = int_grid[itr_cut]+extend
-        return result
 
 def _mass_cut(mass_grid,min_mass):
     """helper function to trim mass ranges to minimum min_mass"""

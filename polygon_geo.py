@@ -38,6 +38,10 @@ class PolygonGeo(Geo):
         self.bounding_theta = thetas-np.pi/2. #to radec
         self.bounding_phi = np.pi-phis
         self.bounding_xyz = np.asarray(sgv.radec_to_vector(self.bounding_phi,self.bounding_theta,degrees=False)).T
+        self.theta_in = theta_in
+        self.phi_in = phi_in
+        self.thetas_orig = thetas
+        self.phis_orig = phis
 
         #this gets correct internal angles with specified vertex order (copied from spherical_polygon clas)
         angle_body = gca.angle(self.bounding_xyz[:-2], self.bounding_xyz[1:-1], self.bounding_xyz[2:], degrees=False)

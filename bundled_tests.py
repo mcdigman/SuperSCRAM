@@ -1,5 +1,6 @@
 """bundles all the pytest calls for the code"""
 #other tests: cosmolike_comparision_test, projected_tests,cosmolike_comparison_test_ssc
+from __future__ import absolute_import
 import pytest
 if __name__=='__main__':
     pytest.cmdline.main(['algebra_tests.py'])

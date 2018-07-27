@@ -29,7 +29,8 @@ if __name__=="__main__":
     #TODO check possible h discrepancy
     camb_params = defaults.camb_params.copy()
     camb_params['force_sigma8'] = False
-    camb_params['kmax'] = 10.
+    camb_params['kmax'] = 5.
+    #camb_params['maxkh'] = 100.
     camb_params['npoints'] = 1000
     cosmo_fid = defaults.cosmology_jdem.copy()
     cosmo_fid['w'] = -1.

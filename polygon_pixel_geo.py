@@ -29,6 +29,8 @@ class PolygonPixelGeo(PixelGeo):
         hard_l_max = 3.*2**self.res_healpix-1.
         self.all_pixels = get_healpix_pixelation(res_choose=self.res_healpix)
         self.sp_poly = get_poly(thetas,phis,theta_in,phi_in)
+        self.theta_in = theta_in
+        self.phi_in = phi_in
         if isnan(self.sp_poly.area()):
             raise ValueError("PolygonPixelGeo: Calculated area of polygon is nan, polygon likely invalid")
         #self.contained =  is_contained(all_pixels,self.sp_poly)
@@ -43,6 +45,15 @@ class PolygonPixelGeo(PixelGeo):
         true_area = self.sp_poly.area()
         if not np.isclose(calc_area,true_area,atol=10**-2,rtol=10**-3):
             warn("discrepancy between area "+str(true_area)+" and est "+str(calc_area)+", may be poorly converged")
+            if np.isclose(calc_area,true_area,atol=10**-2,rtol=10**-1):
+                print thetas
+                print phis
+                print theta_in
+                print phi_in
+                print self.sp_poly
+                print calc_area,true_area
+                assert False
+                #raise RuntimeError('failed')
         PixelGeo.__init__(self,zs,contained_pixels,C,z_fine,l_max,hard_l_max)
 
         #set a00 to value from pixels for consistency, not angle defect even though angle defect is more accurate

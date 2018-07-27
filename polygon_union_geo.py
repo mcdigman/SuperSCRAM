@@ -5,15 +5,26 @@ import spherical_geometry.vector as sgv
 from polygon_geo import PolygonGeo
 from geo import Geo
 #from spherical_geometry.polygon import SphericalPolygon
-
+#TODO standardize inputs
 class PolygonUnionGeo(Geo):
     """get the geo represented by the union of geos minus anything covered by masks, all PolygonGeo objects"""
-    def __init__(self,geos,masks):
+    def __init__(self,geos,masks,C=None,zs=None,z_fine=None,l_max=None,poly_params=None):
         """geo,masks:    an array of PolygonGeo objects"""
         self.geos = geos
         self.masks = masks
         self.n_g = geos.size
         self.n_m = masks.size
+        if zs is None:
+            zs = geos[0].zs
+        if z_fine is None:
+            z_fine = geos[0].z_fine
+        if C is None:
+            C = geos[0].C
+        if l_max is None:
+            l_max = geos[0].l_max
+        if poly_params is None:
+            poly_params = geos[0].poly_params
+
         polys_pos = np.zeros(self.n_g,dtype=object)
         polys_mask = np.zeros(self.n_m,dtype=object)
 
@@ -31,7 +42,7 @@ class PolygonUnionGeo(Geo):
         for itr in xrange(0,self.n_union):
             union_ra,union_dec = sgv.vector_to_radec(self.union_xyz[itr][:,0],self.union_xyz[itr][:,1],self.union_xyz[itr][:,2],degrees=False)
             in_ra,in_dec = sgv.vector_to_radec(self.union_in[itr][0],self.union_in[itr][1],self.union_in[itr][2],degrees=False)
-            self.union_geos[itr] = PolygonGeo(geos[0].zs,union_dec+np.pi/2.,union_ra,in_dec+np.pi/2.,in_ra,geos[0].C,geos[0].z_fine,geos[0].l_max,geos[0].poly_params)
+            self.union_geos[itr] = PolygonGeo(zs,union_dec+np.pi/2.,union_ra,in_dec+np.pi/2.,in_ra,C,z_fine,l_max,poly_params)
 
         if self.n_m>0:
             #get union of all the masks with the union of the inside, ie the intersection, which is the mask to use
@@ -47,7 +58,7 @@ class PolygonUnionGeo(Geo):
             for itr in xrange(0,self.n_mask):
                 mask_ra,mask_dec = sgv.vector_to_radec(mask_xyz[itr][:,0],mask_xyz[itr][:,1],mask_xyz[itr][:,2],degrees=False)
                 in_ra,in_dec = sgv.vector_to_radec(in_point[itr][0],in_point[itr][1],in_point[itr][2],degrees=False)
-                self.mask_geos[itr] = PolygonGeo(geos[0].zs,mask_dec+np.pi/2.,mask_ra,in_dec+np.pi/2.,in_ra,geos[0].C,geos[0].z_fine,geos[0].l_max,geos[0].poly_params)
+                self.mask_geos[itr] = PolygonGeo(zs,mask_dec+np.pi/2.,mask_ra,in_dec+np.pi/2.,in_ra,C,z_fine,l_max,poly_params)
         else:
             #TODO not right
             self.union_mask = None
@@ -56,10 +67,10 @@ class PolygonUnionGeo(Geo):
 
         #self.sp_poly = self.union_geo
 
-        Geo.__init__(self,self.union_geos[0].zs,self.union_geos[0].C,self.union_geos[0].z_fine)
+        Geo.__init__(self,zs,C,z_fine)
         self.alm_table = {(0,0):self.angular_area()/np.sqrt(4.*np.pi)}
         self._l_max = 0
-        self.expand_alm_table(geos[0].l_max)
+        self.expand_alm_table(l_max)
 
     def angular_area(self):
         """get angular area"""

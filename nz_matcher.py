@@ -2,6 +2,7 @@
 by abundance matching a cutoff mass M to the halo mass function"""
 
 import numpy as np
+from scipy.ndimage import gaussian_filter1d 
 from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
 from scipy.integrate import cumtrapz
 import algebra_utils as au
@@ -83,16 +84,22 @@ def get_gaussian_smoothed_dN_dz(z_grid,zs_chosen,params,normalize):
         if suppress=True cut off z below z_cut, to avoid numerical issues elsewhere"""
     dN_dz = np.zeros(z_grid.size)
     sigma = params['smooth_sigma']
+    delta_dist = np.zeros(z_grid.size) 
     for itr in xrange(0,zs_chosen.size):
-        if params['mirror_boundary']:
-            dN_dz += np.exp(-(z_grid-zs_chosen[itr])**2/(2.*sigma**2))+np.exp(-(z_grid+zs_chosen[itr])**2/(2.*sigma**2))
-        else:
-            dN_dz += np.exp(-(z_grid-zs_chosen[itr])**2/(2.*sigma**2))
+        #if params['mirror_boundary']:
+        #    dN_dz += np.exp(-(z_grid-zs_chosen[itr])**2/(2.*sigma**2))+np.exp(-(z_grid+zs_chosen[itr])**2/(2.*sigma**2))
+        #else:
+        #    dN_dz += np.exp(-(z_grid-zs_chosen[itr])**2/(2.*sigma**2))
+        delta_dist[np.argmax(z_grid>=zs_chosen[itr])]+=1.
+    #assume z_grid uniform, in case first bin is set to something else to avoid going to 0.
+    dz = (z_grid[2]-z_grid[1]) 
+    delta_dist = delta_dist/dz
 
-    dN_dz = dN_dz/(sigma*np.sqrt(2.*np.pi))
-    dn_store = dN_dz.copy()
-    #if params['suppress']:
-    #    dN_dz[z_grid<params['z_cut']] = 0.
+    #dN_dz = dN_dz/(sigma*np.sqrt(2.*np.pi))
+    if params['mirror_boundary']:
+        dN_dz = gaussian_filter1d(delta_dist,sigma/dz,truncate=params['n_right_extend'],mode='mirror')
+    else:
+        dN_dz = gaussian_filter1d(delta_dist,sigma/dz,truncate=params['n_right_extend'],mode='constant')
 
     if normalize:
         dN_dz = zs_chosen.size*dN_dz/(au.trapz2(dN_dz,z_grid))

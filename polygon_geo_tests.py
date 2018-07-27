@@ -168,6 +168,8 @@ def test_alm_rect_agreement(geo_input):
         #main source of error is angle doubling formula, increasing number of doublings would decrease error
         ABS_TOL = 10**-7
         REL_TOL = 10**-8
+        print geo_input.poly_geo.thetas_orig,geo_input.poly_geo.phis_orig,geo_input.poly_geo.theta_in,geo_input.poly_geo.phi_in
+        print geo_input.poly_geo.sp_poly
         alm_array_poly = geo_input.poly_geo.get_alm_array(geo_input.params['l_max_rect'])[0]
         alm_array_rect = geo_input.r_geo.get_alm_array(geo_input.params['l_max_rect'])[0]
         assert np.allclose(alm_array_poly,alm_array_rect,atol=ABS_TOL,rtol=REL_TOL)

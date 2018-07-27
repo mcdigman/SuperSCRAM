@@ -33,7 +33,6 @@ class LensingPowerBase(object):
 
         self.dC_dpars = np.zeros((cosmo_par_list.size,2),dtype=object)
         self.Cs_pert = ppr.get_perturbed_cosmopies(C,cosmo_par_list,cosmo_par_eps,log_par_derivs)
-        self.nzs_pert = np.zeros((cosmo_par_list.size,2),dtype=object)
 
         for i in xrange(0,cosmo_par_list.size):
             self.dC_dpars[i,0] = sp.ShearPower(self.Cs_pert[i,0],self.geo.z_fine,f_sky,params,'power',ps,self.nz_matcher)
@@ -94,3 +93,8 @@ class GalaxyGalaxyLensingObservable(LensingObservable):
     def __init__(self,len_pow,r1,r2):
         """See LensingObservable"""
         LensingObservable.__init__(self,len_pow,r1,r2,len_w.QNum,len_w.QNum)
+#TODO build this
+#class MatterPowerObservable(SWObservable):
+#    """Class for matter power spectrum as an observable"""
+#    def __init__(self,len_pow):
+#        """len_pow: a LensingPowerBase object"""

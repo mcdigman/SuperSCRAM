@@ -1,4 +1,6 @@
 """provides implementations/wrappers of some fast algebra utilities"""
+from __future__ import absolute_import
+from builtins import range
 from warnings import warn
 import numpy as np
 import scipy.linalg as spl
@@ -208,7 +210,7 @@ def mirror_symmetrize(A,lower=True,inplace=False):
     if not inplace:
         A = A.copy()
     n = A.shape[0]
-    for itr in xrange(0,n-1):
+    for itr in range(0,n-1):
         if lower:
             A[itr,itr+1:n] = A[itr+1:n,itr]
         else:
@@ -222,7 +224,7 @@ def clean_triangle(A,lower=True,inplace=False):
     n = A.shape[0]
     if not inplace:
         A = A.copy()
-    for itr in xrange(0,n-1):
+    for itr in range(0,n-1):
         if lower:
             A[itr,itr+1:n] = 0.
         else:

@@ -24,7 +24,7 @@ if __name__=='__main__':
     C.P_lin = P
     C.k = C.P_lin.k
     theta0 = 0.*np.pi/16.
-    theta1 = 16.*np.pi/16.
+    theta1 = 15.*np.pi/16.
     phi0 = 0.
     phi1 = np.pi/3.
 
@@ -50,13 +50,14 @@ if __name__=='__main__':
     nz_params['smooth_sigma'] = 0.1
     nz_params['n_right_extend'] = 16
     nz_params_candel['smooth_sigma'] = 0.02
-    nz_params_candel['n_right_extend'] = 4
+    nz_params_candel['n_right_extend'] = 8
     nz_params_candel['i_cut'] = 25.3
     #nz_params['mirror_boundary'] = False
     nz_lsst_params = defaults.nz_params_lsst.copy()
     nz_lsst_params['i_cut'] = 25.3
     ts = np.zeros(n_run+1)
     ts[0] = time()
+
     for i in xrange(0,n_run):
         nzc = NZWFirst(nz_params)
         mf = hmf.ST_hmf(C,mf_params)
@@ -116,3 +117,6 @@ if __name__=='__main__':
         plt.xlabel('z')
         plt.ylabel('dN/dz(z)')
         plt.show()
+
+    from scipy.ndimage import gaussian_filter1d
+    dN_smooth = gaussian_filter1d(dN_dz_candel,0.001,truncate=5.)
