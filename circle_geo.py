@@ -1,4 +1,6 @@
 """approximate a circular geometry with PolygonGeo"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 import numpy as np
 from polygon_geo import PolygonGeo
 #exact radius for 1000 deg^2 r=np.arccos(1.-5.*np.pi/324.)=0.3126603700269391 as n_x->infinity

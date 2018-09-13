@@ -6,7 +6,8 @@
 	have not ruined any of the output 
 	J. E. McEwen (c) 2016
 '''
-
+from __future__ import division,absolute_import,print_function
+from builtins import range
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation

@@ -1,8 +1,9 @@
 """wrapper for camb to interface with our cosmology conventions"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 from warnings import warn
 import camb
 
-#TODO may want to investigate possible halofit discrepancy
 #TODO add accuracy parameter, for either set_accuracy or k_per_logint in set_matter_power
 #TODO set pivot_scalar to be a parameter
 #Note force_sigma8 forces sigma8_nl(z) to be the sigma8 in the cosmology, not sigma8_lin(z=0.), which may not be ideal behavior
@@ -50,7 +51,6 @@ def camb_pow(cosmology,camb_params,zbar=0.,nonlinear_model=camb.model.NonLinear_
 
     pars.set_dark_energy() #reset defaults
 
-    #TODO check little h again
     if camb_params['leave_h']:
         if camb_params['return_sigma8']:
             return kh,pk[0],sigma8

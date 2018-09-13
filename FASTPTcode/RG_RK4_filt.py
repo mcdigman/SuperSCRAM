@@ -6,6 +6,8 @@
 	J. E. McEwen (c) 2016 
 	mcewen.24@osu.edu 
 '''
+from __future__ import division,absolute_import,print_function
+from builtins import range
 
 import numpy as np
 from matter_power_spt import one_loop

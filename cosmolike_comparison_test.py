@@ -1,4 +1,6 @@
 """compares gaussian covariance with cosmolike"""
+from __future__ import absolute_import,division,print_function
+from builtins import range
 import numpy as np
 from scipy.integrate import cumtrapz
 import scipy.special as spp
@@ -9,9 +11,9 @@ from lensing_weight import QShear
 import matter_power_spectrum as mps
 from sw_survey import SWSurvey
 from circle_geo import CircleGeo
+import pytest
 
-
-if __name__=='__main__':
+def test_cosmolike_agreement():
     base_dir = './'
     input_dir = base_dir+'test_inputs/cosmolike_1/'
     cosmo_results = np.loadtxt(input_dir+'cov_results_7.dat')
@@ -67,7 +69,7 @@ if __name__=='__main__':
     amin_cosmo = 0.2
 
     n_s = sigma_e_cosmo**2/(2*n_gal_cosmo)
-    print "n_s",n_s
+    print("n_s",n_s)
     #format input results
     lbin_cosmo_1 = cosmo_results[:,0]
     lbin_cosmo_2 = cosmo_results[:,1]
@@ -87,8 +89,8 @@ if __name__=='__main__':
         zs = np.array([int(zbin_cosmo_1[itr]),int(zbin_cosmo_2[itr]),int(zbin_cosmo_3[itr]),int(zbin_cosmo_4[itr])])
         loc_mat1 = np.zeros((n_b,n_b))
         loc_mat2 = np.zeros((n_b,n_b))
-        for l1 in xrange(0,n_b):
-            for l2 in xrange(0,n_b):
+        for l1 in range(0,n_b):
+            for l2 in range(0,n_b):
                 loc_mat1[l1,l2] = c_g_cosmo_in[itr]
                 loc_mat2[l1,l2] = c_ssc_cosmo_in[itr]
                 itr+=1
@@ -100,11 +102,11 @@ if __name__=='__main__':
     c_ssc_cosmo_flat = np.zeros((n_side*n_b,n_side*n_b))
     itr1 = 0
     #sanity check formatting of input results from cosmolike
-    for i1 in xrange(tomo_bins_cosmo):
-        for i2 in xrange(i1,tomo_bins_cosmo):
+    for i1 in range(tomo_bins_cosmo):
+        for i2 in range(i1,tomo_bins_cosmo):
             itr2 = 0
-            for i3 in xrange(tomo_bins_cosmo):
-                for i4 in xrange(i3,tomo_bins_cosmo):
+            for i3 in range(tomo_bins_cosmo):
+                for i4 in range(i3,tomo_bins_cosmo):
                     assert np.all(c_g_cosmo[i1,i2,i3,i4]==c_g_cosmo[i3,i4,i1,i2].T)
                     assert np.all(c_g_cosmo[i1,i2,i3,i4]==c_g_cosmo[i1,i2,i4,i3].T)
                     assert np.all(c_g_cosmo[i1,i2,i3,i4]==c_g_cosmo[i2,i1,i3,i4].T)
@@ -125,8 +127,8 @@ if __name__=='__main__':
 
     Cll_sh_sh_cosmo = np.zeros((tomo_bins_cosmo,tomo_bins_cosmo),dtype=object)
     itr = 0
-    for i in xrange(tomo_bins_cosmo):
-        for j in xrange(i,tomo_bins_cosmo):
+    for i in range(tomo_bins_cosmo):
+        for j in range(i,tomo_bins_cosmo):
             Cll_sh_sh_cosmo[i,j] = cosmo_shear[:,itr+1]
             if not i==j:
                 Cll_sh_sh_cosmo[j,i] = Cll_sh_sh_cosmo[i,j]
@@ -137,7 +139,7 @@ if __name__=='__main__':
     l_mids = np.zeros(n_b)
     dls = np.zeros(n_b)
 
-    for i in xrange(l_mids.size):
+    for i in range(l_mids.size):
         l_starts[i] = np.exp(np.log(lmin_cosmo)+i*log_dl)
         l_mids[i] = np.exp(np.log(lmin_cosmo)+(i+0.5)*log_dl)
         dls[i] = (np.exp(np.log(lmin_cosmo)+(i+1.)*log_dl)- np.exp(np.log(lmin_cosmo)+i*log_dl))
@@ -151,15 +153,8 @@ if __name__=='__main__':
     cum_n_z = cum_n_z/cum_n_z[-1]
     z_bin_starts = np.zeros(tomo_bins_cosmo)
     r_bins = np.zeros((tomo_bins_cosmo,2))
-    for i in xrange(0,tomo_bins_cosmo):
+    for i in range(0,tomo_bins_cosmo):
         z_bin_starts[i] = np.min(z_fine[cum_n_z>=1./tomo_bins_cosmo*i])
-
-#    for i in xrange(0,tomo_bins_cosmo):
-#        if i==tomo_bins_cosmo-1:
-#            r_next = C.D_comov(np.max(z_fine))
-#        else:
-#            r_next = C.D_comov(z_bin_starts[i+1])
-#        r_bins[i] = np.array([C.D_comov(z_bin_starts[i]),r_next])
 
     P_in = mps.MatterPower(C,power_params)
     k_in = P_in.k
@@ -192,29 +187,29 @@ if __name__=='__main__':
     #test lensing observables
     sp = ShearPower(C,z_fine,fsky_cosmo,len_params,mode='power',ps=n_z)
     qs = np.zeros(tomo_bins_cosmo,dtype=object)
-    for i in xrange(qs.size):
+    for i in range(qs.size):
         qs[i] = QShear(sp,r_bins[i,0],r_bins[i,1])
     Cll_sh_sh = np.zeros((tomo_bins_cosmo,tomo_bins_cosmo),dtype=object)
     ratio_means = np.zeros((tomo_bins_cosmo,tomo_bins_cosmo))
-    for i in xrange(qs.size):
-        for j in xrange(qs.size):
+    for i in range(qs.size):
+        for j in range(qs.size):
             Cll_sh_sh[i,j] = Cll_q_q(sp,qs[i],qs[j]).Cll()
             ratio_means[i,j] = np.average(Cll_sh_sh[i,j]/Cll_sh_sh_cosmo[i,j])
             assert np.allclose(Cll_sh_sh[i,j],Cll_sh_sh_cosmo[i,j],rtol=RTOL,atol=ATOL)
 
-    print "average Cll ratio: ",np.average(ratio_means)
-    print "mse Cll: ",np.linalg.norm(np.linalg.norm(1.-Cll_sh_sh/Cll_sh_sh_cosmo))/(Cll_sh_sh.size*Cll_sh_sh[0,0].size)
+    print("average Cll ratio: ",np.average(ratio_means))
+    print("mse Cll: ",np.linalg.norm(np.linalg.norm(1.-Cll_sh_sh/Cll_sh_sh_cosmo))/(Cll_sh_sh.size*Cll_sh_sh[0,0].size))
 
     c_g_flat = np.zeros_like(c_g_cosmo_flat)
     c_ssc_flat = np.zeros_like(c_g_cosmo_flat)
 
     #first test individually by manually building covariance matrix
     itr1 = 0
-    for i1 in xrange(tomo_bins_cosmo):
-        for i2 in xrange(i1,tomo_bins_cosmo):
+    for i1 in range(tomo_bins_cosmo):
+        for i2 in range(i1,tomo_bins_cosmo):
             itr2 = 0
-            for i3 in xrange(tomo_bins_cosmo):
-                for i4 in xrange(i3,tomo_bins_cosmo):
+            for i3 in range(tomo_bins_cosmo):
+                for i4 in range(i3,tomo_bins_cosmo):
                     ns = np.array([0.,0.,0.,0.])
                     if i1==i3:
                         ns[0] = n_s
@@ -250,23 +245,26 @@ if __name__=='__main__':
     assert np.allclose(c_g_sw,c_g_flat)
     assert np.allclose(c_g_sw,c_g_cosmo_flat,atol=ATOL,rtol=RTOL)
 
-    print "mean squared diff covariances:"+str(np.linalg.norm(1.-rat_c)/rat_c.size)
+    print("mean squared diff covariances:"+str(np.linalg.norm(1.-rat_c)/rat_c.size))
 
 
-    print "PASS: all assertions passed"
-    do_plot = True
-    if do_plot:
-        import matplotlib.pyplot as plt
-        ax = plt.subplot(111)
-        bin1 = 0
-        bin2 = 0
-        bin3 = 1
-        bin4 = 0
-        ax.loglog(l_mids,np.diag(c_g_flat[0:n_b,0:n_b]))
-        ax.loglog(l_mids,np.diag(c_g_cosmo_flat[0:n_b,0:n_b]))
-        #ax.loglog(l_mids,np.diag(c_g[bin1,bin2,bin3,bin4]))
-        #ax.loglog(l_mids,np.diag(c_g_cosmo[bin1,bin2,bin3,bin4]))
-        #ax.loglog(l_mids,Cll_sh_sh[bin1,bin2])
-        #ax.loglog(l_mids,Cll_sh_sh_cosmo[bin1,bin2])
-        #print Cll_sh_sh[bin1,bin2]/Cll_sh_sh_cosmo[bin1,bin2]
-        plt.show()
+    print("PASS: all assertions passed")
+#    do_plot = True
+#    if do_plot:
+#        import matplotlib.pyplot as plt
+#        ax = plt.subplot(111)
+#        bin1 = 0
+#        bin2 = 0
+#        bin3 = 1
+#        bin4 = 0
+#        ax.loglog(l_mids,np.diag(c_g_flat[0:n_b,0:n_b]))
+#        ax.loglog(l_mids,np.diag(c_g_cosmo_flat[0:n_b,0:n_b]))
+#        #ax.loglog(l_mids,np.diag(c_g[bin1,bin2,bin3,bin4]))
+#        #ax.loglog(l_mids,np.diag(c_g_cosmo[bin1,bin2,bin3,bin4]))
+#        #ax.loglog(l_mids,Cll_sh_sh[bin1,bin2])
+#        #ax.loglog(l_mids,Cll_sh_sh_cosmo[bin1,bin2])
+#        #print(Cll_sh_sh[bin1,bin2]/Cll_sh_sh_cosmo[bin1,bin2])
+#        plt.show()
+
+if __name__=='__main__':
+    pytest.cmdline.main(['cosmolike_comparison_test.py'])

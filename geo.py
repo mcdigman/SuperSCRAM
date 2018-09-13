@@ -1,4 +1,6 @@
 """Specification for a survey geometry"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 import numpy as np
 
 from scipy.integrate import dblquad
@@ -32,7 +34,7 @@ class Geo(object):
         tot_area = self.angular_area()
         self.volumes = np.zeros(self.zs.size-1) #volume of each tomography bin
         if tot_area > 0.:#check area is not negative
-            for i in xrange(0,self.volumes.size):
+            for i in range(0,self.volumes.size):
                 self.volumes[i] += (self.rs[i+1]**3-self.rs[i]**3)/3.*tot_area
         else:
             if tot_area<-1.e-14: #don't raise exception for rounding error just let volume be 0
@@ -44,7 +46,7 @@ class Geo(object):
         #list r and  z bins as [rmin,rmax] pairs (min in bin, max in bin) for convenience
         self.rbins = np.zeros((self.rs.size-1,2))
         self.zbins = np.zeros((self.zs.size-1,2))
-        for i in xrange(0,self.rs.size-1):
+        for i in range(0,self.rs.size-1):
             self.rbins[i,:] = self.rs[i:i+2]
             self.zbins[i,:] = self.zs[i:i+2]
         #TODO go to 0 more elegantly maybe
@@ -52,7 +54,7 @@ class Geo(object):
         self.zbins_fine = np.zeros((self.z_fine.size,2))
         self.rbins_fine[0,:] = np.array([0.,self.r_fine[0]])
         self.zbins_fine[0,:] = np.array([0.,self.z_fine[0]])
-        for i in xrange(0,self.r_fine.size-1):
+        for i in range(0,self.r_fine.size-1):
             self.rbins_fine[i+1,:] = self.r_fine[i:i+2]
             self.zbins_fine[i+1,:] = self.z_fine[i:i+2]
 
@@ -60,7 +62,7 @@ class Geo(object):
         #TODO check handling bin edges correctly
         self.fine_indices = np.zeros((self.zs.size-1,2),dtype=np.int)
         self.fine_indices[0,0] = np.argmax(self.z_fine>=self.zs[0])
-        for i in xrange(1,self.zs.size-1):
+        for i in range(1,self.zs.size-1):
             self.fine_indices[i-1,1] = np.argmax(self.z_fine>=self.zs[i])
             self.fine_indices[i,0] = self.fine_indices[i-1,1]
         self.fine_indices[-1,1] = self.z_fine.size
@@ -118,21 +120,44 @@ class Geo(object):
 
     def get_alm_array(self,l_max):
         """get a(l,m) as an array up to l_max"""
+        if self._l_max<l_max:
+            self.expand_alm_table(l_max)
         ls = np.zeros((l_max+1)**2,dtype=int)
         ms = np.zeros((1+l_max)**2,dtype=int)
         alms = np.zeros((1+l_max)**2)
         itr = 0
-        for ll in xrange(0,l_max+1):
-            for mm in xrange(-ll,ll+1):
+        for ll in range(0,l_max+1):
+            for mm in range(-ll,ll+1):
                 ls[itr] = ll
                 ms[itr] = mm
-                alms[itr] = self.a_lm(ll,mm)
+                alms[itr] = self.alm_table[(ll,mm)]
                 itr+=1
         return alms,ls,ms
+
+    def get_alm_table(self,l_max):
+        """get table of a(l,m) up to at least l_max"""
+        if l_max>self._l_max:
+            self.expand_alm_table(l_max)
+        if l_max<self._l_max:
+            table_res = {}
+            for key in list(self.alm_table):
+                if key[0]<=l_max:
+                    table_res[key] = self.alm_table[key]
+            return table_res
+        else:
+            return self.alm_table
+
+    def expand_alm_table(self,l_max):
+        """expand internal alm table to at least l_max"""
+        for ll in range(self._l_max+1,l_max+1):
+            for mm in range(-ll,ll+1):
+                self.alm_table[(ll,mm)] = self.a_lm(ll,mm)
+        self._l_max = l_max
 
     def get_current_l_max(self):
         """get maximum l currently available in table"""
         return self._l_max
+
 
 class RectGeo(Geo):
     """implements a geometry of rectangles on the surface of a sphere, constant latitude and longitude sides"""

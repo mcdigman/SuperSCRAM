@@ -1,5 +1,7 @@
 """implement NZMatcher by matching the number density
 in the CANDELS GOODS-S catalogue for a limiting i band magnitude"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 import numpy as np
 
 from nz_matcher import NZMatcher,get_gaussian_smoothed_dN_dz
@@ -22,6 +24,6 @@ class NZCandel(NZMatcher):
         self.chosen = (self.data[:,5]<self.params['i_cut'])
         #cut off faint galaxies
         self.zs_chosen = self.data[self.chosen,1]
-        print "nz_candel: "+str(self.zs_chosen.size)+" available galaxies"
+        print("nz_candel: "+str(self.zs_chosen.size)+" available galaxies")
         dN_dz = get_gaussian_smoothed_dN_dz(z_grid,self.zs_chosen,params,normalize=True)#*0.00004
         NZMatcher.__init__(self,z_grid,dN_dz)

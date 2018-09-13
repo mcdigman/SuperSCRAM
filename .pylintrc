@@ -1,7 +1,7 @@
 [MESSAGES CONTROL]
 disable=C0326,C0301,C0103,no-else-return 
 [TYPECHECK]
-ignored-modules=numpy,scipy.linalg.blas,scipy.linalg.lapack,scipy.special,astropy.io,numpy.random
+ignored-modules=numpy,scipy.linalg.blas,scipy.linalg.lapack,scipy.special,astropy.io,numpy.random,mpl_toolkits
 ignored-classes=HDUList
 [DESIGN]
 max-args=10

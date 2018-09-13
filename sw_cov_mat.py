@@ -1,6 +1,8 @@
 """
 SWCovMat calculates gaussian and nongaussian contributions to the covariance
 """
+from __future__ import division,print_function,absolute_import
+from builtins import range
 from warnings import warn
 import numpy as np
 import lensing_observables as lo
@@ -12,13 +14,13 @@ class SWCovMat(object):
     def __init__(self,O_I_1,O_I_2,silent=False):
         """ O_I_1,O_I_2: SWObservable objects
             debug: do debugging checks
-            silent: whether to print messages
+            silent: whether to print(messages)
         """
         self.gaussian_covar = 0.
         if isinstance(O_I_1,lo.LensingObservable) and isinstance(O_I_2,lo.LensingObservable):
             if O_I_1.get_survey_id()==O_I_2.get_survey_id():
                 if not silent:
-                    print "SWCovMat: retrieving covariance"
+                    print("SWCovMat: retrieving covariance")
                 class_a = O_I_1.q1_pow.__class__
                 class_b = O_I_1.q2_pow.__class__
                 class_c = O_I_2.q1_pow.__class__
@@ -43,7 +45,7 @@ class SWCovMat(object):
                     ns[3] = sh_pow1.get_n_shape(class_b,class_c)
                 self.gaussian_covar = np.diagflat(sh_pow1.cov_g_diag(np.array([O_I_1.q1_pow,O_I_1.q2_pow,O_I_2.q1_pow,O_I_2.q2_pow]),ns))
                 if not silent:
-                    print "SWCovMat: covariance retrieved"
+                    print("SWCovMat: covariance retrieved")
 
                 if DEBUG:
                     #check that covariance matrix possesses all expected symmetries

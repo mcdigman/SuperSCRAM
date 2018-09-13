@@ -1,5 +1,7 @@
 """module for getting n(z) and the bias b(z) for an input source distribution
 by abundance matching a cutoff mass M to the halo mass function"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 
 import numpy as np
 from scipy.ndimage import gaussian_filter1d 
@@ -48,13 +50,8 @@ class NZMatcher(object):
         mass = mf.mass_grid
         nz = self.get_nz(geo)*mf.C.h**3
         m_cuts = np.zeros(geo.z_fine.size)
-        #TODO maybe can be faster
-        #TODO check this
         #note could do bisection search if not accurate enough
-        #Gs = mf.Growth(geo.z_fine)
-        #dns = mf.dndM_G(mass,Gs)
-        #n_avgs_alt = mf.n_avg(mass,geo.z_fine)
-        for itr in xrange(0,geo.z_fine.size):
+        for itr in range(0,geo.z_fine.size):
             #no number density to match
             if nz[itr]==0.:
                 m_cuts[itr] = mass[-1]
@@ -63,7 +60,7 @@ class NZMatcher(object):
             n_i = np.argmin(n_avgs>=nz[itr]) 
             
             if n_i==0:
-                    print "FLOORED",geo.z_fine[itr],nz[itr],n_avgs[0],n_i
+                    print("FLOORED",geo.z_fine[itr],nz[itr],n_avgs[0],n_i)
                     m_cuts[itr] = mass[0]
             elif m_cuts[itr]>=mass[-1] or n_i==mass.size-1:
                 m_cuts[itr] = mass[-1]
@@ -72,7 +69,6 @@ class NZMatcher(object):
                 log_norm_nz = np.log(nz[itr]/n_avgs[0])
                 m_interp = np.exp(interp1d(log_norm_n,np.log(mass[n_i-1:n_i+1]))(log_norm_nz))
                 m_cuts[itr] = m_interp
-            #assert np.isclose(m_interp2,m_cuts[itr])
         return m_cuts
 
 def get_gaussian_smoothed_dN_dz(z_grid,zs_chosen,params,normalize):
@@ -85,17 +81,12 @@ def get_gaussian_smoothed_dN_dz(z_grid,zs_chosen,params,normalize):
     dN_dz = np.zeros(z_grid.size)
     sigma = params['smooth_sigma']
     delta_dist = np.zeros(z_grid.size) 
-    for itr in xrange(0,zs_chosen.size):
-        #if params['mirror_boundary']:
-        #    dN_dz += np.exp(-(z_grid-zs_chosen[itr])**2/(2.*sigma**2))+np.exp(-(z_grid+zs_chosen[itr])**2/(2.*sigma**2))
-        #else:
-        #    dN_dz += np.exp(-(z_grid-zs_chosen[itr])**2/(2.*sigma**2))
+    for itr in range(0,zs_chosen.size):
         delta_dist[np.argmax(z_grid>=zs_chosen[itr])]+=1.
     #assume z_grid uniform, in case first bin is set to something else to avoid going to 0.
     dz = (z_grid[2]-z_grid[1]) 
     delta_dist = delta_dist/dz
 
-    #dN_dz = dN_dz/(sigma*np.sqrt(2.*np.pi))
     if params['mirror_boundary']:
         dN_dz = gaussian_filter1d(delta_dist,sigma/dz,truncate=params['n_right_extend'],mode='mirror')
     else:

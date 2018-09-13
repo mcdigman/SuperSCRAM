@@ -31,7 +31,7 @@ class FisherMatrix(object):
             input_type: a code for matrix type of input_matrix, options REP_FISHER, REP_CHOL, REP_CHOL_INV, or REP_COVAR
             initial_state: code for starting state, defaults to input_type
             fix_input: do not mutate input_matrix (ie make a copy)
-            silent: if True, less print statements
+            silent: if True, less print(statements)
         """
         self.silent = silent
         self.fix_input = fix_input

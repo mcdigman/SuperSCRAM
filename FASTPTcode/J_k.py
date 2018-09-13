@@ -6,15 +6,16 @@
 	
 	J. E. McEwen (c) 2016
 ''' 
-from __future__ import division 
+from __future__ import division,absolute_import,print_function
+from builtins import range
 import numpy as np
 from numpy.fft import fft, ifft , rfft, irfft , fftfreq
 from numpy import exp, log, log10, cos, sin, pi, cosh, sinh , sqrt
 from scipy.special import gamma 
 import sys
 from time import time 
-from fastpt_extr import p_window, c_window, pad_left, pad_right
-from gamma_funcs import g_m_vals, gamsn
+from .fastpt_extr import p_window, c_window, pad_left, pad_right
+from .gamma_funcs import g_m_vals, gamsn
 
 
 log2=log(2.)

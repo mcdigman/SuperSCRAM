@@ -2,6 +2,8 @@
 	It mostly contains window functions and padding routines. 
 	J. E. McEwen
 '''
+from __future__ import division,absolute_import,print_function
+from builtins import range
 
 import numpy as np
 from numpy import pi, cos, sin, log 

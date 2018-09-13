@@ -1,4 +1,6 @@
 """class for manipulating and plotting the Super Sample term"""
+from __future__ import print_function,division,absolute_import
+from builtins import range
 from time import time
 
 import numpy as np
@@ -26,7 +28,6 @@ if __name__=="__main__":
     #d=np.loadtxt('Pk_Planck15.dat')
     #d=np.loadtxt('camb_m_pow_l.dat')
     #k=d[:,0]; P=d[:,1]
-    #TODO check possible h discrepancy
     camb_params = defaults.camb_params.copy()
     camb_params['force_sigma8'] = False
     camb_params['kmax'] = 5.
@@ -38,7 +39,7 @@ if __name__=="__main__":
     cosmo_fid['wa'] = 0.
     cosmo_fid['de_model'] = 'constant_w'
     if cosmo_fid['de_model']=='jdem':
-        for i in xrange(0,36):
+        for i in range(0,36):
             cosmo_fid['ws36_'+str(i).zfill(2)] = cosmo_fid['w']
 
     C = cp.CosmoPie(cosmology=cosmo_fid,p_space='jdem')
@@ -50,7 +51,7 @@ if __name__=="__main__":
     k = P.k
     C.set_power(P)
     r_max = C.D_comov(z_max)
-    print 'this is r max and l_max', r_max , l_max
+    print('this is r max and l_max', r_max , l_max)
 
 #    #theta0=0.
 #    #theta1=np.pi/2.
@@ -135,7 +136,6 @@ if __name__=="__main__":
 #    len_params['z_max_dist'] = np.max(zs)
     len_params['pmodel'] = 'halofit'
 
-    #TODO put in defaults
     lenless_defaults = defaults.sw_survey_params.copy()
     lenless_defaults['needs_lensing'] = False
     if cosmo_fid['de_model']=='w0wa':
@@ -148,7 +148,6 @@ if __name__=="__main__":
         cosmo_par_list = ['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs']
         cosmo_par_list.extend(cp.JDEM_LIST)
         cosmo_par_list = np.array(cosmo_par_list,dtype=object)
-        #TODO does not really seem to be converging in small epsilon, maybe interpolation or camb issue?
         cosmo_par_eps = np.full(41,0.5)
         cosmo_par_eps[0:5] = np.array([0.002,0.0005,0.0001,0.0005,0.1])
 
@@ -163,7 +162,7 @@ if __name__=="__main__":
     #cosmo_par_eps = np.array([0.001,0.001])
     #cosmo_par_list = np.array(['Omegamh2','Omegabh2','ns','h','sigma8'])
     #note that currently (poorly implemented derivative) in jdem,
-    #OmegaLh2 and LogAs are both almost completely unconstrained but nondegenerate, 
+    #OmegaLh2 and LogAs are both almost completely unconstrained but nondegenerate,
     #while in basic, h and sigma8 are not constrained but are almost completely degenerate
     nz_params = defaults.nz_params_wfirst_lens.copy()
     #nz_params['data_source'] = 'data/H-5x140s.dat'
@@ -205,13 +204,13 @@ if __name__=="__main__":
     surveys_lw = np.array([survey_3])
 
 
-    print 'main: this is r_max: '+str(r_max)
+    print('main: this is r_max: '+str(r_max))
     SS = SuperSurvey(surveys_sw,surveys_lw,basis,C,defaults.prior_fisher_params.copy(),get_a=False,do_unmitigated=True,do_mitigated=True,include_sw=True)
 
     t2 = time()
-    print "main: total run time "+str(t2-t1)+" s"
+    print("main: total run time "+str(t2-t1)+" s")
 
-    #print "fractional mitigation: ", SS.a_no_mit/SS.a_mit
+    #print("fractional mitigation: ", SS.a_no_mit/SS.a_mit)
     #coeff = SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0]
     #rel_weights1 = coeff*np.dot(SS.multi_f.get_fisher(mf.f_spec_no_mit,mf.f_return_lw)[0].get_cov_cholesky(),coeff)
     #rel_weights2 = coeff*np.dot(SS.multi_f.get_fisher(mf.f_spec_mit   ,mf.f_return_lw)[0].get_cov_cholesky(),coeff)
@@ -234,14 +233,14 @@ if __name__=="__main__":
         no_mit_eigs_par = SS.eig_set[1,0]
         #TODO check not including priors in eigenvalues
         #TODO check eigenvalue interlace for this projection
-        print "main: unmitigated sw lambda1,2: "+str(no_mit_eigs_sw[0][-1])+","+str(no_mit_eigs_sw[0][-2])
-        print "main: mitigated sw lambda1,2: "+str(mit_eigs_sw[0][-1])+","+str(mit_eigs_sw[0][-2])
-        print "main: n sw mit lambda>1.00000001: "+str(np.sum(np.abs(mit_eigs_sw[0])>1.00000001))
-        print "main: n sw no mit lambda>1.00000001: "+str(np.sum(np.abs(no_mit_eigs_sw[0])>1.00000001))
-        print "main: unmitigated par lambda1,2: "+str(no_mit_eigs_par[0][-1])+","+str(no_mit_eigs_par[0][-2])
-        print "main: mitigated par lambda1,2: "+str(mit_eigs_par[0][-1])+","+str(mit_eigs_par[0][-2])
-        print "main: n par mit lambda>1.00000001: "+str(np.sum(np.abs(mit_eigs_par[0])>1.00000001))
-        print "main: n par no mit lambda>1.00000001: "+str(np.sum(np.abs(no_mit_eigs_par[0])>1.00000001))
+        print("main: unmitigated sw lambda1,2: "+str(no_mit_eigs_sw[0][-1])+","+str(no_mit_eigs_sw[0][-2]))
+        print("main: mitigated sw lambda1,2: "+str(mit_eigs_sw[0][-1])+","+str(mit_eigs_sw[0][-2]))
+        print("main: n sw mit lambda>1.00000001: "+str(np.sum(np.abs(mit_eigs_sw[0])>1.00000001)))
+        print("main: n sw no mit lambda>1.00000001: "+str(np.sum(np.abs(no_mit_eigs_sw[0])>1.00000001)))
+        print("main: unmitigated par lambda1,2: "+str(no_mit_eigs_par[0][-1])+","+str(no_mit_eigs_par[0][-2]))
+        print("main: mitigated par lambda1,2: "+str(mit_eigs_par[0][-1])+","+str(mit_eigs_par[0][-2]))
+        print("main: n par mit lambda>1.00000001: "+str(np.sum(np.abs(mit_eigs_par[0])>1.00000001)))
+        print("main: n par no mit lambda>1.00000001: "+str(np.sum(np.abs(no_mit_eigs_par[0])>1.00000001)))
         v_no_mit_par = np.dot(SS.f_set_nopriors[0][2].get_cov_cholesky(),no_mit_eigs_par[1])
         v_mit_par = np.dot(SS.f_set_nopriors[0][2].get_cov_cholesky(),mit_eigs_par[1])
 
@@ -261,17 +260,17 @@ if __name__=="__main__":
                 v_test_fails+=1
                 warn('some mit eig vectors may be bad')
         if v_test_fails == 0:
-            print "PASS: eigenvector decomposition checks passed"
+            print("PASS: eigenvector decomposition checks passed")
         else:
             warn('FAIL: '+str(v_test_fails)+' eigenvector decomposition checks failed')
 
 
     except Exception:
         warn('Eig value failed')
-#    print "SS eigenvals:",SS_eig[0]
-#    print "(S/N)^2 gaussian: ",np.dot(np.dot(c_ss,np.linalg.inv(cov_ss)),c_ss)
-    #print "(S/N)^2 gaussian+no mitigation: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss)+SS.cov_no_mit[0,0])),c_ss)
-    #print "(S/N)^2 gaussian+mitigation: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss)+SS.cov_mit[0,0])),c_ss)
+#    print("SS eigenvals:",SS_eig[0])
+#    print("(S/N)^2 gaussian: ",np.dot(np.dot(c_ss,np.linalg.inv(cov_ss)),c_ss))
+    #print("(S/N)^2 gaussian+no mitigation: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss)+SS.cov_no_mit[0,0])),c_ss))
+    #print("(S/N)^2 gaussian+mitigation: ",np.dot(np.dot(c_ss,np.linalg.inv(np.diagflat(cov_ss)+SS.cov_mit[0,0])),c_ss))
     #ax.loglog(l_sw,cov_ss)
     #ax.loglog(l,np.diag(SS.cov_mit[0,0])/c_ss**2*l/2)
     #ax.loglog(l_sw,(np.diag(SS.cov_no_mit[0,0])/cov_ss))
@@ -283,9 +282,9 @@ if __name__=="__main__":
         if C.de_model=='jdem':
             no_prior_project = prior_fisher.project_w0wa(no_prior_hold,defaults.prior_fisher_params,prior_fisher.JDEM_LABELS)
 
-    print 'main: r diffs',np.diff(geo1.rs)
-    print 'main: theta width',(geo1.rs[1]+geo1.rs[0])/2.*(Theta1[1]-Theta1[0])
-    print 'main: phi width',(geo1.rs[1]+geo1.rs[0])/2.*(Phi1[1]-Phi1[0])*np.sin((Theta1[1]+Theta1[0])/2)
+    print('main: r diffs',np.diff(geo1.rs))
+    print('main: theta width',(geo1.rs[1]+geo1.rs[0])/2.*(Theta1[1]-Theta1[0]))
+    print('main: phi width',(geo1.rs[1]+geo1.rs[0])/2.*(Phi1[1]-Phi1[0])*np.sin((Theta1[1]+Theta1[0])/2))
     #ax_ls = np.hstack((l_sw,l_sw))
 
     #v = SS.surveys_sw[0].get_dO_I_dpar_array()
@@ -374,7 +373,7 @@ if __name__=="__main__":
             warn("some covariance eigenvalues increase, unacceptable")
 
         if pert_test_fails==0:
-            print "PASS: All fisher matrix sanity checks passed"
+            print("PASS: All fisher matrix sanity checks passed")
         else:
             warn("FAIL: "+str(pert_test_fails)+" fisher matrix sanity checks failed")
     test_eigs = True
@@ -424,7 +423,7 @@ if __name__=="__main__":
 
 
         if eig_test_fails==0:
-            print "PASS: All sw eigenvalue sanity checks passed"
+            print("PASS: All sw eigenvalue sanity checks passed")
         else:
             warn("FAIL: "+str(pert_test_fails)+" eigenvalue sanity checks failed")
 
@@ -440,7 +439,7 @@ if __name__=="__main__":
             eig_l_no_mit_par = no_mit_eigs_par[0][::-1]
             eig_l_mit_sw = mit_eigs_sw[0][::-1]
             eig_l_no_mit_sw = no_mit_eigs_sw[0][::-1]
-            for i in xrange(0,n_par):
+            for i in range(0,n_par):
                 if eig_l_mit_par[i]>eig_l_mit_sw[i]:
                     eig_interlace_fails_mit+=1
                 if eig_l_no_mit_par[i]>eig_l_no_mit_sw[i]:
@@ -450,6 +449,6 @@ if __name__=="__main__":
                 if eig_l_no_mit_par[i]<eig_l_no_mit_sw[i+d_n]:
                     eig_interlace_fails_no_mit+=1
             if eig_interlace_fails_mit==0 and eig_interlace_fails_no_mit==0:
-                print "PASS: All parameter eigenvalue interlace tests passed"
+                print("PASS: All parameter eigenvalue interlace tests passed")
             else:
                 warn("FAIL: "+str(eig_interlace_fails_mit)+" mitigation and "+str(eig_interlace_fails_no_mit)+" no mitigation failures in parameter eigenvalue interlace tests")

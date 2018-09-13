@@ -1,4 +1,6 @@
 """Abstract class for a long wavelength basis"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 
 class LWBasis(object):
     """Abstract class for a long wavelength basis"""

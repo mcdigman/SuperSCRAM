@@ -1,5 +1,7 @@
 """test consistency of different ways of getting power spectrum"""
 #pylint: disable=W0621
+from __future__ import division,print_function,absolute_import
+from builtins import range
 import numpy as np
 import pytest
 from scipy.interpolate import InterpolatedUnivariateSpline
@@ -19,7 +21,7 @@ def param_set(request):
     """choose params from test_list"""
     return request.param
 
-vary_list = defaults.cosmology.keys()
+vary_list = list(defaults.cosmology)
 #vary_list = ['OmegaLh2']
 @pytest.fixture(params=vary_list)
 def param_vary(request):
@@ -49,7 +51,7 @@ def test_vary_1_parameter(param_set,param_vary):
     if isinstance(cosmo_fid[param_vary],float):
         cosmo_pert = cosmo_fid.copy()
         cosmo_pert[param_vary]*=(1.+eps)
-        print cosmo_pert['Omegar']
+        print(cosmo_pert['Omegar'])
 
         C_pert = cp.CosmoPie(cosmo_pert,p_space='jdem')
         P_pert = mps.MatterPower(C_pert,power_params)
@@ -123,10 +125,10 @@ if __name__=='__main__':
                 plt.semilogx(k_fid[k_mask],((P_res1-P_res2)/P_res2)[k_mask])
 
             mean_abs_err_lin = np.average(np.abs((P_res2-P_res1)/P_res2)[k_mask])
-            print "mean absolute diff leave_h="+str(param[1])+" force_sigma8="+str(param[0])+" pmodel="+str(param[2])+": "+str(mean_abs_err_lin)
+            print("mean absolute diff leave_h="+str(param[1])+" force_sigma8="+str(param[0])+" pmodel="+str(param[2])+": "+str(mean_abs_err_lin))
             #assert np.allclose(k_res2,k_fid,atol=atol_k,rtol=rtol)
             #assert np.allclose(P_res1,P_res2,atol=atol_power,rtol=rtol)
-        #print "PASS: passed all assertions"
+        #print("PASS: passed all assertions")
 #        do_jvp_comp = True
 #        if do_jvp_comp:
 #            from halofit2 import PowerSpectrum

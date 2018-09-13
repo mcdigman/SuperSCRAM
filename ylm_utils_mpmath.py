@@ -1,4 +1,6 @@
 """some utility functions for real spherical harmonic a_lm computations, used by PolygonGeo, using arbitrary precision mpmath"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 import numpy as np
 from mpmath import mp
 from ylm_utils import get_lm_dict
@@ -22,7 +24,7 @@ def reconstruct_from_alm(l_max,thetas,phis,alms):
     #this part doesn't need multiple precision
     sin_phi_m = np.zeros((l_max+1,phis.size))
     cos_phi_m = np.zeros((l_max+1,phis.size))
-    for mm in xrange(0,l_max+1):
+    for mm in range(0,l_max+1):
         sin_phi_m[mm,:] = np.sin(mm*phis)
         cos_phi_m[mm,:] = np.cos(mm*phis)
 
@@ -31,13 +33,13 @@ def reconstruct_from_alm(l_max,thetas,phis,alms):
     for ll in np.arange(0,l_max+1):
         if ll>=2:
             kl11 = known_legendre[(ll-1,ll-1)]
-            known_legendre[(ll,ll-1)] = mp.matrix([(2.*ll-1.)*cos_theta[i,0]*kl11[i,0] for i in xrange(0,thetas.rows)])
-            known_legendre[(ll,ll)] = mp.matrix([-(2.*ll-1.)*abs_sin_theta[i,0]*kl11[i,0] for i in xrange(0,thetas.rows)])
+            known_legendre[(ll,ll-1)] = mp.matrix([(2.*ll-1.)*cos_theta[i,0]*kl11[i,0] for i in range(0,thetas.rows)])
+            known_legendre[(ll,ll)] = mp.matrix([-(2.*ll-1.)*abs_sin_theta[i,0]*kl11[i,0] for i in range(0,thetas.rows)])
         for mm in np.arange(0,ll+1):
             if mm<=ll-2:
                 kl1 = known_legendre[(ll-1,mm)]
                 kl2 = known_legendre[(ll-2,mm)]
-                known_legendre[(ll,mm)] = mp.matrix([((2.*ll-1.)/(ll-mm)*cos_theta[i,0]*kl1[i,0]-(ll+mm-1.)/(ll-mm)*kl2[i,0]) for i in xrange(0,thetas.rows)])
+                known_legendre[(ll,mm)] = mp.matrix([((2.*ll-1.)/(ll-mm)*cos_theta[i,0]*kl1[i,0]-(ll+mm-1.)/(ll-mm)*kl2[i,0]) for i in range(0,thetas.rows)])
                 known_legendre.pop((ll-2,mm),None)
             prefactor = mp.sqrt((2.*ll+1.)/(4.*mp.pi)*factorials[ll-mm]/factorials[ll+mm])
 
@@ -54,7 +56,7 @@ def get_Y_r_dict(l_max,thetas,phis):
     """get Y_r for thetas and phis out to l_max as a dictionary"""
     ytable,ls,ms = get_Y_r_table(l_max,thetas,phis)
     ydict = {}
-    for itr in xrange(0,ls.size):
+    for itr in range(0,ls.size):
         ydict[(ls[itr],ms[itr])] = ytable[itr]
     return ydict
 
@@ -62,10 +64,10 @@ def get_Y_r_dict_central(l_max):
     """get Y_r up to l_max at the theta=np.pi/2., phi=0., which can be found analytically"""
     Y_lms = {(0,0):np.double(1./mp.sqrt(4.*mp.pi))}
     factorials = mp.matrix([mp.factorial(val) for val in np.arange(0,2*l_max+1)])
-    for ll in xrange(1,l_max+1):
-        for mm in xrange(-ll,0):
+    for ll in range(1,l_max+1):
+        for mm in range(-ll,0):
             Y_lms[(ll,mm)] = 0.
-        for nn in xrange(0,np.int(ll/2.)+1):
+        for nn in range(0,np.int(ll/2.)+1):
             Y_lms[(ll,ll-2*nn-1)] = 0.
             base = factorials[(2*ll-2*nn)]/factorials[ll-nn]*1./factorials[nn]
             ratio = factorials[2*nn]/factorials[2*ll-2*nn]
@@ -97,7 +99,7 @@ def get_Y_r_table(l_max,thetas,phis):
 
     sin_phi_m = np.zeros((l_max+1,phis.size))
     cos_phi_m = np.zeros((l_max+1,phis.size))
-    for mm in xrange(0,l_max+1):
+    for mm in range(0,l_max+1):
         sin_phi_m[mm,:] = np.sin(mm*phis)
         cos_phi_m[mm,:] = np.cos(mm*phis)
 

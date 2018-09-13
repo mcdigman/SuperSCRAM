@@ -1,6 +1,8 @@
 """
 Contains lensing observable classes and functions
 """
+from __future__ import division,print_function,absolute_import
+from builtins import range
 import numpy as np
 from sw_observable import SWObservable
 import shear_power as sp
@@ -34,7 +36,7 @@ class LensingPowerBase(object):
         self.dC_dpars = np.zeros((cosmo_par_list.size,2),dtype=object)
         self.Cs_pert = ppr.get_perturbed_cosmopies(C,cosmo_par_list,cosmo_par_eps,log_par_derivs)
 
-        for i in xrange(0,cosmo_par_list.size):
+        for i in range(0,cosmo_par_list.size):
             self.dC_dpars[i,0] = sp.ShearPower(self.Cs_pert[i,0],self.geo.z_fine,f_sky,params,'power',ps,self.nz_matcher)
             self.dC_dpars[i,1] = sp.ShearPower(self.Cs_pert[i,1],self.geo.z_fine,f_sky,params,'power',ps,self.nz_matcher)
 
@@ -58,7 +60,7 @@ class LensingObservable(SWObservable):
         self.q2_dC = self.q2_handle(self.len_pow.dC_ddelta,self.r2[0],self.r2[1])
         self.q1_dpars = np.zeros((len_pow.cosmo_par_list.size,2),dtype=object)
         self.q2_dpars = np.zeros((len_pow.cosmo_par_list.size,2),dtype=object)
-        for itr in xrange(0,len_pow.cosmo_par_list.size):
+        for itr in range(0,len_pow.cosmo_par_list.size):
             self.q1_dpars[itr,0] = self.q1_handle(self.len_pow.dC_dpars[itr,0],self.r1[0],self.r1[1])
             self.q1_dpars[itr,1] = self.q1_handle(self.len_pow.dC_dpars[itr,1],self.r1[0],self.r1[1])
             self.q2_dpars[itr,0] = self.q2_handle(self.len_pow.dC_dpars[itr,0],self.r2[0],self.r2[1])
@@ -76,7 +78,7 @@ class LensingObservable(SWObservable):
     def get_dO_I_dpars(self):
         r"""Get \partial{O_I}\partial{\Theta_i} for the set of observables as set up in LensingPowerBase"""
         dO_dpars = np.zeros((self.get_dimension(),self.len_pow.cosmo_par_list.size))
-        for itr in xrange(0,dO_dpars.shape[1]):
+        for itr in range(0,dO_dpars.shape[1]):
             Cll_low = sp.Cll_q_q(self.len_pow.dC_dpars[itr,0],self.q1_dpars[itr,0],self.q2_dpars[itr,0]).Cll()
             Cll_high = sp.Cll_q_q(self.len_pow.dC_dpars[itr,1],self.q1_dpars[itr,1],self.q2_dpars[itr,1]).Cll()
             dO_dpars[:,itr] = (Cll_high-Cll_low)/(2.*self.len_pow.cosmo_par_eps[itr])

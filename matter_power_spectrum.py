@@ -1,6 +1,8 @@
 """
 MatterPower class handles and wrap all matter power spectra related functionality
 """
+from __future__ import division,print_function,absolute_import
+from builtins import range
 from warnings import warn
 import numpy as np
 from scipy.interpolate import RectBivariateSpline,InterpolatedUnivariateSpline
@@ -71,15 +73,16 @@ class MatterPower(object):
             else:
                 self.wm = w_matcher.WMatcher(self.C,self.power_params.wmatcher)
             self.w_match_grid = self.wm.match_w(self.C,self.z_grid)
-            #TODO is this grid acceptably fine?
+            self.growth_match_grid = self.wm.match_growth(self.C,self.z_grid,self.w_match_grid)
             self.w_match_interp = InterpolatedUnivariateSpline(self.z_grid,self.w_match_grid,k=3,ext=2)
-#            self.pow_mult_grid = self.wm.match_growth(self.C,self.z_grid,self.w_match_grid)
+            self.growth_match_interp = InterpolatedUnivariateSpline(self.z_grid,self.growth_match_grid,k=3,ext=2)
             self.use_match_grid = True
         else:
             self.wm = None
-            self.w_match_grid = np.zeros(self.n_a)+self.cosmology['w']
-            self.w_match_interp = InterpolatedUnivariateSpline(self.z_grid,self.w_match_grid,k=3,ext=2)
-#            self.pow_mult_grid = np.zeros(self.n_a)+1.
+            self.w_match_grid = None
+            self.w_match_interp = None
+            self.growth_match_grid = None
+            self.growth_match_interp = None
             self.use_match_grid = False
         #figure out an error checking method here
         #Interpolated to capture possible k dependence in camb of w
@@ -116,8 +119,9 @@ class MatterPower(object):
                 #make sure the grid has at least some minimum number of values
                 if self.camb_w_grid.size<self.params['min_n_w']:
                     self.camb_w_grid = np.linspace(self.w_min,self.w_max,self.params['min_n_w'])
-                print "matter_power_spectrum: camb grid",self.camb_w_grid
-                print "matter_power_spectrum: w grid diffs",np.diff(self.w_match_grid)
+                print("matter_power_spectrum: camb grid",self.camb_w_grid)
+                print("matter_power_spectrum: w grid",self.w_match_grid)
+                print("matter_power_spectrum: w grid diffs",np.diff(self.w_match_grid))
 
                 n_cw = self.camb_w_grid.size
                 self.camb_w_pows = np.zeros((self.k.size,n_cw))
@@ -127,13 +131,13 @@ class MatterPower(object):
                 #k_use,P_use,sigma8_use = camb_pow(camb_cosmos,camb_params=self.camb_params)
                 #if not np.all(k_use==self.k):
                 #    P_use = InterpolatedUnivariateSpline(k_use,P_use,k=2,ext=2)(self.k)
-                for i in xrange(0,n_cw):
+                for i in range(0,n_cw):
                     camb_cosmos['w'] = self.camb_w_grid[i]
-                    print "camb with w=",self.camb_w_grid[i]
+                    print("camb with w=",self.camb_w_grid[i])
                     k_i,self.camb_w_pows[:,i],self.camb_sigma8s[i] = camb_pow(camb_cosmos,camb_params=self.camb_params)
                     #self.camb_sigma8s[i] = sigma8_use*self.wm.match_scale(np.array([0.]),self.camb_w_grid[i])[0]
                     #alt_camb_sigma8s = camb_sigma8(camb_cosmos,self.camb_params)
-                    #print self.camb_sigma8s[i],alt_camb_sigma8s[i]
+                    #print(self.camb_sigma8s[i],alt_camb_sigma8s[i])
                     #This interpolation shift shouldn't really be needed because self.k is generated with the same value of H0
                     self.camb_w_pows[:,i] = power_law_extend(k_i,self.camb_w_pows[:,i],self.k,k=2,extend_limit=self.extend_limit)
                     #if not np.all(k_i==self.k):
@@ -162,7 +166,8 @@ class MatterPower(object):
         """get effective sigma8(z) for matching power spectrum amplitude in w(z) models from WMatcher"""
         if self.use_match_grid:
             w_match_grid = self.w_match_interp(zs)
-            pow_mult_grid = self.wm.match_growth(self.C,zs,w_match_grid)
+            #pow_mult_grid = self.wm.match_growth(self.C,zs,w_match_grid)
+            pow_mult_grid = self.growth_match_interp(zs)
             return self.camb_sigma8_interp(w_match_grid)*np.sqrt(pow_mult_grid)
         else:
             return self.sigma8_in+np.zeros(zs.size)
@@ -182,16 +187,15 @@ class MatterPower(object):
 
         n_z = zs.size
 
-        if self.use_match_grid:
-            #TODO maybe allow override of interpolation
-            w_match_grid = self.w_match_interp(zs)
-            pow_mult_grid = self.wm.match_growth(self.C,zs,w_match_grid)*const_pow_mult
-
         G_norms = self.C.G_norm(zs)
+
         if self.use_match_grid:
+            w_match_grid = self.w_match_interp(zs)
+            pow_mult_grid = self.growth_match_interp(zs)
+
             Pbases = np.zeros((self.k.size,n_z))
             if self.use_camb_grid:
-                for i in xrange(0,n_z):
+                for i in range(0,n_z):
                     Pbases[:,i] = pow_mult_grid[i]*self.camb_w_interp(self.k,w_match_grid[i]).flatten()
             else:
                 Pbases = np.outer(self.P_lin,pow_mult_grid)
@@ -203,7 +207,7 @@ class MatterPower(object):
             P_nonlin = Pbases*G_norms**2
         elif pmodel=='halofit':
             if self.use_match_grid:
-                for i in xrange(0,n_z):
+                for i in range(0,n_z):
                     cosmo_hf_i = self.cosmology.copy()
                     cosmo_hf_i['de_model'] = 'constant_w'
                     cosmo_hf_i['w'] = w_match_grid[i]
@@ -219,13 +223,14 @@ class MatterPower(object):
         elif pmodel=='fastpt':
             if self.use_match_grid:
                 one_loops = np.zeros((self.k.size,n_z))
-                for i in xrange(0,n_z):
+                for i in range(0,n_z):
                     G_i = G_norms[i]
                     one_loops[:,i] = self.fpt.one_loop(Pbases[:,i],C_window=self.power_params.fpt['C_window'])*G_i**4
                     P_nonlin[:,i] =  Pbases[:,i]*G_i**2+one_loops[:,i]
             else:
                 one_loops = np.outer(self.fpt.one_loop(self.P_lin,C_window=self.power_params.fpt['C_window']),G_norms**4)
                 P_nonlin = np.outer(self.P_lin,G_norms**2)+one_loops
+
         if pmodel=='fastpt' and get_one_loop:
             return P_nonlin,one_loops
         elif get_one_loop:

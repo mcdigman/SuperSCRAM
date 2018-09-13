@@ -1,9 +1,9 @@
 """
 init file for FASTPT 
 """
-
-import fastpt_extr
-import FASTPT
-import gamma_funcs
-import matter_power_spt 
+from __future__ import absolute_import
+import FASTPTcode.fastpt_extr
+import FASTPTcode.FASTPT
+import FASTPTcode.gamma_funcs
+import FASTPTcode.matter_power_spt 
 

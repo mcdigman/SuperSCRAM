@@ -1,4 +1,6 @@
 """module gets perturbed sets of cosmologies and CosmoPie objects for varying cosmological parameters"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 from warnings import warn
 
 import numpy as np
@@ -30,7 +32,7 @@ def get_perturbed_cosmopies(C_fid,pars,epsilons,log_par_derivs=None,override_saf
 
     Cs_pert = np.zeros((pars.size,2),dtype=object)
 
-    for i in xrange(0,pars.size):
+    for i in range(0,pars.size):
         cosmo_a = get_perturbed_cosmology(cosmo_fid,pars[i],epsilons[i],log_par_derivs[i])
         cosmo_b = get_perturbed_cosmology(cosmo_fid,pars[i],-epsilons[i],log_par_derivs[i])
 

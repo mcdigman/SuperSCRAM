@@ -1,5 +1,7 @@
 """test the prior_fisher module"""
 #pylint: disable=W0621
+from __future__ import print_function,division,absolute_import
+from builtins import range
 import pytest
 import numpy as np
 #import defaults
@@ -63,9 +65,9 @@ def test_strip(prior_fisher):
     if prior_fisher.key==2:
         index_list = np.hstack([1,2,3,5,np.arange(9,46)])
         stripped_true = np.outer(index_list,index_list)
-        print stripped_true[0:5,0:5]
-        print stripped[0:5,0:5]
-        print original[0:5,0:5]
+        print(stripped_true[0:5,0:5])
+        print(stripped[0:5,0:5])
+        print(original[0:5,0:5])
         assert np.all(stripped_true==stripped)
     assert np.all(stripped.T==stripped)
     eig_strip = np.linalg.eigh(stripped)
@@ -97,7 +99,7 @@ def test_de(prior_fisher):
         assert processed.shape[0]==41
         assert processed.shape[1]==41
         assert np.all(processed_labels[0:5]==np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs']))
-        for i in xrange(0,36):
+        for i in range(0,36):
             assert processed_labels[5+i]=='ws36_'+str(i).zfill(2)
         assert np.all(processed==stripped)
         assert np.all(processed_labels==stripped_labels)

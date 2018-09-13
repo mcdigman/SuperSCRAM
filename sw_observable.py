@@ -1,6 +1,8 @@
 """
 Abstract class for a short wavelength observable
 """
+from __future__ import division,print_function,absolute_import
+from builtins import range
 
 class SWObservable(object):
     """short wavelength observable abstract class"""

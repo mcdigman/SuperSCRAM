@@ -1,5 +1,7 @@
 """Implementation of takahashi halofit prescription.
 Similar to the implementation in camb, but smooth cutoff from linear to nonlinear"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 from warnings import warn
 from scipy.interpolate import interp1d
 from scipy.integrate import cumtrapz
@@ -19,7 +21,7 @@ class HalofitPk(object):
                     year = 2014,
                     month = feb,
                     archivePrefix = "ascl",
-                    eprint = {1402.032},
+                    eprint(= {1402.032},)
                     adsurl = {http://adsabs.harvard.edu/abs/2014ascl.soft02032P},
                     adsnote = {Provided by the SAO/NASA Astrophysics Data System}
                     }
@@ -92,7 +94,7 @@ class HalofitPk(object):
         sigs,sig_d1s,sig_d2s = self.wint(rs)
         #can safely cutoff if 1/sig is greater than 1, because that corresponds to a normalized growth factor>1 and 1/sig monotonically increases with higher r
 #        n_r_max = n_r
-#        for i in xrange(0,n_r):
+#        for i in range(0,n_r):
 #            sig,d1,d2 = self.wint(rs[i])
 #            sigs[i] = sig
 #            sig_d1s[i] = d1
@@ -177,7 +179,7 @@ class HalofitPk(object):
         #current method introduces dependence of k_max of input power spectrum, which is not ideal.
         #nint = 1000
         #nint=np.floor((self.k_max)/2.)
-        #print self.k_max/2.
+        #print(self.k_max/2.)
         #TODO figure out what to do if k_max<2
         nint = min(np.int(self.k_max/2.),np.int(self.k_fix/2.))
         #nint = np.int(self.k_fix/2.)

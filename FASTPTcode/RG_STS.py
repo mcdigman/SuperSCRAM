@@ -12,11 +12,13 @@
 	J. E. McEwen (c) 2016 
 	mcewen.24@osu.edu 
 '''
+from __future__ import division,absolute_import,print_function
+from builtins import range
 
 import numpy as np
 import matplotlib.pyplot as plt  
-from fastpt_extr import p_window
-import FASTPT
+from .fastpt_extr import p_window
+import .FASTPT
 import time, sys
 
 # set the STS parameters here 

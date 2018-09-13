@@ -1,6 +1,8 @@
 """Sample implementation of a long wavelength mitigation strategy,
 for the difference in galaxy number densities
 between two survey geometries, as described in the paper"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 
 from warnings import warn
 import numpy as np
@@ -11,6 +13,7 @@ from hmf import ST_hmf
 from nz_candel import NZCandel
 from nz_wfirst import NZWFirst
 from nz_lsst import NZLSST
+from nz_constant import NZConstant
 from lw_observable import LWObservable
 from algebra_utils import trapz2
 from polygon_geo import PolygonGeo
@@ -36,7 +39,7 @@ class DNumberDensityObservable(LWObservable):
                 nz_params: parameters needed by NZMatcher object
                 mf_params: params needed by ST_hmf
         """
-        print "Dn: initializing"
+        print("Dn: initializing")
         LWObservable.__init__(self,geos,params,survey_id,C)
         self.fisher_type = False
         self.basis = basis
@@ -44,12 +47,21 @@ class DNumberDensityObservable(LWObservable):
         self.nz_params = nz_params
 
         #self.geo2 should be area in mitigation survey but not in original survey
+        #TODO this is a bit hackish, but works for now
         if isinstance(geos[0],PolygonGeo):
-            self.geo2 = PolygonUnionGeo(np.array([geos[1]]),np.array([geos[0]]),zs=geos[1].zs,z_fine=geos[1].z_fine)
+            if isinstance(geos[1],PolygonGeo):
+                self.geo2 = PolygonUnionGeo(np.array([geos[1]]),np.array([geos[0]]),zs=geos[1].zs,z_fine=geos[1].z_fine)
+            elif isinstance(geos[1],PolygonUnionGeo):
+                self.geo2 = PolygonUnionGeo(geos[1].geos,np.append(geos[0],geos[1].masks),zs=geos[1].zs,z_fine=geos[1].z_fine)
+            else:
+                raise ValueError('unsupported type for geo2')
         elif isinstance(self.geos[0],PolygonPixelGeo):
-            self.geo2 = PolygonPixelUnionGeo(np.array([geos[1]]),np.array([geos[0]]))
+            if isinstance(geos[1],PolygonPixelGeo):
+                self.geo2 = PolygonPixelUnionGeo(np.array([geos[1]]),np.array([geos[0]]))
+            else:
+                raise ValueError('unsupported type for geo2')
         else:
-            raise ValueError('unrecognized type for geo1')
+            raise ValueError('unsupported type for geo1')
 
         #self.geo1 should be intersect of mitigation survey and original survey
         if np.isclose(geos[0].get_overlap_fraction(geos[1]),1.):
@@ -74,7 +86,7 @@ class DNumberDensityObservable(LWObservable):
         assert np.all(geos[0].r_fine==geos[1].r_fine)
         dz = self.z_fine[2]-self.z_fine[1]
 
-        print mf_params
+        print(mf_params)
         self.mf = ST_hmf(self.C,params=mf_params)
 
         if self.nz_select == 'CANDELS':
@@ -83,6 +95,8 @@ class DNumberDensityObservable(LWObservable):
             self.nzc = NZWFirst(self.nz_params)
         elif self.nz_select == 'LSST':
             self.nzc = NZLSST(self.z_fine,self.nz_params)
+        elif self.nz_select == 'constant':
+            self.nzc = NZConstant(self.geo2,self.nz_params)
         else:
             raise ValueError('unrecognized nz_select '+str(self.nz_select))
 
@@ -106,6 +120,7 @@ class DNumberDensityObservable(LWObservable):
         #self.m_avgs = np.zeros(self.n_bins)
         #self.biases = np.diag(self.mf.bias(self.M_cuts,self.z_fine))
         self.n_avg_bin = np.zeros(self.n_bins)
+        #self.bias = np.full(self.z_fine.size,1.6)#self.dn_ddelta_bar/self.n_avgs
         self.bias = self.dn_ddelta_bar/self.n_avgs
         self.sigma0 = 0.001
         self.z_extra = np.hstack([self.z_fine,np.arange(self.z_fine[-1]+dz,self.z_fine[-1]+5.*self.sigma0*(1.+self.z_fine[-1]),dz)])
@@ -114,7 +129,7 @@ class DNumberDensityObservable(LWObservable):
         self.r_vols1 = 3./np.diff(geos[0].rbins**3)
         self.n_avg_bin1 = np.zeros(geos[0].zbins.shape[0])
         self.b_ns1 = np.zeros(geos[0].zbins.shape[0])
-        for itr in xrange(0,geos[0].zbins.shape[0]):
+        for itr in range(0,geos[0].zbins.shape[0]):
             bounds1 = geos[0].fine_indices[itr]
             range1 = np.arange(bounds1[0],bounds1[1])
             self.n_avg_bin1[itr] = self.r_vols1[itr]*trapz2(self.n_avg_integrand[range1],self.r_fine[range1])
@@ -123,11 +138,11 @@ class DNumberDensityObservable(LWObservable):
 
         
         #NOTE this whole loop could be pulled apart with a small change in sph_klim
-        for itr in xrange(0,self.n_bins):
+        for itr in range(0,self.n_bins):
             bounds1 = self.geo2.fine_indices[itr]
             range1 = np.arange(bounds1[0],bounds1[1])
 
-            print "Dn: getting d1,d2"
+            print("Dn: getting d1,d2")
             #multiplier for integrand
             #TODO temporary hack
             V1 = self.geo2.volumes[itr]*self.geo1.angular_area()/self.geo2.angular_area()
@@ -166,16 +181,16 @@ class DNumberDensityObservable(LWObservable):
                 sigma = self.sigma0*(1.+self.geo2.zs[itr])/(self.z_fine[2]-self.z_fine[1])
                 dN_smooth = gaussian_filter1d(dN_wind,sigma,mode='mirror',truncate=10.)
                 dN_smooth = dN_smooth[0:self.z_fine.size] 
-                print "tot acc",np.trapz(dN_smooth,self.z_fine)/np.trapz(dN_wind,self.z_extra)
-                print "outside",np.trapz(dN_smooth[range1],self.z_fine[range1])/np.trapz(dN_wind,self.z_extra)
+                print("tot acc",np.trapz(dN_smooth,self.z_fine)/np.trapz(dN_wind,self.z_extra))
+                print("outside",np.trapz(dN_smooth[range1],self.z_fine[range1])/np.trapz(dN_wind,self.z_extra))
                 n_smooth = dN_smooth/self.r_fine**2*self.geo2.dzdr
                 bn_smooth = n_smooth*self.bias
                 integrand_smooth = np.expand_dims(bn_smooth*self.r_fine**2,axis=1)
                 self.integrands_smooth[:,itr] = integrand_smooth[:,0]
                 #integrand_smooth = np.zeros((self.n_avgs.size,1))#self.integrand[range1]
                 #integrand_smooth[range1] = self.integrand[range1]
-                #print "COSW",trapz2(n_smooth[range1],self.r_fine[range1])/trapz2(self.n_avgs[range1],self.r_fine[range1])
-                #print "COSQ",trapz2(n_smooth,self.r_fine)/trapz2(self.n_avgs[range1],self.r_fine[range1])
+                #print("COSW",trapz2(n_smooth[range1],self.r_fine[range1])/trapz2(self.n_avgs[range1],self.r_fine[range1]))
+                #print("COSQ",trapz2(n_smooth,self.r_fine)/trapz2(self.n_avgs[range1],self.r_fine[range1]))
                 #n_smooth = np.expand_dims(n_smooth,axis=1)
                 #d1 = self.basis.D_O_I_D_delta_alpha(self.geo1,self.integrand,use_r=True,range_spec=range1)
                 #d2 = self.basis.D_O_I_D_delta_alpha(self.geo2,self.integrand,use_r=True,range_spec=range1)

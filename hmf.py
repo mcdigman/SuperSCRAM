@@ -1,6 +1,8 @@
-'''
+"""
     Halo mass function classes
-'''
+"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 from time import time
 #from warnings import warn
 from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
@@ -41,7 +43,6 @@ class ST_hmf(object):
         self.C = C
 
         #self.delta_c=C.delta_c(0)
-        #TODO consider having option to overwride delta_c
         self.delta_c = 1.686
         if delta_bar is not None:
             self.delta_c = self.delta_c - delta_bar
@@ -50,11 +51,11 @@ class ST_hmf(object):
         self.Growth = C.G_norm
 
 
-        #print 'rhos', 0,self.rho_bar/(1e10), C.rho_crit(0)/(1e10)
+        #print('rhos', 0,self.rho_bar/(1e10), C.rho_crit(0)/(1e10))
 
         self.R = (3./4.*self.M_grid/self.rho_bar/np.pi)**(1./3.)
         #manually fixed h factor to agree with convention
-        self.sigma = C.sigma_r(0.,self.R/C.h)
+        self.sigma = C.sigma_r(np.array([0.]),self.R/C.h)
 
         # calculated at z=0
         self.nu_array = (self.delta_c/self.sigma)**2
@@ -66,23 +67,6 @@ class ST_hmf(object):
         self.nu_of_M = interp1d(self.M_grid, self.nu_array)
         self.M_of_nu = interp1d(self.nu_array,self.M_grid)
         self.dsigma_dM_of_M = interp1d(np.log(self.M_grid),np.log(self.dsigma_dM))
-
-        if self.params['b_norm_overwride'] or self.params['f_norm_overwride']:
-            #grid for precomputing z dependent quantities
-            self.z_grid = np.linspace(self.params['z_min'],self.params['z_max'],self.params['n_z'])
-            self.G_grid = C.G_norm(self.z_grid)
-
-        #TODO why does this change the code's overall behavior?
-        #TODO remove this logic if nothing needs
-        self.b_norm_overwride = self.params['b_norm_overwride']
-        if self.b_norm_overwride:
-            self.b_norm_grid = self.bias_norm(self.G_grid)
-            self.b_norm_cache = InterpolatedUnivariateSpline(self.G_grid[::-1],self.b_norm_grid[::-1],k=3,ext=2)
-
-        self.f_norm_overwride = self.params['f_norm_overwride']
-        if self.f_norm_overwride:
-            self.f_norm_grid = self.f_norm(self.G_grid)
-            self.f_norm_cache = InterpolatedUnivariateSpline(self.G_grid[::-1],self.f_norm_grid[::-1],k=3,ext=2)
 
     def f_norm(self,G):
         """ get normalization factor to ensure all mass is in a halo
@@ -128,9 +112,7 @@ class ST_hmf(object):
             implements equation 7 in arXiv:astro-ph/0005260
             both M and G can be numpy arrays
             renormalizing for input mass range is optional"""
-        if norm_in is None and self.f_norm_overwride:
-            norm = self.f_norm_cache(G)
-        elif norm_in is not None:
+        if norm_in is not None:
             norm = norm_in 
         else:
             norm = 1.
@@ -142,7 +124,7 @@ class ST_hmf(object):
             nu = self.nu_of_M(M)/G**2
 
         f = self.f_nu(nu)
-        if self.f_norm_overwride or norm_in is not None:
+        if norm_in is not None:
             return f/norm
         else:
             return f
@@ -187,9 +169,7 @@ class ST_hmf(object):
     def bias_G(self,M,G,norm_in=None):
         """get bias as a function of G
         implements Sheth-Tormen 1999 arXiv:astro-ph/9901122 eq 12"""
-        if norm_in is None and self.b_norm_overwride:
-            norm = self.b_norm_cache(G)
-        elif norm_in is not None: 
+        if norm_in is not None: 
             norm = norm_in
         else:
             norm = 1.
@@ -199,7 +179,7 @@ class ST_hmf(object):
         else:
             nu = self.nu_of_M(M)/G**2
         bias = self.bias_nu(nu)
-        if self.b_norm_overwride or norm_in is not None:
+        if norm_in is not None:
             result = bias/norm
         else:
             result = bias
@@ -221,17 +201,13 @@ class ST_hmf(object):
             raise ValueError('specified minimum mass too low, increase log10_min_mass')
 
         G = self.Growth(z)
-        if self.b_norm_overwride:
-            norm = self.b_norm_cache(G)
-        else:
-            norm = None
 
         if isinstance(min_mass,np.ndarray) and isinstance(z,np.ndarray):
             result = np.zeros(min_mass.size)
-            for i in xrange(0,min_mass.size):
+            for i in range(0,min_mass.size):
                 mass = _mass_cut(self.mass_grid,min_mass[i])
                 mf_i = self.dndM_G(mass,G[i])
-                b_i = self.bias_G(mass,G[i],norm)
+                b_i = self.bias_G(mass,G[i])
                 result[i] = trapz2(mf_i*b_i,mass)
         else:
             if isinstance(min_mass,np.ndarray):
@@ -245,7 +221,7 @@ class ST_hmf(object):
                     result = mf_b_int
                 else:
                     cut_itrs = np.zeros(min_mass.size,dtype=np.int)
-                    for i in xrange(0,min_mass.size):
+                    for i in range(0,min_mass.size):
                         cut_itrs[i] = np.argmax(self.mass_grid>=min_mass[i])
                     dm = self.mass_grid[cut_itrs]-min_mass
                     mf_b_ext = self.dndM_G(min_mass,G)*self.bias_G(min_mass,G)+mf_b[cut_itrs]
@@ -253,7 +229,7 @@ class ST_hmf(object):
             else:
                 mass = _mass_cut(self.mass_grid,min_mass)
                 mf = self.dndM_G(mass,G)
-                b_array = self.bias_G(mass,G,norm_in=norm)
+                b_array = self.bias_G(mass,G)
                 result = trapz2(b_array*mf,mass)
 
         if DEBUG: 
@@ -278,7 +254,7 @@ class ST_hmf(object):
 
         if isinstance(min_mass,np.ndarray) and isinstance(z,np.ndarray):
             result = np.zeros(min_mass.size)
-            for i in xrange(0,min_mass.size):
+            for i in range(0,min_mass.size):
                 mass = _mass_cut(self.mass_grid,min_mass[i])
                 mf_i = self.dndM_G(mass,G[i])
                 result[i] = trapz2(mf_i,mass)
@@ -291,7 +267,7 @@ class ST_hmf(object):
                     result = mf_int
                 else:
                     cut_itrs = np.zeros(min_mass.size,dtype=np.int)
-                    for i in xrange(0,min_mass.size):
+                    for i in range(0,min_mass.size):
                         cut_itrs[i] = np.argmax(self.mass_grid>=min_mass[i])
                     dm = self.mass_grid[cut_itrs]-min_mass
                     mf_ext = self.dndM_G(min_mass,G)+mf[cut_itrs]

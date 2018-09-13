@@ -1,6 +1,8 @@
 """
 Handle a short wavelength survey
 """
+from __future__ import division,print_function,absolute_import
+from builtins import range
 import re
 from warnings import warn
 
@@ -27,7 +29,7 @@ class SWSurvey(object):
                 nz_matcher: NZMatcher object. optional
         """
 
-        print "sw_survey: began initializing survey: "+str(survey_id)
+        print("sw_survey: began initializing survey: "+str(survey_id))
         self.geo = geo
         self.params = params
         self.needs_lensing = self.params['needs_lensing']
@@ -52,7 +54,7 @@ class SWSurvey(object):
 
         self.observable_names = generate_observable_names(self.geo,observable_list,params['cross_bins'])
         self.observables = self.names_to_observables(self.observable_names)
-        print "sw_survey: finished initializing survey: "+str(survey_id)
+        print("sw_survey: finished initializing survey: "+str(survey_id))
 
 
     def get_survey_id(self):
@@ -70,7 +72,7 @@ class SWSurvey(object):
     def get_dimension_list(self):
         """get an array listing the number of dimensions of the individual observables in order"""
         dim_list = np.zeros(self.get_N_O_I(),dtype=np.int_)
-        for i in xrange(dim_list.size):
+        for i in range(dim_list.size):
             dim_list[i] = self.observables[i].get_dimension()
         return dim_list
 
@@ -79,7 +81,7 @@ class SWSurvey(object):
 #        O_I_array = np.zeros(self.get_total_dimension())
 #        itr = 0
 #        ds = self.get_dimension_list()
-#        for i in xrange(self.observables.size):
+#        for i in range(self.observables.size):
 #            O_I_array[itr:itr+ds[i]] = self.observables[i].get_O_I()
 #            itr+=ds[i]
 #        return O_I_array
@@ -90,7 +92,7 @@ class SWSurvey(object):
         dO_I_ddelta_bar_array = np.zeros((self.geo.z_fine.size,self.get_total_dimension()))
         itr = 0
         ds = self.get_dimension_list()
-        for i in xrange(self.observables.size):
+        for i in range(self.observables.size):
             dO_I_ddelta_bar_array[:,itr:itr+ds[i]] = self.observables[i].get_dO_I_ddelta_bar()
             itr+=ds[i]
         return dO_I_ddelta_bar_array
@@ -100,7 +102,7 @@ class SWSurvey(object):
         dO_I_dpar_array = np.zeros((self.get_total_dimension(),self.n_param))
         ds = self.get_dimension_list()
         itr = 0
-        for i in xrange(0,self.get_N_O_I()):
+        for i in range(0,self.get_N_O_I()):
             dO_I_dpar_array[itr:itr+ds[i],:] = self.observables[i].get_dO_I_dpars()
             itr+=ds[i]
         return dO_I_dpar_array
@@ -111,9 +113,9 @@ class SWSurvey(object):
         ds = self.get_dimension_list()
         #n1 and n2 are to track indices so cov_mats can be a float array instead of an array of objects
         n1 = 0
-        for i in xrange(0,self.get_N_O_I()):
+        for i in range(0,self.get_N_O_I()):
             n2 = 0
-            for j in xrange(0,i+1):
+            for j in range(0,i+1):
                 #if time consumption here is a problem can exploit symmetries to avoid getting same Cll multiple times
                 cov = SWCovMat(self.observables[i],self.observables[j],silent=True)
                 cov_mats[0,n1:n1+ds[i],n2:n2+ds[j]] = cov.get_gaussian_covar_array()
@@ -126,9 +128,9 @@ class SWSurvey(object):
         assert np.all(cov_mats[0]==cov_mats[0].T)
         if DEBUG:
             n1 = 0
-            for i in xrange(0,self.get_N_O_I()):
+            for i in range(0,self.get_N_O_I()):
                 n2 = 0
-                for j in xrange(0,self.get_N_O_I()):
+                for j in range(0,self.get_N_O_I()):
                     assert np.all(cov_mats[0,n2:n2+ds[j],n1:n1+ds[i]] == cov_mats[0,n1:n1+ds[i],n2:n2+ds[j]])
                 n2+=ds[j]
             n1+=ds[i]
@@ -174,10 +176,10 @@ def generate_observable_names(geo,observable_list,cross_bins):
     for name in observable_list:
         if re.match('^len',name):
             n_fill = np.int(np.ceil(np.log10(rbins.shape[0]))) #pad with zeros so names sort correctly
-            for i in xrange(0,rbins.shape[0]):
+            for i in range(0,rbins.shape[0]):
                 r1 = rbins[i]
                 if cross_bins:
-                    for j in xrange(0,rbins.shape[0]):
+                    for j in range(0,rbins.shape[0]):
                         #Only take r1<=r2
                         if i>j:
                             pass

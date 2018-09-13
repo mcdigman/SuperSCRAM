@@ -1,5 +1,7 @@
 """test extrap_utils module"""
 #pylint: disable=W0621
+from __future__ import absolute_import,division,print_function
+from builtins import range
 import numpy as np
 import pytest
 from extrap_utils import power_law_extend

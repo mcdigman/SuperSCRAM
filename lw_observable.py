@@ -2,6 +2,8 @@
 long wavelength observable abstract class
 Methods must be implemented
 """
+from __future__ import division,print_function,absolute_import
+from builtins import range
 class LWObservable(object):
     """abstract class for lw obserables."""
     def __init__(self,geos,params,survey_id,C):

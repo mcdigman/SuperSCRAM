@@ -1,11 +1,13 @@
 """check code matches a plot from chiang&wagner arxiv:1403.3411v2 figure 4-5"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 import numpy as np
 from scipy.interpolate import interp1d
 import power_response as shp
 import defaults
 import cosmopie as cp
 import matter_power_spectrum as mps
-import pytest 
+import pytest
 
 COSMOLOGY_CHIANG = {'Omegabh2' :0.023,
                     'Omegach2' :0.1093,
@@ -45,17 +47,17 @@ def test_power_derivative():
     k_a = P_a.k
     C.k = k_a
     k_a_h = P_a.k/C.cosmology['h']
-    
+
     pmodels = ['linear','halofit','fastpt']
-    for pmodel in pmodels: 
+    for pmodel in pmodels:
         z0 = 0.
-        hold0 = shp.dp_ddelta(P_a,z0,C,pmodel,epsilon) 
+        hold0 = shp.dp_ddelta(P_a,z0,C,pmodel,epsilon)
         z1 = np.array([0.])
-        hold1 = shp.dp_ddelta(P_a,z1,C,pmodel,epsilon) 
+        hold1 = shp.dp_ddelta(P_a,z1,C,pmodel,epsilon)
         z2 = np.array([0.,0.001])
-        hold2 = shp.dp_ddelta(P_a,z2,C,pmodel,epsilon) 
+        hold2 = shp.dp_ddelta(P_a,z2,C,pmodel,epsilon)
         z3 = np.arange(0.,1.,0.001)
-        hold3 = shp.dp_ddelta(P_a,z3,C,pmodel,epsilon) 
+        hold3 = shp.dp_ddelta(P_a,z3,C,pmodel,epsilon)
         assert np.allclose(hold0[0],hold1[0][:,0])
         assert np.allclose(hold1[0][:,0],hold2[0][:,0])
         assert np.allclose(hold1[0][:,0],hold3[0][:,0])
@@ -89,7 +91,6 @@ def test_power_derivative():
     rat_fpt = (dc_ch3/abs(dcalt3/p3a)[:,0])[mask_mult]
 
 
-    #TODO what is wrong with halofit
     k_a_halofit = k_a_h[mask_mult][~np.isnan(rat_halofit)]
     k_a_linear = k_a_h[mask_mult][~np.isnan(rat_linear)]
     k_a_fpt = k_a_h[mask_mult][~np.isnan(rat_fpt)]
@@ -195,7 +196,6 @@ class PowerDerivativeComparison1(object):
         rat_halofit = (dc_ch1/abs(dcalt2/p2a)[:,0])[mask_mult]
         rat_linear = (dc_ch2/abs(dcalt1/p1a)[:,0])[mask_mult]
         rat_fpt = (dc_ch3/abs(dcalt3/p3a)[:,0])[mask_mult]
-
         zbar = np.array([0.])
         dcalt1,p1a = shp.dp_ddelta(P_a,zbar,C=C,pmodel='linear',epsilon=epsilon)
         dcalt2,p2a = shp.dp_ddelta(P_a,zbar,C=C,pmodel='halofit',epsilon=epsilon)
@@ -226,29 +226,29 @@ class PowerDerivativeComparison1(object):
             halofit_bins[itr-1] =  np.average(rat_halofit[~np.isnan(rat_halofit)][mask_loc_hf])
             linear_bins[itr-1] =  np.average(rat_linear[~np.isnan(rat_linear)][mask_loc_lin])
             fpt_bins[itr-1] =  np.average(rat_fpt[~np.isnan(rat_fpt)][mask_loc_fpt])
-        #print np.abs(halofit_bins-1.)
-        #print np.abs(linear_bins-1.)
-        #print np.abs(fpt_bins-1.)
+        #print(np.abs(halofit_bins-1.))
+        #print(np.abs(linear_bins-1.))
+        #print(np.abs(fpt_bins-1.))
         fails = 0
         if np.all(np.abs(halofit_bins-1.)<0.02):
-            print "PASS: smoothed z=1 halofit matches chiang"
+            print("PASS: smoothed z=1 halofit matches chiang")
         else:
             fails+=1
-            print "FAIL: smoothed z=1 halofit does not match chiang"
+            print("FAIL: smoothed z=1 halofit does not match chiang")
         if np.all(np.abs(linear_bins-1.)<0.02):
-            print "PASS: smoothed z=1 linear matches chiang"
+            print("PASS: smoothed z=1 linear matches chiang")
         else:
             fails+=1
-            print "FAIL: smoothed z=1 linear does not match chiang"
+            print("FAIL: smoothed z=1 linear does not match chiang")
         if np.all(np.abs(fpt_bins-1.)<0.02):
-            print "PASS: smoothed z=1 fastpt matches chiang"
+            print("PASS: smoothed z=1 fastpt matches chiang")
         else:
             fails+=1
-            print "FAIL: smoothed z=1 fastpt does not match chiang"
+            print("FAIL: smoothed z=1 fastpt does not match chiang")
         if fails==0:
-            print "PASS: all tests satisfactory"
+            print("PASS: all tests satisfactory")
         else:
-            print "FAIL: "+str(fails)+" tests unsatisfactory"
+            print("FAIL: "+str(fails)+" tests unsatisfactory")
         #plt.plot(k_a_h[mask_mult][~np.isnan(rat_halofit)],rat_halofit[~np.isnan(rat_halofit)])
         #plt.plot(k_a_h[mask_mult][~np.isnan(rat_linear)],rat_linear[~np.isnan(rat_linear)])
         #plt.show()

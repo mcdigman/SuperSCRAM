@@ -1,4 +1,6 @@
 """test approximate a circular geometry with PolygonGeo"""
+from __future__ import absolute_import,division,print_function
+from builtins import range
 import numpy as np
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
@@ -27,7 +29,7 @@ if __name__=='__main__':
         radius = radius*np.sqrt(area_goal/(geo1.angular_area()*180**2/np.pi**2))
         error_old = error_new
         error_new = np.abs(area2*180**2/np.pi**2-area_goal)
-    print "radius for n_x="+str(n_x)+" 1000 deg^2="+str(radius)
+    print("radius for n_x="+str(n_x)+" 1000 deg^2="+str(radius))
     if do_plot:
         m = Basemap(projection='moll',lon_0=0)
         geo1.sp_poly.draw(m,color='red')

@@ -1,4 +1,6 @@
 """a healpix pixelated polygon with great circle sides as in PolygonGeo"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 from warnings import warn
 from math import isnan
 
@@ -37,37 +39,28 @@ class PolygonPixelGeo(PixelGeo):
         self.contained =  contains_points(self.all_pixels,self.sp_poly)
         contained_pixels = self.all_pixels[self.contained,:]
         #self.n_pix = contained_pixels.shape[0]
-        print "PolygonPixelGeo: total contained pixels in polygon: "+str(np.sum(self.contained*1.))
-        print "PolygonPixelGeo: total contained area of polygon: "+str(np.sum(contained_pixels[:,2]))
-        print "PolygonPixelGeo: area calculated by SphericalPolygon: "+str(self.sp_poly.area())
+        print("PolygonPixelGeo: total contained pixels in polygon: "+str(np.sum(self.contained*1.)))
+        print("PolygonPixelGeo: total contained area of polygon: "+str(np.sum(contained_pixels[:,2])))
+        print("PolygonPixelGeo: area calculated by SphericalPolygon: "+str(self.sp_poly.area()))
         #check that the true area from angular defect formula and calculated area approximately match
         calc_area = np.sum(contained_pixels[:,2])
         true_area = self.sp_poly.area()
-        if not np.isclose(calc_area,true_area,atol=10**-2,rtol=10**-3):
+        if not np.isclose(calc_area,true_area,atol=contained_pixels[0,2]*100.,rtol=10**-2):
             warn("discrepancy between area "+str(true_area)+" and est "+str(calc_area)+", may be poorly converged")
-            if np.isclose(calc_area,true_area,atol=10**-2,rtol=10**-1):
-                print thetas
-                print phis
-                print theta_in
-                print phi_in
-                print self.sp_poly
-                print calc_area,true_area
-                assert False
-                #raise RuntimeError('failed')
         PixelGeo.__init__(self,zs,contained_pixels,C,z_fine,l_max,hard_l_max)
 
         #set a00 to value from pixels for consistency, not angle defect even though angle defect is more accurate
     #    self.alm_table[(0,0)] = calc_area/np.sqrt(4.*np.pi)
         #precompute a table of alms
-        #self.alm_table,_,_,self.alm_dict = self.get_a_lm_table(l_max)
+        #self.alm_table,_,_,self.alm_dict = self.get_alm_table(l_max)
         #self._l_max = l_max
 
 
 #    def a_lm(self,l,m):
 #        #if not precomputed, regenerate table up to specified l, otherwise read it out of the table
 #        if l>self._l_max:
-#            print "PolygonPixelGeo: l value "+str(l)+" exceeds maximum precomputed l "+str(self._l_max)+",expanding table"
-#            self.alm_table,_,_,self.alm_dict = self.get_a_lm_table(l)
+#            print("PolygonPixelGeo: l value "+str(l)+" exceeds maximum precomputed l "+str(self._l_max)+",expanding table")
+#            self.alm_table,_,_,self.alm_dict = self.get_alm_table(l)
 #            self._l_max = l
 #        alm = self.alm_table.get((l,m))
 #        if alm is None:
@@ -85,15 +78,15 @@ class PolygonPixelGeo(PixelGeo):
     #third try with 16348 pixels l_max =100 takes 0.9288-1.047ss
     #fourth try (precompute some stuff), 16348 pixels l_max=100 takes 0.271s
     #fourth try l_max=50 takes 0.0691s, total ~2800x speed up over 1st try
-#    def get_a_lm_below_l_max(self,l_max):
+#    def get_alm_below_l_max(self,l_max):
 #        a_lms = {}
 #        ls = np.zeros((l_max+1)**2)
 #        ms = np.zeros((l_max+1)**2)
 #
 #        itr = 0
 #
-#        for ll in xrange(0,l_max+1):
-#            for mm in xrange(-ll,ll+1):
+#        for ll in range(0,l_max+1):
+#            for mm in range(-ll,ll+1):
 #                #first try takes ~0.618 sec/iteration for 290 pixel region=>2.1*10**-3 sec/(iteration pixel), much too slow
 #                ls[itr] = ll
 #                ms[itr] = mm
@@ -102,16 +95,16 @@ class PolygonPixelGeo(PixelGeo):
 #        return a_lms,ls,ms
 
 #    #TODO check numerical stability
-#    def get_a_lm_table(self,l_max):
+#    def get_alm_table(self,l_max):
 #        """get table of a(l,m) below l_max"""
-#        return ylmu.get_a_lm_table(l_max,self.pixels[:,0],self.pixels[:,1],self.pixels[0,2])
+#        return ylmu.get_alm_table(l_max,self.pixels[:,0],self.pixels[:,1],self.pixels[0,2])
 #
     #TODO make robust
     def get_overlap_fraction(self,geo2):
         """get overlap fraction between this geometry and another PolygonPixelGeo"""
         result = np.sum(self.contained*geo2.contained)*1./np.sum(self.contained)
         #result2 = self.sp_poly.overlap(geo2.sp_poly)
-        #print "PolygonPixelGeo: my overlap prediction="+str(result)+" spherical_geometry prediction="+str(result2)
+        #print("PolygonPixelGeo: my overlap prediction="+str(result)+" spherical_geometry prediction="+str(result2))
         return result
 
 
@@ -144,7 +137,7 @@ class PolygonPixelGeo(PixelGeo):
 #    xyz_vals = sgv.radec_to_vector(pixels[:,1],pixels[:,0]-np.pi/2.,degrees=False)
 #    contained = np.zeros(pixels.shape[0],dtype=bool)
 #    #check if each point is contained in the polygon. This is fairly slow if the number of points is huge
-#    for i in xrange(0,pixels.shape[0]):
+#    for i in range(0,pixels.shape[0]):
 #        contained[i] = sp_poly.contains_point([xyz_vals[0][i],xyz_vals[1][i],xyz_vals[2][i]])
 #    return contained
 #
@@ -156,7 +149,7 @@ class PolygonPixelGeo(PixelGeo):
 #    inside_xyz = sp_poly._polygons[0]._inside
 #    inside_large = np.zeros_like(xyz_vals)
 #    inside_large+=inside_xyz
-#    for itr in xrange(0,bounding_xyz.shape[0]-1):
+#    for itr in range(0,bounding_xyz.shape[0]-1):
 #        #intersects+= great_circle_arc.intersects(bounding_xyz[itr], bounding_xyz[itr+1], inside_large, xyz_vals)
 #        intersects+= contains_intersect(bounding_xyz[itr], bounding_xyz[itr+1], inside_xyz, xyz_vals)
 #    return np.mod(intersects,2)==0
@@ -212,30 +205,30 @@ class PolygonPixelGeo(PixelGeo):
 #    t0 = time()
 #    pp_geo = PolygonPixelGeo(zs,thetas,phis,theta_in,phi_in,C,z_fine,l_max,res_choose)
 #    t1 = time()
-#    print "instantiation finished in time: "+str(t1-t0)+"s"
+#    print("instantiation finished in time: "+str(t1-t0)+"s")
 #    #TODO write explicit test case to compare
 #    if do_old:
-#        print "PolygonPixelGeo: initialization time: "+str(t1-t0)+"s"
-#        alm_pps,ls,ms = pp_geo.get_a_lm_below_l_max(l_max)
+#        print("PolygonPixelGeo: initialization time: "+str(t1-t0)+"s")
+#        alm_pps,ls,ms = pp_geo.get_alm_below_l_max(l_max)
 #    t2 = time()
 #    if do_old:
-#        print "PolygonPixelGeo: a_lm up to l="+str(l_max)+" time: "+str(t2-t1)+"s"
-#    for i in xrange(0,n_run):
-#        alm_recurse,ls,ms,_ = pp_geo.get_a_lm_table(l_max)
+#        print("PolygonPixelGeo: a_lm up to l="+str(l_max)+" time: "+str(t2-t1)+"s")
+#    for i in range(0,n_run):
+#        alm_recurse,ls,ms,_ = pp_geo.get_alm_table(l_max)
 #    t3 = time()
-#    print "PolygonPixelGeo: a_lm_recurse in avg time: "+str((t3-t2)/n_run)+"s"
+#    print("PolygonPixelGeo: a_lm_recurse in avg time: "+str((t3-t2)/n_run)+"s")
 #    if do_old:
-#        print "methods match: "+str(np.allclose(alm_pps,alm_recurse))
+#        print("methods match: "+str(np.allclose(alm_pps,alm_recurse)))
 #
 #    if do_rect:
 #        r_geo = RectGeo(zs,np.array([theta0,theta1]),np.array([phi0,phi1]),C,z_fine)
 #        if do_reconstruct:
 #            alm_rect = {}
-#            for itr in xrange(0,ls.size):
+#            for itr in range(0,ls.size):
 #                alm_rect[(ls[itr],ms[itr])] = r_geo.a_lm(ls[itr],ms[itr])
 #    t4 = time()
 #    if do_rect:
-#        print "RectGeo: rect geo alms in time"+str(t4-t3)
+#        print("RectGeo: rect geo alms in time"+str(t4-t3))
 #
 #    #totals_recurse = np.zeros(pp_geo.all_pixels.shape[0])
 #    if do_reconstruct:
@@ -248,17 +241,17 @@ class PolygonPixelGeo(PixelGeo):
 #    #Y_r_2s = pp_geo.get_Y_r_table(l_max,pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1])
 #
 #    t5 = time()
-#    print "Y_r_2 table time: "+str(t5-t4)+"s"
+#    print("Y_r_2 table time: "+str(t5-t4)+"s")
 #    if do_rect and do_reconstruct:
 #        totals_rect = reconstruct_from_alm(l_max,pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1],alm_rect)
 #    #if do_rect:
-#    #    for itr in xrange(0,ls.size):
+#    #    for itr in range(0,ls.size):
 #    #        totals_rect+=alm_rect[itr]*Y_r(ls[itr],ms[itr],pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1])
 #    #        totals_recurse+=alm_recurse[itr]*Y_r(ls[itr],ms[itr],pp_geo.all_pixels[:,0],pp_geo.all_pixels[:,1])
 #        #totals_recurse+=alm_recurse[itr]*Y_r_2(ls[itr],ms[itr],pp_geo.pixels[:,0],pp_geo.pixels[:,1],known_legendre)
 #    #    if do_rect:
 #    t6 = time()
-#    print "reconstruct time: "+str(t6-t5)+"s"
+#    print("reconstruct time: "+str(t6-t5)+"s")
 #    #plot the polygon if basemap is installed, do nothing if it isn't
 #    import matplotlib.pyplot as plt
 #    if try_plot2:

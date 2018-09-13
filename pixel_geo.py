@@ -1,4 +1,6 @@
 """pixelated geometry"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 import numpy as np
 from geo import Geo
 import ylm_utils as ylmu
@@ -23,13 +25,12 @@ class PixelGeo(Geo):
 
         self._l_max = 0
         self.alm_table[(0,0)] = np.sum(self.pixels[:,2])/np.sqrt(4.*np.pi)
-        self.alm_table,_,_,self.alm_dict = self.get_a_lm_table(l_max)
-        self._l_max = l_max
+        self.expand_alm_table(l_max)
 
 #    def surface_integral(self,function):
 #        """do the surface integral by summing over values at the discrete pixels"""
 #        total = 0.
-#        for i in xrange(0,self.pixels.shape[0]):
+#        for i in range(0,self.pixels.shape[0]):
 #            total+=function(self.pixels[i,0],self.pixels[i,1])*self.pixels[i,2] #f(theta,phi)*A
 #        return total
 
@@ -47,16 +48,21 @@ class PixelGeo(Geo):
         """a(l,m) if not precomputed, regenerate table up to specified l, otherwise read it out of the table
             assume constant pixel area"""
         if l>self._l_max:
-            print "PixelGeo: l value "+str(l)+" exceeds maximum precomputed l "+str(self._l_max)+",expanding table"
-            self.alm_table,_,_,self.alm_dict = self.get_a_lm_table(l)
-            self._l_max = l
+            print("PixelGeo: l value "+str(l)+" exceeds maximum precomputed l "+str(self._l_max)+",expanding table")
+            expand_alm_table(self,l_max)
         alm = self.alm_table.get((l,m))
         if alm is None:
             raise RuntimeError("PixelGeo: alm evaluated to None at l="+str(l)+",m="+str(m)+". l,m may exceed highest available Ylm")
         return alm
 
-    def get_a_lm_table(self,l_max):
-        """get table of a(l,m) below l_max"""
+    def get_alm_table(self,l_max):
+        """get table of a(l,m) up to at least l_max"""
         if l_max>self.hard_l_max:
             raise ValueError('requested l '+str(l_max)+' exceeds resolvable l limit '+str(self.hard_l_max))
-        return ylmu.get_a_lm_table(l_max,self.pixels[:,0],self.pixels[:,1],self.pixels[0,2])
+        return Geo.get_alm_table(self,l_max)
+
+    def expand_alm_table(self,l_max):
+        """expand alm table to at least l_max"""
+        if l_max>self._l_max:
+            self.alm_table,_,_,_ = ylmu.get_alm_table(l_max,self.pixels[:,0],self.pixels[:,1],self.pixels[0,2])
+            self._l_max = l_max

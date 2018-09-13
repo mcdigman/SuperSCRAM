@@ -4,6 +4,8 @@
         Matthew C. Digman
         mcewen.24@osu.edu
 """
+from __future__ import division,print_function,absolute_import
+from builtins import range
 
 from warnings import warn
 from scipy.integrate import odeint
@@ -31,14 +33,14 @@ class CosmoPie(object):
         p_space: The cosmological parameter space. available options listed in P_SPACES.
         G_in: Function to get linear growth factor. Optional.
         G_safe: If True and G_in is not None, use G_in instead of solving differential equation.
-        silent: If True, less print statements
+        silent: If True, less print(statements)
         """
 
 
         # default to Planck 2015 values
         self.silent = silent
         if not silent:
-            print "cosmopie "+str(id(self))+": begin initialization"
+            print("cosmopie "+str(id(self))+": begin initialization")
 
         #define parameterization
         self.p_space = p_space
@@ -137,7 +139,7 @@ class CosmoPie(object):
         self.k = k
 
         if not silent:
-            print "cosmopie "+str(id(self))+": finished initialization"
+            print("cosmopie "+str(id(self))+": finished initialization")
 
     def Ez(self,z):
         """
@@ -231,7 +233,7 @@ class CosmoPie(object):
 #    def log_growth(self,z):
 #        """using equation 3.2 from Baldauf 2015, not currently consistent with G(z)"""
 #        a = 1/(1+z)
-#        print 'what I think it is', a/self.H(z)*self.dH_da(z) + 5/2.*self.Omegam*self.G_norm(0)/self.H(z)**2/a**2/self.G_norm(z)
+#        print('what I think it is', a/self.H(z)*self.dH_da(z) + 5/2.*self.Omegam*self.G_norm(0)/self.H(z)**2/a**2/self.G_norm(z))
 #        return -3/2.*self.Omegam/a**3*self.H0**2/self.H(z)**2 + 1/self.H(z)**2/a**2/self.G_norm(z)
 
     # ----------------------------------------------------------------------------
@@ -294,7 +296,7 @@ class CosmoPie(object):
     def rho_crit(self,z):
         """return critical density in units of solar mass and h^2 """
         factor = 1e12/self.M_sun*self.pc
-        #print 'rho crit [g/cm^3] at z =', z, 3*self.H(z)**2/8./np.pi/self.GN*1e9/(self.pc*10**8)**2/10**2
+        #print('rho crit [g/cm^3] at z =', z, 3*self.H(z)**2/8./np.pi/self.GN*1e9/(self.pc*10**8)**2/10**2)
         return 3*self.H(z)**2/8./np.pi/self.GN*factor/self.h**2
 
     def get_P_lin(self):
@@ -323,7 +325,7 @@ class CosmoPie(object):
 
     # -----------------------------------------------------------------------------
 
-JDEM_LIST = ['ws36_'+str(itr_36).zfill(2) for itr_36 in xrange(0,36)]
+JDEM_LIST = ['ws36_'+str(itr_36).zfill(2) for itr_36 in range(0,36)]
 P_SPACES = {'jdem': ['ns','Omegamh2','Omegabh2','Omegakh2','OmegaLh2','dGamma','dM','LogG0','LogAs'],
             'lihu' : ['ns','Omegach2','Omegabh2','Omegakh2','h','LogAs'],
             'basic': ['ns','Omegamh2','Omegabh2','Omegakh2','h','sigma8'],
@@ -335,7 +337,7 @@ DE_METHODS = {'constant_w':['w'],
 #parameters guaranteed not to affect linear growth factor (G_norm)
 GROW_SAFE = ['ns','LogAs','sigma8','p_space','de_model']
 #parameters guaranteed to not require generating a new WMatcher object
-DE_SAFE = np.unique(np.concatenate(DE_METHODS.values())).tolist()
+DE_SAFE = np.unique(np.concatenate(list(DE_METHODS.values()))).tolist()
 def strip_cosmology(cosmo_old,p_space,overwride=None):
     """
         remove all nonessential attributes for a cosmology unless they are in overwride list,
@@ -448,7 +450,7 @@ def sanity_check_pars(cosmo_in):
     assert cosmo_in['Omegam']>=0.
     assert cosmo_in['Omegac']>=0.
     assert cosmo_in['Omegab']>=0.
-    assert cosmo_in['Omegar']==0. #TODO fix if use Omegar
+    assert cosmo_in['Omegar']==0. 
     assert cosmo_in['Omegarh2']==0.
     assert cosmo_in['Omegak']==0.
     assert cosmo_in['Omegakh2']==0.

@@ -1,4 +1,6 @@
 """provide ability to compute union of PolygonGeos and use PolygonGeos as masks"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 import numpy as np
 import spherical_geometry.vector as sgv
 
@@ -28,18 +30,27 @@ class PolygonUnionGeo(Geo):
         polys_pos = np.zeros(self.n_g,dtype=object)
         polys_mask = np.zeros(self.n_m,dtype=object)
 
-        for itr in xrange(0,self.masks.size):
+        for itr in range(0,self.masks.size):
+            if not isinstance(masks[itr],PolygonGeo):
+                raise ValueError('unsupported type for mask')
+            print(masks[itr].angular_area())
+        for itr in range(0,self.geos.size):
+            if not isinstance(geos[itr],PolygonGeo):
+                raise ValueError('unsupported type for geo')
+            print(geos[itr].angular_area())
+
+        for itr in range(0,self.masks.size):
             polys_mask[itr] = masks[itr].sp_poly
 
         self.union_pos = self.geos[0].sp_poly
-        for itr in xrange(1,self.n_g):
+        for itr in range(1,self.n_g):
             self.union_pos = self.union_pos.union(polys_pos[itr])
 
         self.union_xyz = list(self.union_pos.points)
         self.union_in = list(self.union_pos.inside)
         self.n_union = len(self.union_xyz)
         self.union_geos = np.zeros(self.n_union,dtype=object)
-        for itr in xrange(0,self.n_union):
+        for itr in range(0,self.n_union):
             union_ra,union_dec = sgv.vector_to_radec(self.union_xyz[itr][:,0],self.union_xyz[itr][:,1],self.union_xyz[itr][:,2],degrees=False)
             in_ra,in_dec = sgv.vector_to_radec(self.union_in[itr][0],self.union_in[itr][1],self.union_in[itr][2],degrees=False)
             self.union_geos[itr] = PolygonGeo(zs,union_dec+np.pi/2.,union_ra,in_dec+np.pi/2.,in_ra,C,z_fine,l_max,poly_params)
@@ -47,7 +58,7 @@ class PolygonUnionGeo(Geo):
         if self.n_m>0:
             #get union of all the masks with the union of the inside, ie the intersection, which is the mask to use
             self.union_mask = polys_mask[0]
-            for itr1 in xrange(1,self.n_m):
+            for itr1 in range(1,self.n_m):
                 self.union_mask = self.union_mask.union(polys_mask[itr1])
             #note union_mask can be several disjoint polygons
             self.union_mask = self.union_mask.intersection(self.union_pos)
@@ -55,7 +66,7 @@ class PolygonUnionGeo(Geo):
             in_point = list(self.union_mask.inside)
             self.n_mask = len(mask_xyz)
             self.mask_geos = np.zeros(self.n_mask,dtype=object)
-            for itr in xrange(0,self.n_mask):
+            for itr in range(0,self.n_mask):
                 mask_ra,mask_dec = sgv.vector_to_radec(mask_xyz[itr][:,0],mask_xyz[itr][:,1],mask_xyz[itr][:,2],degrees=False)
                 in_ra,in_dec = sgv.vector_to_radec(in_point[itr][0],in_point[itr][1],in_point[itr][2],degrees=False)
                 self.mask_geos[itr] = PolygonGeo(zs,mask_dec+np.pi/2.,mask_ra,in_dec+np.pi/2.,in_ra,C,z_fine,l_max,poly_params)
@@ -76,9 +87,9 @@ class PolygonUnionGeo(Geo):
         """get angular area"""
         if self.mask_geos is not None:
             area = 0
-            for itr in xrange(0,self.n_union):
+            for itr in range(0,self.n_union):
                 area+=self.union_geos[itr].angular_area()
-            for itr in xrange(0,self.n_mask):
+            for itr in range(0,self.n_mask):
                 area-=self.mask_geos[itr].angular_area()
             return area
         else:
@@ -86,19 +97,19 @@ class PolygonUnionGeo(Geo):
 
     def expand_alm_table(self,l_max):
         """expand the internal alm table out to l_max"""
-        for itr in xrange(0,self.n_union):
+        for itr in range(0,self.n_union):
             self.union_geos[itr].expand_alm_table(l_max)
-        for itr in xrange(0,self.n_mask):
+        for itr in range(0,self.n_mask):
             self.mask_geos[itr].expand_alm_table(l_max)
         ls = np.arange(np.int(self._l_max)+1,np.int(l_max)+1)
         if ls.size==0:
             return
         for ll in ls:
-            for mm in xrange(-ll,ll+1):
+            for mm in range(-ll,ll+1):
                 alm = 0
-                for itr in xrange(0,self.n_union):
+                for itr in range(0,self.n_union):
                     alm+=self.union_geos[itr].alm_table[(ll,mm)]
-                for itr in xrange(0,self.n_mask):
+                for itr in range(0,self.n_mask):
                     alm-=self.mask_geos[itr].alm_table[(ll,mm)]
                 self.alm_table[(ll,mm)] = alm
         self._l_max = l_max
@@ -106,7 +117,7 @@ class PolygonUnionGeo(Geo):
     def a_lm(self,l,m):
         """get a(l,m) for the geometry"""
         if l>self._l_max:
-            print "PolygonUnionGeo: l value "+str(l)+" exceeds maximum precomputed l "+str(self._l_max)+",expanding table"
+            print("PolygonUnionGeo: l value "+str(l)+" exceeds maximum precomputed l "+str(self._l_max)+",expanding table")
             self.expand_alm_table(l)
         alm = self.alm_table.get((l,m))
         if alm is None:

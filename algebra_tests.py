@@ -1,5 +1,7 @@
 """tests for the algebra_utils module"""
 #pylint: disable=W0621,duplicate-code
+from __future__ import division,print_function,absolute_import
+from builtins import range
 import warnings
 import numpy as np
 import numpy.linalg as npl
@@ -168,8 +170,8 @@ def test_get_inv_cholesky_F_order_inverse_lower(test_mat):
 
     assert np.allclose(test_A_i,A_i,atol=atol_loc2,rtol=rtol_use)
     assert check_is_cholesky_inv(test_chol2,A_i,atol_rel=atol_rel_use,rtol=rtol_use,lower=True)
-    #print test_chol2.T
-    #print chol1
+    #print(test_chol2.T)
+    #print(chol1)
     #assert np.allclose(test_chol2.T,chol1)
 
 def test_get_inv_cholesky_C_order_direct_lower(test_mat):
@@ -227,7 +229,7 @@ def test_get_inv_cholesky_F_order_inverse_upper(test_mat):
 
     assert np.allclose(test_A_i,A_i,atol=atol_loc2,rtol=rtol_use)
     assert check_is_cholesky_inv(test_chol2,A_i,atol_rel=atol_rel_use,rtol=rtol_use,lower=False)
-    #print test_chol2.T
+    #print(test_chol2.T)
 
 
 def test_get_inv_cholesky_C_order_direct_upper(test_mat):
@@ -254,7 +256,7 @@ def test_get_inv_cholesky_C_order_inverse_upper(test_mat):
 
     assert np.allclose(test_A_i,A_i,atol=atol_loc2,rtol=rtol_use)
     assert check_is_cholesky_inv(test_chol2,A_i,atol_rel=atol_rel_use,rtol=rtol_use,lower=False)
-    #print test_chol2.T
+    #print(test_chol2.T)
 
 def test_ch_inv_chol_given_lower(test_mat):
     """test ch_inv works with lower cholesky"""
@@ -1201,7 +1203,7 @@ def test_trapz2_array_dx(trapz_test):
 
 def test_trapz2_constant_dx(trapz_test):
     """test algebra_utils reimplementation of trapz with array of dxs"""
-    print trapz_test.key
+    print(trapz_test.key)
     xs = trapz_test.xs
     integrand = trapz_test.integrand
     atol_use = atol_rel_use*np.max(integrand)

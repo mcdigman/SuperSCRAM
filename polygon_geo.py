@@ -1,4 +1,6 @@
 """Module for a spherical polygon Geo, defined by vertices with great circle edges"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 from warnings import warn
 import numpy as np
 import spherical_geometry.vector as sgv
@@ -51,8 +53,8 @@ class PolygonGeo(Geo):
         Geo.__init__(self,zs,C,z_fine)
 
         self.sp_poly = get_poly(thetas,phis,theta_in,phi_in)
-        print "PolygonGeo: area calculated by SphericalPolygon: "+str(self.sp_poly.area())
-        print "PolygonGeo: area calculated by PolygonGeo: "+str(self.angular_area())+" sr or "+str(self.angular_area()*(180./np.pi)**2)+" deg^2"
+        print("PolygonGeo: area calculated by SphericalPolygon: "+str(self.sp_poly.area()))
+        print("PolygonGeo: area calculated by PolygonGeo: "+str(self.angular_area())+" sr or "+str(self.angular_area()*(180./np.pi)**2)+" deg^2")
 
         self.alm_table = {(0,0):self.angular_area()/np.sqrt(4.*np.pi)}
 
@@ -66,7 +68,7 @@ class PolygonGeo(Geo):
         self.omega_alphas = np.zeros(self.n_v)
         self.gamma_alphas = np.zeros(self.n_v)
 
-        for itr1 in xrange(0,self.n_v):
+        for itr1 in range(0,self.n_v):
             itr2 = itr1+1
             pa1 = self.bounding_xyz[itr1] #vertex 1
             pa2 = self.bounding_xyz[itr2] #vertex 2
@@ -83,7 +85,7 @@ class PolygonGeo(Geo):
 
             #define z_hat if possible
             if np.isclose(self.betas[itr1],0.):
-                print "PolygonGeo: side length 0, directions unconstrained, picking directions arbitrarily"
+                print("PolygonGeo: side length 0, directions unconstrained, picking directions arbitrarily")
                 #z_hat is not uniquely defined here so arbitrarily pick one orthogonal to pa1
                 arbitrary = np.zeros(3)
                 if not np.isclose(np.abs(pa1[0]),1.):
@@ -119,15 +121,15 @@ class PolygonGeo(Geo):
                 self.gamma_alphas[itr1] = np.arctan2(pa1[1],pa1[0])
                 #need to handle the case where z||z_hat separately (so don't divide by 0)
                 if self.z_hats[itr1,2]<0:
-                    print "PolygonGeo: setting theta_alpha to pi at "+str(itr1)
+                    print("PolygonGeo: setting theta_alpha to pi at "+str(itr1))
                     self.theta_alphas[itr1] = np.pi
                 else:
-                    print "PolygonGeo: setting theta_alpha to 0 at "+str(itr1)
+                    print("PolygonGeo: setting theta_alpha to 0 at "+str(itr1))
                     self.theta_alphas[itr1] = 0.
 
 
         self.expand_alm_table(l_max)
-        print "PolygonGeo: finished initialization"
+        print("PolygonGeo: finished initialization")
 
     #use angle defect formula (Girard's theorem) to get a00
     def angular_area(self):
@@ -163,7 +165,7 @@ class PolygonGeo(Geo):
 #        vals2 = np.zeros(n_k)
 #        #vals3 = np.zeros(n_k)
 #        vals4 = np.zeros(n_k)
-#        for itr in xrange(0,n_k):
+#        for itr in range(0,n_k):
 #            vals1[itr] = Y_r_dict[keys1[itr]]
 #            vals2[itr] = Y_r_dict2[keys2[itr]]
 #        #    vals3[itr] = Y_r_dict3[keys3[itr]]
@@ -172,10 +174,10 @@ class PolygonGeo(Geo):
 #        #assert np.allclose(vals1,vals3)
 #        assert np.allclose(vals1,vals4)
 #####
-        for l_itr in xrange(0,ls.size):
+        for l_itr in range(0,ls.size):
             ll = ls[l_itr]
             d_alm_table1[l_itr] = np.zeros((2*ll+1,self.n_v))
-            for mm in xrange(0,ll+1):
+            for mm in range(0,ll+1):
                 if mm>ll-1:
                     prefactor = 0.
                 else:
@@ -187,7 +189,7 @@ class PolygonGeo(Geo):
                 #else:
                 #    prefactor = 0
                 if not np.all(np.isfinite(prefactor)):
-                    #print ll,mm,Y_r_dict[(ll-1,mm)]
+                    #print(ll,mm,Y_r_dict[(ll-1,mm)])
                     raise ValueError('prefactor is nan at l='+str(ll)+',m='+str(mm))
                 if mm==0:
                     d_alm_table1[l_itr][ll+mm] = np.sqrt(2.)*prefactor*self.betas
@@ -199,9 +201,9 @@ class PolygonGeo(Geo):
         d_alm_table3 = au.rot_alm_x(d_alm_table2,self.theta_alphas,ls,n_double=self.n_double)
         d_alm_table4 = au.rot_alm_z(d_alm_table3,self.gamma_alphas,ls)
 
-        for l_itr in xrange(0,ls.size):
+        for l_itr in range(0,ls.size):
             ll = ls[l_itr]
-            for mm in xrange(0,ll+1):
+            for mm in range(0,ll+1):
                 if mm==0:
                     self.alm_table[(ll,mm)] = np.sum(d_alm_table4[l_itr][ll+mm])
                 else:
@@ -213,7 +215,7 @@ class PolygonGeo(Geo):
         """get a(l,m) for the geometry"""
 
         if l>self._l_max:
-            print "PolygonGeo: l value "+str(l)+" exceeds maximum precomputed l "+str(self._l_max)+",expanding table"
+            print("PolygonGeo: l value "+str(l)+" exceeds maximum precomputed l "+str(self._l_max)+",expanding table")
             self.expand_alm_table(l)
 
         alm = self.alm_table.get((l,m))

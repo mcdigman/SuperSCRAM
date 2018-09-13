@@ -1,6 +1,8 @@
 ''' This is the file that we keep all our Gamma function routines in.
 	J.E. McEwen 
 '''
+from __future__ import division,absolute_import,print_function
+from builtins import range
 import numpy as np
 from numpy import exp, pi, sin, cos, log, sqrt 
 from scipy.special import gamma 

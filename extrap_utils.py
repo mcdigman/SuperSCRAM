@@ -1,4 +1,6 @@
 """convenience functions for extrapolation"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
 #TODO should matter power spectrums extend with ns instead of fitting?

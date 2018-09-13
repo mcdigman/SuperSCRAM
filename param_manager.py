@@ -1,4 +1,6 @@
 """wrapper for parameters needed by MatterPower to prevent excessively long arguments"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 class PowerParamManager(object):
     """wrapper for parameters needed by MatterPower to prevent excessively long arguments"""
     def __init__(self,matter_power,wmatcher,halofit,camb,fpt):

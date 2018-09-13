@@ -1,4 +1,6 @@
 """module for holding some common utils between polygon geos"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 import numpy as np
 from numpy.core.umath_tests import inner1d
 from astropy.io import fits
@@ -33,7 +35,7 @@ def get_difference(poly1,poly2,pixels=None):
         pixels = get_healpix_pixelation(4)
     bounding_xyz = list(poly2.points)
     #contained = np.zeros(pixels.shape[0],dtype==bool)
-    #for itr in xrange(0,len(bounding_xyz)):
+    #for itr in range(0,len(bounding_xyz)):
     #    ra,dec = sgv.vector_to_radec(
     #    contained = contained | contains_points(bounding_xyz[itr],pixels)
     contained = contains_points(pixels,poly2)
@@ -42,11 +44,11 @@ def get_difference(poly1,poly2,pixels=None):
     #contained_c = contains_points(pixels,poly2_complement)
     #assert not np.any(contained & contained_c)
     first_false = 100+np.argmin(contained[100:])
-    #print "orig 1",contains_points(pixels[first_false:first_false+1],poly1),poly1.area()
-    #print "orig 2",contains_points(pixels[first_false:first_false+1],poly2),poly2.area()
-    print poly2
+    #print("orig 1",contains_points(pixels[first_false:first_false+1],poly1),poly1.area())
+    #print("orig 2",contains_points(pixels[first_false:first_false+1],poly2),poly2.area())
+    print(poly2)
     colors = ['red','green','blue']
-    for itr in xrange(0,len(bounding_xyz)):
+    for itr in range(0,len(bounding_xyz)):
         first_false = 100+itr+np.argmin(contained[100+itr:])
         theta_in = pixels[first_false,0]
         phi_in = pixels[first_false,1]
@@ -54,22 +56,22 @@ def get_difference(poly1,poly2,pixels=None):
         loc_poly = SphericalPolygon(bounding_xyz[itr].copy(),inside_xyz.copy())
         loc_poly.draw(m,color=colors[itr])
         cont = contains_points(pixels[first_false:first_false+1],loc_poly)
-        print "loc contains: ",cont
+        print("loc contains: ",cont)
         if poly2_complement is None:
             poly2_complement = deepcopy(loc_poly)
         else:
             poly2_complement = deepcopy(poly2_complement.intersection(loc_poly))
         cont_comp = contains_points(pixels[first_false:first_false+1],poly2_complement)
-        print "comp contains: ",cont_comp
-        print "test: ",np.all(contains_points(pixels[contained],poly2_complement))
-        print "test: ",np.any(contains_points(pixels[~contained],poly2_complement))
-        print "insp: ",list(poly2_complement.inside)
-        #print "comp ",itr,contains_points(pixels[first_false:first_false+1],poly2_complement),poly2_complement.area(),poly2_complement.is_clockwise()
-        #print "inside c ",list(poly2_complement.inside)
-        #print "vert c ",list(poly2_complement.points)
-        #for itr2 in xrange(0,len(list(poly2_complement.inside))):
-        #    print "loc cont inside c ",loc_poly.contains_point(list(poly2_complement.inside)[itr2])
-    #print poly1.area(),poly2.area(),poly2_complement.area()
+        print("comp contains: ",cont_comp)
+        print("test: ",np.all(contains_points(pixels[contained],poly2_complement)))
+        print("test: ",np.any(contains_points(pixels[~contained],poly2_complement)))
+        print("insp: ",list(poly2_complement.inside))
+        #print("comp ",itr,contains_points(pixels[first_false:first_false+1],poly2_complement),poly2_complement.area(),poly2_complement.is_clockwise())
+        #print("inside c ",list(poly2_complement.inside))
+        #print("vert c ",list(poly2_complement.points))
+        #for itr2 in range(0,len(list(poly2_complement.inside))):
+        #    print("loc cont inside c ",loc_poly.contains_point(list(poly2_complement.inside)[itr2]))
+    #print(poly1.area(),poly2.area(),poly2_complement.area())
     plt.show()
     return poly1.intersection(poly2_complement)
 
@@ -104,7 +106,7 @@ def get_healpix_pixelation(res_choose=6):
 #    xyz_vals = sgv.radec_to_vector(pixels[:,1],pixels[:,0]-np.pi/2.,degrees=False)
 #    contained = np.zeros(pixels.shape[0],dtype=bool)
 #    #check if each point is contained in the polygon. This is fairly slow if the number of points is huge
-#    for i in xrange(0,pixels.shape[0]):
+#    for i in range(0,pixels.shape[0]):
 #        contained[i] = sp_poly.contains_point([xyz_vals[0][i],xyz_vals[1][i],xyz_vals[2][i]])
 #    return contained
 
@@ -115,11 +117,11 @@ def contains_points(pixels,sp_poly):
     points = list(sp_poly.points)
     inside = list(sp_poly.inside)
     #iterate over polygons if disjoint
-    for itr1 in xrange(0,len(points)):
+    for itr1 in range(0,len(points)):
         intersects = np.zeros(pixels.shape[0],dtype=int)
         bounding_xyz = np.asarray(points[itr1])
         inside_xyz = np.asarray(inside[itr1])
-        for itr2 in xrange(0,bounding_xyz.shape[0]-1):
+        for itr2 in range(0,bounding_xyz.shape[0]-1):
             intersects+= contains_intersect(bounding_xyz[itr2], bounding_xyz[itr2+1], inside_xyz, xyz_vals)
         contained = contained | (np.mod(intersects,2)==0).astype(bool)
     return contained

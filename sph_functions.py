@@ -1,10 +1,12 @@
-'''
+"""
     Code to calculate spherical functions, such as:
     spherical Bessel functions
     the zeros of the Bessel functions
     the real spherical harmonics
     J. E. McEwen (c) 2016
-'''
+"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 
 import numpy as np
 
@@ -56,24 +58,19 @@ def Y_r(l,m,theta,phi):
         Y_lm(m,l,phi,theta)
     """
     if np.abs(m) > l:
-        print 'You must have |m|<=l for spherical harmonics.'
+        print('You must have |m|<=l for spherical harmonics.')
         raise ValueError('Please check the function values you sent into Y_r in module sph_functions.py')
         #sys.exit()
 
         #if np.real(result) < eps:
         #    result = 0
         #return result
-        #print 'check', result
+        #print('check', result)
         #if result < eps:
         #    result = 0
         #return result
     if m<0:
         result = 1j/np.sqrt(2)*(Y_lm(m,l,phi,theta) - (-1)**np.abs(m)*Y_lm(-m,l,phi,theta))
-        #TODO check if eps check is done correctly
-        #result[np.abs(result)<eps] = 0.
-        #if np.absolute(np.real(result)) < eps:
-        #    result = 0
-        #return np.sqrt(2)*(-1)**m*np.imag(Y_lm(m,l,phi,theta))
         return np.real(result)
     elif m>0:
         result = 1/np.sqrt(2)*(Y_lm(-m,l,phi,theta)  + (-1)**m*Y_lm(m,l,phi,theta))
@@ -87,27 +84,27 @@ def Y_r(l,m,theta,phi):
 
 #if __name__=="__main__":
 #
-#    print 'check spherical Bessel against mathematica output'
-#    print 'function values',j_n(0,2.)
-#    print 'mathematica value', 0.454649
-#    print 'function values',j_n(1,2.)
-#    print 'mathematica value', 0.435398
-#    print 'function values',j_n(2,2.)
-#    print 'mathematica value', 0.198448
-#    print 'function values',j_n(3,2.)
-#    print 'mathematica value', 0.0607221
-#    print 'function values',j_n(10,2.)
-#    print 'mathematica value', 6.8253e-8
-#    print 'function values',j_n(50,101.5)
-#    print 'mathematica value', -0.0100186
+#    print('check spherical Bessel against mathematica output')
+#    print('function values',j_n(0,2.))
+#    print('mathematica value', 0.454649)
+#    print('function values',j_n(1,2.))
+#    print('mathematica value', 0.435398)
+#    print('function values',j_n(2,2.))
+#    print('mathematica value', 0.198448)
+#    print('function values',j_n(3,2.))
+#    print('mathematica value', 0.0607221)
+#    print('function values',j_n(10,2.))
+#    print('mathematica value', 6.8253e-8)
+#    print('function values',j_n(50,101.5))
+#    print('mathematica value', -0.0100186)
 #
-#    print 'check derivative of Bessel against keisan.casio.com'
-#    print 'function values', dJ_n(0,1)
-#    print 'true value', -0.4400505857449335159597
-#    print 'function values', dJ_n(3,11.5)
-#    print 'true value', -0.0341759332779211515933
-#    print 'function values', dJ_n(5,3.145)
-#    print 'true value', 0.0686374928139798052691
+#    print('check derivative of Bessel against keisan.casio.com')
+#    print('function values', dJ_n(0,1))
+#    print('true value', -0.4400505857449335159597)
+#    print('function values', dJ_n(3,11.5))
+#    print('true value', -0.0341759332779211515933)
+#    print('function values', dJ_n(5,3.145))
+#    print('true value', 0.0686374928139798052691)
 #
 #    y = lambda phi : np.sin(phi)
 #    x = lambda phi : np.cos(phi)
@@ -117,43 +114,43 @@ def Y_r(l,m,theta,phi):
 #    # check the values for the real spherical harmonics
 #    # checking against values on https://en.wikipedia.org/wiki/Table_of_spherical_harmonics#l_.3D_0.5B2.5D.5B3.5D
 #    # check against wiki values
-#    print 'check l=0 case'
-#    print 'function value', Y_r(0,0,theta,phi)
-#    print 'wiki value', .5*np.sqrt(1/np.pi)
-#    print '------------------------------------------'
+#    print('check l=0 case')
+#    print('function value', Y_r(0,0,theta,phi))
+#    print('wiki value', .5*np.sqrt(1/np.pi))
+#    print('------------------------------------------')
 #    # l=1 case
-#    print 'check l=1, m=-1 case'
-#    print 'function value', Y_r(1,-1,theta,phi)
-#    print 'wiki value', np.sqrt(3/4./np.pi)*y(phi)
-#    print '------------------------------------------'
-#    print 'check l=1, m=0 case'
-#    print 'function value', Y_r(1,0,theta,phi)
-#    print 'wiki value', np.sqrt(3/4./np.pi)*z(theta)
-#    print '------------------------------------------'
-#    print 'check l=1, m=1 case'
-#    print 'function value', Y_r(1,1,theta,phi)
-#    print 'wiki value', np.sqrt(3/4./np.pi)*x(phi)
-#    print '------------------------------------------'
-#    print 'check l=2, m=-2 case'
-#    print 'function value', Y_r(2,-2,theta,phi)
-#    print 'wiki value', .5*np.sqrt(15/np.pi)*x(phi)*y(phi)
-#    print 'check l=2, m=-1 case'
-#    print 'function value', Y_r(2,-1,theta,phi)
-#    print 'wiki value', .5*np.sqrt(15/np.pi)*z(theta)*y(phi)
-#    print 'check l=2, m=0 case'
-#    print 'function value', Y_r(2,0,theta,phi)
-#    print 'wiki value', .25*np.sqrt(5/np.pi)*(2*z(theta)**2 - y(phi)**2 - x(phi)**2)
-#    print 'check l=2, m=1 case'
-#    print 'function value', Y_r(2,1,theta,phi)
-#    print 'wiki value', .5*np.sqrt(15/np.pi)*z(theta)*x(phi)
-#    print 'check l=2, m=2 case'
-#    print 'function value', Y_r(2,2,theta,phi)
-#    print 'wiki value', .25*np.sqrt(15/np.pi)*(x(phi)**2-y(phi)**2)
-#    print '------------------------------------------'
-#    #print 'check an incorrect m and l value'
-#    #print Y_r(2,3,theta,phi)
-#    print '------------------------------------------'
-#    print 'check normalization'
+#    print('check l=1, m=-1 case')
+#    print('function value', Y_r(1,-1,theta,phi))
+#    print('wiki value', np.sqrt(3/4./np.pi)*y(phi))
+#    print('------------------------------------------')
+#    print('check l=1, m=0 case')
+#    print('function value', Y_r(1,0,theta,phi))
+#    print('wiki value', np.sqrt(3/4./np.pi)*z(theta))
+#    print('------------------------------------------')
+#    print('check l=1, m=1 case')
+#    print('function value', Y_r(1,1,theta,phi))
+#    print('wiki value', np.sqrt(3/4./np.pi)*x(phi))
+#    print('------------------------------------------')
+#    print('check l=2, m=-2 case')
+#    print('function value', Y_r(2,-2,theta,phi))
+#    print('wiki value', .5*np.sqrt(15/np.pi)*x(phi)*y(phi))
+#    print('check l=2, m=-1 case')
+#    print('function value', Y_r(2,-1,theta,phi))
+#    print('wiki value', .5*np.sqrt(15/np.pi)*z(theta)*y(phi))
+#    print('check l=2, m=0 case')
+#    print('function value', Y_r(2,0,theta,phi))
+#    print('wiki value', .25*np.sqrt(5/np.pi)*(2*z(theta)**2 - y(phi)**2 - x(phi)**2))
+#    print('check l=2, m=1 case')
+#    print('function value', Y_r(2,1,theta,phi))
+#    print('wiki value', .5*np.sqrt(15/np.pi)*z(theta)*x(phi))
+#    print('check l=2, m=2 case')
+#    print('function value', Y_r(2,2,theta,phi))
+#    print('wiki value', .25*np.sqrt(15/np.pi)*(x(phi)**2-y(phi)**2))
+#    print('------------------------------------------')
+#    #print('check an incorrect m and l value')
+#    #print(Y_r(2,3,theta,phi))
+#    print('------------------------------------------')
+#    print('check normalization')
 #    from scipy.integrate import nquad
 #    def norm_check(m1,l1,m2,l2):
 #        def func(theta,phi):
@@ -164,19 +161,19 @@ def Y_r(l,m,theta,phi):
 #
 #
 #        I = nquad(func,[[0,np.pi],[0,2*np.pi]])[0]
-#        #print 'check against spherical harmonics',nquad(funcII,[[0,np.pi],[0,2*np.pi]])[0]
+#        #print('check against spherical harmonics',nquad(funcII,[[0,np.pi],[0,2*np.pi]])[0])
 #        if I < eps:
 #            I = 0
 #        return I
 #
-#    print 'check normalization, 1,1,1,1:', norm_check(1,1,1,1)
-#    print 'check normalization, 0,1,0,1:', norm_check(0,1,0,1)
-#    print 'check normalization, 0,2,0,2:', norm_check(0,2,0,2)
-#    print 'check normalization, 1,2,1,2:', norm_check(1,2,1,2)
-#    print 'check normalization, 2,2,2,2:', norm_check(2,2,2,2)
-#    print 'check normalization, -1,2,-1,2:', norm_check(-1,2,-1,2)
-#    print 'check normalization, -1,2,0,2:', norm_check(-1,2,0,2)
-#    print 'check normalization, -1,2,-1,3:', norm_check(-1,2,-1,3)
+#    print('check normalization, 1,1,1,1:', norm_check(1,1,1,1))
+#    print('check normalization, 0,1,0,1:', norm_check(0,1,0,1))
+#    print('check normalization, 0,2,0,2:', norm_check(0,2,0,2))
+#    print('check normalization, 1,2,1,2:', norm_check(1,2,1,2))
+#    print('check normalization, 2,2,2,2:', norm_check(2,2,2,2))
+#    print('check normalization, -1,2,-1,2:', norm_check(-1,2,-1,2))
+#    print('check normalization, -1,2,0,2:', norm_check(-1,2,0,2))
+#    print('check normalization, -1,2,-1,3:', norm_check(-1,2,-1,3))
 #
 #    import matplotlib.pyplot as plt
 #
@@ -196,7 +193,7 @@ def Y_r(l,m,theta,phi):
 #    ax.plot(z, j_n(4,z))
 #
 #    x = jn_zeros(0,3)
-#    print 'this is x', x
+#    print('this is x', x)
 #    ax.plot(x,np.zeros(x.size),'o')
 #    x = jn_zeros(1,3)
 #    ax.plot(x,np.zeros(x.size),'o')

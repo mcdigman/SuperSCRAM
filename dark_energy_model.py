@@ -1,4 +1,6 @@
 """handle various w(z) models"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 import numpy as np
 from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
 class DarkEnergyModel(object):
@@ -67,7 +69,7 @@ class DarkEnergyJDEM(DarkEnergyModel):
         #default to value of w over edge
         ws = np.full(z_de.size,self.w)
         itr = 0
-        for i in xrange(0,z_de.size):
+        for i in range(0,z_de.size):
             if z_de[i]>=zs_max[itr]:
                 itr+=1
                 if itr>=zs_max.size:
@@ -80,7 +82,7 @@ class DarkEnergyJDEM(DarkEnergyModel):
         de_step_sum = np.full(de_step.size+1,0.)
         de_step_sum[1::] += np.cumsum(de_step)
         de_exponent_true = _de_exp_const_w(z_de,ws)
-        for itr in xrange(0,36):
+        for itr in range(0,36):
             de_exponent_true[(zs_min[itr]<=z_de)*(z_de<zs_max[itr])]+=de_step_sum[itr]-_de_exp_const_w(zs_min[itr],self.ws_in[itr])
         de_exponent_true[z_de>=zs_max[-1]]+=de_step_sum[-1]-_de_exp_const_w(zs_max[-1],self.w)
         self.de_true_interp = InterpolatedUnivariateSpline(z_de,np.exp(3.*de_exponent_true),k=3,ext=2)

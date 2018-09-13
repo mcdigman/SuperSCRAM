@@ -1,6 +1,8 @@
 """
 contains various weight functions used by lensing observables
 """
+from __future__ import division,print_function,absolute_import
+from builtins import range
 import numpy as np
 from scipy.integrate import cumtrapz
 from algebra_utils import trapz2
@@ -41,7 +43,7 @@ def _gs(sp,r_min=0.,r_max=np.inf):
     if sp.C.Omegak==0.0:
         g_vals = -cumtrapz(ps_norm[::-1],sp.rs[::-1],initial=0.)[::-1]+sp.rs*cumtrapz((ps_norm/sp.rs)[::-1],sp.rs[::-1],initial=0.)[::-1]
     else:
-        for i in xrange(0,sp.n_z):
+        for i in range(0,sp.n_z):
             if r_max<sp.rs[i]:
                 break
             if sp.C.Omegak>0.0: #TODO handle curvature
@@ -71,7 +73,7 @@ class QNum(QWeight):
         """see QShear"""
         q = np.zeros((sp.n_z,sp.n_l))
         self.b = _bias(sp)
-        for i in xrange(0,sp.n_z):
+        for i in range(0,sp.n_z):
             if sp.rs[i]>r_max:
                 break
             elif sp.rs[i]<r_min:

@@ -1,6 +1,8 @@
 """
 Handles lensing observable power spectrum
 """
+from __future__ import division,print_function,absolute_import
+from builtins import range
 from warnings import warn
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline,interp1d
@@ -11,7 +13,6 @@ from lensing_source_distribution import get_source_distribution
 from algebra_utils import trapz2
 from extrap_utils import power_law_extend
 
-#TODO check integral boundaries ok
 class ShearPower(object):
     """handles lensing power spectra"""
     def __init__(self,C,z_fine,f_sky,params,mode='power',ps=None,nz_matcher=None):
@@ -67,7 +68,6 @@ class ShearPower(object):
             p_grid = dp_ddelta(self.C.P_lin,self.zs,self.C,self.pmodel,self.params['epsilon'])[0]
         else:
             raise ValueError('unrecognized mode \''+str(self.mode)+'\'')
-        #TODO should be same rs as everthing else
         self.rs = self.C.D_comov(self.zs)
         #TODO if using Omegak not 0, make sure rs and r_As used consistently
         if self.C.Omegak==0:
@@ -79,15 +79,17 @@ class ShearPower(object):
         self.k_use = np.outer((self.l_mids+0.5),1./self.r_As)
 
         #loop appears necessary due to uneven grid spacing in k_use
-        for i in xrange(0,self.n_z):
-            #self.p_dd_use[:,i] = power_law_extend(self.k_in,p_grid[:,i],self.k_use[:,i],k=2)
-            k_range = (self.k_use[:,i]<=self.k_max) & (self.k_use[:,i]>=self.k_min)
-            k_loc = self.k_use[:,i][k_range]
-            self.p_dd_use[:,i][k_range] = interp1d(self.k_in,p_grid[:,i])(k_loc)
-            #self.p_dd_use[:,i] = self.pow_interp(self.k_use[:,i],self.zs[i])[:,0]
+        assert not np.any(p_grid==0.)
+        for i in range(0,self.n_z):
+            self.p_dd_use[:,i] = power_law_extend(self.k_in,p_grid[:,i],self.k_use[:,i],k=2)
+#            continue
+#            k_range = (self.k_use[:,i]<=self.k_max) & (self.k_use[:,i]>=self.k_min)
+#            k_loc = self.k_use[:,i][k_range]
+#            self.p_dd_use[:,i][k_range] = interp1d(self.k_in,p_grid[:,i])(k_loc)
+#            #self.p_dd_use[:,i] = self.pow_interp(self.k_use[:,i],self.zs[i])[:,0]
 
+        assert not np.any(self.p_dd_use==0.)
         self.sc_as = 1/(1+self.zs)
-
         #galaxy galaxy and galaxy dm power spectra. Set to matter power spectra for now, could input bias model
         self.p_gg_use = self.p_dd_use
         self.p_gd_use = self.p_dd_use
@@ -153,7 +155,7 @@ class ShearPower(object):
 #        n_t = thetas.size
 #        tans = np.zeros(n_t)
 #        kg_pow = Cll_k_g(self).Cll()
-#        for i in xrange(0,n_t):
+#        for i in range(0,n_t):
 #            if with_limber:
 #                tans[i] = trapz2((2.*self.ls+1.)/(4.*np.pi*self.ls*(self.ls+1.))*kg_pow*spp.lpmv(2,ls,np.cos(thetas[i])),ls)
 #            else:
@@ -242,10 +244,10 @@ class Cll_q_q(object):
 #        integrand1 = np.zeros((sp.n_z,sp.n_l))
 #        #integrand2 = np.zeros((sp.n_z,sp.n_l))
 #        integrand_total = np.zeros((sp.n_z,sp.n_l))
-#        for i in xrange(0,sp.n_z):
+#        for i in range(0,sp.n_z):
 #            window_int1 = np.zeros((sp.n_z,sp.n_l))
 #        #    window_int2 = np.zeros((sp.n_z,sp.n_l))
-#            for j in xrange(0,sp.n_z):
+#            for j in range(0,sp.n_z):
 #                window_int1[j] = q1s.qs[j]/np.sqrt(sp.rs[j])*spp.jv(sp.ls+0.5,(sp.ls+0.5)/sp.rs[i]*sp.rs[j])
 #         #       window_int2[j] = q2s.qs[j]/np.sqrt(sp.rs[j])*spp.jv(sp.ls+0.5,(sp.ls+0.5)/sp.rs[i]*sp.rs[j])
 #            integrand1[i] = np.trapz(window_int1,sp.rs,axis=0)
@@ -259,12 +261,12 @@ class Cll_q_q(object):
 #        integrand1 = np.zeros((sp.n_z,sp.n_l))
 #        integrand2 = np.zeros((sp.n_z,sp.n_l))
 #        if corr_param.size!=0:
-#            for i in xrange(0,sp.n_z):
+#            for i in range(0,sp.n_z):
 #                integrand1[i] = q1s.qs[i]*q2s.qs[i]/sp.rs[i]**2*sp.p_dd_use[:,i]*corr_param[:,i]
 #        else:
-#            for i in xrange(0,sp.n_z):
+#            for i in range(0,sp.n_z):
 #                integrand1[i] = q1s.qs[i]*q2s.qs[i]/sp.rs[i]**2*sp.p_dd_use[:,i]
-#        for i in xrange(0,sp.n_z-1): #check edge case
+#        for i in range(0,sp.n_z-1): #check edge case
 #            term1 = sp.rs[i]**2/2.*(q1s.rcs_d2[i]/q1s.rcs[i]+q2s.rcs_d2[i]/q2s.rcs[i])
 #            term2 = sp.rs[i]**3/6.*(q1s.rcs_d3[i]/q1s.rcs[i]+q2s.rcs_d3[i]/q2s.rcs[i])
 #            integrand2[i] = -1./(sp.ls+0.5)**2*(term1+term2)*integrand1[i]

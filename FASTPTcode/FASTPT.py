@@ -1,32 +1,32 @@
-''' 
-	FASTPT is a numerical algorithm to calculate 
-	1-loop contributions to the matter power spectrum or other 
-	similar type integrals. 
+'''
+	FASTPT is a numerical algorithm to calculate
+	1-loop contributions to the matter power spectrum or other
+	similar type integrals.
 	The method is presented in the paper 2016arXiv160304826M.
 	Please cite this paper if you are using FASTPT
 		
-	J. E. McEwen (c) 2016 
-	mcewen.24@osu.edu 
+	J. E. McEwen (c) 2016
+	mcewen.24@osu.edu
 	
-	The FASTPT class is the workhose of the FASTPT algorithm. 
-	This class calculates integrals of the form 
-	\int \frac{d^3q}{(2 \pi)^3} K(q,k-q) P(q) P(|k-q|) 
+	The FASTPT class is the workhose of the FASTPT algorithm.
+	This class calculates integrals of the form
+	\int \frac{d^3q}{(2 \pi)^3} K(q,k-q) P(q) P(|k-q|)
 '''
-from __future__ import division 
-
+from __future__ import division,absolute_import,print_function
+from builtins import range
 
 import numpy as np
 from numpy.fft import fft, ifft , rfft, irfft , fftfreq
 from numpy import exp, log, log10, cos, sin, pi, cosh, sinh , sqrt
-from scipy.special import gamma 
+from scipy.special import gamma
 import sys
-from time import time 
-from fastpt_extr import p_window, c_window, pad_left, pad_right
-from matter_power_spt import P_13_reg 
-from scipy.signal import convolve , fftconvolve 
+from time import time
+from .fastpt_extr import p_window, c_window, pad_left, pad_right
+from .matter_power_spt import P_13_reg
+from scipy.signal import convolve , fftconvolve
 from scipy.interpolate import interp1d
-from gamma_funcs import g_m_vals, gamsn
-from P_extend import k_extend 
+from .gamma_funcs import g_m_vals, gamsn
+from FASTPTcode.P_extend import k_extend
 from scipy.integrate import quad
 
 log2=log(2.)
@@ -34,7 +34,7 @@ class FASTPT:
 	
 	def __init__(self,k,nu,param_mat=None,low_extrap=None,high_extrap=None,n_pad=None,verbose=False):
 	
-		# size of input array must be an even number 
+		# size of input array must be an even number
 		if (k.size % 2 != 0):
 			raise ValueError('Input array must contain an even number of elements.')
 		
@@ -51,7 +51,7 @@ class FASTPT:
 		self.k_old=k
 		
 		
-		delta_L=(log(np.max(k))-log(np.min(k)))/(k.size-1)   # need to put in a check to make sure that it is log sampled 
+		delta_L=(log(np.max(k))-log(np.min(k)))/(k.size-1)   # need to put in a check to make sure that it is log sampled
 		
 		if(n_pad !=None):
 			self.id_pad=np.arange(k.size)+n_pad
@@ -65,17 +65,17 @@ class FASTPT:
 			k=np.hstack((k_left,k,k_right))
 			
 			
-			# check to make sure that the n padding sufficient to keep the 
+			# check to make sure that the n padding sufficient to keep the
 			# FASTPT k_min less than 1/2 of the input k_min (added a plus 1 to be safe)
-			# actually we really need to change how the padding works, some of it is redundant. 
+			# actually we really need to change how the padding works, some of it is redundant.
 			n_pad_check=int(np.log(2)/delta_L) +1
-			if (n_pad < n_pad_check): 
-				print('Warnign, you should consider increasing your zero padding to at least ', n_pad_check, ' .')
+			if (n_pad < n_pad_check):
+				print('Warning, you should consider increasing your zero padding to at least ', n_pad_check, ' .')
 				print('So, that you ensure that k > 2k_min.')
 				print(' k min in the FASTPT univeris is ', k[0], ' while k min input is ', self.k_old[0])
 						
 	
-		if(n_pad == None): 
+		if(n_pad == None):
 			print('Your results are only good for k > 2k_min')
 		
 			
@@ -102,7 +102,7 @@ class FASTPT:
 		
 		# define eta_m and eta_n=eta_m
 		omega=2*pi/(float(self.N)*delta_L)
-		self.m=np.arange(-self.N//2,self.N//2+1) 
+		self.m=np.arange(-self.N//2,self.N//2+1)
 		self.eta_m=omega*self.m
 		
 		
@@ -111,12 +111,12 @@ class FASTPT:
 		self.l=np.arange(-self.n_l//2+1,self.n_l//2+1)
 		self.tau_l=omega*self.l
 		
-		#Q_m=np.zeros((param_mat.shape[0],self.N+1), dtype=complex) 
-		self.pf=np.zeros((param_mat.shape[0])) 
-		self.two_part_l=np.zeros((param_mat.shape[0],self.l.size), dtype=complex) 
+		#Q_m=np.zeros((param_mat.shape[0],self.N+1), dtype=complex)
+		self.pf=np.zeros((param_mat.shape[0]))
+		self.two_part_l=np.zeros((param_mat.shape[0],self.l.size), dtype=complex)
 		#Q_n=Q_m
-		self.g_m=np.zeros((param_mat.shape[0],self.N+1), dtype=complex) 
-		self.g_n=np.zeros((param_mat.shape[0],self.N+1), dtype=complex) 
+		self.g_m=np.zeros((param_mat.shape[0],self.N+1), dtype=complex)
+		self.g_n=np.zeros((param_mat.shape[0],self.N+1), dtype=complex)
 		self.h_l=np.zeros((param_mat.shape[0],self.l.size),dtype=complex)
 		
 		self.p=-5-2*self.nu-alpha-beta
@@ -125,8 +125,8 @@ class FASTPT:
 	
 			sigma=l_Bessel[i]+1/2.
 		
-			# Define Q_m and Q_n and p 
-			# use eta_m for Q_n, the value is the same 
+			# Define Q_m and Q_n and p
+			# use eta_m for Q_n, the value is the same
 			Q_m=3/2.+ nu + alpha[i] + 1j*self.eta_m
 			Q_n=3/2.+ nu + beta[i] + 1j*self.eta_m
 			p=-5-2*nu-alpha[i]-beta[i]
@@ -135,11 +135,11 @@ class FASTPT:
 			
 			if (type[i]==1):
 			
-				# this is the special case, Corresponding to the regularized version of 
+				# this is the special case, Corresponding to the regularized version of
 				# J_{2,-2,0,reg}(k)
-				# get values for g_n 
-				# again use eta_m. 
-				s=2+nu + beta[i] 
+				# get values for g_n
+				# again use eta_m.
+				s=2+nu + beta[i]
 				Q_n=s+ 1j*self.eta_m
 		
 				self.g_n[i,:]=gamsn(Q_n)
@@ -147,19 +147,19 @@ class FASTPT:
 				#two_part_m=2**Q_m
 				self.g_m[i,:]=self.g_m[i,:]*2**Q_m
 	
-				# prefactor 
+				# prefactor
 				self.pf[i]=(-1)**l_Bessel[i]/pi**3*np.sqrt(pi/2.)
 			
 				self.two_part_l[i,:]=np.ones(self.l.size)
 			
 			else:
 				self.g_n[i,:]=g_m_vals(sigma,Q_n)
-				# pre factor 
+				# pre factor
 				self.pf[i]=(-1)**l_Bessel[i]/pi**2.*2.**(2.+2.*nu+alpha[i]+beta[i])
 			
 				self.two_part_l[i,:]=exp(1j*self.tau_l*log2)
 			
-			# calculate h_l     
+			# calculate h_l
 			#arg=(p+1-1j*tau_l)
 			self.h_l[i,:]=gamsn(self.p[i]+1-1j*self.tau_l)
 	
@@ -187,41 +187,39 @@ class FASTPT:
 		if P_window is not None:
 		# window the input power spectrum, so that at high and low k
 		# the signal smoothly tappers to zero. This make the input
-		# more "like" a periodic signal 
+		# more "like" a periodic signal
 			
 			if (self.verbose):
 				print('windowing biased power spectrum')
 			W=p_window(self.k_old,P_window[0],P_window[1])
-			P_b=P_b*W 
+			P_b=P_b*W
 			
-		if (self.n_pad !=0): 
+		if (self.n_pad !=0):
 			P_b=np.pad(P_b, pad_width=(self.n_pad,self.n_pad), mode='constant', constant_values=0)
 	
 		c_m_positive=rfft(P_b)
-		# End point should be divided by two. However, we always filter the Fourier coefficients (the last element is set to 
-		# zero), so this really has no effect. 
+		# End point should be divided by two. However, we always filter the Fourier coefficients (the last element is set to
+		# zero), so this really has no effect.
 		c_m_positive[-1]=c_m_positive[-1]/2.
 		c_m_negative=np.conjugate(c_m_positive[1:])
 		c_m=np.hstack((c_m_negative[::-1], c_m_positive))/float(self.N)
 		
 		if (C_window != None):
-			# window the Fourier coefficients. 
-			# This will damping the highest frequencies 
+			# window the Fourier coefficients.
+			# This will damping the highest frequencies
 			
 			if (self.verbose):
 				print('windowing the Fourier coefficients')
-			c_m=c_m*c_window(self.m,int(C_window*self.N//2.)) 
+			c_m=c_m*c_window(self.m,int(C_window*self.N//2.))
 			
 		
 		A_out=np.zeros((self.p_size,self.k_size))
-		for i in range(self.p_size):
-	
-			
-			# convolve f_c and g_c 
+		for i in range(self.p_size):	
+			# convolve f_c and g_c
 			#C_l=np.convolve(c_m*self.g_m[i,:],c_m*self.g_n[i,:])
 			C_l=fftconvolve(c_m*self.g_m[i,:],c_m*self.g_n[i,:])
 	
-			# multiply all l terms together 
+			# multiply all l terms together
 			C_l=C_l*self.h_l[i,:]*self.two_part_l[i]
 		
 			# set up to feed ifft an array ordered with l=0,1,...,-1,...,N/2-1
@@ -230,23 +228,22 @@ class FASTPT:
 		
 			C_l=np.hstack((c_plus[:-1],c_minus))
 			A_k=ifft(C_l)*C_l.size # multiply by size to get rid of the normalization in ifft
+			A_out[i,:]=np.real(A_k[::2])*self.pf[i]*self.k**(-self.p[i]-2)
 					
-			A_out[i,:]=np.real(A_k[::2])*self.pf[i]*self.k**(-self.p[i]-2) 
-			# note that you have to take every other element 
+			# note that you have to take every other element
 			# in A_k, due to the extended array created from the
-			# discrete convolution 
+			# discrete convolution
 		
 		P_out=irfft(c_m[self.m>=0])*self.k**self.nu*float(self.N)
 		if (self.n_pad !=0):
-			# get rid of the elements created from padding 
+			# get rid of the elements created from padding
 			P_out=P_out[self.id_pad]
-			A_out=A_out[:,self.id_pad] 
+			A_out=A_out[:,self.id_pad]
 		
 		return P_out, A_out
 		
-	def P22(self,P,P_window=None,C_window=None):
-		
-		Power, mat=self.J_k(P,P_window=P_window,C_window=C_window)  
+	def P22(self,P,P_window=None,C_window=None):	
+		Power, mat=self.J_k(P,P_window=P_window,C_window=C_window)
 		A=1219/1470.*mat[0,:]
 		B=671/1029.*mat[1,:]
 		C=32/1715.*mat[2,:]
@@ -263,10 +260,10 @@ class FASTPT:
 		if (self.extrap):
 			_,P=self.EK.PK_orginal(P22+P13)
 			return P
-		  
+		
 		return P22+P13
 
-	def P_bias(self,P,P_window=None,C_window=None): 
+	def P_bias(self,P,P_window=None,C_window=None):
 		# Quadraric bias Legendre components
 		# See eg section B of Baldauf+ 2012 (arxiv: 1201.4827)
 		# Note pre-factor convention is not standardized
@@ -310,36 +307,36 @@ class FASTPT:
 
 if __name__ == "__main__":
 	# An example script to run FASTPT and get the plot for
-	# P_22 + P_13 
+	# P_22 + P_13
 	
-	# load the data file 
-	d=np.loadtxt('Pk_Planck15.dat') 
-	# declare k and the power spectrum 
+	# load the data file
+	d=np.loadtxt('Pk_Planck15.dat')
+	# declare k and the power spectrum
 	k=d[:,0]; P=d[:,1]
 	
 	# set the parameters for the power spectrum window and
-	# Fourier coefficient window 
-	P_window=np.array([.2,.2])  
-	C_window=.75    
+	# Fourier coefficient window
+	P_window=np.array([.2,.2])
+	C_window=.75
 	
-	# bias parameter and padding length 
+	# bias parameter and padding length
 	nu=-2; n_pad=800
 	
 	from time import time
 		
-	# initialize the FASTPT class       
-	fastpt=FASTPT(k,nu,low_extrap=-5,high_extrap=5,n_pad=n_pad) 
+	# initialize the FASTPT class
+	fastpt=FASTPT(k,nu,low_extrap=-5,high_extrap=5,n_pad=n_pad)
 	
 	
-	t1=time()   
+	t1=time()
 	
-	# with out P_windowing (better if you are using zero padding) 
-	P_spt=fastpt.one_loop(P,C_window=C_window) 
+	# with out P_windowing (better if you are using zero padding)
+	P_spt=fastpt.one_loop(P,C_window=C_window)
 	t2=time()
-	print('time'), t2-t1 
+	print('time'), t2-t1
 	
 	
-	# make a plot 
+	# make a plot
 	import matplotlib.pyplot as plt
 	
 	ax=plt.subplot(111)
@@ -348,9 +345,9 @@ if __name__ == "__main__":
 	ax.set_ylabel(r'$P(k)$', size=30)
 	ax.set_xlabel(r'$k$', size=30)
 	
-	ax.plot(k,P, label='linear power') 
+	ax.plot(k,P, label='linear power')
 	ax.plot(k,P_spt, label=r'$P_{22}(k) + P_{13}(k)$' )
 	
-	plt.legend(loc=3) 
+	plt.legend(loc=3)
 	plt.grid()
 	plt.show()

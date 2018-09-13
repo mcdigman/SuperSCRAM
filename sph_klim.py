@@ -1,4 +1,6 @@
 """Basis and covariances for long wavelength fluctuations"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 from time import time
 from warnings import warn
 from scipy.special import jv
@@ -30,7 +32,7 @@ class SphBasisK(LWBasis):
                 l_ceil: maximum l value allowed independent of k_cut, mainly because limited table of bessel function zeros available
                 important! no little h in any of the calculations
         """
-        print "sph_klim: begin init basis id: "+str(id(self))+" with r_max="+str(r_max)+" k_cut="+str(k_cut)
+        print("sph_klim: begin init basis id: "+str(id(self))+" with r_max="+str(r_max)+" k_cut="+str(k_cut))
         LWBasis.__init__(self,C)
         #TODO check correct power spectrum
         self.r_max = r_max
@@ -68,11 +70,11 @@ class SphBasisK(LWBasis):
         self.k_num = np.zeros(l_ceil+1,dtype=np.int)
         self.k_zeros = np.zeros(l_ceil+1,dtype=object)
         self.n_l = 0
-        for ll in xrange(0,self.k_num.size):
+        for ll in range(0,self.k_num.size):
             k_alpha = jn_zeros_cut(ll,self.k_cut*self.r_max)/self.r_max
             #once there are no zeros above the cut, skip higher l
             if k_alpha.size==0:
-                print "sph_klim: cutting off all l>=",ll
+                print("sph_klim: cutting off all l>=",ll)
                 break
             else:
                 self.k_num[ll] = k_alpha.size
@@ -83,7 +85,7 @@ class SphBasisK(LWBasis):
         self.lm_map = np.zeros((l_alpha.size,3),dtype=object)
 #        self.lm = np.zeros((l_alpha.size,2),dtype=object)
         C_size = 0
-        for i in xrange(l_alpha.size):
+        for i in range(l_alpha.size):
             m = np.arange(-l_alpha[i], l_alpha[i]+1)
             self.lm_map[i,0] = l_alpha[i]
             self.lm_map[i,1] = self.k_zeros[i]
@@ -92,20 +94,20 @@ class SphBasisK(LWBasis):
 #            self.lm[i,0] = l_alpha[i]
 #            self.lm[i,1] = m
         self.C_size = C_size
-        print "sph_klim: basis size: ",self.C_size
+        print("sph_klim: basis size: ",self.C_size)
         self.C_id = np.zeros((C_size,3))
 
         self.C_compact = np.zeros(self.n_l,dtype=object)
-        print "sph_klim: begin constructing covariance matrix. basis id: ",id(self)
+        print("sph_klim: begin constructing covariance matrix. basis id: ",id(self))
         itr = 0
-        for a in xrange(self.n_l):
+        for a in range(self.n_l):
             ll = self.lm_map[a,0]
             kk = self.lm_map[a,1]
             mm = self.lm_map[a,2]
 
-            print "sph_klim: calculating covar for l=",ll
-            for c in xrange(mm.size):
-                for b in xrange(kk.size):
+            print("sph_klim: calculating covar for l=",ll)
+            for c in range(mm.size):
+                for b in range(kk.size):
                     self.C_id[itr,0] = ll
                     self.C_id[itr,1] = kk[b]
                     self.C_id[itr,2] = mm[c]
@@ -116,12 +118,12 @@ class SphBasisK(LWBasis):
             inv_k = 1./(k2-np.expand_dims(kk**2,1))
             integrand_b = (integrand1*inv_k)
             integrand1 = None
-            for b in xrange(0,kk.size):
+            for b in range(0,kk.size):
                 #trapezoidal rule using inner products to avoid temporary arrays
                 integrated_bd = np.inner(inv_k,integrand_b[b])*dk
                 integrated_bd-=(inv_k[:,0]*integrand_b[b][0]+inv_k[:,-1]*integrand_b[b][-1])/2.*dk
 
-                for d in xrange(0,b+1):
+                for d in range(0,b+1):
                     coeff = 8.*np.sqrt(kk[b]*kk[d])*kk[b]*kk[d]/(np.pi*self.r_max**2*jv(ll+1.5,kk[b]*self.r_max)*jv(ll+1.5,kk[d]*self.r_max))
                     #TODO convergence test
                     #note: this integrand is highly oscillatory, and some integration methods may produce inaccurate results,
@@ -131,17 +133,17 @@ class SphBasisK(LWBasis):
                 integrated_bd = None
             integrand_b = None
 
-        print "sph_klim: finished calculating covars"
+        print("sph_klim: finished calculating covars")
 #        x_grid = np.linspace(0.,np.max(self.C_id[:,1])*self.r_max,self.params['x_grid_size'])
 #        self.rints = np.zeros(self.n_l,dtype=object)
 
-#        for ll in xrange(0,self.n_l):
+#        for ll in range(0,self.n_l):
 #            result_ll = odeint(lambda y,x: x**2*j_n(ll,x),0.,x_grid,atol=1e-20,rtol=1e-13)[:,0]
 #            self.rints[ll] = InterpolatedUnivariateSpline(x_grid,result_ll,ext=2,k=3)
 #
         t2 = time()
-        print "sph_klim: basis time: ",t2-t1
-        print "sph_klim: finished init basis id: ",id(self)
+        print("sph_klim: basis time: ",t2-t1)
+        print("sph_klim: finished init basis id: ",id(self))
 
     def get_size(self):
         """Get number of basis elements"""
@@ -155,9 +157,9 @@ class SphBasisK(LWBasis):
         """get the covariance matrix for the basis as an array"""
         result = np.zeros((self.C_id.shape[0],self.C_id.shape[0]),order='F')
         itr_ll = 0
-        for ll in xrange(0,self.n_l):
+        for ll in range(0,self.n_l):
             n_k = self.C_compact[ll].shape[0]
-            for _m_itr in xrange(0,2*ll+1):
+            for _m_itr in range(0,2*ll+1):
                 result[itr_ll:itr_ll+n_k,itr_ll:itr_ll+n_k] = self.C_compact[ll]
                 itr_ll+=n_k
         return result
@@ -166,11 +168,11 @@ class SphBasisK(LWBasis):
         """get the fisher matrix for the basis as an array"""
         result = np.zeros((self.C_id.shape[0],self.C_id.shape[0]),order='F')
         itr_ll = 0
-        for ll in xrange(0,self.n_l):
+        for ll in range(0,self.n_l):
             n_k = self.C_compact[ll].shape[0]
             res = spl.solve(self.C_compact[ll],np.identity(n_k),sym_pos=True,lower=True,check_finite=False,overwrite_b=True)
             res = (res+res.T)/2.
-            for _m_itr in xrange(0,2*ll+1):
+            for _m_itr in range(0,2*ll+1):
                 result[itr_ll:itr_ll+n_k,itr_ll:itr_ll+n_k] = res
                 itr_ll+=n_k
         return result
@@ -179,10 +181,10 @@ class SphBasisK(LWBasis):
         """get cholesky decomposition of covariance matrix as an array"""
         result = np.zeros((self.C_id.shape[0],self.C_id.shape[0]),order='F')
         itr_ll = 0
-        for ll in xrange(0,self.n_l):
+        for ll in range(0,self.n_l):
             n_k = self.C_compact[ll].shape[0]
             res = cholesky_inplace(self.C_compact[ll],inplace=False,lower=True)
-            for _m_itr in xrange(0,2*ll+1):
+            for _m_itr in range(0,2*ll+1):
                 result[itr_ll:itr_ll+n_k,itr_ll:itr_ll+n_k] = res
                 itr_ll+=n_k
         return result
@@ -209,17 +211,17 @@ class SphBasisK(LWBasis):
             k_cut_use = k_cut_in
 
         itr_ll = 0
-        for ll in xrange(0,self.n_l):
+        for ll in range(0,self.n_l):
             n_k = self.C_compact[ll].shape[0]
             res = self.C_compact[ll]
             n_break = n_k
-            for k_itr in xrange(0,n_k):
+            for k_itr in range(0,n_k):
                 if self.C_id[itr_ll+k_itr,1]>k_cut_use:
                     n_break = k_itr
                     break
             #if n_break==0:
             #    continue
-            for _m_itr in xrange(0,2*ll+1):
+            for _m_itr in range(0,2*ll+1):
                 variance+=np.dot(v[itr_ll:itr_ll+n_break].T,np.dot(res[0:n_break,0:n_break],v[itr_ll:itr_ll+n_break]))
                 itr_ll+=n_k
             res = None
@@ -244,7 +246,7 @@ class SphBasisK(LWBasis):
                 use_r: if False, use geo.z_fine instead of geo.r_fine for integration
                 range_spec: array slice specification for geo.r_fine to limit range of integration for tomographic bins
         """
-        print "sph_klim: calculating D_O_I_D_delta_alpha"
+        print("sph_klim: calculating D_O_I_D_delta_alpha")
         d_delta_bar = self.D_delta_bar_D_delta_alpha(geo,tomography=False)
 #        d_delta_bar = (d_delta_bar.T*(geo.z_fine<0.4)).T
 #        result = np.zeros((d_delta_bar.shape[1],integrand.shape[1]))
@@ -271,7 +273,7 @@ class SphBasisK(LWBasis):
         dx2s = (delta_x*d_delta_bar_cut[:-1:].T)/2.
         dxs = np.hstack([np.zeros((dx1s.shape[0],1)),dx1s])+np.hstack([dx2s,np.zeros((dx2s.shape[0],1))])
         result = np.dot(dxs,integrand_cut)
-        print "sph_klim: got D_O_I_D_delta_alpha"
+        print("sph_klim: got D_O_I_D_delta_alpha")
         return result
 
     #Note: Cacheing is potentially dangerous if the geo changes, so it should not be allowed to.
@@ -282,37 +284,37 @@ class SphBasisK(LWBasis):
                 tomography: if True use tomographic (coarse) bins, otherwise use resolution (fine) bins for r integrals
         """
         #TODO Check this
-        print "sph_klim: begin D_delta_bar_D_delta_alpha with geo id: ",id(geo)
+        print("sph_klim: begin D_delta_bar_D_delta_alpha with geo id: ",id(geo))
 
         #Caching implements significant speedup, check caches
         result_cache = self.ddelta_bar_cache.get(str(id(geo)))
         if result_cache is not None:
             if tomography and ('tomo' in result_cache):
-                print "sph_klim: tomographic bins retrieved from cache"
+                print("sph_klim: tomographic bins retrieved from cache")
                 return result_cache['tomo']
             elif (not tomography) and ('fine' in result_cache):
-                print "sph_klim: fine bins retrieved from cache"
+                print("sph_klim: fine bins retrieved from cache")
                 return result_cache['fine']
             else:
-                print "sph_klim: cache miss with nonempty cache"
+                print("sph_klim: cache miss with nonempty cache")
         else:
-            print "sph_klim: cache miss with empty cache"
+            print("sph_klim: cache miss with empty cache")
             self.ddelta_bar_cache[str(id(geo))] = {}
 
 
         a_00 = geo.a_lm(0,0)
-        print "sph_klim: a_00="+str(a_00)
+        print("sph_klim: a_00="+str(a_00))
 
         if tomography:
             rbins = geo.rbins
             result = np.zeros((rbins.shape[0],self.C_id.shape[0]))
             r_cache = self.ddelta_bar_cache.get(str(id(geo.zs)))
-            print "sph_klim: calculating with tomographic (coarse) bins"
+            print("sph_klim: calculating with tomographic (coarse) bins")
         else:
             rbins = geo.rbins_fine
             result = np.zeros((rbins.shape[0],self.C_id.shape[0]))
             r_cache = self.ddelta_bar_cache.get(str(id(geo.z_fine)))
-            print "sph_klim: calculating with resolution (fine) slices"
+            print("sph_klim: calculating with resolution (fine) slices")
 
         if a_00<=0:
             if a_00<-1.e-14:
@@ -326,7 +328,7 @@ class SphBasisK(LWBasis):
 
         #norm = 3./(rbins[:,1]**3 - rbins[:,0]**3)#/(a_00*2.*np.sqrt(np.pi))
 
-        for itr in xrange(self.C_id.shape[0]):
+        for itr in range(self.C_id.shape[0]):
             ll = int(self.C_id[itr,0])
             kk = self.C_id[itr,1]
             mm = int(self.C_id[itr,2])
@@ -339,7 +341,7 @@ class SphBasisK(LWBasis):
         else:
             self.ddelta_bar_cache[str(id(geo))]['fine'] = result
             self.ddelta_bar_cache[str(id(geo.z_fine))] = r_cache
-        print "sph_klim: finished d_delta_bar_d_delta_alpha for geo id: ",id(geo)
+        print("sph_klim: finished d_delta_bar_d_delta_alpha for geo id: ",id(geo))
         return result
 
     def gen_R_cache(self,rbins):
@@ -349,7 +351,7 @@ class SphBasisK(LWBasis):
         r_cache = {}
 
         norm = 3./(rbins[:,1]**3 - rbins[:,0]**3)
-        for itr in xrange(self.C_id.shape[0]):
+        for itr in range(self.C_id.shape[0]):
             ll = int(self.C_id[itr,0])
             kk = self.C_id[itr,1]
             if ll!=ll_old:
@@ -370,9 +372,7 @@ def R_int(r_range,k,ll):
     # I am using the spherical Bessel function for R_n, but that might change
     def _integrand(r):
         return r**2*j_n(ll,r*k)
-    #TODO can be done with trapz
     result = quad(_integrand,r_range[0],r_range[1],epsabs=10e-20,epsrel=1e-10)[0]
-    #TODO check if eps logic needed
     return result
 
 #I_alpha checked

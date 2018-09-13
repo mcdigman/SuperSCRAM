@@ -1,5 +1,7 @@
 """Provides various lensing source distributions"""
 #TODO handle photo z uncertainties
+from __future__ import division,print_function,absolute_import
+from builtins import range
 import numpy as np
 from algebra_utils import trapz2
 
@@ -83,7 +85,7 @@ def _dz_to_dchi(p_in,zs,rs,C,params):
     #z_min_dist = params['z_min_dist']
     #z_max_dist = params['z_max_dist']
     ps = np.zeros(p_in.size)
-    for i in xrange(0,zs.size-1): #compensate for different bin sizes
+    for i in range(0,zs.size-1): #compensate for different bin sizes
         ps[i] = p_in[i]/(rs[i+1]-rs[i])
     ps[-1] = p_in[-1]/(C.D_comov(2*zs[-1]-zs[-2])-rs[-1]) #patch for last value
     #ps = ps*(zs<=z_max_dist)*(zs>=z_min_dist) #cutoff outside dist limits

@@ -1,5 +1,6 @@
 """test some exact results for sph_klim, default x_grid_size is sufficiently converged to l tested if succeeds"""
-
+from __future__ import print_function,absolute_import,division
+from builtins import range
 #Test numeric integral compared to mp arbitrary precision
 #Both the numeric and mp results should agree; they are both trustworthy, although the numerical method is still potentially more robust
 import numpy as np
@@ -34,7 +35,7 @@ def test_alm_match1():
     geo1 = RectGeo(zs,Theta,Phi,C,z_fine)
 
     alm_py = np.zeros_like(alm_math)
-    for i in xrange(0,lm_table.shape[0]):
+    for i in range(0,lm_table.shape[0]):
         alm_py[i] = geo1.a_lm(lm_table[i,0],lm_table[i,1])# sph.a_lm(geo1,lm_table[i,0],lm_table[i,1])
 
     alm_math1 = alm_math[alm_math>0]
@@ -46,8 +47,8 @@ def test_alm_match1():
         zero_max_diff = np.max(alm_py1[alm_math==0.])
     else:
         zero_max_diff = 0.
-    print "n nonzero",alm_math1.size
-    print "avg,max diff:",avg_diff,max_diff
+    print("n nonzero",alm_math1.size)
+    print("avg,max diff:",avg_diff,max_diff)
     assert avg_diff<AVG_TOLERANCE
     assert max_diff<MAX_TOLERANCE
     assert zero_max_diff<ZERO_TOLERANCE
@@ -59,7 +60,7 @@ def test_rint_match_mp():
     scipy's hypergeometric functions would fail this test because of a catastrophic loss of precision,
     mp works but to avoid mp dependency we just use numerical method
     """
-    print "test_rint_match_mp: begin testing numeric r integral agreement with exact (arbitrary precision) mp solution"
+    print("test_rint_match_mp: begin testing numeric r integral agreement with exact (arbitrary precision) mp solution")
     ZERO_TOLERANCE = 10e-13
     MAX_TOLERANCE = 10e-11
     AVG_TOLERANCE = 10e-13
@@ -91,7 +92,7 @@ def test_rint_match_mp():
     for ll in ls:
         ks = jn_zeros_cut(ll,k_cut*r_max)/r_max
         ll_m = mp.mpf(ll)
-        for i in xrange(0,ks.size):
+        for i in range(0,ks.size):
             kk_m = mp.mpf(ks[i])
 
             hyp1 = mp.hyp1f2(1.5+ll_m/2.,2.5+ll_m/2.,1.5+ll_m,-1./4*kk_m**2*r2_m**2)*r2_m**(3+ll_m)
@@ -107,7 +108,7 @@ def test_rint_match_mp():
                 diff_tot+=diff
                 diff_tot2+=diff2
                 if diff>MAX_TOLERANCE:
-                    #print "test_rint_match_mp: error outside tolerance at l,k,numeric,mp: ",ll,ks[i],r_int_compute,r_int_exact
+                    #print("test_rint_match_mp: error outside tolerance at l,k,numeric,mp: ",ll,ks[i],r_int_compute,r_int_exact)
                     bad_count+=1
                 diff_max = max(diff_max,diff)
                 diff_max2 = max(diff_max2,diff2)
@@ -115,10 +116,10 @@ def test_rint_match_mp():
                 zero_diff+=r_int_compute
                 zero_diff2+=r_int_compute2
                 z_count+=1
-    print "test_rint_match_mp: zero diff, n zero",zero_diff,z_count
-    print "test_rint_match_mp: max diff, avg diff,n",diff_max,diff_tot/n_count,n_count
-    print "test_rint_match_mp: max diff tolerance, avg diff tolerance",MAX_TOLERANCE,AVG_TOLERANCE
-    print "test_rint_match_mp: n values outside tolerance",bad_count
+    print("test_rint_match_mp: zero diff, n zero",zero_diff,z_count)
+    print("test_rint_match_mp: max diff, avg diff,n",diff_max,diff_tot/n_count,n_count)
+    print("test_rint_match_mp: max diff tolerance, avg diff tolerance",MAX_TOLERANCE,AVG_TOLERANCE)
+    print("test_rint_match_mp: n values outside tolerance",bad_count)
     if z_count>0:
         assert ZERO_TOLERANCE>zero_diff/z_count
         assert ZERO_TOLERANCE>zero_diff2/z_count
@@ -126,12 +127,12 @@ def test_rint_match_mp():
     assert MAX_TOLERANCE>diff_max2
     assert AVG_TOLERANCE>diff_tot/n_count
     assert AVG_TOLERANCE>diff_tot2/n_count
-    print "test_rint_match_mp: finished testing numeric r integral agreement with exact (arbitrary precision) mp solution"
+    print("test_rint_match_mp: finished testing numeric r integral agreement with exact (arbitrary precision) mp solution")
 
 #Test scipy exact solution vs numeric integration
 #This test fails because of scipy loss of precision: the numeric integration is more accurate
 #    def test_rint_match_scipy(self):
-#        print "test_rint_match_scipy: begin testing numeric r integral agreement with exact (floating point precision) scipy solution"
+#        print("test_rint_match_scipy: begin testing numeric r integral agreement with exact (floating point precision) scipy solution")
 #        ZERO_TOLERANCE = 10e-13
 #        MAX_TOLERANCE = 10e-2
 #        AVG_TOLERANCE = 10e-15
@@ -149,7 +150,7 @@ def test_rint_match_mp():
 #        bad_count = 0
 #        for ll in ls:
 #            ks = jn_zeros_cut(ll,k_cut*r_max)/r_max
-#            for i in xrange(0,ks.size):
+#            for i in range(0,ks.size):
 #                hyp1 = mp.hyp1f2(1.5+ll_m/2.,2.5+ll_m/2.,1.5+ll_m,-1./4*kk_m**2*r2_m**2)*r2_m**(3+ll_m)
 #                hyp2 = mp.hyp1f2(1.5+ll_m/2.,2.5+ll_m/2.,1.5+ll_m,-1./4.*kk_m**2*r1_m**2)*r1_m**(3+ll_m)
 #                r_int_exact = float(1./((3.+ll_m)*mp.gamma(1.5+ll_m))/2.**(ll_m+1.)*kk_m**ll_m*mp.sqrt(mp.pi)*(hyp1-hyp2))
@@ -161,21 +162,21 @@ def test_rint_match_mp():
 #                    if diff>MAX_TOLERANCE:
 #                        f1 = sp.hyp1f2(1.5+ll/2.,2.5+ll/2.,1.5+ll,-1./4*ks[i]**2*r2**2)
 #                        f2 = sp.hyp1f2(1.5+ll/2.,2.5+ll/2.,1.5+ll,-1./4.*ks[i]**2*r1**2)
-#                        print "test_rint_match_scipy: err>TOL: l,k,numeric,scipy,hyp1,hyp2: ",ll,ks[i],r_int_compute,r_int_exact,f1,f2
+#                        print("test_rint_match_scipy: err>TOL: l,k,numeric,scipy,hyp1,hyp2: ",ll,ks[i],r_int_compute,r_int_exact,f1,f2)
 #                        bad_count+=1
 #                    diff_max = max(diff_max,diff)
 #                else:
 #                    zero_diff+=r_int_compute
 #                    z_count+=1
-#        print "test_rint_match_scipy: zero diff, n zero",zero_diff,z_count
-#        print "test_rint_match_scipy: max diff, avg diff,n",diff_max,diff_tot/n_count,n_count
-#        print "test_rint_match_scipy: max diff tolerance, avg diff tolerance",MAX_TOLERANCE,AVG_TOLERANCE
-#        print "test_rint_match_scipy: n values outside tolerance",bad_count
+#        print("test_rint_match_scipy: zero diff, n zero",zero_diff,z_count)
+#        print("test_rint_match_scipy: max diff, avg diff,n",diff_max,diff_tot/n_count,n_count)
+#        print("test_rint_match_scipy: max diff tolerance, avg diff tolerance",MAX_TOLERANCE,AVG_TOLERANCE)
+#        print("test_rint_match_scipy: n values outside tolerance",bad_count)
 #        if z_count>0:
 #            assert ZERO_TOLERANCE>zero_diff/z_count
 #        assert MAX_TOLERANCE>diff_max
 #        assert AVG_TOLERANCE>diff_tot/n_count
-#        print "test_rint_match_scipy: finished testing numeric r integral agreement with exact (floating point precision) scipy solution"
+#        print("test_rint_match_scipy: finished testing numeric r integral agreement with exact (floating point precision) scipy solution")
 
 if __name__=='__main__':
 #    unittest.main()

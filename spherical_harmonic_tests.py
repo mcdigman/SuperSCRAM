@@ -1,6 +1,7 @@
 """tests of spherical harmonic utilities"""
 #pylint: disable=W0621
-#TODO write test for reconstruction when ground truth known
+from __future__ import print_function,division,absolute_import
+from builtins import range
 import numpy as np
 import pytest
 import sph_functions as sph
@@ -24,8 +25,8 @@ class ThetaPhiList(object):
             self.thetas = np.zeros(n_side**2)
             self.phis = np.zeros(n_side**2)
             self.l_max = 20
-            for i in xrange(0,n_side):
-                for j in xrange(0,n_side):
+            for i in range(0,n_side):
+                for j in range(0,n_side):
                     self.thetas[n_side*i+j] = theta_need[j]
                     self.phis[n_side*i+j] = phi_need[i]
         elif key==2:
@@ -87,7 +88,7 @@ def test_Y_R_agreement_table_direct(theta_phis):
     l_max = theta_phis.l_max
     Y_r_1s,ls,ms = ylmu.get_Y_r_table(l_max,thetas,phis)
     Y_r_2s = np.zeros_like(Y_r_1s)
-    for itr in xrange(0,ls.size):
+    for itr in range(0,ls.size):
         Y_r_2s[itr] = sph.Y_r(ls[itr],ms[itr],thetas,phis)
     assert np.allclose(Y_r_1s,Y_r_2s,atol=ATOL_USE,rtol=RTOL_USE)
 
@@ -98,7 +99,7 @@ def test_Y_R_agreement_mp_table_direct(theta_phis):
     l_max = theta_phis.l_max
     Y_r_1s,ls,ms = ylmu_mp.get_Y_r_table(l_max,thetas,phis)
     Y_r_2s = np.zeros_like(Y_r_1s)
-    for itr in xrange(0,ls.size):
+    for itr in range(0,ls.size):
         Y_r_2s[itr] = sph.Y_r(ls[itr],ms[itr],thetas,phis)
     assert np.allclose(Y_r_1s,Y_r_2s,atol=ATOL_USE,rtol=RTOL_USE)
 
@@ -129,7 +130,7 @@ def test_Y_R_agreement_dict_central():
     Y_r_1s = np.zeros(n_val)
     Y_r_2s = np.zeros(n_val)
 
-    for itr in xrange(0,n_val):
+    for itr in range(0,n_val):
         Y_r_1s[itr] = Y_r_1_dict[keys1[itr]]
         Y_r_2s[itr] = Y_r_2_dict[keys2[itr]]
 
@@ -151,7 +152,7 @@ def test_Y_R_agreement_mp_central_central():
     Y_r_1s = np.zeros(n_val)
     Y_r_2s = np.zeros(n_val)
 
-    for itr in xrange(0,n_val):
+    for itr in range(0,n_val):
         Y_r_1s[itr] = Y_r_1_dict[keys1[itr]]
         Y_r_2s[itr] = Y_r_2_dict[keys2[itr]]
 
@@ -173,7 +174,7 @@ def test_Y_R_agreement_mp_dict_central():
     Y_r_1s = np.zeros(n_val)
     Y_r_2s = np.zeros(n_val)
 
-    for itr in xrange(0,n_val):
+    for itr in range(0,n_val):
         Y_r_1s[itr] = Y_r_1_dict[keys1[itr]]
         Y_r_2s[itr] = Y_r_2_dict[keys2[itr]]
 

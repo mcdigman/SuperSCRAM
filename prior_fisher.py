@@ -1,9 +1,11 @@
 """Load the prior fisher matrix from the jdem fom working group report and project to the necessary parameter space"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 import numpy as np
 import fisher_matrix as fm
 #jdem order is ns,Omegamh2,Omegabh2,Omegakh2,OmegaLh2,deltaGamma,deltaM,deltaG0,LogAs,ws36_00,ws36_01,...
 JDEM_LABELS = np.hstack([np.array(['ns','Omegamh2','Omegabh2','Omegakh2','OmegaLh2','deltaGamma','deltaM','deltaG0','LogAs']),
-                         np.array(['ws36_'+str(_i).zfill(2) for _i in xrange(0,36)])])
+                         np.array(['ws36_'+str(_i).zfill(2) for _i in range(0,36)])])
 class PriorFisher(object):
     """class to manage reading in prior fisher matrix"""
     def __init__(self,de_model,params,fisher_in=None,labels_in=None):
@@ -61,7 +63,7 @@ def read_prior_fisher(params):
     col_is = fisher_d[:,1].astype(int)
     n_row = np.max(row_is)+1
     fisher_mat = np.zeros((n_row,n_row))
-    for itr in xrange(0,row_is.size):
+    for itr in range(0,row_is.size):
         fisher_mat[row_is[itr],col_is[itr]] = fisher_d[itr,2]
     fisher_mat = (fisher_mat+fisher_mat.T)/2.
     return fisher_mat
@@ -78,7 +80,7 @@ def fix_elements(fisher_mat,params,labels):
     #make sure does not change actual array
     fisher_new = fisher_mat.copy()
     labels_new = labels.copy()
-    for i in xrange(0,rows.size):
+    for i in range(0,rows.size):
         fisher_new = np.delete(fisher_new,(rows[i]),axis=0)
         fisher_new = np.delete(fisher_new,(rows[i]),axis=1)
         labels_new = np.delete(labels_new,(rows[i]),axis=0)

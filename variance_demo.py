@@ -1,4 +1,6 @@
 """demonstration of ability to compute super sample variance term in a geometry"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 from time import time
 import numpy as np
 from polygon_geo import PolygonGeo
@@ -18,7 +20,7 @@ if __name__=='__main__':
                     'return_sigma8':False,
                     'accuracy':2
                   }
-    print "main: building cosmology"
+    print("main: building cosmology")
     power_params = defaults.power_params.copy()
     power_params.camb = camb_params
     cosmo_use = defaults.cosmology.copy()
@@ -160,19 +162,19 @@ if __name__=='__main__':
 
     l_sw = np.logspace(np.log(30),np.log(5000),base=np.exp(1.),num=40)
 
-    print "main: building geometries"
+    print("main: building geometries")
     polygon_params = defaults.polygon_params
     polygon_params['n_double'] = 80
     geo1 = PolygonGeo(z_coarse,thetas,phis,theta_in,phi_in,C,z_fine,l_max,defaults.polygon_params)
-    print 'main: r diffs',np.diff(geo1.rs)
-    print 'main: theta width',(geo1.rs[1]+geo1.rs[0])/2.*(theta1-theta0)
-    #print 'main: phi width',(geo1.rs[1]+geo1.rs[0])/2.*(phi1-phi0)*np.sin((theta1+theta0)/2)
-    print 'main: phi width',(geo1.rs[1]+geo1.rs[0])/2.*(phi1-phi0)
+    print('main: r diffs',np.diff(geo1.rs))
+    print('main: theta width',(geo1.rs[1]+geo1.rs[0])/2.*(theta1-theta0))
+    #print('main: phi width',(geo1.rs[1]+geo1.rs[0])/2.*(phi1-phi0)*np.sin((theta1+theta0)/2))
+    print('main: phi width',(geo1.rs[1]+geo1.rs[0])/2.*(phi1-phi0))
 #    geo2 = PolygonGeo(z_coarse,thetas,phis+phi1,theta_in,phi_in+phi1,C,z_fine,l_max,defaults.polygon_params)
 #    #geo1 = RectGeo(z_coarse,np.array([theta0,theta1]),np.array([phi0,phi1]),C,z_fine)
 #    #geo2 = RectGeo(z_coarse,np.array([theta0,theta1]),np.array([phi0,phi1])+phi1,C,z_fine)
 
-    print "main: building basis"
+    print("main: building basis")
     basis_params = defaults.basis_params.copy()
     basis_params['n_bessel_oversample']*=1
     basis_params['x_grid_size']*=10
@@ -185,37 +187,38 @@ if __name__=='__main__':
 
     basis = SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_max)
     #TODO priority check if z_fine matters make self consistent if so
-    for i in xrange(0,k_tests.size):
-        print "r_max,k_cut",r_max,k_tests[i]
+    for i in range(0,k_tests.size):
+        print("r_max,k_cut",r_max,k_tests[i])
         n_basis[i] = np.sum(basis.C_id[:,1]<=k_tests[i])
         variances[i] = basis.get_variance(geo1,k_cut_in=k_tests[i])
-        print "main: with k_cut="+str(k_tests[i])+" size="+str(n_basis[i])+" got variance="+str(variances[i])
+        print("main: with k_cut="+str(k_tests[i])+" size="+str(n_basis[i])+" got variance="+str(variances[i]))
 
     if do_plot:
         import matplotlib.pyplot as plt
         plt.plot(n_basis,variances)
         plt.show()
-    print "main: getting variance"
+    print("main: getting variance")
     variance_res = basis.get_variance(geo1)
     time1 = time()
-    print "main: finished building in "+str(time1-time0)+"s"
+    print("main: finished building in "+str(time1-time0)+"s")
 
     r_width = np.diff(geo1.rs)[0]
     theta_width = (geo1.rs[1]+geo1.rs[0])/2.*(theta1-theta0)
     phi_width = (geo1.rs[1]+geo1.rs[0])/2.*(phi1-phi0)
     volume = 4./3.*np.pi*(geo1.rs[1]**3-geo1.rs[0]**3)*geo1.angular_area()/(4.*np.pi)
     square_equiv = volume**(1./3.)
-    print 'main: r diffs',r_width*C.h
-    print 'main: theta width',theta_width*C.h
-    #print 'main: phi width',(geo1.rs[1]+geo1.rs[0])/2.*(phi1-phi0)*np.sin((theta1+theta0)/2)
-    print 'main: phi width',phi_width*C.h
-    print 'main: square side length',square_equiv*C.h
-    print "main: variance is "+str(variance_res)
-    print "main: variance/predicted by sides is "+str(variances[-1]/variance_pred1)
-    print "main: variance/predicted by volume is "+str(variances[-1]/variance_pred2)
-    #print "main: rate of change of variance is "+str((variances[-1]-variances[-2])/(k_tests[-1]-k_tests[-2]))
+    print('main: r diffs',r_width*C.h)
+    print('main: theta width',theta_width*C.h)
+    #print('main: phi width',(geo1.rs[1]+geo1.rs[0])/2.*(phi1-phi0)*np.sin((theta1+theta0)/2))
+    print('main: phi width',phi_width*C.h)
+    print('main: square side length',square_equiv*C.h)
+    print("main: variance is "+str(variance_res))
+    print("main: variance/predicted by sides is "+str(variances[-1]/variance_pred1))
+    print("main: variance/predicted by volume is "+str(variances[-1]/variance_pred2))
+    #print("main: rate of change of variance is "+str((variances[-1]-variances[-2])/(k_tests[-1]-k_tests[-2])))
     #approx_deriv = np.average((np.diff(variances)/np.diff(n_basis))[-5::])
     approx_deriv = (variances[-1]-variances[-5])/(n_basis[-1]-n_basis[-5])
     estim_change = approx_deriv*n_basis[-1]*2.
     estim_converge = estim_change/variances[-1]
-    print "main: estimate variance converged to within an error of"+str(estim_converge*100.)+"%, first approx of true value ~"+str(estim_change+variances[-1])
+    print("main: estimate variance converged to within an error of"+str(estim_converge*100.)+"%, first approx of true value ~"+str(estim_change+variances[-1]))
+

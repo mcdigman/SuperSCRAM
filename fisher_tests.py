@@ -1,5 +1,7 @@
 """tests for the fisher_matrix module"""
 #pylint: disable=W0621,duplicate-code
+from __future__ import print_function,absolute_import,division
+from builtins import range
 import copy
 import numpy as np
 import numpy.linalg as npl
@@ -347,7 +349,7 @@ def test_contract_cov_range2_nofisher(fisher_params):
     cov = fisher_params.fisher_input.cov.copy()
 
     range_mat1 = np.zeros((cov.shape[0],cov.shape[0]))
-    for i in xrange(0,cov.shape[0]):
+    for i in range(0,cov.shape[0]):
         range_mat1[:,i] = np.arange(cov.shape[0])
 
     range_mat2 = np.zeros((cov.shape[0],1))
@@ -460,7 +462,7 @@ def test_contract_fab_range2_nofisher(fisher_params):
     fab = fisher_params.fisher_input.fab.copy()
 
     range_mat1 = np.zeros((fab.shape[0],fab.shape[0]))
-    for i in xrange(0,fab.shape[0]):
+    for i in range(0,fab.shape[0]):
         range_mat1[:,i] = np.arange(fab.shape[0])
 
     range_mat2 = np.zeros((fab.shape[0],1))

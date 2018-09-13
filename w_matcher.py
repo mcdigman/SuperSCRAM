@@ -1,4 +1,6 @@
 """class to match 'effective' w and growth factors in order to emulate arbitrary w(z) behavior"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 from warnings import warn
 
 from scipy.interpolate import InterpolatedUnivariateSpline,RectBivariateSpline
@@ -44,19 +46,18 @@ class WMatcher(object):
         self.Gs = np.zeros((self.n_w,self.n_a))
 
 
-        for i in xrange(0,self.n_w):
+        for i in range(0,self.n_w):
             self.cosmos[i] = self.cosmo_fid.copy()
             self.cosmos[i]['w'] = self.ws[i]
             C_i = cp.CosmoPie(cosmology=self.cosmos[i],p_space=self.cosmo_fid['p_space'],silent=True)
             E_as = C_i.Ez(self.zs)
-            #TODO check initial 0 on this integral is right
             self.integ_Es[i] = cumtrapz(1./(self.a_s**2*E_as)[::-1],self.a_s[::-1],initial=0.)
             self.Gs[i] = C_i.G(self.zs)
         self.G_interp = RectBivariateSpline(self.ws,self.a_s[::-1],self.Gs[:,::-1],kx=2,ky=2)
 
         self.ind_switches = np.argmax(np.diff(self.integ_Es,axis=0)<0,axis=0)+1
         #there is a purely numerical issue that causes the integral to be non-monotonic, this loop eliminates the spurious behavior
-        for i in xrange(1,self.n_a):
+        for i in range(1,self.n_a):
             if self.ind_switches[i]>1:
                 if self.integ_Es[self.ind_switches[i]-1,i]-self.integ_Es[0,i]>=0:
                     self.integ_Es[0:(self.ind_switches[i]-1),i] = self.integ_Es[self.ind_switches[i]-1,i]
@@ -66,7 +67,7 @@ class WMatcher(object):
         self.integ_E_interp = RectBivariateSpline(self.ws,self.a_s[::-1],self.integ_Es,kx=2,ky=2)
 
     #accurate to within numerical precision
-    #TODO could reduce reliance on padding
+    #could reduce reliance on padding
     def match_w(self,C_in,z_match,n_pad=3):
         """ match effective constant w as in casarini paper
             require some padding so can get very accurate interpolation results, 2 works 3 is better"""
@@ -77,7 +78,7 @@ class WMatcher(object):
         integ_E_in_interp = InterpolatedUnivariateSpline(self.a_s[::-1],integ_E_in,k=2,ext=2)
         integ_E_targets = integ_E_in_interp(a_match)
         w_grid1 = np.zeros(a_match.size)
-        for itr in xrange(0,z_match.size):
+        for itr in range(0,z_match.size):
             iE_vals = self.integ_E_interp(self.ws,a_match[itr]).T[0]-integ_E_targets[itr]
             iG = np.argmax(iE_vals<=0.)
             if iG-n_pad>=0 and iG+n_pad<self.ws.size:
@@ -93,7 +94,7 @@ class WMatcher(object):
         G_norm_ins = C_in.G_norm(z_in)
         n_z_in = z_in.size
         pow_mult = np.zeros(n_z_in)
-        for itr in xrange(0,n_z_in):
+        for itr in range(0,n_z_in):
             pow_mult[itr] = (G_norm_ins[itr]/(self.G_interp(w_in[itr],a_in[itr])/self.G_interp(w_in[itr],1.)))**2
         #return multiplier for linear power spectrum from effective constant w model
         return pow_mult
@@ -101,13 +102,14 @@ class WMatcher(object):
     def growth_interp(self,w_in,a_in):
         """get an interpolated growth factor for a given w, a_in is a vector"""
         return self.G_interp(w_in,a_in,grid=False).T
+
     #TODO check
     def match_scale(self,z_in,w_in):
         """match scaling (ie sigma8) for the input model compared to the fiducial model, not used"""
         n_z_in = z_in.size
         pow_scale = np.zeros(n_z_in)
         G_fid = self.C_fid.G(0)
-        for itr in xrange(0,n_z_in):
+        for itr in range(0,n_z_in):
             pow_scale[itr]=(self.G_interp(w_in,1./(1.+z_in))/G_fid)**2
         #return multiplier for linear power spectrum from effective constant w model
         return pow_scale

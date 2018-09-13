@@ -1,4 +1,6 @@
 """provides some useful default values"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 import numpy as np
 from param_manager import PowerParamManager
 # default cosmology is Planck 2015 TT+lowP+lensing+ext (arxiv 1502.01589v3 page 32)
@@ -66,9 +68,6 @@ dn_params = {'nz_select': 'CANDELS'}#'M_cut':(12.5)}
 lw_observable_list = np.array(['d_number_density'])
 lw_survey_params = {    'cross_bins': False}
 basis_params = {   'n_bessel_oversample'   :400000,
-                   #TODO n_bessel_ovsersample default may not be enough
-                   # 'k_max'                 :10.,#TODO check
-                   # 'k_min'                 :10**-4,
                    'x_grid_size':100000}#convergence related
 polygon_params = {'res_healpix':6,'n_double':30}
 nz_params = {   'data_source'   :'./data/CANDELS-GOODSS2.dat',
@@ -99,6 +98,15 @@ nz_params_wfirst_lens = {   'data_source'   :'./data/H-5x140s.dat',
                             'suppress'      :True,
                             'z_cut'         :0.04
                         }
+nz_params_constant = {   'data_source'   :'./data/H-5x140s.dat',
+                            'area_sterad'   : 0.040965*np.pi**2/180**2,
+                            'smooth_sigma'  :0.01,
+                            'n_right_extend':16,
+                            'z_resolution'  :0.001,
+                            'mirror_boundary':True,
+                            'suppress'      :True,
+                            'z_cut'         :0.04,
+                            'nz_constant' :0.0001}
 nz_params_lsst = {  'data_source'   :'./data/CANDELS-GOODSS2.dat',
                     'i_cut'         :25.3,#lsst assumes they will get 10 billion galaxies with i<26 in 20000 deg^2, 4 billion lensing quality with i<25.3
                     'area_sterad'   :0.0409650328530259/3282.80635,
@@ -116,9 +124,7 @@ hmf_params = {      'log10_min_mass'    :   11, #saturated mitigation achieved w
                     'z_resolution'      : 0.01,
                     'z_min'             : 0.,
                     'z_max'             : 4.05,
-                    'n_z'               : 405,
-                    'b_norm_overwride'    : False,
-                    'f_norm_overwride'    : False}
+                    'n_z'               : 405}
 fpt_params = {  'C_window':0.75,
                 'n_pad':1000,
                 'low_extrap':-5,
@@ -153,7 +159,7 @@ halofit_params = {  'r_max':6,#5
 wmatcher_params = { 'w_step':0.01,
                     'w_min':-3.50,
                     'w_max':0.1,
-                    'a_step':0.001,
+                    'a_step':0.0001,
                     'a_min':0.001,
                     'a_max':1.00
                   }

@@ -1,7 +1,9 @@
 r"""test that the shear shear power spectrum derivatives have some expected functional dependencies,
-specifically \partial C^{ij}/\partial \bar{\delta}(zs) \propto 1/(width of zs bin)*z^i*C^{ij}, 
+specifically \partial C^{ij}/\partial \bar{\delta}(zs) \propto 1/(width of zs bin)*z^i*C^{ij},
 where z^i ~ average z of closer z bin"""
 #pylint: disable=W0621
+from __future__ import division,print_function,absolute_import
+from builtins import range
 import numpy as np
 import pytest
 from shear_power import ShearPower,Cll_q_q
@@ -64,12 +66,12 @@ def test_dz(util_set):
 
     results1_0 = np.zeros((5,ls.size))
     results1_test = np.zeros((5,ls.size))
-    for z_ind in xrange(10,35,5):
+    for z_ind in range(10,35,5):
         ind_min = 200
         ind_max = ind_min+z_ind
         dC_ss_1 = Cll_q_q(dC_ddelta1,QShear1_1,QShear1_2).Cll(dC_ddelta1.rs[ind_min],dC_ddelta1.rs[ind_max])
-        results1_test[(z_ind-10)/5] = dC_ss_1/ss_1/(dC_ddelta1.zs[ind_max]-dC_ddelta1.zs[ind_min])
-        results1_0[(z_ind-10)/5] = dC_ss_1/ss_1
+        results1_test[int((z_ind-10)/5)] = dC_ss_1/ss_1/(dC_ddelta1.zs[ind_max]-dC_ddelta1.zs[ind_min])
+        results1_0[int((z_ind-10)/5)] = dC_ss_1/ss_1
 
     results_norm1_test = results1_test/results1_test[0]
     results_norm1_0 = results1_0/results1_0[0]

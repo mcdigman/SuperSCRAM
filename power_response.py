@@ -1,4 +1,6 @@
 """get response of matter power spectrum to an overall density perturbation"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline,RectBivariateSpline
 from time import time
