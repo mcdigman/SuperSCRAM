@@ -117,7 +117,7 @@ class SuperSurvey(object):
         print("----------------------------------------------------")
         print("----------------------------------------------------")
 
-    def make_standard_ellipse_plot(self,c_extra=None,include_base=True,dchi2=2.3,include_diag=True):
+    def make_standard_ellipse_plot(self,c_extra=None,include_base=True,dchi2=2.3,include_diag=True,margin=2.,plot_dim=(10,7),left_space=0.06,right_space=0.99,top_space=0.99,bottom_space=0.05,labelsize=6,pad=2,fontsize=8,nticks=2,tickrange=0.7):
         """make a standardized ellipse plot for the object"""
         if c_extra is None:
             c_extra = np.zeros((0,self.surveys_sw[0].cosmo_par_list.size,self.surveys_sw[0].cosmo_par_list.size))
@@ -140,7 +140,7 @@ class SuperSurvey(object):
             label_set = np.full(c_extra.shape[0],'extra')
         #box_widths = np.array([0.015,0.005,0.0005,0.005,0.1,0.05])*3.
         #cov_set = np.array([SS.covs_params[1],SS.covs_params[0],SS.covs_g_pars[0]])
-        make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',self.surveys_sw[0].cosmo_par_list,dchi2=dchi2,include_diag=include_diag)
+        make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',self.surveys_sw[0].cosmo_par_list,dchi2=dchi2,include_diag=include_diag,margin=margin,plot_dim=plot_dim,left_space=left_space,right_space=right_space,top_space=top_space,bottom_space=bottom_space,labelsize=labelsize,pad=pad,fontsize=fontsize,nticks=nticks,tickrange=tickrange)
 
 
 def get_ellipse_specs(covs,dchi2=2.3):
@@ -181,12 +181,12 @@ FORMATTED_LABELS = {"ns":"$n_s$",
                     "Omegach2":r"$\Omega_c h^2$",
                     "Omegac":r"$\Omega_c$"
                    }
-def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_par_list,dchi2,adaptive_mult=1.05,include_diag=True):
+def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_par_list,dchi2,adaptive_mult=1.05,include_diag=True,aspect='auto',margin=2.,plot_dim=(10,7),left_space=0.06,right_space=0.99,top_space=0.99,bottom_space=0.05,labelsize=6,pad=2,fontsize=8,nticks=2,tickrange=0.7):
     """make the plot of error ellipses given the set of covariance matrices"""
     import matplotlib.pyplot as plt
     import matplotlib.ticker as ticker
     from matplotlib.patches import Ellipse
-    fig = plt.figure(figsize=(10,7))
+    fig = plt.figure(figsize=plot_dim)
     n_p = cosmo_par_list.size
     if include_diag:
         ax_list = fig.subplots(n_p,n_p)
@@ -203,8 +203,7 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
     if not isinstance(box_widths,np.ndarray) and box_widths=="adaptive":
         box_widths = np.zeros(n_p)
         for itr3 in range(0,n_c):
-            #TODO make sigmas more selectable don't hardcode the 3
-            box_widths = np.max(np.array([box_widths,2.*np.sqrt(np.diag(cov_set[itr3]))]),axis=0)
+            box_widths = np.max(np.array([box_widths,margin*np.sqrt(np.diag(cov_set[itr3]))]),axis=0)
         box_widths*=adaptive_mult
 
     xbox_widths = box_widths
@@ -212,13 +211,16 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
     for itr1 in range(0,n_p):
         for itr2 in range(0,n_p):
             if not include_diag:
-                if itr1==itr2 or itr2==0 or itr1==n_p-1:
+                if itr2==0 or itr1==n_p-1:
                     continue
                 else:
                     if n_p==2:
                         ax = ax_list
                     else:
                         ax = ax_list[itr2-1,itr1]
+                    if itr1==itr2:
+                        ax.axis('off')
+                        continue
             else:
                 if n_p==1:
                     ax = ax_list
@@ -236,6 +238,7 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
             es = np.zeros(n_c,dtype=object)
             ybox_width = 0.
             for itr3  in range(0,n_c):
+                print("angle ",itr3,180./np.pi*angle_set[itr3][itr1,itr2])
                 es[itr3] = Ellipse(fid_point,width1_set[itr3][itr1,itr2],width2_set[itr3][itr1,itr2],angle=180./np.pi*angle_set[itr3][itr1,itr2],label=label_set[itr3])
                 if itr1==itr2:
                     xs = np.linspace(-xbox_widths[itr1]/2.,xbox_widths[itr1]/2.,200)
@@ -255,59 +258,59 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
                 ybox_width = ybox_widths[itr2]
             elif itr1==itr2:
                 xbox_width = xbox_widths[itr1]
-            nticks = 2
-            tickrange = 0.7
             formatter = ticker.FormatStrFormatter("%.1e")
-            if itr1<=itr2:
-                xtickspacing = xbox_width*tickrange/nticks
-                xticks = np.arange(-tickrange/2*xbox_width,tickrange/2*xbox_width+0.01*xtickspacing,xtickspacing)
-                ax.xaxis.set_major_locator(ticker.FixedLocator(xticks))
-                ax.xaxis.set_major_formatter(formatter)
-                ax.set_xlim(-xbox_width/2.,xbox_width/2.)
+            xtickspacing = xbox_width*tickrange/nticks
+            xticks = np.arange(-tickrange/2*xbox_width,tickrange/2*xbox_width+0.01*xtickspacing,xtickspacing)
+            ax.xaxis.set_major_locator(ticker.FixedLocator(xticks))
+            ax.xaxis.set_major_formatter(formatter)
+            ax.set_xlim(-xbox_width/2.,xbox_width/2.)
 
+            if itr1==itr2:
+                ytickspacing = (ybox_width)*tickrange/nticks
+                yticks = np.arange(ybox_width/2.-tickrange/2*ybox_width,ybox_width/2.+tickrange/2*ybox_width+0.01*ytickspacing,ytickspacing)
+            else:
+                ytickspacing = (ybox_width)*tickrange/nticks
+                yticks = np.arange(-tickrange/2*ybox_width,tickrange/2*ybox_width+0.01*ytickspacing,ytickspacing)
+            ax.yaxis.set_major_locator(ticker.FixedLocator(yticks))
+            ax.yaxis.set_major_formatter(formatter)
 
-            if itr1<=itr2:
-                if itr1==itr2:
-                    ytickspacing = (ybox_width)*tickrange/nticks
-                    yticks = np.arange(ybox_width/2.-tickrange/2*ybox_width,ybox_width/2.+tickrange/2*ybox_width+0.01*ytickspacing,ytickspacing)
-                else:
-                    ytickspacing = (ybox_width)*tickrange/nticks
-                    yticks = np.arange(-tickrange/2*ybox_width,tickrange/2*ybox_width+0.01*ytickspacing,ytickspacing)
-                ax.yaxis.set_major_locator(ticker.FixedLocator(yticks))
-                ax.yaxis.set_major_formatter(formatter)
-                if itr1==itr2:
-                    ax.set_ylim(0.,ybox_width)
-                else:
-                    ax.set_ylim(-ybox_width/2.,ybox_width/2.)
-                ax.tick_params(axis='both',labelsize=6,labelbottom='off',labelleft='off',labeltop='off',labelright='off',bottom='on',top='on',left='on',right='on',direction='in')
+            if itr1==itr2:
+                ax.set_ylim(0.,ybox_width)
+            else:
+                ax.set_ylim(-ybox_width/2.,ybox_width/2.)
+            ax.tick_params(axis='both',labelsize=labelsize,labelbottom='off',labelleft='off',labeltop='off',labelright='off',bottom='on',top='on',left='on',right='on',direction='in',pad=0.)
 
             ax.grid()
 
-            if itr1==itr2==0:
-                param2_pretty = FORMATTED_LABELS.get(param2)
-                if param2_pretty is None:
-                    param2_pretty = param2
-                ax.set_ylabel("$\\Delta$"+str(param2_pretty),fontsize=8)
-                ax.legend(handles=es.tolist(),loc=2,prop={'size':6})
-            if itr1==0 and itr1<itr2:
-                param2_pretty = FORMATTED_LABELS.get(param2)
-                if param2_pretty is None:
-                    param2_pretty = param2
-                ax.set_ylabel("$\\Delta$"+str(param2_pretty),fontsize=8)
-                ax.tick_params(axis='y',labelsize=6,labelleft='on',pad=2,bottom='on',left='on',right='on',top='on',direction='in')
+            param1_pretty = FORMATTED_LABELS.get(param1)
+            if param1_pretty is None:
+                param1_pretty = param1
+            param2_pretty = FORMATTED_LABELS.get(param2)
+            if param2_pretty is None:
+                param2_pretty = param2
+
+            if itr1==itr2==0 or (not include_diag) and itr1==0 and itr2==1:
+                #ax.set_ylabel("$\\Delta$"+str(param2_pretty),fontsize=fontsize)
+                ax.legend(handles=es.tolist(),loc=2,prop={'size':fontsize})
+            if itr1==0:
+                ax.set_ylabel("$\\Delta$"+str(param2_pretty),fontsize=fontsize)
+                ax.tick_params(axis='y',labelsize=labelsize,labelleft='on',pad=pad,bottom='on',left='on',right='on',top='on',direction='in')
             if itr2==n_p-1:
-                param1_pretty = FORMATTED_LABELS.get(param1)
-                if param1_pretty is None:
-                    param1_pretty = param1
-                ax.set_xlabel("$\\Delta$"+str(param1_pretty),fontsize=8)
-                ax.tick_params(axis='x',labelsize=6,labelbottom='on',pad=2,bottom='on',left='on',right='on',top='on',direction='in')
+                ax.set_xlabel("$\\Delta$"+str(param1_pretty),fontsize=fontsize)
+                ax.tick_params(axis='x',labelsize=labelsize,labelbottom='on',pad=pad,bottom='on',left='on',right='on',top='on',direction='in')
             if itr1==itr2:
                 if itr2==n_p-1:
-                    ax.tick_params(axis='both',labelsize=6,labelright='off',labeltop='off',pad=2,bottom='on',left='on',right='on',top='on',direction='in')
+                    ax.tick_params(axis='both',pad=pad,bottom='on',left='on',right='on',top='on',direction='in')
                 elif itr2==0:
-                    ax.tick_params(axis='both',labelsize=6,labelright='off',labeltop='off',labelleft='on',pad=2,bottom='on',left='on',right='on',top='on',direction='in')
+                    ax.tick_params(axis='both',labelsize=labelsize,pad=pad,bottom='on',left='on',right='on',top='on',direction='in')
                 else:
-                    ax.tick_params(axis='both',labelsize=6,labelright='off',labeltop='off',labelbottom='on',pad=2,bottom='on',left='on',right='on',top='on',direction='in')
-    fig.subplots_adjust(wspace=0.,hspace=0.,left=0.06,right=0.99,top=0.99,bottom=0.05)
-    fig.show()
+                    ax.tick_params(axis='both',labelsize=labelsize,pad=pad,bottom='on',left='on',right='on',top='on',direction='in')
+                if aspect=='equal':
+                    ax.set_aspect(xbox_width/ybox_width)
+                    #ax.margins(ymargin=0.,xmargin=0.)
+
+            else:
+                ax.set_aspect(aspect)
+    fig.subplots_adjust(wspace=0.,hspace=0.,left=left_space,right=right_space,top=top_space,bottom=bottom_space)
+    plt.show(fig)
     #TODO add correlation matrix functionality

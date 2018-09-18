@@ -226,6 +226,7 @@ if __name__=='__main__':
             abs_error = np.abs(reconstruct6-geo6.contained*1.)
             mse = np.sqrt(np.average(abs_error**2))
 
+    
     do_wfirst_lsst_test = True
     if do_wfirst_lsst_test:
         res_healpix_high = 5

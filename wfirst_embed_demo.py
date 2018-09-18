@@ -185,63 +185,42 @@ if __name__=='__main__':
     print('\a')
     SS.make_standard_ellipse_plot()
 
-do_c_rots = True
-if do_c_rots:
-#cov_g = SS.f_set_nopriors[0][2].get_covar()
-    cov_g_inv = SS.f_set_nopriors[0][2].get_fisher()
-    chol_g = SS.f_set_nopriors[0][2].get_cov_cholesky()
-#chol_g_inv = SS.f_set_nopriors[0][2].get_cov_cholesky_inv()
-    u_no_mit = SS.eig_set[1][0][1]
-    v_no_mit = np.dot(chol_g,u_no_mit)
-    of_no_mit = np.dot(cov_g_inv,v_no_mit)
-#u_mit = SS.eig_set[1][1][1]
-#v_mit = np.dot(chol_g,u_mit)
-#of_mit = np.dot(cov_g_inv,v_mit)
+#do_c_rots = True
+#if do_c_rots:
+cov_g_inv = SS.f_set_nopriors[0][2].get_fisher()
+chol_g = SS.f_set_nopriors[0][2].get_cov_cholesky()
+u_no_mit = SS.eig_set[1][0][1]
+v_no_mit = np.dot(chol_g,u_no_mit)
+of_no_mit = np.dot(cov_g_inv,v_no_mit)
 
-    c_rot_eig_no_mit = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[1][2].get_covar(),of_no_mit))
-#c_rot_eig_no_mit = (c_rot_eig_no_mit+c_rot_eig_no_mit.T)/2.
-#f_rot_eig_no_mit = np.linalg.inv(c_rot_eig_no_mit)
-#f_rot_eig_no_mit = (f_rot_eig_no_mit+f_rot_eig_no_mit.T)/2.
+c_rot_eig_no_mit = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[1][2].get_covar(),of_no_mit))
 
-    c_rot_eig_mit = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[2][2].get_covar(),of_no_mit))
-#c_rot_eig_mit = (c_rot_eig_mit+c_rot_eig_mit.T)/2.
-#f_rot_eig_mit = np.linalg.inv(c_rot_eig_mit)
-#f_rot_eig_mit = (f_rot_eig_mit+f_rot_eig_mit.T)/2.
-
-    c_rot_eig_g = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[0][2].get_covar(),of_no_mit))
-#c_rot_eig_g = (c_rot_eig_g+c_rot_eig_g.T)/2.
-#f_rot_eig_g = np.linalg.inv(c_rot_eig_g)
-#f_rot_eig_g = (f_rot_eig_g+f_rot_eig_g.T)/2.
-
-#assert np.allclose(np.diagonal(c_rot_eig_no_mit/c_rot_eig_g),SS.eig_set[1][0][0])
-#assert np.allclose(np.diagonal(c_rot_eig_mit/c_rot_eig_g),SS.eig_set[1][1][0])
-
-#f_rot_eig_mit2 = np.dot(rot_of_mit,np.dot(SS.f_set[1][2].get_fisher(),rot_of_mit.T))
-#f_rot_eig_mit2 = (f_rot_eig_mit2+f_rot_eig_mit2.T)/2.
-#c_rot_eig_mit2 = np.linalg.inv(f_rot_eig_mit2)
-#c_rot_eig_mit2 = (c_rot_eig_mit2+c_rot_eig_mit2.T)/2.
-
-#m_mat = np.dot(chol_g_inv,np.dot(SS.f_set[1][2].get_fisher(),chol_g_inv.T))f
-    opacities = np.array([1.,1.,1.])
-    colors = np.array([[0,1,0],[1,0,0],[0,0,1]]) 
-    pnames = np.array(['p7','p6','p5','p4','p3','p2','p1'])
-    names = np.array(['g','no mit','mit'])
-    boxes = np.array([5.,5.,5.,5.,5.,5.,5.,])
-    cov_set_1 = np.array([c_rot_eig_g,c_rot_eig_no_mit,c_rot_eig_mit])
-    cov_set_2 = np.array([c_rot_eig_g[-2:,-2:],c_rot_eig_no_mit[-2:,-2:],c_rot_eig_mit[-2:,-2:]])
-    import matplotlib.pyplot as plt
-    Dn = survey_lw.observables[0]
+c_rot_eig_mit = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[2][2].get_covar(),of_no_mit))
+c_rot_eig_g = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[0][2].get_covar(),of_no_mit))
+opacities = np.array([1.,1.,1.])
+colors = np.array([[0,1,0],[1,0,0],[0,0,1]]) 
+pnames = np.array(['p7','p6','p5','p4','p3','p2','p1'])
+names = np.array(['g','no mit','mit'])
+boxes = np.array([5.,5.,5.,5.,5.,5.,5.,])
+cov_set_1 = np.array([c_rot_eig_g,c_rot_eig_no_mit,c_rot_eig_mit])
+cov_set_2 = np.array([c_rot_eig_g[-2:,-2:],c_rot_eig_no_mit[-2:,-2:],c_rot_eig_mit[-2:,-2:]])
+#cov_set_3 = np.array([c_rot_eig_g[-3:,-3:],c_rot_eig_no_mit[-3:,-3:],c_rot_eig_mit[-3:,-3:]])
+import matplotlib.pyplot as plt
+Dn = survey_lw.observables[0]
 #make_ellipse_plot(cov_set_2,colors,opacities,names,np.array([0.0002,0.0025]),pnames[-2:],dchi2,1.05)
-#make_ellipse_plot(cov_set_1,colors,opacities,names,boxes,pnames,dchi2,1.05)
+#make_ellipse_plot(cov_set_1,colors,opacities,names,boxes,pnames,dchi2,1.05,True,'equal')
 #make_ellipse_plot(cov_set_2,colors,opacities,names,boxes[-2:],pnames[-2:],dchi2,1.05)
-#make_ellipse_plot(cov_set_2,colors,opacities,names,boxes[-2:],pnames[-2:],dchi2,1.05,False)
-    a_lw = SS.multi_f.get_a_lw(destructive=True)
-    v_db = np.diag(a_lw[0])
-    n_exp = geo_wfirst.volumes*Dn.n_avg_bin1
-    b_exp = Dn.b_ns1/Dn.n_avg_bin1
-    v_db_b2 = b_exp**2*v_db
-    n_bin = zs.size
-    angles = np.zeros((n_bin,n_bin))
-    for i in range(0,n_bin):
-        for j in range(0,n_bin):
-            angles[i,j] = np.dot(Dn.vs[i],Dn.vs[j])/(np.linalg.norm(Dn.vs[i])*np.linalg.norm(Dn.vs[j]))
+#make_ellipse_plot(cov_set_2,colors,opacities,names,boxes[-2:],pnames[-2:],dchi2,1.05,False,'equal')
+make_ellipse_plot(cov_set_2,colors,opacities,names,boxes[-2:],pnames[-2:],dchi2,1.05,False,'equal',2.,(4,4),0.17,0.99,0.99,0.05)
+print("main: most contaminated direction: ",u_no_mit[:,-1])
+#make_ellipse_plot(cov_set_3,colors,opacities,names,boxes[-3:],pnames[-3:],dchi2,1.05,True,'equal',2.,(4,4),0.17,0.99,0.99,0.05)
+#    a_lw = SS.multi_f.get_a_lw(destructive=True)
+#    v_db = np.diag(a_lw[0])
+#    n_exp = geo_wfirst.volumes*Dn.n_avg_bin1
+#    b_exp = Dn.b_ns1/Dn.n_avg_bin1
+#    v_db_b2 = b_exp**2*v_db
+#n_bin = zs.size
+#angles = np.zeros((n_bin,n_bin))
+#for i in range(0,n_bin):
+#    for j in range(0,n_bin):
+#            angles[i,j] = np.dot(Dn.vs[i],Dn.vs[j])/(np.linalg.norm(Dn.vs[i])*np.linalg.norm(Dn.vs[j]))

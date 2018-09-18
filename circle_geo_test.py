@@ -22,15 +22,26 @@ if __name__=='__main__':
     error_old = 10000000.
     error_new = 1000000.
     area_goal = 2098.2028581550499
-    while error_new<error_old:
+    do_gen = False
+    if do_gen:
+        radius = radius
         geo1 = CircleGeo(zs,C,radius,n_x,z_fine,l_max,{'n_double':30})
-        area1 = 2.*np.pi*(1.-np.cos(radius))
-        area2 = geo1.angular_area()
-        radius = radius*np.sqrt(area_goal/(geo1.angular_area()*180**2/np.pi**2))
-        error_old = error_new
-        error_new = np.abs(area2*180**2/np.pi**2-area_goal)
-    print("radius for n_x="+str(n_x)+" 1000 deg^2="+str(radius))
-    if do_plot:
-        m = Basemap(projection='moll',lon_0=0)
-        geo1.sp_poly.draw(m,color='red')
-        plt.show()
+        if do_plot:
+            m = Basemap(projection='moll',lon_0=0)
+            geo1.sp_poly.draw(m,color='red')
+            plt.show()
+
+    do_loop = True
+    if do_loop:
+        while error_new<error_old:
+            geo1 = CircleGeo(zs,C,radius,n_x,z_fine,l_max,{'n_double':30})
+            area1 = 2.*np.pi*(1.-np.cos(radius))
+            area2 = geo1.angular_area()
+            radius = radius*np.sqrt(area_goal/(geo1.angular_area()*180**2/np.pi**2))
+            error_old = error_new
+            error_new = np.abs(area2*180**2/np.pi**2-area_goal)
+        print("radius for n_x="+str(n_x)+" 1000 deg^2="+str(radius))
+        if do_plot:
+            m = Basemap(projection='moll',lon_0=0)
+            geo1.sp_poly.draw(m,color='red')
+            plt.show()
