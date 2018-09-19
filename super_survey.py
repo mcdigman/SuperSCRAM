@@ -140,7 +140,7 @@ class SuperSurvey(object):
             label_set = np.full(c_extra.shape[0],'extra')
         #box_widths = np.array([0.015,0.005,0.0005,0.005,0.1,0.05])*3.
         #cov_set = np.array([SS.covs_params[1],SS.covs_params[0],SS.covs_g_pars[0]])
-        make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',self.surveys_sw[0].cosmo_par_list,dchi2=dchi2,include_diag=include_diag,margin=margin,plot_dim=plot_dim,left_space=left_space,right_space=right_space,top_space=top_space,bottom_space=bottom_space,labelsize=labelsize,pad=pad,fontsize=fontsize,nticks=nticks,tickrange=tickrange)
+        return make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',self.surveys_sw[0].cosmo_par_list,dchi2=dchi2,include_diag=include_diag,margin=margin,plot_dim=plot_dim,left_space=left_space,right_space=right_space,top_space=top_space,bottom_space=bottom_space,labelsize=labelsize,pad=pad,fontsize=fontsize,nticks=nticks,tickrange=tickrange)
 
 
 def get_ellipse_specs(covs,dchi2=2.3):
@@ -238,7 +238,7 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
             es = np.zeros(n_c,dtype=object)
             ybox_width = 0.
             for itr3  in range(0,n_c):
-                print("angle ",itr3,180./np.pi*angle_set[itr3][itr1,itr2])
+                #print("angle ",itr3,180./np.pi*angle_set[itr3][itr1,itr2])
                 es[itr3] = Ellipse(fid_point,width1_set[itr3][itr1,itr2],width2_set[itr3][itr1,itr2],angle=180./np.pi*angle_set[itr3][itr1,itr2],label=label_set[itr3])
                 if itr1==itr2:
                     xs = np.linspace(-xbox_widths[itr1]/2.,xbox_widths[itr1]/2.,200)
@@ -312,5 +312,6 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
             else:
                 ax.set_aspect(aspect)
     fig.subplots_adjust(wspace=0.,hspace=0.,left=left_space,right=right_space,top=top_space,bottom=bottom_space)
-    plt.show(fig)
+    #plt.show(fig)
+    return fig
     #TODO add correlation matrix functionality

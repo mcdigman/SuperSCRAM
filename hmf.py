@@ -216,7 +216,7 @@ class ST_hmf(object):
                 mf_b = mf*b_array
                 mf_b_int = -cumtrapz(mf_b[::-1],self.mass_grid[::-1],initial=0.)[::-1]
 
-                if np.all(min_mass==self.mass_grid): 
+                if np.array_equal(min_mass,self.mass_grid): 
                     #no need to extrapolate if already is result
                     result = mf_b_int
                 else:

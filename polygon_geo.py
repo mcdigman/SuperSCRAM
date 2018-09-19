@@ -114,7 +114,7 @@ class PolygonGeo(Geo):
 
                 self.gamma_alphas[itr1] = np.arctan2(-self.z_hats[itr1,0],self.z_hats[itr1,1])
                 gamma_alpha2 =  np.arctan2(self.z_hats[itr1,1],self.z_hats[itr1,0])-np.pi/2.
-                assert np.isclose(np.mod(self.gamma_alphas[itr1],2.*np.pi),np.mod(gamma_alpha2,2.*np.pi))
+                assert np.isclose(np.mod(self.gamma_alphas[itr1]+0.000001,2.*np.pi),np.mod(gamma_alpha2+0.000001,2.*np.pi),atol=1.e-5)
                 self.omega_alphas[itr1] = -np.arctan2(self.xps[itr1,1],self.xps[itr1,0])
             else:
                 self.omega_alphas[itr1] = 0.

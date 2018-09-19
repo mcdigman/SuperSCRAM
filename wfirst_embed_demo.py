@@ -183,8 +183,12 @@ if __name__=='__main__':
 
     SS.print_standard_analysis()
     #make the ellipse plot
+    #import matplotlib.pyplot as plt
     print('\a')
-    SS.make_standard_ellipse_plot()
+    fig1 = SS.make_standard_ellipse_plot()
+    fig1.savefig('ellipse_plot_test_save.png')
+    #plt.show(fig1)
+
 
 #do_c_rots = True
 #if do_c_rots:
@@ -206,13 +210,15 @@ boxes = np.array([5.,5.,5.,5.,5.,5.,5.,])
 cov_set_1 = np.array([c_rot_eig_g,c_rot_eig_no_mit,c_rot_eig_mit])
 cov_set_2 = np.array([c_rot_eig_g[-2:,-2:],c_rot_eig_no_mit[-2:,-2:],c_rot_eig_mit[-2:,-2:]])
 #cov_set_3 = np.array([c_rot_eig_g[-3:,-3:],c_rot_eig_no_mit[-3:,-3:],c_rot_eig_mit[-3:,-3:]])
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 Dn = survey_lw.observables[0]
 #make_ellipse_plot(cov_set_2,colors,opacities,names,np.array([0.0002,0.0025]),pnames[-2:],dchi2,1.05)
 #make_ellipse_plot(cov_set_1,colors,opacities,names,boxes,pnames,dchi2,1.05,True,'equal')
 #make_ellipse_plot(cov_set_2,colors,opacities,names,boxes[-2:],pnames[-2:],dchi2,1.05)
 #make_ellipse_plot(cov_set_2,colors,opacities,names,boxes[-2:],pnames[-2:],dchi2,1.05,False,'equal')
-make_ellipse_plot(cov_set_2,colors,opacities,names,boxes[-2:],pnames[-2:],dchi2,1.05,False,'equal',2.,(4,4),0.17,0.99,0.99,0.05)
+fig2 = make_ellipse_plot(cov_set_2,colors,opacities,names,boxes[-2:],pnames[-2:],dchi2,1.05,False,'equal',2.,(4,4),0.17,0.99,0.99,0.05)
+fig2.savefig('circle_plot_test_save.png')
+#plt.show(fig2)
 print("main: most contaminated direction: ",u_no_mit[:,-1])
 #make_ellipse_plot(cov_set_3,colors,opacities,names,boxes[-3:],pnames[-3:],dchi2,1.05,True,'equal',2.,(4,4),0.17,0.99,0.99,0.05)
 #    a_lw = SS.multi_f.get_a_lw(destructive=True)
@@ -225,3 +231,10 @@ print("main: most contaminated direction: ",u_no_mit[:,-1])
 #for i in range(0,n_bin):
 #    for j in range(0,n_bin):
 #            angles[i,j] = np.dot(Dn.vs[i],Dn.vs[j])/(np.linalg.norm(Dn.vs[i])*np.linalg.norm(Dn.vs[j]))
+do_dump = True
+if do_dump:
+    dump_set = [SS.f_set_nopriors[0][2],SS.f_set_nopriors[1][2],SS.f_set_nopriors[2][2],SS.f_set[0][2],SS.f_set[1][2],SS.f_set[2][2],SS.eig_set[1],SS.eig_set_ssc[1],lw_param_list,n_params_wfirst,power_params,nz_params_wfirst_lens,sw_observable_list,lw_observable_list,sw_params,len_params,x_cut,l_max,zs,zs_lsst,z_fine,mf_params,basis_params,cosmo_par_list,cosmo_par_eps,cosmo,poly_params]
+    import dill
+    dump_f = open('dump_test.pkl','w')
+    dill.dump(dump_set,dump_f)
+    dump_f.close()
