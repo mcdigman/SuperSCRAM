@@ -185,8 +185,8 @@ if __name__=='__main__':
     #make the ellipse plot
     #import matplotlib.pyplot as plt
     print('\a')
-    fig1 = SS.make_standard_ellipse_plot()
-    fig1.savefig('ellipse_plot_test_save.png')
+    #fig1 = SS.make_standard_ellipse_plot()
+    #fig1.savefig('ellipse_plot_test_save.png')
     #plt.show(fig1)
 
 
@@ -216,8 +216,8 @@ Dn = survey_lw.observables[0]
 #make_ellipse_plot(cov_set_1,colors,opacities,names,boxes,pnames,dchi2,1.05,True,'equal')
 #make_ellipse_plot(cov_set_2,colors,opacities,names,boxes[-2:],pnames[-2:],dchi2,1.05)
 #make_ellipse_plot(cov_set_2,colors,opacities,names,boxes[-2:],pnames[-2:],dchi2,1.05,False,'equal')
-fig2 = make_ellipse_plot(cov_set_2,colors,opacities,names,boxes[-2:],pnames[-2:],dchi2,1.05,False,'equal',2.,(4,4),0.17,0.99,0.99,0.05)
-fig2.savefig('circle_plot_test_save.png')
+#fig2 = make_ellipse_plot(cov_set_2,colors,opacities,names,boxes[-2:],pnames[-2:],dchi2,1.05,False,'equal',2.,(4,4),0.17,0.99,0.99,0.05)
+#fig2.savefig('circle_plot_test_save.png')
 #plt.show(fig2)
 print("main: most contaminated direction: ",u_no_mit[:,-1])
 #make_ellipse_plot(cov_set_3,colors,opacities,names,boxes[-3:],pnames[-3:],dchi2,1.05,True,'equal',2.,(4,4),0.17,0.99,0.99,0.05)
