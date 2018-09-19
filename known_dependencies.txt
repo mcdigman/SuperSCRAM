@@ -6,6 +6,6 @@ spherical_geometry
 matplotlib
 nose (optional)
 basemap (optional)
-conda create -n ssc_build_alt -c conda-forge python=2.7.15 basemap scipy matplotlib=2.1.2 pytest numpy astropy cython mpmath future healpy spherical-geometry future
+conda create -n ssc_build_test -c conda-forge python=2.7.15 basemap scipy matplotlib=2.1.2 pytest numpy astropy cython mpmath future healpy spherical-geometry future
 pip install --upgrade numpy
 pip install spherical_geometry camb future

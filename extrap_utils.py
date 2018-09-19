@@ -18,7 +18,7 @@ def power_law_extend(x_in,f_in,x_out,k=2,extend_limit=None):
         if x_out[-1]/x_in[-1] > 2.:
             raise ValueError('max x in '+str(x_in[-1])+' and max x out '+str(x_out[-1])+' differ too much')
 
-    if not np.all(x_in==x_out):
+    if not np.array_equal(x_in,x_out):
         f_out = np.zeros(x_out.size)
         mask_low = x_in[0]<=x_out
         mask_high =  x_out<=x_in[-1]

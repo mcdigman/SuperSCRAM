@@ -2,7 +2,7 @@
 from __future__ import division,print_function,absolute_import
 from builtins import range
 import numpy as np
-import scipy.misc as spm
+import scipy.special as spp
 
 def get_lm_dict(l_max):
     """get a dictionary which maps an (l,m) key to the position in a list of ls and ms"""
@@ -41,7 +41,7 @@ def _legendre_iterate(l_max,thetas,phis,function,args):
         sin_phi_m[mm] = np.sin(mm*phis)
         cos_phi_m[mm] = np.cos(mm*phis)
 
-    factorials = spm.factorial(np.arange(0,2*l_max+1))
+    factorials = spp.factorial(np.arange(0,2*l_max+1))
 
     known_legendre = {(0,0):(np.zeros(n_t)+1.),(1,0):cos_theta,(1,1):-abs_sin_theta}
     for ll in range(0,l_max+1):
@@ -127,7 +127,7 @@ def get_Y_r_dict_central(l_max):
     if 2*l_max>170:
         raise ValueError('Scipy factorial will fail for n!>170 because 171!>2^1024, need to use arbitrary precision or implement asymptotic form')
     Y_lms = {(0,0):1./np.sqrt(4.*np.pi)}
-    factorials = spm.factorial(np.arange(0,2*l_max+1))
+    factorials = spp.factorial(np.arange(0,2*l_max+1))
     for ll in range(1,l_max+1):
         for mm in range(-ll,0):
             Y_lms[(ll,mm)] = 0.
