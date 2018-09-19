@@ -23,7 +23,7 @@ if __name__=='__main__':
     time0 = time()
     #get dictionaries of parameters that various functions will need
     cosmo = defaults.cosmology.copy()
-    cosmo['de_model'] = 'constant_w'
+    cosmo['de_model'] = 'w0wa'
     cosmo['wa'] = 0.
     cosmo['w0'] = -1.
     cosmo['w'] = -1.
@@ -38,7 +38,7 @@ if __name__=='__main__':
     #halofit_params = defaults.halofit_params.copy()
     #matter_power_params = defaults.matter_power_params.copy()
     #hf_params = defaults.halofit_params.copy()
-    poly_params = {'n_double':30}
+    poly_params = {'n_double':80}
     len_params = defaults.lensing_params.copy()
     len_params['l_max'] = 5000
     len_params['l_min'] = 30
@@ -83,16 +83,16 @@ if __name__=='__main__':
     #zs are the bounding redshifts of the tomographic bins
     #zs = np.array([0.2,0.43,.63,0.9, 1.3])
     #TODO check no off by one errors in final bin
-    zs = np.arange(0.2,3.01,0.9)
-    zs_lsst = np.linspace(0.,1.2,3)
+    zs = np.arange(0.2,3.01,0.2)
+    zs_lsst = np.linspace(0.,1.2,5)
     #zs = np.array([0.2,0.4,0.6])
     #z_fine are the resolution redshift slices to be integrated over
-    z_fine = np.linspace(0.001,np.max(zs),1000)
+    z_fine = np.linspace(0.001,np.max(zs),2000)
 
     #z_fine[0] = 0.0001
 
     #l_max is the highest l that should be precomputed
-    l_max = 10
+    l_max = 84
 
     print("main: begin constructing WFIRST PolygonGeo")
     geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,poly_params)
@@ -134,9 +134,9 @@ if __name__=='__main__':
     #k_cut is the maximum k value for the bessel function zeros that define the basis
     #x_cut = 80.
     #x_cut = 100.
-    #x_cut = 85
+    x_cut = 85
     #x_cut = 30.
-    x_cut = 20.
+    #x_cut = 80.
     k_cut = x_cut/r_max
     #l_max caps maximum l regardless of k
     print("main: begin constructing basis for long wavelength fluctuations")
