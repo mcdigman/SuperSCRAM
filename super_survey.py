@@ -117,30 +117,31 @@ class SuperSurvey(object):
         print("----------------------------------------------------")
         print("----------------------------------------------------")
 
-    def make_standard_ellipse_plot(self,c_extra=None,include_base=True,dchi2=2.3,include_diag=True,margin=2.,plot_dim=(10,7),left_space=0.06,right_space=0.99,top_space=0.99,bottom_space=0.05,labelsize=6,pad=2,fontsize=8,nticks=2,tickrange=0.7):
-        """make a standardized ellipse plot for the object"""
-        if c_extra is None:
-            c_extra = np.zeros((0,self.surveys_sw[0].cosmo_par_list.size,self.surveys_sw[0].cosmo_par_list.size))
-        extra_colors = np.zeros((c_extra.size,3))
-        for i in range(0,c_extra.size):
-            extra_colors[i] = np.random.rand(3)
+def make_standard_ellipse_plot(f_set,cosmo_par_list,c_extra=None,include_base=True,dchi2=2.3,include_diag=True,margin=2.,plot_dim=(10,7),left_space=0.06,right_space=0.99,top_space=0.99,bottom_space=0.05,labelsize=6,pad=2,fontsize=8,nticks=2,tickrange=0.7):
+    """make a standardized ellipse plot for the object"""
+    if c_extra is None:
+        n_s = cosmo_par_list.size
+        c_extra = np.zeros((0,n_s,n_s))
+    extra_colors = np.zeros((c_extra.size,3))
+    for i in range(0,c_extra.size):
+        extra_colors[i] = np.random.rand(3)
 
-        if include_base:
-            no_mit_color = np.array([1.,0.,0.])
-            mit_color = np.array([0.,1.,0.])
-            g_color = np.array([0.,0.,1.])
-            color_set = np.vstack([np.array([mit_color,no_mit_color,g_color]),extra_colors])
-            opacity_set = np.full(3+c_extra.size,1.)#np.array([1.0,1.0,1.0])
-            cov_set = np.vstack([np.array([self.f_set[2][2].get_covar(),self.f_set[1][2].get_covar(),self.f_set[0][2].get_covar()]),c_extra])
-            label_set = np.hstack([np.array(["ssc+mit+g","ssc+g","g"]),np.full(c_extra.shape[0],'extra')])
-        else:
-            color_set = extra_colors
-            opacity_set = np.full(c_extra.size,1.)#np.array([1.0,1.0,1.0])
-            cov_set = c_extra
-            label_set = np.full(c_extra.shape[0],'extra')
-        #box_widths = np.array([0.015,0.005,0.0005,0.005,0.1,0.05])*3.
-        #cov_set = np.array([SS.covs_params[1],SS.covs_params[0],SS.covs_g_pars[0]])
-        return make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',self.surveys_sw[0].cosmo_par_list,dchi2=dchi2,include_diag=include_diag,margin=margin,plot_dim=plot_dim,left_space=left_space,right_space=right_space,top_space=top_space,bottom_space=bottom_space,labelsize=labelsize,pad=pad,fontsize=fontsize,nticks=nticks,tickrange=tickrange)
+    if include_base:
+        no_mit_color = np.array([1.,0.,0.])
+        mit_color = np.array([0.,1.,0.])
+        g_color = np.array([0.,0.,1.])
+        color_set = np.vstack([np.array([mit_color,no_mit_color,g_color]),extra_colors])
+        opacity_set = np.full(3+c_extra.size,1.)#np.array([1.0,1.0,1.0])
+        cov_set = np.vstack([np.array([f_set[2][2].get_covar(),f_set[1][2].get_covar(),f_set[0][2].get_covar()]),c_extra])
+        label_set = np.hstack([np.array(["ssc+mit+g","ssc+g","g"]),np.full(c_extra.shape[0],'extra')])
+    else:
+        color_set = extra_colors
+        opacity_set = np.full(c_extra.size,1.)#np.array([1.0,1.0,1.0])
+        cov_set = c_extra
+        label_set = np.full(c_extra.shape[0],'extra')
+    #box_widths = np.array([0.015,0.005,0.0005,0.005,0.1,0.05])*3.
+    #cov_set = np.array([SS.covs_params[1],SS.covs_params[0],SS.covs_g_pars[0]])
+    return make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',cosmo_par_list,dchi2=dchi2,include_diag=include_diag,margin=margin,plot_dim=plot_dim,left_space=left_space,right_space=right_space,top_space=top_space,bottom_space=bottom_space,labelsize=labelsize,pad=pad,fontsize=fontsize,nticks=nticks,tickrange=tickrange)
 
 
 def get_ellipse_specs(covs,dchi2=2.3):

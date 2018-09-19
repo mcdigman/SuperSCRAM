@@ -5,7 +5,7 @@ from time import time
 
 import numpy as np
 
-from super_survey import SuperSurvey,make_ellipse_plot
+from super_survey import SuperSurvey,make_ellipse_plot,make_standard_ellipse_plot
 from lw_survey import LWSurvey
 from sw_survey import SWSurvey
 from cosmopie import CosmoPie
@@ -185,7 +185,7 @@ if __name__=='__main__':
     #make the ellipse plot
     #import matplotlib.pyplot as plt
     print('\a')
-    #fig1 = SS.make_standard_ellipse_plot()
+    #fig1 = make_standard_ellipse_plot(SS.f_set_nopriors,cosmo_par_list)
     #fig1.savefig('ellipse_plot_test_save.png')
     #plt.show(fig1)
 
@@ -233,7 +233,7 @@ print("main: most contaminated direction: ",u_no_mit[:,-1])
 #            angles[i,j] = np.dot(Dn.vs[i],Dn.vs[j])/(np.linalg.norm(Dn.vs[i])*np.linalg.norm(Dn.vs[j]))
 do_dump = True
 if do_dump:
-    dump_set = [SS.f_set_nopriors[0][2],SS.f_set_nopriors[1][2],SS.f_set_nopriors[2][2],SS.f_set[0][2],SS.f_set[1][2],SS.f_set[2][2],SS.eig_set[1],SS.eig_set_ssc[1],lw_param_list,n_params_wfirst,power_params,nz_params_wfirst_lens,sw_observable_list,lw_observable_list,sw_params,len_params,x_cut,l_max,zs,zs_lsst,z_fine,mf_params,basis_params,cosmo_par_list,cosmo_par_eps,cosmo,poly_params]
+    dump_set = [SS.f_set_nopriors[0][2],SS.f_set_nopriors[1][2],SS.f_set_nopriors[2][2],SS.f_set[0][2],SS.f_set[1][2],SS.f_set[2][2],cosmo_par_list,SS.eig_set[1],SS.eig_set_ssc[1],lw_param_list,n_params_wfirst,power_params,nz_params_wfirst_lens,sw_observable_list,lw_observable_list,sw_params,len_params,x_cut,l_max,zs,zs_lsst,z_fine,mf_params,basis_params,cosmo_par_eps,cosmo,poly_params]
     import dill
     dump_f = open('dump_test.pkl','w')
     dill.dump(dump_set,dump_f)
