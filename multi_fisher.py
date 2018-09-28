@@ -55,8 +55,7 @@ class MultiFisher(object):
         self.sw_to_par_array = sw_survey.get_dO_I_dpar_array()
 
 
-        print("MultiFisher: getting lw no mit covariance")
-        #get the variance if needed but don't always do this because it adds time
+
         #TODO eliminate from main loop
         if self.needs_a:
             print("MultiFisher: getting lw no mit variance")

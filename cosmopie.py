@@ -16,7 +16,7 @@ from algebra_utils import trapz2
 
 from dark_energy_model import DarkEnergyConstant,DarkEnergyW0Wa,DarkEnergyJDEM
 
-DEBUG=True
+DEBUG=False
 
 eps = np.finfo(float).eps
 #TODO ensure safe sigma8
@@ -131,7 +131,7 @@ class CosmoPie(object):
                 return yps
             #drop ghost cell
             integ_result = odeint(_d_evolve_eqs,d_ics,self.a_grid[::-1],d_args)
-            self.G_p = InterpolatedUnivariateSpline(self.z_grid,(self.a_grid*integ_result[:,0][::-1]),k=2,ext=2)
+            self.G_p = InterpolatedUnivariateSpline(self.z_grid,(self.a_grid*integ_result[:,0][::-1]),k=3,ext=2)
         else:
             self.G_p = G_in
 

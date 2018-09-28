@@ -81,7 +81,7 @@ class ShearPower(object):
         #loop appears necessary due to uneven grid spacing in k_use
         assert not np.any(p_grid==0.)
         for i in range(0,self.n_z):
-            self.p_dd_use[:,i] = power_law_extend(self.k_in,p_grid[:,i],self.k_use[:,i],k=2)
+            self.p_dd_use[:,i] = power_law_extend(self.k_in,p_grid[:,i],self.k_use[:,i],k=3)
 #            continue
 #            k_range = (self.k_use[:,i]<=self.k_max) & (self.k_use[:,i]>=self.k_min)
 #            k_loc = self.k_use[:,i][k_range]

@@ -200,10 +200,11 @@ class SphBasisK(LWBasis):
         else:
             return fm.FisherMatrix(self.get_covar_array(),input_type=fm.REP_COVAR,initial_state=initial_state,silent=silent)
 
-    def get_variance(self,geo,k_cut_in=None):
+    def get_variance(self,geo,k_cut_in=None,itr_in=0):
         r"""get the variance  (v.T).C_lw.v where v=\frac{\partial\bar{\delta}}{\delta_\alpha} in the given geometry"""
-        v = np.array([self.D_delta_bar_D_delta_alpha(geo,tomography=True)[0]]).T
-        variance = 0.
+        #v = np.array([self.D_delta_bar_D_delta_alpha(geo,tomography=True)[itr_in]]).T
+        v = self.D_delta_bar_D_delta_alpha(geo,tomography=True).T
+        variance = np.zeros((v.shape[1],v.shape[1]))
 
         if k_cut_in is None:
             k_cut_use = self.k_cut

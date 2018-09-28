@@ -172,7 +172,7 @@ class HalofitPk(object):
         rkn;, rneff, rncurr.  Uses a Gaussian filter at the
         to determine the scale at which the variance is unity, to
         fing rknl. rneff is defined as the first derivative of the
-        variance, calculated at the nonlinear wavenumber. rncur si the
+        variance, calculated at the nonlinear wavenumber. rncur is the
         second derivative of variance at rknl.
         '''
         #TODO consider handling upper limit differently

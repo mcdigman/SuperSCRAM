@@ -21,7 +21,7 @@ if __name__=='__main__':
                     'leave_h':False,
                     'force_sigma8':False,
                     'return_sigma8':False,
-                    'accuracy':2
+                    'accuracy':1
                   }
     print("main: building cosmology")
     power_params = defaults.power_params.copy()
@@ -33,11 +33,11 @@ if __name__=='__main__':
     #x_cut = 527.
     #l_max = 515
     #x_cut = 360
-    #l_max = 340
-    x_cut = 150
-    l_max = 140
-    #x_cut = 30
-    #l_max = 30
+    #l_max = 347
+    #x_cut = 150
+    #l_max = 140
+    x_cut = 30
+    l_max = 30
 
     param_use = 7
     do_plot = True
@@ -155,10 +155,11 @@ if __name__=='__main__':
     polygon_params['n_double'] = 80
 #    geo1 = PolygonGeo(z_coarse,thetas,phis,theta_in,phi_in,C,z_fine,l_max,defaults.polygon_params)
     #geo1 = LSSTGeoSimpl(z_coarse,C,z_fine,l_max,defaults.polygon_params) #best con 2.51447459e-07
-    z_coarse = np.array([0.2,0.4])
+    z_coarse = np.arange(0.2,3.01,0.2)#np.array([0.2,0.4])
     #z_max = np.max(z_coarse)
     z_max = 3.001
-    z_fine = np.arange(0.0001,z_max,0.0001)
+    #z_fine = np.arange(0.0001,z_max,0.0001)
+    z_fine = np.linspace(0.001,z_max,2)
     geo1 = WFIRSTGeo(z_coarse,C,z_fine,l_max,polygon_params) #best con 2.43117008e-06
     #geo1 = CircleGeo(z_coarse,C,0.45509788222857989,100,z_fine,l_max,polygon_params)
     #geo1 = LSSTGeoSimpl(z_coarse,C,z_fine,l_max,defaults.polygon_params) #best con 2.43117008e-06
@@ -177,21 +178,22 @@ if __name__=='__main__':
 
     r_max = C.D_comov(z_max)
     k_cut = x_cut/r_max
-    k_tests = np.linspace(20./r_max,k_cut,100)
+    k_tests = np.linspace(20./r_max,k_cut,50)
     n_basis = np.zeros(k_tests.size)
-    variances = np.zeros(k_tests.size)
+    variances = np.zeros((k_tests.size,z_coarse.size-1,z_coarse.size-1))
 
     basis = SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_max)
 
     for i in range(0,k_tests.size):
-        print("r_max,k_cut",r_max,k_tests[i])
-        n_basis[i] = np.sum(basis.C_id[:,1]<=k_tests[i])
-        variances[i] = basis.get_variance(geo1,k_cut_in=k_tests[i])
-        print("main: with k_cut="+str(k_tests[i])+" size="+str(n_basis[i])+" got variance="+str(variances[i]))
+            print("r_max,k_cut,j",r_max,k_tests[i])
+            n_basis[i] = np.sum(basis.C_id[:,1]<=k_tests[i])
+            variances[i,:,:] = basis.get_variance(geo1,k_cut_in=k_tests[i])
+            print("main: with k_cut="+str(k_tests[i])+" size="+str(n_basis[i])+" got variance="+str(variances[i,0,0]))
 
     if do_plot:
         import matplotlib.pyplot as plt
-        plt.plot(n_basis,variances)
+        for j in range(0,z_coarse.size-1):
+            plt.plot(n_basis,variances[:,j,j])
         plt.show()
     print("main: getting variance")
     variance_res = basis.get_variance(geo1)
@@ -213,9 +215,9 @@ if __name__=='__main__':
     #print("main: variance/predicted by volume is "+str(variances[-1]/variance_pred2))
     #print("main: rate of change of variance is "+str((variances[-1]-variances[-2])/(k_tests[-1]-k_tests[-2])))
     #approx_deriv = np.average((np.diff(variances)/np.diff(n_basis))[-5::])
-    approx_deriv = (variances[-1]-variances[-5])/(n_basis[-1]-n_basis[-5])
+    approx_deriv = (variances[-1,0,0]-variances[-5,0,0])/(n_basis[-1]-n_basis[-5])
     estim_change = approx_deriv*n_basis[-1]*2.
-    estim_converge = estim_change/variances[-1]
-    print("main: estimate variance converged to within an error of"+str(estim_converge*100.)+"%, first approx of true value ~"+str(estim_change+variances[-1]))
-    converge_approx = InterpolatedUnivariateSpline(n_basis,variances/variances[-1],k=3,ext=2)
+    estim_converge = estim_change/variances[-1,0,0]
+    print("main: estimate variance converged to within an error of"+str(estim_converge*100.)+"%, first approx of true value ~"+str(estim_change+variances[-1,0,0]))
+    converge_approx = InterpolatedUnivariateSpline(n_basis,variances[:,0,0]/variances[-1,0,0],k=3,ext=2)
     print("main: estimated convergence of 40000 element basis: "+str(converge_approx(40000)))

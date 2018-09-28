@@ -25,7 +25,7 @@ def test_power_extend_same(power_law_low):
     x_out = np.arange(0.02,1.9,0.0013)
     f_in = mult*x_in**exp
     f_out1 = mult*x_out**exp
-    f_out2 = power_law_extend(x_in,f_in,x_out,k=2)
+    f_out2 = power_law_extend(x_in,f_in,x_out,k=3)
     assert np.allclose(f_out1,f_out2)
 
 def test_power_extend2(power_law_low,power_law_high):
@@ -40,7 +40,7 @@ def test_power_extend2(power_law_low,power_law_high):
     f_in[x_in>0.5] = mult_high*x_in[x_in>0.5]**exp_high
     f_out1 = mult_low*x_out**exp_low
     f_out1[x_out>0.5] = mult_high*x_out[x_out>0.5]**exp_high
-    f_out2 = power_law_extend(x_in,f_in,x_out,k=2)
+    f_out2 = power_law_extend(x_in,f_in,x_out,k=3)
     #cut out the break where spline may misbehave
     assert np.allclose(f_out1[x_out>0.5+0.005],f_out2[x_out>0.5+0.005])
     assert np.allclose(f_out1[x_out<0.5-0.005],f_out2[x_out<0.5-0.005])

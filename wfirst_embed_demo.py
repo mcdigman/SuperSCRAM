@@ -87,12 +87,12 @@ if __name__=='__main__':
     zs_lsst = np.linspace(0.,1.2,5)
     #zs = np.array([0.2,0.4,0.6])
     #z_fine are the resolution redshift slices to be integrated over
-    z_fine = np.linspace(0.001,np.max(zs),2000)
+    z_fine = np.linspace(0.001,np.max(zs),8000)
 
     #z_fine[0] = 0.0001
 
     #l_max is the highest l that should be precomputed
-    l_max = 84
+    l_max = 25
 
     print("main: begin constructing WFIRST PolygonGeo")
     geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,poly_params)
@@ -134,8 +134,8 @@ if __name__=='__main__':
     #k_cut is the maximum k value for the bessel function zeros that define the basis
     #x_cut = 80.
     #x_cut = 100.
-    x_cut = 85
-    #x_cut = 30.
+    #x_cut = 85
+    x_cut = 30.
     #x_cut = 80.
     k_cut = x_cut/r_max
     #l_max caps maximum l regardless of k
@@ -219,7 +219,7 @@ Dn = survey_lw.observables[0]
 #fig2 = make_ellipse_plot(cov_set_2,colors,opacities,names,boxes[-2:],pnames[-2:],dchi2,1.05,False,'equal',2.,(4,4),0.17,0.99,0.99,0.05)
 #fig2.savefig('circle_plot_test_save.png')
 #plt.show(fig2)
-print("main: most contaminated direction: ",u_no_mit[:,-1])
+print("main: most contaminated direction: ",of_no_mit[:,-1])
 #make_ellipse_plot(cov_set_3,colors,opacities,names,boxes[-3:],pnames[-3:],dchi2,1.05,True,'equal',2.,(4,4),0.17,0.99,0.99,0.05)
 #    a_lw = SS.multi_f.get_a_lw(destructive=True)
 #    v_db = np.diag(a_lw[0])
@@ -238,3 +238,25 @@ if do_dump:
     dump_f = open('dump_test.pkl','w')
     dill.dump(dump_set,dump_f)
     dump_f.close()
+
+f_g_nop  = SS.f_set_nopriors[0][2].get_fisher().copy()
+f_s_nop  = SS.f_set_nopriors[1][2].get_fisher().copy()
+f_wa_prior = np.zeros((7,7))
+f_wa_prior[-1,-1] = 10**12
+f_g_nowa = f_g_nop+f_wa_prior
+f_s_nowa = f_s_nop+f_wa_prior
+import fisher_matrix as fm
+fm_g_nowa = fm.FisherMatrix(f_g_nowa,input_type=fm.REP_FISHER)
+fm_s_nowa = fm.FisherMatrix(f_s_nowa,input_type=fm.REP_FISHER)
+eigv_s_g_nowa = fm_s_nowa.get_cov_eig_metric(fm_g_nowa)[0]
+eigv_s_g_wa = SS.eig_set[1][0][0]
+
+f_g_margwa = f_g_nop.copy()
+f_g_margwa = f_g_margwa[0:6,0:6]
+f_s_margwa = f_s_nop.copy()
+f_s_margwa = f_s_margwa[0:6,0:6]
+fm_g_margwa = fm.FisherMatrix(f_g_margwa,input_type=fm.REP_FISHER)
+fm_s_margwa = fm.FisherMatrix(f_s_margwa,input_type=fm.REP_FISHER)
+fm_g_margwa = fm.FisherMatrix(f_g_margwa,input_type=fm.REP_FISHER)
+fm_s_margwa = fm.FisherMatrix(f_s_margwa,input_type=fm.REP_FISHER)
+eigv_s_g_margwa = fm_s_margwa.get_cov_eig_metric(fm_g_margwa)[0]

@@ -4,7 +4,7 @@ from builtins import range
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
 #TODO should matter power spectrums extend with ns instead of fitting?
-def power_law_extend(x_in,f_in,x_out,k=2,extend_limit=None):
+def power_law_extend(x_in,f_in,x_out,k=3,extend_limit=None):
     """take f_in(x_in) and extrapolate with power laws to f_in(x_out)
     interpolates with spline order k inside
     extend_limit is multiplier to limit maximum extrapolation without error"""

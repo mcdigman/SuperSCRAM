@@ -53,7 +53,7 @@ class WMatcher(object):
             E_as = C_i.Ez(self.zs)
             self.integ_Es[i] = cumtrapz(1./(self.a_s**2*E_as)[::-1],self.a_s[::-1],initial=0.)
             self.Gs[i] = C_i.G(self.zs)
-        self.G_interp = RectBivariateSpline(self.ws,self.a_s[::-1],self.Gs[:,::-1],kx=2,ky=2)
+        self.G_interp = RectBivariateSpline(self.ws,self.a_s[::-1],self.Gs[:,::-1],kx=3,ky=3)
 
         self.ind_switches = np.argmax(np.diff(self.integ_Es,axis=0)<0,axis=0)+1
         #there is a purely numerical issue that causes the integral to be non-monotonic, this loop eliminates the spurious behavior
@@ -64,7 +64,7 @@ class WMatcher(object):
                 else:
                     raise RuntimeError( "Nonmonotonic integral, solution is not unique at "+str(self.a_s[i]))
 
-        self.integ_E_interp = RectBivariateSpline(self.ws,self.a_s[::-1],self.integ_Es,kx=2,ky=2)
+        self.integ_E_interp = RectBivariateSpline(self.ws,self.a_s[::-1],self.integ_Es,kx=3,ky=3)
 
     #accurate to within numerical precision
     #could reduce reliance on padding
@@ -75,7 +75,7 @@ class WMatcher(object):
         a_match = 1./(1.+z_match)
         E_in = C_in.Ez(self.zs)
         integ_E_in = cumtrapz(1./(self.a_s**2*E_in)[::-1],self.a_s[::-1],initial=0.)
-        integ_E_in_interp = InterpolatedUnivariateSpline(self.a_s[::-1],integ_E_in,k=2,ext=2)
+        integ_E_in_interp = InterpolatedUnivariateSpline(self.a_s[::-1],integ_E_in,k=3,ext=2)
         integ_E_targets = integ_E_in_interp(a_match)
         w_grid1 = np.zeros(a_match.size)
         for itr in range(0,z_match.size):

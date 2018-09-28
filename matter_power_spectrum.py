@@ -53,7 +53,7 @@ class MatterPower(object):
             if k_in is None:
                 self.k = k_camb
             else:
-                self.P_lin = power_law_extend(k_camb,self.P_lin,k_in,k=2,extend_limit=self.extend_limit)
+                self.P_lin = power_law_extend(k_camb,self.P_lin,k_in,k=3,extend_limit=self.extend_limit)
                 self.k = k_in
         else:
             self.k = k_in
@@ -84,6 +84,8 @@ class MatterPower(object):
             self.growth_match_grid = None
             self.growth_match_interp = None
             self.use_match_grid = False
+
+
         #figure out an error checking method here
         #Interpolated to capture possible k dependence in camb of w
         #needed because field can cluster on very large scales, see arXiv:astro-ph/9906174
@@ -139,12 +141,12 @@ class MatterPower(object):
                     #alt_camb_sigma8s = camb_sigma8(camb_cosmos,self.camb_params)
                     #print(self.camb_sigma8s[i],alt_camb_sigma8s[i])
                     #This interpolation shift shouldn't really be needed because self.k is generated with the same value of H0
-                    self.camb_w_pows[:,i] = power_law_extend(k_i,self.camb_w_pows[:,i],self.k,k=2,extend_limit=self.extend_limit)
+                    self.camb_w_pows[:,i] = power_law_extend(k_i,self.camb_w_pows[:,i],self.k,k=3,extend_limit=self.extend_limit)
                     #if not np.all(k_i==self.k):
                     #    self.camb_w_pows[:,i] = InterpolatedUnivariateSpline(k_i,self.camb_w_pows[:,i],k=2,ext=2)(self.k)
                     #self.camb_w_pows[:,i] = P_use*self.camb_sigma8s[i]**2/sigma8_use**2
                 self.camb_w_interp = RectBivariateSpline(self.k,self.camb_w_grid,self.camb_w_pows,kx=3,ky=3)
-                self.camb_sigma8_interp = InterpolatedUnivariateSpline(self.camb_w_grid,self.camb_sigma8s,k=2,ext=2)
+                self.camb_sigma8_interp = InterpolatedUnivariateSpline(self.camb_w_grid,self.camb_sigma8s,k=3,ext=2)
                 self.use_camb_grid = True
         else:
             self.w_min = None
@@ -155,6 +157,10 @@ class MatterPower(object):
             self.camb_w_interp = None
             self.camb_sigma8_interp = None
             self.use_camb_grid = False
+
+        #don't bother actually using the match grid if it is constant anyway
+        if (self.C.de_model=='w0wa' and self.cosmology['wa']==0.):
+            self.use_match_grid = False
 
         if self.params['needs_fpt']:
             fpt_p = self.power_params.fpt
@@ -191,7 +197,7 @@ class MatterPower(object):
 
         if self.use_match_grid:
             w_match_grid = self.w_match_interp(zs)
-            pow_mult_grid = self.growth_match_interp(zs)
+            pow_mult_grid = self.growth_match_interp(zs)*const_pow_mult
 
             Pbases = np.zeros((self.k.size,n_z))
             if self.use_camb_grid:
@@ -211,7 +217,7 @@ class MatterPower(object):
                     cosmo_hf_i = self.cosmology.copy()
                     cosmo_hf_i['de_model'] = 'constant_w'
                     cosmo_hf_i['w'] = w_match_grid[i]
-                    G_hf = InterpolatedUnivariateSpline(self.C.z_grid,self.wm.growth_interp(w_match_grid[i],self.C.a_grid),ext=2,k=2)
+                    G_hf = InterpolatedUnivariateSpline(self.C.z_grid,self.wm.growth_interp(w_match_grid[i],self.C.a_grid),ext=2,k=3) #TODO no k=2 spline
                     hf_C_calc = cp.CosmoPie(cosmo_hf_i,self.C.p_space,silent=True,G_safe=True,G_in=G_hf)
                     hf_C_calc.k = self.k
                     hf_calc = halofit.HalofitPk(hf_C_calc,Pbases[:,i],self.power_params.halofit,self.camb_params['leave_h'])
