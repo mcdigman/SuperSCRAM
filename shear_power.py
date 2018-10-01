@@ -134,10 +134,10 @@ class ShearPower(object):
         if rcs is None:
             rcs = np.full(4,1.)
         ns = np.zeros(ns_in.size)
-        ns[0] = ns_in[0]/trapz2((((self.rs>=qs[0].r_min)&(self.rs<=qs[0].r_max))*self.ps),self.rs)
-        ns[1] = ns_in[1]/trapz2((((self.rs>=qs[0].r_min)&(self.rs<=qs[0].r_max))*self.ps),self.rs)
-        ns[2] = ns_in[2]/trapz2((((self.rs>=qs[1].r_min)&(self.rs<=qs[1].r_max))*self.ps),self.rs)
-        ns[3] = ns_in[3]/trapz2((((self.rs>=qs[1].r_min)&(self.rs<=qs[1].r_max))*self.ps),self.rs)
+        ns[0] = ns_in[0]/trapz2((((self.zs>=qs[0].z_min)&(self.zs<=qs[0].z_max))*self.ps),self.rs)
+        ns[1] = ns_in[1]/trapz2((((self.zs>=qs[0].z_min)&(self.zs<=qs[0].z_max))*self.ps),self.rs)
+        ns[2] = ns_in[2]/trapz2((((self.zs>=qs[1].z_min)&(self.zs<=qs[1].z_max))*self.ps),self.rs)
+        ns[3] = ns_in[3]/trapz2((((self.zs>=qs[1].z_min)&(self.zs<=qs[1].z_max))*self.ps),self.rs)
         #could exploit/cache symmetries to reduce time
         c_ac = Cll_q_q(self,qs[0],qs[2],rcs[0]).Cll()
         c_bd = Cll_q_q(self,qs[1],qs[3],rcs[1]).Cll()
@@ -165,7 +165,7 @@ class ShearPower(object):
 
 class Cll_q_q(object):
     """class for a generic lensing power spectrum"""
-    def __init__(self,sp,q1s,q2s,corr_param=1.,r_cut=np.inf):
+    def __init__(self,sp,q1s,q2s,corr_param=1.):
         """
             inputs:
                 sp: a ShearPower object
@@ -174,69 +174,20 @@ class Cll_q_q(object):
                 corr_param: correlation parameter, could be an array
         """
         self.rs = sp.rs
+        self.zs = sp.zs
         self.integrand = (corr_param*q1s.qs.T*q2s.qs.T*sp.Cll_kernel).T
 
-    def Cll(self,r_min=0.,r_max=np.inf):
+    def Cll(self,z_min=0.,z_max=np.inf):
         """get lensing power spectrum integrated in a specified range"""
-        if r_min==0. and r_max==np.inf:
+        if z_min==0. and z_max==np.inf:
             return trapz2(self.integrand,self.rs)
         else:
-            mask = ((self.rs<=r_max)&(self.rs>=r_min))
+            mask = ((self.zs<=z_max)&(self.zs>=z_min))
             return trapz2((mask*self.integrand.T).T,self.rs)
 
     def Cll_integrand(self):
         """get the integrand of the lensing power spectrum, if want to multiply by something else before integrating"""
         return self.integrand
-
-#class Cll_sh_sh(Cll_q_q):
-#    """Shear shear lensing power spectrum"""
-#    def __init__(self,sp,r_min1=0.,r_max1=np.inf,r_min2=0.,r_max2=np.inf):
-#        """ sp: ShearPower object
-#            r_max1,r_min1,r_max2,r_min2: maximum and minimum comoving distance for 1st and second window function
-#        """
-#        Cll_q_q.__init__(self,sp,QShear(sp,r_min1,r_max1),QShear(sp,r_min2,r_max2))
-#
-#class Cll_g_g(Cll_q_q):
-#    """Galaxy Galaxy lensing power spectrum"""
-#    def __init__(self,sp,r_min1=0.,r_max1=np.inf,r_min2=0.,r_max2=np.inf):
-#        "see Cll_sh_sh"""
-#        Cll_q_q.__init__(self,sp,QNum(sp,r_min1,r_max1),QNum(sp,r_min2,r_max2))
-#
-#class Cll_mag_mag(Cll_q_q):
-#    """Magnification magnification lensing power spectrum"""
-#    def __init__(self,sp,r_min1=0.,r_max1=np.inf,r_min2=0.,r_max2=np.inf):
-#        "see Cll_sh_sh"""
-#        Cll_q_q.__init__(self,sp,QMag(sp,r_min1,r_max1),QMag(sp,r_min2,r_max2))
-#
-#class Cll_k_k(Cll_q_q):
-#    """Convergence convergence lensing power spectrum"""
-#    def __init__(self,sp,r_min1=0.,r_max1=np.inf,r_min2=0.,r_max2=np.inf):
-#        "see Cll_sh_sh"""
-#        Cll_q_q.__init__(self,sp,QK(sp,r_min1,r_max1),QK(sp,r_min2,r_max2))
-#
-#class Cll_k_g(Cll_q_q):
-#    """Convergence galaxy lensing power spectrum"""
-#    def __init__(self,sp,r_min1=0.,r_max1=np.inf,r_min2=0.,r_max2=np.inf):
-#        "see Cll_sh_sh"""
-#        Cll_q_q.__init__(self,sp,QK(sp,r_min1,r_max1),QNum(sp,r_min2,r_max2))
-#
-#class Cll_sh_mag(Cll_q_q):
-#    """Shear magnification lensing power spectrum"""
-#    def __init__(self,sp,r_min1=0.,r_max1=np.inf,r_min2=0.,r_max2=np.inf):
-#        "see Cll_sh_sh"""
-#        Cll_q_q.__init__(self,sp,QShear(sp,r_min1,r_max1),QMag(sp,r_min2,r_max2))
-#
-#class Cll_mag_g(Cll_q_q):
-#    """Magnification galaxy lensing power spectrum"""
-#    def __init__(self,sp,r_min1=0.,r_max1=np.inf,r_min2=0.,r_max2=np.inf):
-#        "see Cll_sh_sh"""
-#        Cll_q_q.__init__(self,sp,QMag(sp,r_min1,r_max1),QNum(sp,r_min2,r_max2))
-#
-#class Cll_sh_g(Cll_q_q):
-#    """Shear galaxy lensing power spectrum"""
-#    def __init__(self,sp,r_min1=0.,r_max1=np.inf,r_min2=0.,r_max2=np.inf):
-#        "see Cll_sh_sh"""
-#        Cll_q_q.__init__(self,sp,QShear(sp,r_min1,r_max1),QNum(sp,r_min2,r_max2),corr_param=sp.r_corr())
 
 
 #class Cll_q_q_nolimber(Cll_q_q):

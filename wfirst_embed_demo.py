@@ -88,7 +88,7 @@ if __name__=='__main__':
     zs_lsst = np.linspace(0.,1.2,5)
     #zs = np.array([0.2,0.4,0.6])
     #z_fine are the resolution redshift slices to be integrated over
-    z_fine = np.linspace(0.0002,np.max(zs),4000)
+    z_fine = np.linspace(0.001,np.max(zs),1000)
 
     #z_fine[0] = 0.0001
 

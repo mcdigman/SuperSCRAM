@@ -50,8 +50,8 @@ def util_set():
     r_min2 = C.D_comov(z_min2)
     r_max2 = C.D_comov(z_max2)
 
-    QShear1_1 = QShear(dC_ddelta1,r_min1,r_max1)
-    QShear1_2 = QShear(dC_ddelta1,r_min2,r_max2)
+    QShear1_1 = QShear(dC_ddelta1,z_min1,z_max1)
+    QShear1_2 = QShear(dC_ddelta1,z_min2,z_max2)
 
     ss_1 = Cll_q_q(sp1,QShear1_1,QShear1_2).Cll()
     return [C,dC_ddelta1,QShear1_1,QShear1_2,ss_1,ls,sp1]
@@ -69,7 +69,7 @@ def test_dz(util_set):
     for z_ind in range(10,35,5):
         ind_min = 200
         ind_max = ind_min+z_ind
-        dC_ss_1 = Cll_q_q(dC_ddelta1,QShear1_1,QShear1_2).Cll(dC_ddelta1.rs[ind_min],dC_ddelta1.rs[ind_max])
+        dC_ss_1 = Cll_q_q(dC_ddelta1,QShear1_1,QShear1_2).Cll(dC_ddelta1.zs[ind_min],dC_ddelta1.zs[ind_max])
         results1_test[int((z_ind-10)/5)] = dC_ss_1/ss_1/(dC_ddelta1.zs[ind_max]-dC_ddelta1.zs[ind_min])
         results1_0[int((z_ind-10)/5)] = dC_ss_1/ss_1
 
@@ -93,9 +93,9 @@ def test_zavg(util_set):
     results2_0 = np.zeros((5,ls.size))
     z_test2 = np.linspace(0.8,0.9,6)
     for itr in range(0,5):
-        QShear1_itr =  QShear(dC_ddelta1,C.D_comov(z_test2[itr]),C.D_comov(z_test2[itr+1]))
+        QShear1_itr =  QShear(dC_ddelta1,z_test2[itr],z_test2[itr+1])
         ss_itr = Cll_q_q(sp1,QShear1_itr,QShear1_2).Cll()
-        dC_ss_itr = Cll_q_q(dC_ddelta1,QShear1_itr,QShear1_2).Cll(r_min=dC_ddelta1.rs[200],r_max=dC_ddelta1.rs[210])
+        dC_ss_itr = Cll_q_q(dC_ddelta1,QShear1_itr,QShear1_2).Cll(z_min=dC_ddelta1.zs[200],z_max=dC_ddelta1.zs[210])
         results2_test[itr] = dC_ss_itr/ss_itr*np.average(z_test2[itr:itr+2])
         results3_0[itr] = dC_ss_itr*np.average(z_test2[itr:itr+2])
         results2_0[itr] = dC_ss_itr/ss_itr

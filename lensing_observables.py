@@ -43,28 +43,28 @@ class LensingPowerBase(object):
 #TODO observables should know their name
 class LensingObservable(SWObservable):
     """Generic lensing observable, subclass only need to define a function handle self.len_handle for which obserable to use"""
-    def __init__(self,len_pow,r1,r2,q1_handle,q2_handle):
+    def __init__(self,len_pow,z1,z2,q1_handle,q2_handle):
         """inputs:
             len_pow: a LensingPowerBase object
-            r1,r2: [min r, max r] for the lensing weights to integrate over
+            z1,z2: [min r, max r] for the lensing weights to integrate over
             q1_handle,q2_handle: function handles for QWeight objects, ie len_w.QShear
         """
         self.len_pow = len_pow
-        self.r1 = r1.copy()
-        self.r2 = r2.copy()
+        self.z1 = z1.copy()
+        self.z2 = z2.copy()
         self.q1_handle = q1_handle
         self.q2_handle = q2_handle
-        self.q1_pow = self.q1_handle(self.len_pow.C_pow,self.r1[0],self.r1[1])
-        self.q2_pow = self.q2_handle(self.len_pow.C_pow,self.r2[0],self.r2[1])
-        self.q1_dC = self.q1_handle(self.len_pow.dC_ddelta,self.r1[0],self.r1[1])
-        self.q2_dC = self.q2_handle(self.len_pow.dC_ddelta,self.r2[0],self.r2[1])
+        self.q1_pow = self.q1_handle(self.len_pow.C_pow,self.z1[0],self.z1[1])
+        self.q2_pow = self.q2_handle(self.len_pow.C_pow,self.z2[0],self.z2[1])
+        self.q1_dC = self.q1_handle(self.len_pow.dC_ddelta,self.z1[0],self.z1[1])
+        self.q2_dC = self.q2_handle(self.len_pow.dC_ddelta,self.z2[0],self.z2[1])
         self.q1_dpars = np.zeros((len_pow.cosmo_par_list.size,2),dtype=object)
         self.q2_dpars = np.zeros((len_pow.cosmo_par_list.size,2),dtype=object)
         for itr in range(0,len_pow.cosmo_par_list.size):
-            self.q1_dpars[itr,0] = self.q1_handle(self.len_pow.dC_dpars[itr,0],self.r1[0],self.r1[1])
-            self.q1_dpars[itr,1] = self.q1_handle(self.len_pow.dC_dpars[itr,1],self.r1[0],self.r1[1])
-            self.q2_dpars[itr,0] = self.q2_handle(self.len_pow.dC_dpars[itr,0],self.r2[0],self.r2[1])
-            self.q2_dpars[itr,1] = self.q2_handle(self.len_pow.dC_dpars[itr,1],self.r2[0],self.r2[1])
+            self.q1_dpars[itr,0] = self.q1_handle(self.len_pow.dC_dpars[itr,0],self.z1[0],self.z1[1])
+            self.q1_dpars[itr,1] = self.q1_handle(self.len_pow.dC_dpars[itr,1],self.z1[0],self.z1[1])
+            self.q2_dpars[itr,0] = self.q2_handle(self.len_pow.dC_dpars[itr,0],self.z2[0],self.z2[1])
+            self.q2_dpars[itr,1] = self.q2_handle(self.len_pow.dC_dpars[itr,1],self.z2[0],self.z2[1])
         SWObservable.__init__(self,len_pow.survey_id,dim=self.len_pow.params['n_l'])
 
     def get_O_I(self):
@@ -86,15 +86,15 @@ class LensingObservable(SWObservable):
 
 class ShearShearLensingObservable(LensingObservable):
     """Shear shear lensing signal LensingObservable"""
-    def __init__(self,len_pow,r1,r2):
+    def __init__(self,len_pow,z1,z2):
         """See LensingObservable"""
-        LensingObservable.__init__(self,len_pow,r1,r2,len_w.QShear,len_w.QShear)
+        LensingObservable.__init__(self,len_pow,z1,z2,len_w.QShear,len_w.QShear)
 
 class GalaxyGalaxyLensingObservable(LensingObservable):
     """Galaxy galaxy lensing signal LensingObservable"""
-    def __init__(self,len_pow,r1,r2):
+    def __init__(self,len_pow,z1,z2):
         """See LensingObservable"""
-        LensingObservable.__init__(self,len_pow,r1,r2,len_w.QNum,len_w.QNum)
+        LensingObservable.__init__(self,len_pow,z1,z2,len_w.QNum,len_w.QNum)
 #TODO build this
 #class MatterPowerObservable(SWObservable):
 #    """Class for matter power spectrum as an observable"""

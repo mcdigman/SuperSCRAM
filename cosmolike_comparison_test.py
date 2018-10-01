@@ -174,6 +174,7 @@ def test_cosmolike_agreement():
     geo1 = CircleGeo(z_coarse,C,0.31275863997971481,100,z_fine.copy(),40,{'n_double':30})
     assert np.isclose((geo1.angular_area()*180**2/np.pi**2),1000.)
     r_bins = geo1.rbins
+    z_bins = geo1.zbins
 
 
     len_params = defaults.lensing_params.copy()
@@ -188,7 +189,7 @@ def test_cosmolike_agreement():
     sp = ShearPower(C,z_fine,fsky_cosmo,len_params,mode='power',ps=n_z)
     qs = np.zeros(tomo_bins_cosmo,dtype=object)
     for i in range(qs.size):
-        qs[i] = QShear(sp,r_bins[i,0],r_bins[i,1])
+        qs[i] = QShear(sp,z_bins[i,0],z_bins[i,1])
     Cll_sh_sh = np.zeros((tomo_bins_cosmo,tomo_bins_cosmo),dtype=object)
     ratio_means = np.zeros((tomo_bins_cosmo,tomo_bins_cosmo))
     for i in range(qs.size):

@@ -29,19 +29,19 @@ class SWCovMat(object):
                 #under current assumptions only need sh_pow1
                 sh_pow1 = O_I_1.len_pow.C_pow
                 sh_pow2 = O_I_2.len_pow.C_pow
-                r1_1 = O_I_1.r1
-                r1_2 = O_I_1.r2
-                r2_1 = O_I_2.r1
-                r2_2 = O_I_2.r2
+                z1_1 = O_I_1.z1
+                z1_2 = O_I_1.z2
+                z2_1 = O_I_2.z1
+                z2_2 = O_I_2.z2
 
                 ns = np.zeros(4)
-                if np.allclose(r1_1, r2_1):
+                if np.allclose(z1_1, z2_1):
                     ns[0] = sh_pow1.get_n_shape(class_a,class_c)
-                if np.allclose(r1_1, r2_2):
+                if np.allclose(z1_1, z2_2):
                     ns[1] = sh_pow1.get_n_shape(class_a,class_d)
-                if np.allclose(r1_2 , r2_2):
+                if np.allclose(z1_2 , z2_2):
                     ns[2] = sh_pow1.get_n_shape(class_b,class_d)
-                if np.allclose(r1_2 , r2_1):
+                if np.allclose(z1_2 , z2_1):
                     ns[3] = sh_pow1.get_n_shape(class_b,class_c)
                 self.gaussian_covar = np.diagflat(sh_pow1.cov_g_diag(np.array([O_I_1.q1_pow,O_I_1.q2_pow,O_I_2.q1_pow,O_I_2.q2_pow]),ns))
                 if not silent:

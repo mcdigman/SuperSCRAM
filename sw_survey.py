@@ -147,13 +147,13 @@ class SWSurvey(object):
         itr = 0
         for key in sorted(names.keys()):
             if self.params['needs_lensing'] and re.match('^len',key):
-                r1 = names[key]['r1']
-                r2 = names[key]['r2']
+                z1 = names[key]['z1']
+                z2 = names[key]['z2']
 
                 if re.match('^len_shear_shear',key):
-                    observables[itr] = lo.ShearShearLensingObservable(self.len_pow,r1,r2)
+                    observables[itr] = lo.ShearShearLensingObservable(self.len_pow,z1,z2)
                 elif re.match('^len_galaxy_galaxy',key):
-                    observables[itr] = lo.GalaxyGalaxyLensingObservable(self.len_pow,r1,r2)
+                    observables[itr] = lo.GalaxyGalaxyLensingObservable(self.len_pow,z1,z2)
                 else:
                     warn('unrecognized or unprocessable observable: \'',key,'\', skipping')
                     observables[itr] = None
@@ -171,26 +171,26 @@ def generate_observable_names(geo,observable_list,cross_bins):
             geo: a Geo object to extract tomographic bins from
             observable_list: is a list of short names
             cross_bins: if False, don't do tomography with different bins"""
-    rbins = geo.rbins
+    zbins = geo.zbins
     names = {}
     for name in observable_list:
         if re.match('^len',name):
-            n_fill = np.int(np.ceil(np.log10(rbins.shape[0]))) #pad with zeros so names sort correctly
-            for i in range(0,rbins.shape[0]):
-                r1 = rbins[i]
+            n_fill = np.int(np.ceil(np.log10(zbins.shape[0]))) #pad with zeros so names sort correctly
+            for i in range(0,zbins.shape[0]):
+                z1 = zbins[i]
                 if cross_bins:
-                    for j in range(0,rbins.shape[0]):
-                        #Only take r1<=r2
+                    for j in range(0,zbins.shape[0]):
+                        #Only take z1<=z2
                         if i>j:
                             pass
                         else:
-                            r2 = rbins[j]
+                            z2 = zbins[j]
                             name_str = name+'_'+str(i).zfill(n_fill)+'_'+str(j).zfill(n_fill)
-                            names[name_str] = {'r1':r1,'r2':r2}
+                            names[name_str] = {'z1':z1,'z2':z2}
 
                 else:
                     name_str = name+'_'+str(i)+'_'+str(i)
-                    names[name_str] = {'r1':r1,'r2':r1}
+                    names[name_str] = {'z1':z1,'z2':z1} 
         else:
             warn('observable name \'',name,'\' unrecognized, ignoring')
     return names

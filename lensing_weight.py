@@ -9,44 +9,46 @@ from algebra_utils import trapz2
 
 class QWeight(object):
     """abstract class for weight function"""
-    def __init__(self,rs,qs,r_min=0.,r_max=np.inf):
+    def __init__(self,rs,qs,z_min=0.,z_max=np.inf):
         """ inputs:
                 rs: an array of comoving distances
                 qs: the weight function at each comoving distance
-                r_min: the minimum comoving distance to use in integrations
-                r_max: the maximum comoving distance to use in integrations
+                z_min: the minimum redshift to use in integrations
+                z_max: the maximum redshift to use in integrations
         """
-        self.r_min = r_min
-        self.r_max = r_max
+        assert z_min<5.
+        assert z_max<5. or z_max==np.inf
+        self.z_min = z_min
+        self.z_max = z_max
         self.rs = rs
         self.qs = qs
 
 class QShear(QWeight):
     """weight function for a shear observable as in ie arXiv:1302.2401v2"""
-    def __init__(self,sp,r_min=0.,r_max=np.inf,mult=1.):
+    def __init__(self,sp,z_min=0.,z_max=np.inf,mult=1.):
         """ inputs:
                 sp: a ShearPower object
                 mult: a constant multiplier for the weight function
-                r_min,r_max: minimum and maximum comoving distances
+                z_min,z_max: minimum and maximum comoving distances
         """
-        qs = 3./2.*(sp.C.H0/sp.C.c)**2*sp.C.Omegam*sp.r_As/sp.sc_as*_gs(sp,r_min,r_max)*mult
-        QWeight.__init__(self,sp.rs,qs,r_min,r_max)
+        qs = 3./2.*(sp.C.H0/sp.C.c)**2*sp.C.Omegam*sp.r_As/sp.sc_as*_gs(sp,z_min,z_max)*mult
+        QWeight.__init__(self,sp.rs,qs,z_min,z_max)
 
-def _gs(sp,r_min=0.,r_max=np.inf):
+def _gs(sp,z_min=0.,z_max=np.inf):
     """helper function for QShear"""
     g_vals = np.zeros(sp.n_z)
-    low_mask = (sp.rs>=r_min)*1. #so only integrate from max(chi,r_min)
-    high_mask = (sp.rs<=r_max)*1. #so only integrate to min(chi,r_max)
+    low_mask = (sp.zs>=z_min)*1. #so only integrate from max(z,z_min)
+    high_mask = (sp.zs<=z_max)*1. #so only integrate to min(z,z_max)
     ps_mask = sp.ps*high_mask*low_mask
     ps_norm = ps_mask/trapz2(ps_mask,sp.rs) 
     #norm1 = trapz2(ps_mask,sp.rs)
-    #norm2 = trapz2(ps_mask[(sp.rs>=r_min) & (sp.rs<=r_max)],sp.rs[(sp.rs>=r_min) & (sp.rs<=r_max)])
+    #norm2 = trapz2(ps_mask[(sp.zs>=z_min) & (sp.zs<=z_max)],sp.rs[(sp.zs>=z_min) & (sp.zs<=z_max)])
 
     if sp.C.Omegak==0.0:
         g_vals = -cumtrapz(ps_norm[::-1],sp.rs[::-1],initial=0.)[::-1]+sp.rs*cumtrapz((ps_norm/sp.rs)[::-1],sp.rs[::-1],initial=0.)[::-1]
     else:
         for i in range(0,sp.n_z):
-            if r_max<sp.rs[i]:
+            if z_max<sp.zs[i]:
                 break
             if sp.C.Omegak>0.0: #TODO handle curvature
                 sqrtK = np.sqrt(sp.C.K)
@@ -58,31 +60,31 @@ def _gs(sp,r_min=0.,r_max=np.inf):
 
 class QMag(QShear):
     """weight function for magnification, just shear weight function*2 now"""
-    def __init__(self,sp,r_min=0.,r_max=np.inf):
+    def __init__(self,sp,z_min=0.,z_max=np.inf):
         """see QShear"""
-        QShear.__init__(self,sp,r_min,r_max,mult=2.)
+        QShear.__init__(self,sp,z_min,z_max,mult=2.)
 
 
 class QK(QShear):
     """weight function for convergence, just shear weight function now"""
-    def __init__(self,sp,r_min=0.,r_max=np.inf):
+    def __init__(self,sp,z_min=0.,z_max=np.inf):
         """see QShear"""
-        QShear.__init__(self,sp,r_min,r_max,mult=1.)
+        QShear.__init__(self,sp,z_min,z_max,mult=1.)
 
 class QNum(QWeight):
     """weight function for galaxy lensing, as in ie arXiv:1302.2401v2"""
-    def __init__(self,sp,r_min=0.,r_max=np.inf):
+    def __init__(self,sp,z_min=0.,z_max=np.inf):
         """see QShear"""
         q = np.zeros((sp.n_z,sp.n_l))
         self.b = _bias(sp)
         for i in range(0,sp.n_z):
-            if sp.rs[i]>r_max:
+            if sp.zs[i]>z_max:
                 break
-            elif sp.rs[i]<r_min:
+            elif sp.zs[i]<z_min:
                 continue
             else:
                 q[i] = sp.ps[i]*self.b[:,i]
-        QWeight.__init__(self,sp.rs,q,r_min,r_max)
+        QWeight.__init__(self,sp.rs,q,z_min,z_max)
 
 def _bias(sp):
     """bias as a function of k and r, used in galaxy lensing helper for QNUM"""
