@@ -156,6 +156,112 @@ def test_basic_setup_succeeded(fisher_input):
     assert np.allclose(np.tril(chol_cov_i),chol_cov_i,atol=atol_loc4,rtol=rtol_use)
     assert check_is_cholesky_inv(chol_cov_i,cov,atol_rel=atol_rel_use,rtol=rtol_use)
 
+
+def test_get_eig_metric_diag_range(fisher_params):
+    """test get_cov_eig_metric"""
+    cov = fisher_params.fisher_input.cov.copy()
+    fisher = copy.deepcopy(fisher_params.fisher)
+
+    metric_mat = np.diag(np.arange(1,cov.shape[0]+1))*1.
+    metric_mat_inv = np.linalg.pinv(metric_mat)
+    metric = fm.FisherMatrix(metric_mat,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR)
+
+    eigs_1 = fisher.get_cov_eig_metric(metric)
+    atol_loc = np.max(np.abs(eigs_1[0]-1.))*atol_rel_use
+
+    #m_mat = np.identity(cov.shape[0])+np.dot(cov,metric_mat_inv)
+    m_mat = np.dot(cov,metric_mat_inv)
+    eigs_3 = spl.eig(m_mat)
+    #check matrix is positive semidefinite
+    assert np.all(eigs_3[0]>0.)
+    assert np.all(np.abs(np.imag(eigs_3[0]-1.))[::-1]<atol_loc)
+    #check eigenvalues match
+    assert np.allclose(np.sort(eigs_1[0]-1.),np.sort(np.real(eigs_3[0]-1.)),atol=atol_loc,rtol=rtol_use)
+
+    chol_metric = spl.cholesky(metric_mat,lower=True)
+    chol_inv_metric = npl.pinv(chol_metric)
+    #alt_mat = np.identity(cov.shape[0])+np.dot(chol_inv_metric,np.dot(cov,chol_inv_metric.T))
+    alt_mat = np.dot(chol_inv_metric,np.dot(cov,chol_inv_metric.T))
+    #u vectors
+    eigvs_4 = np.dot(chol_inv_metric,eigs_3[1])
+    #v vectors
+    eigvs_5 = np.dot(chol_metric,eigs_1[1])
+
+    #check eigenvalues work
+    assert np.allclose(np.dot(m_mat,eigs_3[1]),eigs_3[0]*eigs_3[1],atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(np.dot(alt_mat,eigs_1[1]),eigs_1[0]*eigs_1[1],atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(np.identity(cov.shape[0]),np.dot(eigs_1[1].T,eigs_1[1]),atol=atol_loc,rtol=rtol_use)
+    p_mat0 = np.dot(eigs_3[1].T,np.dot(metric_mat_inv,eigs_3[1]))
+    p_mat0_use = p_mat0-np.diag(np.diag(p_mat0))
+    assert np.allclose(np.zeros(cov.shape),p_mat0_use,atol=atol_loc,rtol=rtol_use)
+
+    #check cholesky transforms eigenvalues as expected
+    p_mat1 = np.dot(eigvs_4.T,eigvs_4)
+    p_mat1_use = p_mat1-np.diag(np.diag(p_mat1))
+    assert np.allclose(np.zeros(cov.shape),p_mat1_use,atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(np.dot(alt_mat,eigvs_4),(eigs_3[0]*eigvs_4),atol=atol_loc,rtol=rtol_use)
+    p_mat2 = np.dot(eigvs_5.T,np.dot(metric_mat_inv,eigvs_5))
+    p_mat2_use = p_mat2-np.diag(np.diag(p_mat2))
+    assert np.allclose(np.zeros(cov.shape),p_mat2_use,atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(np.dot(m_mat,eigvs_5),eigs_1[0]*eigvs_5,atol=atol_loc,rtol=rtol_use)
+    
+    #test eig product matches identity
+    eigs_1_prod = np.product(eigs_1[0])
+    eigs_1_prod_true = np.linalg.det(cov)/np.linalg.det(metric_mat)
+    assert np.isclose(eigs_1_prod,eigs_1_prod_true)
+
+
+def test_get_eig_metric_rand(fisher_params):
+    """test get_cov_eig_metric"""
+    cov = fisher_params.fisher_input.cov.copy()
+    fisher = copy.deepcopy(fisher_params.fisher)
+    metric_mat = np.random.rand(cov.shape[0],cov.shape[1])
+    metric_mat = np.dot(metric_mat.T,metric_mat)
+    metric_mat_inv = np.linalg.pinv(metric_mat)
+    metric = fm.FisherMatrix(metric_mat,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR)
+
+    eigs_1 = fisher.get_cov_eig_metric(metric)
+    atol_loc = np.max(np.abs(eigs_1[0]-1.))*atol_rel_use
+
+    m_mat = np.dot(cov,metric_mat_inv)
+    eigs_3 = spl.eig(m_mat)
+    #check matrix is positive semidefinite
+    assert np.all(eigs_3[0]>0.)
+    assert np.all(np.abs(np.imag(eigs_3[0]-1.))[::-1]<atol_loc)
+    #check eigenvalues match
+    assert np.allclose(np.sort(eigs_1[0]-1.),np.sort(np.real(eigs_3[0]-1.)),atol=atol_loc,rtol=rtol_use)
+
+    chol_metric = spl.cholesky(metric_mat,lower=True)
+    chol_inv_metric = npl.pinv(chol_metric)
+    alt_mat = np.dot(chol_inv_metric,np.dot(cov,chol_inv_metric.T))
+    #u vectors
+    eigvs_4 = np.dot(chol_inv_metric,eigs_3[1])
+    #v vectors
+    eigvs_5 = np.dot(chol_metric,eigs_1[1])
+
+    #check eigenvalues work
+    assert np.allclose(np.dot(m_mat,eigs_3[1]),eigs_3[0]*eigs_3[1],atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(np.dot(alt_mat,eigs_1[1]),eigs_1[0]*eigs_1[1],atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(np.identity(cov.shape[0]),np.dot(eigs_1[1].T,eigs_1[1]),atol=atol_loc,rtol=rtol_use)
+    p_mat0 = np.dot(eigs_3[1].T,np.dot(metric_mat_inv,eigs_3[1]))
+    p_mat0_use = p_mat0-np.diag(np.diag(p_mat0))
+    assert np.allclose(np.zeros(cov.shape),p_mat0_use,atol=atol_loc,rtol=rtol_use)
+
+    #check cholesky transforms eigenvalues as expected
+    p_mat1 = np.dot(eigvs_4.T,eigvs_4)
+    p_mat1_use = p_mat1-np.diag(np.diag(p_mat1))
+    assert np.allclose(np.zeros(cov.shape),p_mat1_use,atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(np.dot(alt_mat,eigvs_4),(eigs_3[0]*eigvs_4),atol=atol_loc,rtol=rtol_use)
+    p_mat2 = np.dot(eigvs_5.T,np.dot(metric_mat_inv,eigvs_5))
+    p_mat2_use = p_mat2-np.diag(np.diag(p_mat2))
+    assert np.allclose(np.zeros(cov.shape),p_mat2_use,atol=atol_loc,rtol=rtol_use)
+    assert np.allclose(np.dot(m_mat,eigvs_5),eigs_1[0]*eigvs_5,atol=atol_loc,rtol=rtol_use)
+
+    #test eig product matches identity
+    eigs_1_prod = np.product(eigs_1[0])
+    eigs_1_prod_true = np.linalg.det(cov)/np.linalg.det(metric_mat)
+    assert np.isclose(eigs_1_prod,eigs_1_prod_true)
+
 #def test_perturb_fisher_vec(fisher_params):
 #    """test perturb_fisher"""
 #    fisher = copy.deepcopy(fisher_params.fisher)
@@ -535,100 +641,6 @@ def test_add_fisher1(fisher_params):
     assert np.allclose(fab2,fab3,atol=atol_loc2,rtol=rtol_use)
     assert np.allclose(cov2,cov3,atol=atol_loc1,rtol=rtol_use)
 
-
-def test_get_eig_metric_diag_range(fisher_params):
-    """test get_cov_eig_metric"""
-    cov = fisher_params.fisher_input.cov.copy()
-    fisher = copy.deepcopy(fisher_params.fisher)
-
-    metric_mat = np.diag(np.arange(1,cov.shape[0]+1))*1.
-    metric_mat_inv = np.linalg.pinv(metric_mat)
-    metric = fm.FisherMatrix(metric_mat,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR)
-
-    eigs_1 = fisher.get_cov_eig_metric(metric)
-    atol_loc = np.max(np.abs(eigs_1[0]-1.))*atol_rel_use
-
-    #m_mat = np.identity(cov.shape[0])+np.dot(cov,metric_mat_inv)
-    m_mat = np.dot(cov,metric_mat_inv)
-    eigs_3 = spl.eig(m_mat)
-    #check matrix is positive semidefinite
-    assert np.all(eigs_3[0]>0.)
-    assert np.all(np.abs(np.imag(eigs_3[0]-1.))[::-1]<atol_loc)
-    #check eigenvalues match
-    assert np.allclose(np.sort(eigs_1[0]-1.),np.sort(np.real(eigs_3[0]-1.)),atol=atol_loc,rtol=rtol_use)
-
-    chol_metric = spl.cholesky(metric_mat,lower=True)
-    chol_inv_metric = npl.pinv(chol_metric)
-    #alt_mat = np.identity(cov.shape[0])+np.dot(chol_inv_metric,np.dot(cov,chol_inv_metric.T))
-    alt_mat = np.dot(chol_inv_metric,np.dot(cov,chol_inv_metric.T))
-    #u vectors
-    eigvs_4 = np.dot(chol_inv_metric,eigs_3[1])
-    #v vectors
-    eigvs_5 = np.dot(chol_metric,eigs_1[1])
-
-    #check eigenvalues work
-    assert np.allclose(np.dot(m_mat,eigs_3[1]),eigs_3[0]*eigs_3[1],atol=atol_loc,rtol=rtol_use)
-    assert np.allclose(np.dot(alt_mat,eigs_1[1]),eigs_1[0]*eigs_1[1],atol=atol_loc,rtol=rtol_use)
-    assert np.allclose(np.identity(cov.shape[0]),np.dot(eigs_1[1].T,eigs_1[1]),atol=atol_loc,rtol=rtol_use)
-    p_mat0 = np.dot(eigs_3[1].T,np.dot(metric_mat_inv,eigs_3[1]))
-    p_mat0_use = p_mat0-np.diag(np.diag(p_mat0))
-    assert np.allclose(np.zeros(cov.shape),p_mat0_use,atol=atol_loc,rtol=rtol_use)
-
-    #check cholesky transforms eigenvalues as expected
-    p_mat1 = np.dot(eigvs_4.T,eigvs_4)
-    p_mat1_use = p_mat1-np.diag(np.diag(p_mat1))
-    assert np.allclose(np.zeros(cov.shape),p_mat1_use,atol=atol_loc,rtol=rtol_use)
-    assert np.allclose(np.dot(alt_mat,eigvs_4),(eigs_3[0]*eigvs_4),atol=atol_loc,rtol=rtol_use)
-    p_mat2 = np.dot(eigvs_5.T,np.dot(metric_mat_inv,eigvs_5))
-    p_mat2_use = p_mat2-np.diag(np.diag(p_mat2))
-    assert np.allclose(np.zeros(cov.shape),p_mat2_use,atol=atol_loc,rtol=rtol_use)
-    assert np.allclose(np.dot(m_mat,eigvs_5),eigs_1[0]*eigvs_5,atol=atol_loc,rtol=rtol_use)
-
-def test_get_eig_metric_rand(fisher_params):
-    """test get_cov_eig_metric"""
-    cov = fisher_params.fisher_input.cov.copy()
-    fisher = copy.deepcopy(fisher_params.fisher)
-    metric_mat = np.random.rand(cov.shape[0],cov.shape[1])
-    metric_mat = np.dot(metric_mat.T,metric_mat)
-    metric_mat_inv = np.linalg.pinv(metric_mat)
-    metric = fm.FisherMatrix(metric_mat,input_type=fm.REP_COVAR,initial_state=fm.REP_COVAR)
-
-    eigs_1 = fisher.get_cov_eig_metric(metric)
-    atol_loc = np.max(np.abs(eigs_1[0]-1.))*atol_rel_use
-
-    m_mat = np.dot(cov,metric_mat_inv)
-    eigs_3 = spl.eig(m_mat)
-    #check matrix is positive semidefinite
-    assert np.all(eigs_3[0]>0.)
-    assert np.all(np.abs(np.imag(eigs_3[0]-1.))[::-1]<atol_loc)
-    #check eigenvalues match
-    assert np.allclose(np.sort(eigs_1[0]-1.),np.sort(np.real(eigs_3[0]-1.)),atol=atol_loc,rtol=rtol_use)
-
-    chol_metric = spl.cholesky(metric_mat,lower=True)
-    chol_inv_metric = npl.pinv(chol_metric)
-    alt_mat = np.dot(chol_inv_metric,np.dot(cov,chol_inv_metric.T))
-    #u vectors
-    eigvs_4 = np.dot(chol_inv_metric,eigs_3[1])
-    #v vectors
-    eigvs_5 = np.dot(chol_metric,eigs_1[1])
-
-    #check eigenvalues work
-    assert np.allclose(np.dot(m_mat,eigs_3[1]),eigs_3[0]*eigs_3[1],atol=atol_loc,rtol=rtol_use)
-    assert np.allclose(np.dot(alt_mat,eigs_1[1]),eigs_1[0]*eigs_1[1],atol=atol_loc,rtol=rtol_use)
-    assert np.allclose(np.identity(cov.shape[0]),np.dot(eigs_1[1].T,eigs_1[1]),atol=atol_loc,rtol=rtol_use)
-    p_mat0 = np.dot(eigs_3[1].T,np.dot(metric_mat_inv,eigs_3[1]))
-    p_mat0_use = p_mat0-np.diag(np.diag(p_mat0))
-    assert np.allclose(np.zeros(cov.shape),p_mat0_use,atol=atol_loc,rtol=rtol_use)
-
-    #check cholesky transforms eigenvalues as expected
-    p_mat1 = np.dot(eigvs_4.T,eigvs_4)
-    p_mat1_use = p_mat1-np.diag(np.diag(p_mat1))
-    assert np.allclose(np.zeros(cov.shape),p_mat1_use,atol=atol_loc,rtol=rtol_use)
-    assert np.allclose(np.dot(alt_mat,eigvs_4),(eigs_3[0]*eigvs_4),atol=atol_loc,rtol=rtol_use)
-    p_mat2 = np.dot(eigvs_5.T,np.dot(metric_mat_inv,eigvs_5))
-    p_mat2_use = p_mat2-np.diag(np.diag(p_mat2))
-    assert np.allclose(np.zeros(cov.shape),p_mat2_use,atol=atol_loc,rtol=rtol_use)
-    assert np.allclose(np.dot(m_mat,eigvs_5),eigs_1[0]*eigvs_5,atol=atol_loc,rtol=rtol_use)
 
 
 
