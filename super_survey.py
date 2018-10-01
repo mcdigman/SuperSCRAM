@@ -80,7 +80,7 @@ class SuperSurvey(object):
         print("product eigenvalues without mitigation using gaussian metric: "+str(np.product(self.eig_set[1,0][0])))
         print("product eigenvalues with mitigation using gaussian metric: "+str(np.product(self.eig_set[1,1][0])))
         print("product eigenvalues with mitigation using unmitigated metric: "+str(np.product(self.eig_set_ssc[1,1][0])))
-        print("log(det(C_g,C_ssc,C_mit)): "+str(np.log(np.linalg.det(SS.f_set_nopriors[0][2].get_covar())))+","+str(np.log(np.linalg.det(SS.f_set_nopriors[1][2].get_covar())))+","+str(np.log(np.linalg.det(SS.f_set_nopriors[2][2].get_covar()))))
+        print("log(det(C_g,C_ssc,C_mit)): "+str(np.log(np.linalg.det(self.f_set_nopriors[0][2].get_covar())))+","+str(np.log(np.linalg.det(self.f_set_nopriors[1][2].get_covar())))+","+str(np.log(np.linalg.det(self.f_set_nopriors[2][2].get_covar()))))
         #print("components of eigenvectors, sorted by descending importance, eigenvectors sorted by descending contamination without mitigation")
         #for i in range(0,6):
         #    comp_no_mit = lambda itr1,itr2: cmp(np.abs(self.eig_set[1,0][1][itr1,-1-i]),np.abs(self.eig_set[1,0][1][itr2,-1-i]))
