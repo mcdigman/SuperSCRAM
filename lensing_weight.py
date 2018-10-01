@@ -39,6 +39,8 @@ def _gs(sp,r_min=0.,r_max=np.inf):
     high_mask = (sp.rs<=r_max)*1. #so only integrate to min(chi,r_max)
     ps_mask = sp.ps*high_mask*low_mask
     ps_norm = ps_mask/trapz2(ps_mask,sp.rs) 
+    #norm1 = trapz2(ps_mask,sp.rs)
+    #norm2 = trapz2(ps_mask[(sp.rs>=r_min) & (sp.rs<=r_max)],sp.rs[(sp.rs>=r_min) & (sp.rs<=r_max)])
 
     if sp.C.Omegak==0.0:
         g_vals = -cumtrapz(ps_norm[::-1],sp.rs[::-1],initial=0.)[::-1]+sp.rs*cumtrapz((ps_norm/sp.rs)[::-1],sp.rs[::-1],initial=0.)[::-1]

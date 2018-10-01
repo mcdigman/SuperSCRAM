@@ -23,7 +23,7 @@ if __name__=='__main__':
     time0 = time()
     #get dictionaries of parameters that various functions will need
     cosmo = defaults.cosmology.copy()
-    cosmo['de_model'] = 'w0wa'
+    cosmo['de_model'] = 'constant_w'
     cosmo['wa'] = 0.
     cosmo['w0'] = -1.
     cosmo['w'] = -1.
@@ -84,10 +84,11 @@ if __name__=='__main__':
     #zs = np.array([0.2,0.43,.63,0.9, 1.3])
     #TODO check no off by one errors in final bin
     zs = np.arange(0.2,3.01,0.2)
+    #zs = np.linspace(0.2,3.01,3)
     zs_lsst = np.linspace(0.,1.2,5)
     #zs = np.array([0.2,0.4,0.6])
     #z_fine are the resolution redshift slices to be integrated over
-    z_fine = np.linspace(0.001,np.max(zs),8000)
+    z_fine = np.linspace(0.0002,np.max(zs),4000)
 
     #z_fine[0] = 0.0001
 
@@ -239,24 +240,24 @@ if do_dump:
     dill.dump(dump_set,dump_f)
     dump_f.close()
 
-f_g_nop  = SS.f_set_nopriors[0][2].get_fisher().copy()
-f_s_nop  = SS.f_set_nopriors[1][2].get_fisher().copy()
-f_wa_prior = np.zeros((7,7))
-f_wa_prior[-1,-1] = 10**12
-f_g_nowa = f_g_nop+f_wa_prior
-f_s_nowa = f_s_nop+f_wa_prior
-import fisher_matrix as fm
-fm_g_nowa = fm.FisherMatrix(f_g_nowa,input_type=fm.REP_FISHER)
-fm_s_nowa = fm.FisherMatrix(f_s_nowa,input_type=fm.REP_FISHER)
-eigv_s_g_nowa = fm_s_nowa.get_cov_eig_metric(fm_g_nowa)[0]
-eigv_s_g_wa = SS.eig_set[1][0][0]
-
-f_g_margwa = f_g_nop.copy()
-f_g_margwa = f_g_margwa[0:6,0:6]
-f_s_margwa = f_s_nop.copy()
-f_s_margwa = f_s_margwa[0:6,0:6]
-fm_g_margwa = fm.FisherMatrix(f_g_margwa,input_type=fm.REP_FISHER)
-fm_s_margwa = fm.FisherMatrix(f_s_margwa,input_type=fm.REP_FISHER)
-fm_g_margwa = fm.FisherMatrix(f_g_margwa,input_type=fm.REP_FISHER)
-fm_s_margwa = fm.FisherMatrix(f_s_margwa,input_type=fm.REP_FISHER)
-eigv_s_g_margwa = fm_s_margwa.get_cov_eig_metric(fm_g_margwa)[0]
+#f_g_nop  = SS.f_set_nopriors[0][2].get_fisher().copy()
+#f_s_nop  = SS.f_set_nopriors[1][2].get_fisher().copy()
+#f_wa_prior = np.zeros((7,7))
+#f_wa_prior[-1,-1] = 10**12
+#f_g_nowa = f_g_nop+f_wa_prior
+#f_s_nowa = f_s_nop+f_wa_prior
+#import fisher_matrix as fm
+#fm_g_nowa = fm.FisherMatrix(f_g_nowa,input_type=fm.REP_FISHER)
+#fm_s_nowa = fm.FisherMatrix(f_s_nowa,input_type=fm.REP_FISHER)
+#eigv_s_g_nowa = fm_s_nowa.get_cov_eig_metric(fm_g_nowa)[0]
+#eigv_s_g_wa = SS.eig_set[1][0][0]
+#
+#f_g_margwa = f_g_nop.copy()
+#f_g_margwa = f_g_margwa[0:6,0:6]
+#f_s_margwa = f_s_nop.copy()
+#f_s_margwa = f_s_margwa[0:6,0:6]
+#fm_g_margwa = fm.FisherMatrix(f_g_margwa,input_type=fm.REP_FISHER)
+#fm_s_margwa = fm.FisherMatrix(f_s_margwa,input_type=fm.REP_FISHER)
+#fm_g_margwa = fm.FisherMatrix(f_g_margwa,input_type=fm.REP_FISHER)
+#fm_s_margwa = fm.FisherMatrix(f_s_margwa,input_type=fm.REP_FISHER)
+#eigv_s_g_margwa = fm_s_margwa.get_cov_eig_metric(fm_g_margwa)[0]
