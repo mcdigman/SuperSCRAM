@@ -16,7 +16,7 @@ from algebra_utils import trapz2
 
 from dark_energy_model import DarkEnergyConstant,DarkEnergyW0Wa,DarkEnergyJDEM
 
-DEBUG=False
+DEBUG=True
 
 eps = np.finfo(float).eps
 #TODO ensure safe sigma8

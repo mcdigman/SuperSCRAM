@@ -22,7 +22,7 @@ if __name__=='__main__':
     print("main: begin WFIRST")
     time0 = time()
     #get dictionaries of parameters that various functions will need
-    cosmo = defaults.cosmology.copy()
+    cosmo = defaults.cosmology_wmap.copy()
     cosmo['de_model'] = 'constant_w'
     cosmo['wa'] = 0.
     cosmo['w0'] = -1.
@@ -33,39 +33,28 @@ if __name__=='__main__':
     camb_params['maxkh'] = 100.
     camb_params['kmax'] = 30.
     camb_params['npoints'] = 2000
-    #fpt_params = defaults.fpt_params.copy()
-    #wmatcher_params = defaults.wmatcher_params.copy()
-    #halofit_params = defaults.halofit_params.copy()
-    #matter_power_params = defaults.matter_power_params.copy()
-    #hf_params = defaults.halofit_params.copy()
+    camb_params['pivot_scalar'] = 0.002
     poly_params = {'n_double':80}
     len_params = defaults.lensing_params.copy()
     len_params['l_max'] = 5000
     len_params['l_min'] = 30
     len_params['n_l'] = 20
     nz_params_wfirst_lens = defaults.nz_params_wfirst_lens.copy()
-    nz_params_wfirst_lens['smooth_sigma'] = 0.1
-    nz_params_wfirst_lens['n_right_extend'] = 5
     sw_params = defaults.sw_survey_params.copy()
     lw_params = defaults.lw_survey_params.copy()
     sw_observable_list = defaults.sw_observable_list
-    #TODO don't use defaults for setting up the core demo
     lw_observable_list = defaults.lw_observable_list
     mf_params = defaults.hmf_params.copy()
     mf_params['n_grid'] = 2000
     mf_params['log10_min_mass'] = 10.
-    n_params_wfirst = defaults.nz_params_wfirst_gal.copy()
-    n_params_wfirst['z_resolution'] = 0.0001
-    n_params_wfirst['nz_constant'] = 10**-3*cosmo['h']**3
-    n_params_wfirst['n_right_extend'] = 5
-    n_params_wfirst['smooth_sigma'] = 0.1
-    n_params_wfirst['i_cut'] = 24.1 #gold standard subset of LSST 1 year (10 year 25.3)
+    n_params_lsst = defaults.nz_params_lsst_use.copy()
+    n_params_lsst['i_cut'] = 24.1 #gold standard subset of LSST 1 year (10 year 25.3)
 
     power_params = defaults.power_params.copy()
     power_params.camb = camb_params
-    power_params.camb['accuracy'] = 1
+    power_params.camb['accuracy'] = 2
     prior_params = defaults.prior_fisher_params.copy()
-    lw_param_list = np.array([{'dn_params':{'nz_select':'LSST'},'n_params':n_params_wfirst,'mf_params':mf_params}])
+    lw_param_list = np.array([{'dn_params':{'nz_select':'LSST'},'n_params':n_params_lsst,'mf_params':mf_params}])
     basis_params = defaults.basis_params.copy()
 
     #creat a CosmoPie object to manage the cosmology details
@@ -234,7 +223,7 @@ print("main: most contaminated direction: ",of_no_mit[:,-1])
 #            angles[i,j] = np.dot(Dn.vs[i],Dn.vs[j])/(np.linalg.norm(Dn.vs[i])*np.linalg.norm(Dn.vs[j]))
 do_dump = True
 if do_dump:
-    dump_set = [SS.f_set_nopriors[0][2],SS.f_set_nopriors[1][2],SS.f_set_nopriors[2][2],SS.f_set[0][2],SS.f_set[1][2],SS.f_set[2][2],cosmo_par_list,SS.eig_set[1],SS.eig_set_ssc[1],lw_param_list,n_params_wfirst,power_params,nz_params_wfirst_lens,sw_observable_list,lw_observable_list,sw_params,len_params,x_cut,l_max,zs,zs_lsst,z_fine,mf_params,basis_params,cosmo_par_eps,cosmo,poly_params]
+    dump_set = [SS.f_set_nopriors[0][2],SS.f_set_nopriors[1][2],SS.f_set_nopriors[2][2],SS.f_set[0][2],SS.f_set[1][2],SS.f_set[2][2],cosmo_par_list,SS.eig_set[1],SS.eig_set_ssc[1],lw_param_list,n_params_lsst,power_params,nz_params_wfirst_lens,sw_observable_list,lw_observable_list,sw_params,len_params,x_cut,l_max,zs,zs_lsst,z_fine,mf_params,basis_params,cosmo_par_eps,cosmo,poly_params]
     import dill
     dump_f = open('dump_test.pkl','w')
     dill.dump(dump_set,dump_f)

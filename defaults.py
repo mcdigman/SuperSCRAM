@@ -29,6 +29,31 @@ cosmology = {   'Omegabh2':0.02227,
                 #'zstar'   :1089.90,#redshift at last scattering
                 'mnu'     :0.
             }
+
+# wmap 9 year cosmology #TODO check with Chris which one
+cosmology_wmap = {   'Omegabh2':0.02223,
+                'Omegach2':0.1153,
+                'Omegab'  :0.04283392714316876,
+                'Omegac'  :0.22216607285683124, 
+                'Omegamh2':0.13752999999999999,
+                'OmegaL'  :0.735,
+                'OmegaLh2':0.38145113207547166,
+                'Omegam'  :0.265,
+                'H0'      :72.04034509047493,
+                'sigma8'  : 0.8269877678406697, #from the code
+                'h'       :0.7204034509047493,
+                'Omegak'  : 0.0,
+                'Omegakh2': 0.0,
+                'Omegar'  : 0.0,
+                'Omegarh2': 0.0,
+                'ns'      : 0.9608,
+                'tau'     : 0.081,
+                'Yp'      :0.299,
+                'As'      : 2.464*10**-9,
+                'LogAs'   :-19.821479791275138,
+                'w'       :-1.0,
+                'de_model':'constant_w',#dark energy model
+                'mnu'     :0.} 
 #cosmology from jdem 2008 working group paper arxiv:0901.0721v1
 cosmology_jdem = {  'ns'      : 0.963,
                     'Omegamh2': 0.1326,
@@ -89,24 +114,17 @@ nz_params_wfirst_gal = {    'data_source'   :'./data/CANDELS-GOODSS2.dat',
                             'suppress'      :True,
                             'z_cut'         :0.04
                        }
+nz_params_lsst_use = {      'i_cut'         :24}
+
 nz_params_wfirst_lens = {   'data_source'   :'./data/H-5x140s.dat',
                             'area_sterad'   : 0.040965*np.pi**2/180**2,
-                            'smooth_sigma'  :0.01,
-                            'n_right_extend':16,
+                            'smooth_sigma'  :0.1,
+                            'n_right_extend':5,
                             'z_resolution'  :0.001,
                             'mirror_boundary':True,
                             'suppress'      :True,
                             'z_cut'         :0.04
                         }
-nz_params_constant = {   'data_source'   :'./data/H-5x140s.dat',
-                            'area_sterad'   : 0.040965*np.pi**2/180**2,
-                            'smooth_sigma'  :0.01,
-                            'n_right_extend':16,
-                            'z_resolution'  :0.001,
-                            'mirror_boundary':True,
-                            'suppress'      :True,
-                            'z_cut'         :0.04,
-                            'nz_constant' :0.0001}
 nz_params_lsst = {  'data_source'   :'./data/CANDELS-GOODSS2.dat',
                     'i_cut'         :25.3,#lsst assumes they will get 10 billion galaxies with i<26 in 20000 deg^2, 4 billion lensing quality with i<25.3
                     'area_sterad'   :0.0409650328530259/3282.80635,
@@ -120,11 +138,11 @@ nz_params_lsst = {  'data_source'   :'./data/CANDELS-GOODSS2.dat',
 
 hmf_params = {      'log10_min_mass'    :   11, #saturated mitigation achieved with cutoff ~11
                     'log10_max_mass'    :   18,
-                    'n_grid'            :   500,
-                    'z_resolution'      : 0.01,
-                    'z_min'             : 0.,
-                    'z_max'             : 4.05,
-                    'n_z'               : 405}
+                    'n_grid'            :   500}
+                    #'z_resolution'      : 0.01,
+                    #'z_min'             : 0.,
+                    #'z_max'             : 4.05,
+                    #'n_z'               : 405}
 fpt_params = {  'C_window':0.75,
                 'n_pad':1000,
                 'low_extrap':-5,
@@ -137,7 +155,8 @@ camb_params = { 'npoints':1000,
                 'leave_h':False,
                 'force_sigma8':False,
                 'return_sigma8':False,
-                'accuracy':1
+                'accuracy':1,
+                'pivot_scalar':0.05
               }
 #amara refregier 2006 parameter forecast stuff
 prior_fisher_params = { 'row_strip'     :np.array([3,5,6,7]),
