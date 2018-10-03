@@ -22,7 +22,6 @@ from polygon_union_geo import PolygonUnionGeo
 from polygon_pixel_union_geo import PolygonPixelUnionGeo
 #LSST sigma/(1+z)<0.05 required 0.02 goal for i<25.3 (lsst science book 3.8.1)
 import fisher_matrix as fm
-#TODO evaluate adding more tomographic bins 
 #NOTE if doing photozs tomo must go to z=0 or photoz uncertainty 
 #can actually add information because it provides information at z=0
 class DNumberDensityObservable(LWObservable):
@@ -57,9 +56,15 @@ class DNumberDensityObservable(LWObservable):
                 raise ValueError('unsupported type for geo2')
         elif isinstance(self.geos[0],PolygonPixelGeo):
             if isinstance(geos[1],PolygonPixelGeo):
-                self.geo2 = PolygonPixelUnionGeo(np.array([geos[1]]),np.array([geos[0]]))
+                self.geo2 = PolygonPixelUnionGeo(np.array([geos[1]]),np.array([geos[0]]),zs=geos[1].zs,z_fine=geos[1].z_fine)
+            elif isinstance(geos[1],PolygonPixelUnionGeo):
+                self.geo2 = PolygonPixelUnionGeo(geos[1].geos,np.append(geos[0],geos[1].masks),zs=geos[1].zs,z_fine=geos[1].z_fine)
             else:
                 raise ValueError('unsupported type for geo2')
+            #if isinstance(geos[1],PolygonPixelGeo):
+            #    self.geo2 = PolygonPixelUnionGeo(np.array([geos[1]]),np.array([geos[0]]))
+            #else:
+            #    raise ValueError('unsupported type for geo2')
         else:
             raise ValueError('unsupported type for geo1')
 

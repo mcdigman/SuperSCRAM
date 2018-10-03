@@ -580,7 +580,7 @@ if __name__=='__main__':
             #mask = ((pp_geo2.contained*1.-pp_mask_geo.contained*1.)>0)
             all_pixels = get_healpix_pixelation(res_choose=6)
             #mask =  contains_points(all_pixels,union_geo.union_mask)
-            mask = pp_union_geo_lowres.union_contains*1.
+            mask = pp_union_geo_lowres.contained*1.
             #union_geo.union_mask.draw(m,color='red')
             totals_poly = reconstruct_from_alm(l_max_in,all_pixels[:,0],all_pixels[:,1],union_geo.alm_table.copy())
             totals_pp = reconstruct_from_alm(l_max_in,all_pixels[:,0],all_pixels[:,1],pp_union_geo.alm_table.copy())

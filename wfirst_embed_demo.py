@@ -13,7 +13,7 @@ from sph_klim import SphBasisK
 from matter_power_spectrum import MatterPower
 from nz_wfirst_eff import NZWFirstEff
 from nz_wfirst import NZWFirst
-from premade_geos import WFIRSTGeo,LSSTGeo
+from premade_geos import WFIRSTGeo,LSSTGeo,WFIRSTPixelGeo,LSSTPixelGeo
 
 import defaults
 
@@ -83,15 +83,23 @@ if __name__=='__main__':
 
     #l_max is the highest l that should be precomputed
     l_max = 25
-
+    res_healpix = 5
+    use_pixels = False
     print("main: begin constructing WFIRST PolygonGeo")
-    geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,poly_params)
+    if use_pixels:
+        geo_wfirst = WFIRSTPixelGeo(zs,C,z_fine,l_max,res_healpix)
+    else:
+        geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,poly_params)
+
     print("main: finish constructing WFIRST PolygonGeo")
 
     #create the LSST geometry, for our purposes, a 20000 square degree survey 
     #encompassing the wfirst survey with galactic plane masked)
     print("main: begin constructing LSST PolygonGeo")
-    geo_lsst = LSSTGeo(zs_lsst,C,z_fine,l_max,poly_params)#,phi1=2.9030540874480577)
+    if use_pixels:
+        geo_lsst = LSSTPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
+    else:
+        geo_lsst = LSSTGeo(zs_lsst,C,z_fine,l_max,poly_params)
     print("main: finish constructing LSST PolygonGeo")
 
     #create the short wavelength survey (SWSurvey) object
@@ -152,12 +160,12 @@ if __name__=='__main__':
     SS = SuperSurvey(surveys_sw,surveys_lw,basis,C,prior_params,get_a=False,do_unmitigated=True,do_mitigated=True)
 
     time1 = time()
-    print("main: finished construction tasks in "+str(time1-time0)+"s")
+    print("main: finished construction tasks in "+str(time1-time0)+" s")
 
     mit_eigs_par = SS.eig_set[1,1]
     no_mit_eigs_par = SS.eig_set[1,0]
-    print("main: unmitigated parameter lambda1,2: "+str(no_mit_eigs_par[0][-1])+","+str(no_mit_eigs_par[0][-2]))
-    print("main: mitigated parameter lambda1,2: "+str(mit_eigs_par[0][-1])+","+str(mit_eigs_par[0][-2]))
+    print("main: unmitigated parameter lambda1,2: "+str(no_mit_eigs_par[0][-1])+", "+str(no_mit_eigs_par[0][-2]))
+    print("main: mitigated parameter lambda1,2: "+str(mit_eigs_par[0][-1])+", "+str(mit_eigs_par[0][-2]))
 
     #needed to make ellipse plot
     no_mit_color = np.array([1.,0.,0.])
