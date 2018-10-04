@@ -126,18 +126,17 @@ class LSSTPixelGeo(PolygonPixelUnionGeo):
 
 class LSSTGeoSimpl(PolygonGeo):
     """create a simplified LLST area geo with no masks"""
-    def __init__(self,zs,C,z_fine,l_max,poly_params,phi1=2.9030540874480577):
+    def __init__(self,zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=2.9030540874480577,deg0=-65,deg1=5):
         """params as in PolygonGeo"""
         #use the same redshift bin structure as for WFIRST because we only want LSST for galaxy counts, not lensing
-        theta0 = -65*np.pi/180.+np.pi/2.
-        theta1 = 5.*np.pi/180.+np.pi/2.
-        phi0 = 0.
+        theta0 = deg0*np.pi/180.+np.pi/2.
+        theta1 = deg1*np.pi/180.+np.pi/2.
         #phi1 = 3.074096023740458
         #phi1 = 2.9030540874480577
         thetas_lsst = np.array([theta0,theta1,theta1,theta0,theta0])
         phis_lsst = np.array([phi0,phi0,phi1,phi1,phi0])-phi1/2.
-        theta_in_lsst = np.pi/2.
-        phi_in_lsst = 0.
+        theta_in_lsst = (theta0+theta1)/2.
+        phi_in_lsst = (phi0+phi1)/2.-phi1/2.
 
         print("main: begin constructing LSST PolygonGeo")
         PolygonGeo.__init__(self,zs,thetas_lsst,phis_lsst,theta_in_lsst,phi_in_lsst,C,z_fine,l_max,poly_params)

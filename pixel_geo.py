@@ -64,5 +64,9 @@ class PixelGeo(Geo):
     def expand_alm_table(self,l_max):
         """expand alm table to at least l_max"""
         if l_max>self._l_max:
-            self.alm_table,_,_,_ = ylmu.get_alm_table(l_max,self.pixels[:,0],self.pixels[:,1],self.pixels[0,2])
+            if self.pixels.size==0:
+                pixel_area = 0.
+            else:
+                pixel_area = self.pixels[0,2]
+            self.alm_table,_,_,_ = ylmu.get_alm_table(l_max,self.pixels[:,0],self.pixels[:,1],pixel_area)
             self._l_max = l_max

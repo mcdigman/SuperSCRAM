@@ -27,8 +27,8 @@ class PolygonUnionGeo(Geo):
         if poly_params is None:
             poly_params = geos[0].poly_params
 
-        polys_pos = np.zeros(self.n_g,dtype=object)
-        polys_mask = np.zeros(self.n_m,dtype=object)
+        self.polys_pos = np.zeros(self.n_g,dtype=object)
+        self.polys_mask = np.zeros(self.n_m,dtype=object)
 
         for itr in range(0,self.masks.size):
             if not isinstance(masks[itr],PolygonGeo):
@@ -40,11 +40,11 @@ class PolygonUnionGeo(Geo):
             print(geos[itr].angular_area())
 
         for itr in range(0,self.masks.size):
-            polys_mask[itr] = masks[itr].sp_poly
+            self.polys_mask[itr] = masks[itr].sp_poly
 
         self.union_pos = self.geos[0].sp_poly
         for itr in range(1,self.n_g):
-            self.union_pos = self.union_pos.union(polys_pos[itr])
+            self.union_pos = self.union_pos.union(self.polys_pos[itr])
 
         self.union_xyz = list(self.union_pos.points)
         self.union_in = list(self.union_pos.inside)
@@ -57,17 +57,17 @@ class PolygonUnionGeo(Geo):
 
         if self.n_m>0:
             #get union of all the masks with the union of the inside, ie the intersection, which is the mask to use
-            self.union_mask = polys_mask[0]
+            self.union_mask = self.polys_mask[0]
             for itr1 in range(1,self.n_m):
-                self.union_mask = self.union_mask.union(polys_mask[itr1])
+                self.union_mask = self.union_mask.union(self.polys_mask[itr1])
             #note union_mask can be several disjoint polygons
             self.union_mask = self.union_mask.intersection(self.union_pos)
-            mask_xyz = list(self.union_mask.points)
+            self.mask_xyz = list(self.union_mask.points)
             in_point = list(self.union_mask.inside)
-            self.n_mask = len(mask_xyz)
+            self.n_mask = len(self.mask_xyz)
             self.mask_geos = np.zeros(self.n_mask,dtype=object)
             for itr in range(0,self.n_mask):
-                mask_ra,mask_dec = sgv.vector_to_radec(mask_xyz[itr][:,0],mask_xyz[itr][:,1],mask_xyz[itr][:,2],degrees=False)
+                mask_ra,mask_dec = sgv.vector_to_radec(self.mask_xyz[itr][:,0],self.mask_xyz[itr][:,1],self.mask_xyz[itr][:,2],degrees=False)
                 in_ra,in_dec = sgv.vector_to_radec(in_point[itr][0],in_point[itr][1],in_point[itr][2],degrees=False)
                 self.mask_geos[itr] = PolygonGeo(zs,mask_dec+np.pi/2.,mask_ra,in_dec+np.pi/2.,in_ra,C,z_fine,l_max,poly_params)
         else:

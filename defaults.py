@@ -89,7 +89,9 @@ lensing_params = {  #'z_resolution'    :0.002, #fine resolution
 sw_observable_list = np.array(['len_shear_shear'])
 sw_survey_params = {    'needs_lensing'     : True,
                         'cross_bins'        : True}
-dn_params = {'nz_select': 'CANDELS'}#'M_cut':(12.5)}
+dn_params = {'nz_select'    :'CANDELS',
+             'sigma0'       :0.001,
+             'n_extend'     :5}
 lw_observable_list = np.array(['d_number_density'])
 lw_survey_params = {    'cross_bins': False}
 basis_params = {   'n_bessel_oversample'   :400000,
@@ -107,12 +109,13 @@ nz_params = {   'data_source'   :'./data/CANDELS-GOODSS2.dat',
 nz_params_wfirst_gal = {    'data_source'   :'./data/CANDELS-GOODSS2.dat',
                             'i_cut'         :24,
                             'area_sterad'   :0.0409650328530259/3282.80635,
-                            'smooth_sigma'  :0.04,
-                            'n_right_extend':4,
+                            'smooth_sigma'  :0.02,
+                            'n_right_extend':8,
                             'z_resolution'  :0.001,
                             'mirror_boundary':True,
                             'suppress'      :True,
-                            'z_cut'         :0.04
+                            'z_cut'         :0.04,
+                            'i_cut'         :25.3
                        }
 nz_params_lsst_use = {      'i_cut'         :24}
 

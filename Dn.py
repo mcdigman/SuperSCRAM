@@ -54,7 +54,7 @@ class DNumberDensityObservable(LWObservable):
                 self.geo2 = PolygonUnionGeo(geos[1].geos,np.append(geos[0],geos[1].masks),zs=geos[1].zs,z_fine=geos[1].z_fine)
             else:
                 raise ValueError('unsupported type for geo2')
-        elif isinstance(self.geos[0],PolygonPixelGeo):
+        elif isinstance(self.geos[0],PolygonPixelGeo) or isinstance(self.geos[0],PolygonPixelUnionGeo):
             if isinstance(geos[1],PolygonPixelGeo):
                 self.geo2 = PolygonPixelUnionGeo(np.array([geos[1]]),np.array([geos[0]]),zs=geos[1].zs,z_fine=geos[1].z_fine)
             elif isinstance(geos[1],PolygonPixelUnionGeo):
@@ -71,8 +71,6 @@ class DNumberDensityObservable(LWObservable):
         #self.geo1 should be intersect of mitigation survey and original survey
         if np.isclose(geos[0].get_overlap_fraction(geos[1]),1.):
             self.geo1 = geos[0]
-        #elif np.isclose(geos[0].get_overlap_fraction(geos[1]),0.):
-        #    self.geo1 = PolygonUnionGeo(np.array([geos[0]]),np.array([geos[1]]))
         else:
             if isinstance(geos[0],PolygonGeo):
                 raise RuntimeError('partial overlap not yet implemented')
@@ -119,29 +117,18 @@ class DNumberDensityObservable(LWObservable):
 
         self.Nab_i = np.zeros(self.n_bins)
         self.vs = np.zeros((self.n_bins,basis.get_size()))
-        #self.n_avg_c = np.zeros(self.n_bins)
         self.b_ns = np.zeros(self.n_bins)
-        #self.b_avgs = np.zeros(self.n_bins)
-        #self.m_avgs = np.zeros(self.n_bins)
-        #self.biases = np.diag(self.mf.bias(self.M_cuts,self.z_fine))
         self.n_avg_bin = np.zeros(self.n_bins)
-        #self.bias = np.full(self.z_fine.size,1.6)#self.dn_ddelta_bar/self.n_avgs
         self.bias = self.dn_ddelta_bar/self.n_avgs
-        self.sigma0 = 0.001
-        self.z_extra = np.hstack([self.z_fine,np.arange(self.z_fine[-1]+dz,self.z_fine[-1]+5.*self.sigma0*(1.+self.z_fine[-1]),dz)])
+        self.sigma0 = params['sigma0']
+        self.z_extra = np.hstack([self.z_fine,np.arange(self.z_fine[-1]+dz,self.z_fine[-1]+params['n_extend']*self.sigma0*(1.+self.z_fine[-1]),dz)])
         self.integrands_smooth = np.zeros((self.z_fine.size,self.n_bins))
-        ####
-        self.r_vols1 = 3./np.diff(geos[0].rbins**3)
-        self.n_avg_bin1 = np.zeros(geos[0].zbins.shape[0])
-        self.b_ns1 = np.zeros(geos[0].zbins.shape[0])
-        for itr in range(0,geos[0].zbins.shape[0]):
-            bounds1 = geos[0].fine_indices[itr]
-            range1 = np.arange(bounds1[0],bounds1[1])
-            self.n_avg_bin1[itr] = self.r_vols1[itr]*trapz2(self.n_avg_integrand[range1],self.r_fine[range1])
-            #TODO should be avg true bias or avg observed bias?
-            self.b_ns1[itr] = self.r_vols1[itr]*trapz2(self.integrand[range1],self.r_fine[range1])
-
         
+        V1s = np.diff(self.geo2.rs**3)/3.*self.geo1.angular_area()
+        V2s = self.geo2.volumes
+        assert np.all(V1s>=0.)
+        assert np.all(V2s>=0.)
+
         #NOTE this whole loop could be pulled apart with a small change in sph_klim
         for itr in range(0,self.n_bins):
             bounds1 = self.geo2.fine_indices[itr]
@@ -149,10 +136,12 @@ class DNumberDensityObservable(LWObservable):
 
             print("Dn: getting d1,d2")
             #multiplier for integrand
-            #TODO temporary hack
-            V1 = self.geo2.volumes[itr]*self.geo1.angular_area()/self.geo2.angular_area()
-            V2 = self.geo2.volumes[itr]
-            assert V1>=0 and V2>=0
+
+#            V1 = self.geo2.volumes[itr]*self.geo1.angular_area()/self.geo2.angular_area()
+#            V2 = self.geo2.volumes[itr]
+#            assert np.isclose(V1,V1s[itr])
+#            assert np.isclose(V2,V2s[itr])
+#            assert V1>=0. and V2>=0.
 
 
             #r_vol = 1./(self.r_fine[range1[-1]]**3-self.r_fine[range1[0]]**3)*3.
@@ -162,7 +151,7 @@ class DNumberDensityObservable(LWObservable):
             n_avg = self.r_vols[itr]*trapz2(self.n_avg_integrand[range1],self.r_fine[range1])
             self.n_avg_bin[itr] = n_avg
 
-            assert n_avg>=0
+            assert n_avg>=0.
             #b_n = self.r_vols[itr]*trapz2(self.n_avg_integrand[range1],self.r_fine[range1])
             #bias = self.r_vols[itr]*trapz2(self.n_avg_integrand[range1],self.r_fine[range1])
             #self.n_avg_c[itr] = n_avg
@@ -173,7 +162,7 @@ class DNumberDensityObservable(LWObservable):
             #self.m_avgs[itr] = self.r_vols[itr]*trapz2(self.M_cuts[range1]*self.r_fine[range1]**2,self.r_fine[range1])
             
 
-            if V1 == 0 or V2 == 0:
+            if V1s[itr] == 0. or V2s[itr] == 0.:
                 continue
             elif n_avg==0.:
                 warn('Dn: variance had a value which was exactly 0; fixing inverse to np.inf '+str(itr))
@@ -192,17 +181,10 @@ class DNumberDensityObservable(LWObservable):
                 bn_smooth = n_smooth*self.bias
                 integrand_smooth = np.expand_dims(bn_smooth*self.r_fine**2,axis=1)
                 self.integrands_smooth[:,itr] = integrand_smooth[:,0]
-                #integrand_smooth = np.zeros((self.n_avgs.size,1))#self.integrand[range1]
-                #integrand_smooth[range1] = self.integrand[range1]
-                #print("COSW",trapz2(n_smooth[range1],self.r_fine[range1])/trapz2(self.n_avgs[range1],self.r_fine[range1]))
-                #print("COSQ",trapz2(n_smooth,self.r_fine)/trapz2(self.n_avgs[range1],self.r_fine[range1]))
-                #n_smooth = np.expand_dims(n_smooth,axis=1)
-                #d1 = self.basis.D_O_I_D_delta_alpha(self.geo1,self.integrand,use_r=True,range_spec=range1)
-                #d2 = self.basis.D_O_I_D_delta_alpha(self.geo2,self.integrand,use_r=True,range_spec=range1)
                 d1 = self.basis.D_O_I_D_delta_alpha(self.geo1,integrand_smooth,use_r=True)
                 d2 = self.basis.D_O_I_D_delta_alpha(self.geo2,integrand_smooth,use_r=True)
                 DO_a = (d2-d1)*self.r_vols[itr]
-                Nab_itr = n_avg*(1./V1+1./V2)
+                Nab_itr = n_avg*(1./V1s[itr]+1./V2s[itr])
                 self.Nab_i[itr] = 1./Nab_itr
                 self.vs[itr] = DO_a.flatten()
             d1s_alt = self.basis.D_O_I_D_delta_alpha(self.geo1,self.integrands_smooth,use_r=True)

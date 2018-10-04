@@ -32,8 +32,12 @@ class PolygonPixelUnionGeo(PixelGeo):
         self.contained = self.contain_pos*(~self.contain_mask).astype(bool)
         contained_pixels = self.all_pixels[self.contained,:]
         if zs is None:
-            zs = geos[0].zs.copy() #TODO pointless copy
+            zs = geos[0].zs 
         if z_fine is  None:
-            z_fine = geos[0].z_fine.copy()
-
+            z_fine = geos[0].z_fine
         PixelGeo.__init__(self,zs,contained_pixels,geos[0].C,z_fine,l_max,hard_l_max)
+
+    def get_overlap_fraction(self,geo2):
+        """get overlap fraction between this geometry and another PolygonPixelGeo"""
+        result = np.sum(self.contained*geo2.contained)*1./np.sum(self.contained)
+        return result

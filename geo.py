@@ -34,8 +34,10 @@ class Geo(object):
         tot_area = self.angular_area()
         self.volumes = np.zeros(self.zs.size-1) #volume of each tomography bin
         if tot_area > 0.:#check area is not negative
+            volumes_alt = np.diff(self.rs**3)/3.*tot_area
             for i in range(0,self.volumes.size):
                 self.volumes[i] += (self.rs[i+1]**3-self.rs[i]**3)/3.*tot_area
+            assert np.allclose(volumes_alt,self.volumes)
         else:
             if tot_area<-1.e-14: #don't raise exception for rounding error just let volume be 0
                 raise ValueError('total area '+str(tot_area)+' cannot be negative')

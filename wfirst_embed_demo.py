@@ -13,7 +13,8 @@ from sph_klim import SphBasisK
 from matter_power_spectrum import MatterPower
 from nz_wfirst_eff import NZWFirstEff
 from nz_wfirst import NZWFirst
-from premade_geos import WFIRSTGeo,LSSTGeo,WFIRSTPixelGeo,LSSTPixelGeo
+from nz_candel import NZCandel
+from premade_geos import WFIRSTGeo,LSSTGeo,WFIRSTPixelGeo,LSSTPixelGeo,LSSTGeoSimpl
 
 import defaults
 
@@ -54,7 +55,9 @@ if __name__=='__main__':
     power_params.camb = camb_params
     power_params.camb['accuracy'] = 2
     prior_params = defaults.prior_fisher_params.copy()
-    lw_param_list = np.array([{'dn_params':{'nz_select':'LSST'},'n_params':n_params_lsst,'mf_params':mf_params}])
+    dn_params = defaults.dn_params.copy()
+    dn_params['nz_select'] = 'LSST'
+    lw_param_list = np.array([{'dn_params':dn_params,'n_params':n_params_lsst,'mf_params':mf_params}])
     basis_params = defaults.basis_params.copy()
 
     #creat a CosmoPie object to manage the cosmology details
@@ -77,19 +80,22 @@ if __name__=='__main__':
     zs_lsst = np.linspace(0.,1.2,5)
     #zs = np.array([0.2,0.4,0.6])
     #z_fine are the resolution redshift slices to be integrated over
-    z_fine = np.linspace(0.001,np.max(zs),1000)
+    z_fine = np.linspace(0.001,np.max([zs[-1],zs_lsst[-1]]),1000)
 
     #z_fine[0] = 0.0001
 
     #l_max is the highest l that should be precomputed
-    l_max = 25
-    res_healpix = 5
+    l_max = 23
+    res_healpix = 4
     use_pixels = False
     print("main: begin constructing WFIRST PolygonGeo")
     if use_pixels:
         geo_wfirst = WFIRSTPixelGeo(zs,C,z_fine,l_max,res_healpix)
+        #geo_wfirst = LSSTPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
     else:
-        geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,poly_params)
+        #geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,poly_params)
+        #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.9202821591024097,deg0=-59,deg1=-10)
+        geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.7644912273732581,deg0=-49,deg1=-20)
 
     print("main: finish constructing WFIRST PolygonGeo")
 
@@ -116,8 +122,11 @@ if __name__=='__main__':
 
     #create the number density of lensing sources
     print("main: begin constructing lensing source density for WFIRST")
-    nz_wfirst_lens = NZWFirstEff(nz_params_wfirst_lens)
+    #nz_wfirst_lens = NZWFirstEff(nz_params_wfirst_lens)
     #nz_wfirst_lens = NZWFirst(nz_params_wfirst_lens)
+    nz_params_wfirst_lens['i_cut'] = 26.3
+    nz_params_wfirst_lens['data_source'] = './data/CANDELS-GOODSS2.dat'
+    nz_wfirst_lens = NZCandel(nz_params_wfirst_lens)
     print("main: finish constructing lensing source density for WFIRST")
     #set some parameters for lensing
     len_params['smodel'] = 'nzmatcher'
@@ -127,7 +136,7 @@ if __name__=='__main__':
 
     #create the lw basis
     #z_max is the maximum radial extent of the basis
-    z_max = zs[-1]+0.001
+    z_max = z_fine[-1]+0.001
     r_max = C.D_comov(z_max)
     #k_cut is the maximum k value for the bessel function zeros that define the basis
     #x_cut = 80.
@@ -141,19 +150,18 @@ if __name__=='__main__':
     basis = SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_max)
     print("main: finish constructing basis for long wavelength fluctuations")
 
-    #create the actual sw survey
-    print("main: begin constructing SWSurvey for wfirst")
-    sw_survey_wfirst = SWSurvey(geo_wfirst,'wfirst',C,sw_params,cosmo_par_list,cosmo_par_eps,sw_observable_list,len_params,None,nz_wfirst_lens)
-    print("main: finish constructing SWSurvey for wfirst")
-    surveys_sw = np.array([sw_survey_wfirst])
-
-
     #create the lw survey
     geos = np.array([geo_wfirst,geo_lsst],dtype=object)
     print("main: begin constructing LWSurvey for mitigation")
     survey_lw = LWSurvey(geos,'combined_survey',basis,C,lw_params,observable_list=lw_observable_list,param_list=lw_param_list)
     print("main: finish constructing LWSurvey for mitigation")
     surveys_lw = np.array([survey_lw])
+
+    #create the actual sw survey
+    print("main: begin constructing SWSurvey for wfirst")
+    sw_survey_wfirst = SWSurvey(geo_wfirst,'wfirst',C,sw_params,cosmo_par_list,cosmo_par_eps,sw_observable_list,len_params,None,nz_wfirst_lens)
+    print("main: finish constructing SWSurvey for wfirst")
+    surveys_sw = np.array([sw_survey_wfirst])
 
     #create the SuperSurvey with mitigation
     print("main: begin constructing SuperSurvey")
@@ -229,7 +237,7 @@ print("main: most contaminated direction: ",of_no_mit[:,-1])
 #for i in range(0,n_bin):
 #    for j in range(0,n_bin):
 #            angles[i,j] = np.dot(Dn.vs[i],Dn.vs[j])/(np.linalg.norm(Dn.vs[i])*np.linalg.norm(Dn.vs[j]))
-do_dump = True
+do_dump = False
 if do_dump:
     dump_set = [SS.f_set_nopriors[0][2],SS.f_set_nopriors[1][2],SS.f_set_nopriors[2][2],SS.f_set[0][2],SS.f_set[1][2],SS.f_set[2][2],cosmo_par_list,SS.eig_set[1],SS.eig_set_ssc[1],lw_param_list,n_params_lsst,power_params,nz_params_wfirst_lens,sw_observable_list,lw_observable_list,sw_params,len_params,x_cut,l_max,zs,zs_lsst,z_fine,mf_params,basis_params,cosmo_par_eps,cosmo,poly_params]
     import dill

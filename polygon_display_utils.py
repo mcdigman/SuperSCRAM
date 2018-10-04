@@ -5,6 +5,7 @@ import matplotlib.colors as colors
 import numpy as np
 import healpy as hp
 from ylm_utils import reconstruct_from_alm
+from polygon_utils import get_healpix_pixelation
 #def plot_reconstruction(m,ax,pixels,reconstruct):
 #    """display reconstruction on basemap m"""
 #    lats = (pixels[:,0]-np.pi/2.)*180/np.pi
@@ -30,3 +31,17 @@ def reconstruct_and_plot(geo,l_max,pixels,title,fig,cmap='Greys'):
     alms = geo.get_alm_table(l_max)
     reconstruction = reconstruct_from_alm(l_max,pixels[:,0],pixels[:,1],alms)
     plot_reconstruction(reconstruction,title,fig,cmap)
+
+def display_geo(geo,l_max,res_healpix=5,title='geo display',fig=None,cmap='Greys',display=True):
+    """plot the area enclosed by a geo on a pixelated map"""
+    pixels = get_healpix_pixelation(res_healpix)  
+    alms = geo.get_alm_table(l_max)
+    reconstruction = reconstruct_from_alm(l_max,pixels[:,0],pixels[:,1],alms)
+    if fig is None:
+        fig = plt.figure()
+    plot_reconstruction(reconstruction,title,fig,cmap)
+    if display:
+        plt.show(fig)
+    else:
+        return fig
+    

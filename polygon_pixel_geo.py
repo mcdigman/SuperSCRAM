@@ -53,6 +53,4 @@ class PolygonPixelGeo(PixelGeo):
     def get_overlap_fraction(self,geo2):
         """get overlap fraction between this geometry and another PolygonPixelGeo"""
         result = np.sum(self.contained*geo2.contained)*1./np.sum(self.contained)
-        #result2 = self.sp_poly.overlap(geo2.sp_poly)
-        #print("PolygonPixelGeo: my overlap prediction="+str(result)+" spherical_geometry prediction="+str(result2))
         return result

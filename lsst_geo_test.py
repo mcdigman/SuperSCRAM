@@ -8,6 +8,7 @@ from premade_geos import WFIRSTGeo,LSSTGeoSimpl,LSSTGeo,LSSTPixelGeo,WFIRSTPixel
 from polygon_union_geo import PolygonUnionGeo
 from polygon_pixel_union_geo import PolygonPixelUnionGeo
 from polygon_utils import get_healpix_pixelation
+from polygon_display_utils import display_geo
 from ylm_utils import reconstruct_from_alm
 from copy import deepcopy
 
@@ -17,7 +18,7 @@ if __name__=='__main__':
 
     cosmo_fid =  defaults.cosmology.copy()
     C = CosmoPie(cosmo_fid,'jdem')
-    l_max = 2
+    l_max = 10
     zs = np.array([0.01,1.])
     z_fine = np.arange(0.01,1.0001,0.01)
 
@@ -34,21 +35,30 @@ if __name__=='__main__':
 #        error_old = error_new
 #        error_new = np.abs(area2*180**2/np.pi**2-area_goal)
 #    print("radius for n_x="+str(n_x)+" 1000 deg^2="+str(radius))
-    do_simpl_test = False
+    do_simpl_test = True
     if do_simpl_test:
-        geo1 = LSSTGeoSimpl(zs,C,z_fine,l_max,{'n_double':30},phi1=2.9030540874480577)
-        geo2 = LSSTGeoSimpl(zs,C,z_fine,l_max,{'n_double':30},phi1=2.0*2.9030540874480577)
-        geo3 = WFIRSTGeo(zs,C,z_fine,l_max,{'n_double':30})
-        assert geo1.angular_area()<geo2.angular_area()
-        assert geo3.angular_area()<geo1.angular_area()
+        geo1 = LSSTGeoSimpl(zs,C,z_fine,l_max,{'n_double':30},phi0=0.,phi1=0.9202821591024097*0.8*1.0383719267257006*1.0000197370387798*1.0000197370387798*0.99998029455615*0.9999999844187037*0.9999999999876815*0.9999999999999916*1.0000000000000029,deg0=-49,deg1=-20)
+        print(0.31587654497768103/geo1.angular_area())
+        import sys
+        sys.exit()
+        geo2 = LSSTGeo(zs,C,z_fine,l_max,{'n_double':30})
+        #geo2 = LSSTGeoSimpl(zs,C,z_fine,l_max,{'n_double':30},phi1=2.0*2.9030540874480577)
+        #geo3 = WFIRSTGeo(zs,C,z_fine,l_max,{'n_double':30})
+        geo4 = PolygonUnionGeo(geo2.geos,np.append(geo1,geo2.masks))
+        print(geo4.angular_area(),geo2.angular_area()-geo1.angular_area(),geo4.angular_area()-geo2.angular_area()+geo1.angular_area())
+        #assert geo1.angular_area()<geo2.angular_area()
+        #assert geo3.angular_area()<geo1.angular_area()
         if do_plot:
-            from mpl_toolkits.basemap import Basemap
-            import matplotlib.pyplot as plt
-            m = Basemap(projection='moll',lon_0=0)
-            geo1.sp_poly.draw(m,color='red')
-            geo2.sp_poly.draw(m,color='blue')
-            geo3.sp_poly.draw(m,color='green')
-            plt.show()
+            display_geo(geo4,l_max)
+#            from mpl_toolkits.basemap import Basemap
+#            import matplotlib.pyplot as plt
+#            m = Basemap(projection='moll',lon_0=0)
+#            geo1.sp_poly.draw(m,color='red')
+#            geo2.sp_poly.draw(m,color='blue')
+#            geo3.sp_poly.draw(m,color='green')
+#            plt.show()
+    import sys
+    sys.exit()
     do_lsst_test = False
     if do_lsst_test:
         geo4 = LSSTGeo(zs,C,z_fine,l_max,{'n_double':80})
