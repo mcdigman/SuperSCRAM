@@ -67,7 +67,7 @@ class Geo(object):
         for i in range(1,self.zs.size-1):
             self.fine_indices[i-1,1] = np.argmax(self.z_fine>=self.zs[i])
             self.fine_indices[i,0] = self.fine_indices[i-1,1]
-        self.fine_indices[-1,1] = self.z_fine.size
+        self.fine_indices[-1,1] = np.argmax(self.z_fine>=self.zs[-1])
 
         #self.dzdr = InterpolatedUnivariateSpline(self.r_fine,self.z_fine,ext=2,k=5).derivative()(self.r_fine)
         self.dzdr = self.C.Ez(z_fine)/C.DH

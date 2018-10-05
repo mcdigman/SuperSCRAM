@@ -75,9 +75,9 @@ if __name__=='__main__':
     #zs are the bounding redshifts of the tomographic bins
     #zs = np.array([0.2,0.43,.63,0.9, 1.3])
     #TODO check no off by one errors in final bin
-    zs = np.arange(0.2,3.01,0.2)
+    zs = np.arange(0.2,3.01,0.4)
     #zs = np.linspace(0.2,3.01,3)
-    zs_lsst = np.linspace(0.,1.2,5)
+    zs_lsst = np.linspace(0.,1.2,3)
     #zs = np.array([0.2,0.4,0.6])
     #z_fine are the resolution redshift slices to be integrated over
     z_fine = np.linspace(0.001,np.max([zs[-1],zs_lsst[-1]]),1000)
@@ -93,9 +93,9 @@ if __name__=='__main__':
         geo_wfirst = WFIRSTPixelGeo(zs,C,z_fine,l_max,res_healpix)
         #geo_wfirst = LSSTPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
     else:
-        #geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,poly_params)
+        geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,poly_params)
         #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.9202821591024097,deg0=-59,deg1=-10)
-        geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.7644912273732581,deg0=-49,deg1=-20)
+        #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.7644912273732581,deg0=-49,deg1=-20)
 
     print("main: finish constructing WFIRST PolygonGeo")
 
@@ -122,17 +122,17 @@ if __name__=='__main__':
 
     #create the number density of lensing sources
     print("main: begin constructing lensing source density for WFIRST")
-    #nz_wfirst_lens = NZWFirstEff(nz_params_wfirst_lens)
-    #nz_wfirst_lens = NZWFirst(nz_params_wfirst_lens)
     nz_params_wfirst_lens['i_cut'] = 26.3
     nz_params_wfirst_lens['data_source'] = './data/CANDELS-GOODSS2.dat'
-    nz_wfirst_lens = NZCandel(nz_params_wfirst_lens)
+    nz_wfirst_lens = NZWFirstEff(nz_params_wfirst_lens)
+    #nz_wfirst_lens = NZWFirst(nz_params_wfirst_lens)
+    #nz_wfirst_lens = NZCandel(nz_params_wfirst_lens)
     print("main: finish constructing lensing source density for WFIRST")
     #set some parameters for lensing
     len_params['smodel'] = 'nzmatcher'
     #len_params['z_min_dist'] = np.min(zs)
     #len_params['z_max_dist'] = np.max(zs)
-    len_params['pmodel'] = 'halofit'
+    len_params['pmodel'] = 'fastpt'
 
     #create the lw basis
     #z_max is the maximum radial extent of the basis

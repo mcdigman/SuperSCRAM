@@ -124,10 +124,10 @@ class DNumberDensityObservable(LWObservable):
         self.z_extra = np.hstack([self.z_fine,np.arange(self.z_fine[-1]+dz,self.z_fine[-1]+params['n_extend']*self.sigma0*(1.+self.z_fine[-1]),dz)])
         self.integrands_smooth = np.zeros((self.z_fine.size,self.n_bins))
         
-        V1s = np.diff(self.geo2.rs**3)/3.*self.geo1.angular_area()
-        V2s = self.geo2.volumes
-        assert np.all(V1s>=0.)
-        assert np.all(V2s>=0.)
+        self.V1s = np.diff(self.geo2.rs**3)/3.*self.geo1.angular_area()
+        self.V2s = self.geo2.volumes
+        assert np.all(self.V1s>=0.)
+        assert np.all(self.V2s>=0.)
 
         #NOTE this whole loop could be pulled apart with a small change in sph_klim
         for itr in range(0,self.n_bins):
@@ -139,8 +139,8 @@ class DNumberDensityObservable(LWObservable):
 
 #            V1 = self.geo2.volumes[itr]*self.geo1.angular_area()/self.geo2.angular_area()
 #            V2 = self.geo2.volumes[itr]
-#            assert np.isclose(V1,V1s[itr])
-#            assert np.isclose(V2,V2s[itr])
+#            assert np.isclose(V1,self.V1s[itr])
+#            assert np.isclose(V2,self.V2s[itr])
 #            assert V1>=0. and V2>=0.
 
 
@@ -162,7 +162,7 @@ class DNumberDensityObservable(LWObservable):
             #self.m_avgs[itr] = self.r_vols[itr]*trapz2(self.M_cuts[range1]*self.r_fine[range1]**2,self.r_fine[range1])
             
 
-            if V1s[itr] == 0. or V2s[itr] == 0.:
+            if self.V1s[itr] == 0. or self.V2s[itr] == 0.:
                 continue
             elif n_avg==0.:
                 warn('Dn: variance had a value which was exactly 0; fixing inverse to np.inf '+str(itr))
@@ -184,7 +184,7 @@ class DNumberDensityObservable(LWObservable):
                 d1 = self.basis.D_O_I_D_delta_alpha(self.geo1,integrand_smooth,use_r=True)
                 d2 = self.basis.D_O_I_D_delta_alpha(self.geo2,integrand_smooth,use_r=True)
                 DO_a = (d2-d1)*self.r_vols[itr]
-                Nab_itr = n_avg*(1./V1s[itr]+1./V2s[itr])
+                Nab_itr = n_avg*(1./self.V1s[itr]+1./self.V2s[itr])
                 self.Nab_i[itr] = 1./Nab_itr
                 self.vs[itr] = DO_a.flatten()
             d1s_alt = self.basis.D_O_I_D_delta_alpha(self.geo1,self.integrands_smooth,use_r=True)
