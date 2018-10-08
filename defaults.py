@@ -76,7 +76,7 @@ lensing_params = {  #'z_resolution'    :0.002, #fine resolution
                     'delta_l'         :1., #binning window
                     'sigma2_e'        :0.27**2*2, #other noise term
                     'sigma2_mu'       :1.2, #noise term for magnification
-                    'smodel'          :'constant', #type, current options are 'gaussian','constant','cosmolike'
+                    'smodel'          :'constant', #type, current options are 'gaussian','constant','cosmolike','custom_z','nz_matcher'
                     'z_min_dist'      :0.,
                     'z_max_dist'      :np.inf,
                     'zbar'            :0.1, #mean of gaussian source distribution

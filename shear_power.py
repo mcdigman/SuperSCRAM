@@ -35,16 +35,24 @@ class ShearPower(object):
         self.params = params
         self.ps_in = ps
         self.nz_matcher = nz_matcher
-        self.l_starts = np.logspace(np.log(params['l_min']),np.log(params['l_max']),params['n_l'],base=np.exp(1.))
+
+        #self.l_starts = np.logspace(np.log(params['l_min']),np.log(params['l_max']),params['n_l'],base=np.exp(1.))
+        self.dlogl = (np.log(params['l_max'])-np.log(params['l_min']))/(params['n_l'])
+        self.log_ls = np.log(params['l_min'])+np.arange(0,params['n_l']+1)*self.dlogl
+        self.l_starts = np.exp(self.log_ls[:-1])
+        self.l_ends = np.exp(self.log_ls[1:])
+        self.l_mids = np.exp(self.log_ls[:-1]+self.dlogl/2.)
+        self.delta_ls = np.diff(np.exp(self.log_ls))
+
         #118000000 galaxies/rad^2 if 10/arcmin^2 and f_sky is area in radians of field
         self.f_sky = f_sky
         self.pmodel = params['pmodel']
 
         #assume input ls is constant log spaced and gives starts of bins, need middle of bins
-        log_ls = np.log(self.l_starts)
-        dl = np.diff(log_ls)[0]
-        self.l_mids = np.exp(log_ls[0]+dl*(1./2.+np.arange(0,log_ls.size)))
-        self.delta_ls = np.diff(np.exp(log_ls[0]+dl*np.arange(0,log_ls.size+1)))
+        #log_ls = np.log(self.l_starts)
+        #dl = np.diff(log_ls)[0]
+        #self.l_mids = np.exp(log_ls[0]+dl*(1./2.+np.arange(0,log_ls.size)))
+        #self.delta_ls = np.diff(np.exp(log_ls[0]+dl*np.arange(0,log_ls.size+1)))
 
         self.n_gal = self.params['n_gal']
         if self.nz_matcher is not None:

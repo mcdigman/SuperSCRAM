@@ -39,7 +39,7 @@ if __name__=='__main__':
     len_params = defaults.lensing_params.copy()
     len_params['l_max'] = 5000
     len_params['l_min'] = 30
-    len_params['n_l'] = 20
+    len_params['n_l'] = 80
     nz_params_wfirst_lens = defaults.nz_params_wfirst_lens.copy()
     sw_params = defaults.sw_survey_params.copy()
     lw_params = defaults.lw_survey_params.copy()
@@ -77,7 +77,7 @@ if __name__=='__main__':
     #TODO check no off by one errors in final bin
     zs = np.arange(0.2,3.01,0.4)
     #zs = np.linspace(0.2,3.01,3)
-    zs_lsst = np.linspace(0.,1.2,3)
+    zs_lsst = np.linspace(0.,1.2,5)
     #zs = np.array([0.2,0.4,0.6])
     #z_fine are the resolution redshift slices to be integrated over
     z_fine = np.linspace(0.001,np.max([zs[-1],zs_lsst[-1]]),1000)
@@ -85,7 +85,7 @@ if __name__=='__main__':
     #z_fine[0] = 0.0001
 
     #l_max is the highest l that should be precomputed
-    l_max = 23
+    l_max = 10
     res_healpix = 4
     use_pixels = False
     print("main: begin constructing WFIRST PolygonGeo")
@@ -103,6 +103,7 @@ if __name__=='__main__':
     #encompassing the wfirst survey with galactic plane masked)
     print("main: begin constructing LSST PolygonGeo")
     if use_pixels:
+        #geo_wfirst = WFIRSTPixelGeo(zs,C,z_fine,l_max,res_healpix)
         geo_lsst = LSSTPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
     else:
         geo_lsst = LSSTGeo(zs_lsst,C,z_fine,l_max,poly_params)
@@ -142,7 +143,7 @@ if __name__=='__main__':
     #x_cut = 80.
     #x_cut = 100.
     #x_cut = 85
-    x_cut = 30.
+    x_cut = 5.
     #x_cut = 80.
     k_cut = x_cut/r_max
     #l_max caps maximum l regardless of k

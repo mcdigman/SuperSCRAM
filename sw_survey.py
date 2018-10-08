@@ -11,7 +11,7 @@ import numpy as np
 import lensing_observables as lo
 from sw_cov_mat import SWCovMat
 
-DEBUG = False
+DEBUG = True
 
 #TODO evaluate if param_list as used by LWSurvey more elegant
 class SWSurvey(object):

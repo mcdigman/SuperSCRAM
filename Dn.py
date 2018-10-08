@@ -72,13 +72,14 @@ class DNumberDensityObservable(LWObservable):
         if np.isclose(geos[0].get_overlap_fraction(geos[1]),1.):
             self.geo1 = geos[0]
         else:
-            if isinstance(geos[0],PolygonGeo):
-                raise RuntimeError('partial overlap not yet implemented')
-        #        self.geo1 = PolygonUnionGeo(np.array([geos[0]]),np.array([self.geo2]))
-            elif isinstance(self.geos[0],PolygonPixelGeo):
-                self.geo1 = PolygonPixelUnionGeo(np.array([geos[0]]),np.array([self.geo2]))
-            else:
-                raise ValueError('unrecognized type for geo1')
+            raise RuntimeError('partial overlap not yet implemented')
+#            if isinstance(geos[0],PolygonGeo):
+#                raise RuntimeError('partial overlap not yet implemented')
+#        #        self.geo1 = PolygonUnionGeo(np.array([geos[0]]),np.array([self.geo2]))
+#            elif isinstance(self.geos[0],PolygonPixelGeo) or isinstance(self.geos[0],PolygonPixelUnionGeo):
+#                self.geo1 = PolygonPixelUnionGeo(np.array([geos[0]]),np.array([self.geo2]))
+#            else:
+#                raise ValueError('unrecognized type for geo1')
 
         #should be using r bin structure of mitigation survey
         self.r_fine = self.geo2.r_fine
