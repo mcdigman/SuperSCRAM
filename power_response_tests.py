@@ -3,11 +3,11 @@ from __future__ import division,print_function,absolute_import
 from builtins import range
 import numpy as np
 from scipy.interpolate import interp1d
+import pytest
 import power_response as shp
 import defaults
 import cosmopie as cp
 import matter_power_spectrum as mps
-import pytest
 
 COSMOLOGY_CHIANG = {'Omegabh2' :0.023,
                     'Omegach2' :0.1093,

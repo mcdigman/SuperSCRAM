@@ -40,7 +40,7 @@ def _gs(sp,z_min=0.,z_max=np.inf):
     low_mask = (sp.zs>=z_min)*1. #so only integrate from max(z,z_min)
     high_mask = (sp.zs<=z_max)*1. #so only integrate to min(z,z_max)
     ps_mask = sp.ps*high_mask*low_mask
-    ps_norm = ps_mask/trapz2(ps_mask,sp.rs) 
+    ps_norm = ps_mask/trapz2(ps_mask,sp.rs)
     #norm1 = trapz2(ps_mask,sp.rs)
     #norm2 = trapz2(ps_mask[(sp.zs>=z_min) & (sp.zs<=z_max)],sp.rs[(sp.zs>=z_min) & (sp.zs<=z_max)])
 

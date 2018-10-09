@@ -19,7 +19,7 @@ class PolygonPixelUnionGeo(PixelGeo):
         self.all_pixels = geos[0].all_pixels.copy()
         l_max = geos[0].get_current_l_max()
         hard_l_max = geos[0].hard_l_max
-        
+
         for itr1 in range(0,self.n_g):
             self.contain_pos = self.contain_pos | geos[itr1].contained
             l_max = np.min([geos[itr1].get_current_l_max(),l_max])
@@ -32,7 +32,7 @@ class PolygonPixelUnionGeo(PixelGeo):
         self.contained = self.contain_pos*(~self.contain_mask).astype(bool)
         contained_pixels = self.all_pixels[self.contained,:]
         if zs is None:
-            zs = geos[0].zs 
+            zs = geos[0].zs
         if z_fine is  None:
             z_fine = geos[0].z_fine
         PixelGeo.__init__(self,zs,contained_pixels,geos[0].C,z_fine,l_max,hard_l_max)

@@ -3,7 +3,6 @@ from __future__ import division,print_function,absolute_import
 from builtins import range
 import numpy as np
 from polygon_geo import PolygonGeo
-from astropy.coordinates import SkyCoord
 #exact radius for 1000 deg^2 r=np.arccos(1.-5.*np.pi/324.)=0.3126603700269391 as n_x->infinity
 #if n_x=100 for 1000 deg^2 r=0.31275863997971481
 class CircleGeo(PolygonGeo):
@@ -30,5 +29,3 @@ class CircleGeo(PolygonGeo):
 #        theta_in2 = SkyCoord(phi_in,theta_in,frame='icrs',unit='deg').geocentrictrueecliptic.lat.rad+np.pi/2.
 #        phi_in2 = SkyCoord(phi_in,theta_in,frame='icrs',unit='deg').geocentrictrueecliptic.lon.rad
 #        PolygonGeo.__init__(self,zs,theta2s,phi2s,theta_in2,phi_in2,C,z_fine,l_max,poly_params)
-
-

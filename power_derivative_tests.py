@@ -42,13 +42,13 @@ def util_set():
 
     z_min1 = 0.8
     z_max1 = 1.0
-    r_min1 = C.D_comov(z_min1)
-    r_max1 = C.D_comov(z_max1)
+#    r_min1 = C.D_comov(z_min1)
+#    r_max1 = C.D_comov(z_max1)
 
     z_min2 = 1.6
     z_max2 = 1.8
-    r_min2 = C.D_comov(z_min2)
-    r_max2 = C.D_comov(z_max2)
+#    r_min2 = C.D_comov(z_min2)
+#    r_max2 = C.D_comov(z_max2)
 
     QShear1_1 = QShear(dC_ddelta1,z_min1,z_max1)
     QShear1_2 = QShear(dC_ddelta1,z_min2,z_max2)
@@ -82,7 +82,7 @@ def test_dz(util_set):
 
 def test_zavg(util_set):
     """test proportional to power spectrum and z average"""
-    C = util_set[0]
+#    C = util_set[0]
     dC_ddelta1 = util_set[1]
     QShear1_2 = util_set[3]
     ls = util_set[5]

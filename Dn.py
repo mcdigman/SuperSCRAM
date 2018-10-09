@@ -7,7 +7,6 @@ from builtins import range
 from warnings import warn
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
-from scipy.integrate import cumtrapz
 
 from hmf import ST_hmf
 from nz_candel import NZCandel
@@ -17,12 +16,13 @@ from nz_constant import NZConstant
 from lw_observable import LWObservable
 from algebra_utils import trapz2
 from polygon_geo import PolygonGeo
+from pixel_geo import PixelGeo
 from polygon_pixel_geo import PolygonPixelGeo
 from polygon_union_geo import PolygonUnionGeo
 from polygon_pixel_union_geo import PolygonPixelUnionGeo
 #LSST sigma/(1+z)<0.05 required 0.02 goal for i<25.3 (lsst science book 3.8.1)
 import fisher_matrix as fm
-#NOTE if doing photozs tomo must go to z=0 or photoz uncertainty 
+#NOTE if doing photozs tomo must go to z=0 or photoz uncertainty
 #can actually add information because it provides information at z=0
 class DNumberDensityObservable(LWObservable):
     """An observable for the difference in galaxy number density between two bins"""
@@ -54,11 +54,11 @@ class DNumberDensityObservable(LWObservable):
                 self.geo2 = PolygonUnionGeo(geos[1].geos,np.append(geos[0],geos[1].masks),zs=geos[1].zs,z_fine=geos[1].z_fine)
             else:
                 raise ValueError('unsupported type for geo2')
-        elif isinstance(self.geos[0],PolygonPixelGeo) or isinstance(self.geos[0],PolygonPixelUnionGeo):
-            if isinstance(geos[1],PolygonPixelGeo):
+        elif isinstance(self.geos[0],PixelGeo):
+#            if isinstance(geos[1],PolygonPixelUnionGeo):
+#                self.geo2 = PolygonPixelUnionGeo(geos[1].geos,np.append(geos[0],geos[1].masks),zs=geos[1].zs,z_fine=geos[1].z_fine)
+            if isinstance(geos[1],PixelGeo):
                 self.geo2 = PolygonPixelUnionGeo(np.array([geos[1]]),np.array([geos[0]]),zs=geos[1].zs,z_fine=geos[1].z_fine)
-            elif isinstance(geos[1],PolygonPixelUnionGeo):
-                self.geo2 = PolygonPixelUnionGeo(geos[1].geos,np.append(geos[0],geos[1].masks),zs=geos[1].zs,z_fine=geos[1].z_fine)
             else:
                 raise ValueError('unsupported type for geo2')
             #if isinstance(geos[1],PolygonPixelGeo):
@@ -124,7 +124,7 @@ class DNumberDensityObservable(LWObservable):
         self.sigma0 = params['sigma0']
         self.z_extra = np.hstack([self.z_fine,np.arange(self.z_fine[-1]+dz,self.z_fine[-1]+params['n_extend']*self.sigma0*(1.+self.z_fine[-1]),dz)])
         self.integrands_smooth = np.zeros((self.z_fine.size,self.n_bins))
-        
+
         self.V1s = np.diff(self.geo2.rs**3)/3.*self.geo1.angular_area()
         self.V2s = self.geo2.volumes
         assert np.all(self.V1s>=0.)
@@ -137,31 +137,10 @@ class DNumberDensityObservable(LWObservable):
 
             print("Dn: getting d1,d2")
             #multiplier for integrand
-
-#            V1 = self.geo2.volumes[itr]*self.geo1.angular_area()/self.geo2.angular_area()
-#            V2 = self.geo2.volumes[itr]
-#            assert np.isclose(V1,self.V1s[itr])
-#            assert np.isclose(V2,self.V2s[itr])
-#            assert V1>=0. and V2>=0.
-
-
-            #r_vol = 1./(self.r_fine[range1[-1]]**3-self.r_fine[range1[0]]**3)*3.
-            #TODO check number densities sensible
-            #TODO why does increasing n_avg DECREASE the information?
-            #TODO should be a bin which goes to 0
             n_avg = self.r_vols[itr]*trapz2(self.n_avg_integrand[range1],self.r_fine[range1])
             self.n_avg_bin[itr] = n_avg
 
             assert n_avg>=0.
-            #b_n = self.r_vols[itr]*trapz2(self.n_avg_integrand[range1],self.r_fine[range1])
-            #bias = self.r_vols[itr]*trapz2(self.n_avg_integrand[range1],self.r_fine[range1])
-            #self.n_avg_c[itr] = n_avg
-         
-
-            #self.b_ns[itr] = self.r_vols[itr]*trapz2(self.integrand[range1],self.r_fine[range1])
-            #self.b_avgs[itr] = self.r_vols[itr]*trapz2(self.biases[range1]*self.r_fine[range1]**2,self.r_fine[range1])
-            #self.m_avgs[itr] = self.r_vols[itr]*trapz2(self.M_cuts[range1]*self.r_fine[range1]**2,self.r_fine[range1])
-            
 
             if self.V1s[itr] == 0. or self.V2s[itr] == 0.:
                 continue
@@ -175,7 +154,7 @@ class DNumberDensityObservable(LWObservable):
                 dN_wind[range1] = self.dNdzs[range1]
                 sigma = self.sigma0*(1.+self.geo2.zs[itr])/(self.z_fine[2]-self.z_fine[1])
                 dN_smooth = gaussian_filter1d(dN_wind,sigma,mode='mirror',truncate=10.)
-                dN_smooth = dN_smooth[0:self.z_fine.size] 
+                dN_smooth = dN_smooth[0:self.z_fine.size]
                 print("tot acc",np.trapz(dN_smooth,self.z_fine)/np.trapz(dN_wind,self.z_extra))
                 print("outside",np.trapz(dN_smooth[range1],self.z_fine[range1])/np.trapz(dN_wind,self.z_extra))
                 n_smooth = dN_smooth/self.r_fine**2*self.geo2.dzdr

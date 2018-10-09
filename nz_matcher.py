@@ -4,9 +4,8 @@ from __future__ import division,print_function,absolute_import
 from builtins import range
 
 import numpy as np
-from scipy.ndimage import gaussian_filter1d 
-from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
-from scipy.integrate import cumtrapz
+from scipy.ndimage import gaussian_filter1d
+from scipy.interpolate import interp1d
 import algebra_utils as au
 
 class NZMatcher(object):
@@ -57,11 +56,11 @@ class NZMatcher(object):
                 m_cuts[itr] = mass[-1]
                 continue
             n_avgs = mf.n_avg(mass,geo.z_fine[itr])
-            n_i = np.argmin(n_avgs>=nz[itr]) 
-            
+            n_i = np.argmin(n_avgs>=nz[itr])
+
             if n_i==0:
-                    print("FLOORED",geo.z_fine[itr],nz[itr],n_avgs[0],n_i)
-                    m_cuts[itr] = mass[0]
+                print("FLOORED",geo.z_fine[itr],nz[itr],n_avgs[0],n_i)
+                m_cuts[itr] = mass[0]
             elif m_cuts[itr]>=mass[-1] or n_i==mass.size-1:
                 m_cuts[itr] = mass[-1]
             else:
@@ -80,11 +79,11 @@ def get_gaussian_smoothed_dN_dz(z_grid,zs_chosen,params,normalize):
         if suppress=True cut off z below z_cut, to avoid numerical issues elsewhere"""
     dN_dz = np.zeros(z_grid.size)
     sigma = params['smooth_sigma']
-    delta_dist = np.zeros(z_grid.size) 
+    delta_dist = np.zeros(z_grid.size)
     for itr in range(0,zs_chosen.size):
         delta_dist[np.argmax(z_grid>=zs_chosen[itr])]+=1.
     #assume z_grid uniform, in case first bin is set to something else to avoid going to 0.
-    dz = (z_grid[2]-z_grid[1]) 
+    dz = (z_grid[2]-z_grid[1])
     delta_dist = delta_dist/dz
 
     if params['mirror_boundary']:

@@ -33,7 +33,7 @@ class GaussianZSource(SourceDistribution):
                 sigma: width of source distribution
         """
         ps = np.exp(-(zs-zbar)**2/(2.*(sigma)**2))
-        ps = _dz_to_dchi(ps,zs,rs,C,params)
+        ps = _dz_to_dchi(ps,zs,rs,C)
         SourceDistribution.__init__(self,ps,zs,rs,C,params)
 
 class ConstantZSource(SourceDistribution):
@@ -41,7 +41,7 @@ class ConstantZSource(SourceDistribution):
     def __init__(self,zs,rs,C,params):
         """see SourceDistribution"""
         ps = np.zeros(zs.size)+1.
-        ps = _dz_to_dchi(ps,zs,rs,C,params)
+        ps = _dz_to_dchi(ps,zs,rs,C)
         SourceDistribution.__init__(self,ps,zs,rs,C,params)
 
 class CosmoLikeZSource(SourceDistribution):
@@ -49,7 +49,7 @@ class CosmoLikeZSource(SourceDistribution):
     def __init__(self,zs,rs,C,params,alpha=1.24,beta=1.01,z0=0.51):
         """cosmolike uses alpha=1.3, beta=1.5, z0=0.56"""
         ps = zs**alpha*np.exp(-(zs/z0)**beta)
-        ps = _dz_to_dchi(ps,zs,rs,C,params)
+        ps = _dz_to_dchi(ps,zs,rs,C)
         SourceDistribution.__init__(self,ps,zs,rs,C,params)
 
 class NZMatcherZSource(SourceDistribution):
@@ -58,7 +58,7 @@ class NZMatcherZSource(SourceDistribution):
         """nz_match: an NZMatcher object"""
         self.nz_match = nz_match
         ps = nz_match.get_dN_dzdOmega(zs)
-        ps = _dz_to_dchi(ps,zs,rs,C,params)
+        ps = _dz_to_dchi(ps,zs,rs,C)
         SourceDistribution.__init__(self,ps,zs,rs,C,params)
 
 def get_source_distribution(smodel,zs,rs,C,params,ps=None,nz_matcher=None):
@@ -71,7 +71,7 @@ def get_source_distribution(smodel,zs,rs,C,params,ps=None,nz_matcher=None):
         dist = CosmoLikeZSource(zs,rs,C,params)
     elif smodel=='custom_z':
         if ps is not None and ps.size==zs.size:
-            dist = SourceDistribution(_dz_to_dchi(ps,zs,rs,C,params),zs,rs,C,params)
+            dist = SourceDistribution(_dz_to_dchi(ps,zs,rs,C),zs,rs,C,params)
         else:
             raise ValueError('input zs.size='+str(zs.size)+'and ps.size='+str(ps.size)+' do not match')
     elif smodel=='nzmatcher':
@@ -80,18 +80,8 @@ def get_source_distribution(smodel,zs,rs,C,params,ps=None,nz_matcher=None):
         raise ValueError('invalid smodel value\''+str(smodel)+'\'')
     return dist
 
-def _dz_to_dchi(p_in,zs,rs,C,params):
+def _dz_to_dchi(p_in,zs,rs,C):
     """put a z distribution into a distribution in comoving distance"""
-    #z_min_dist = params['z_min_dist']
-    #z_max_dist = params['z_max_dist']
-######
-#    ps = np.zeros(p_in.size)
-#    for i in range(0,zs.size-1): #compensate for different bin sizes
-#        ps[i] = p_in[i]/(rs[i+1]-rs[i])
-#    ps[-1] = p_in[-1]/(C.D_comov(2*zs[-1]-zs[-2])-rs[-1]) #patch for last value
-######
     ps = p_in*C.Ez(zs)/C.DH
-
     ps = ps/trapz2(ps,rs) #normalize galaxy probability distribution
-    #ps = ps*(zs<=z_max_dist)*(zs>=z_min_dist) #cutoff outside dist limits
-    return ps  
+    return ps

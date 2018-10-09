@@ -49,7 +49,7 @@ class PixelGeo(Geo):
             assume constant pixel area"""
         if l>self._l_max:
             print("PixelGeo: l value "+str(l)+" exceeds maximum precomputed l "+str(self._l_max)+",expanding table")
-            expand_alm_table(self,l_max)
+            self.expand_alm_table(l)
         alm = self.alm_table.get((l,m))
         if alm is None:
             raise RuntimeError("PixelGeo: alm evaluated to None at l="+str(l)+",m="+str(m)+". l,m may exceed highest available Ylm")

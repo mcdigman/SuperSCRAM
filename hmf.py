@@ -3,9 +3,7 @@
 """
 from __future__ import division,print_function,absolute_import
 from builtins import range
-from time import time
-#from warnings import warn
-from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
+from scipy.interpolate import interp1d
 from scipy.integrate import cumtrapz
 import numpy as np
 from algebra_utils import trapz2
@@ -113,7 +111,7 @@ class ST_hmf(object):
             both M and G can be numpy arrays
             renormalizing for input mass range is optional"""
         if norm_in is not None:
-            norm = norm_in 
+            norm = norm_in
         else:
             norm = 1.
 
@@ -169,7 +167,7 @@ class ST_hmf(object):
     def bias_G(self,M,G,norm_in=None):
         """get bias as a function of G
         implements Sheth-Tormen 1999 arXiv:astro-ph/9901122 eq 12"""
-        if norm_in is not None: 
+        if norm_in is not None:
             norm = norm_in
         else:
             norm = 1.
@@ -183,7 +181,7 @@ class ST_hmf(object):
             result = bias/norm
         else:
             result = bias
-            
+
         if DEBUG:
             assert np.all(result>=0)
         return result
@@ -216,7 +214,7 @@ class ST_hmf(object):
                 mf_b = mf*b_array
                 mf_b_int = -cumtrapz(mf_b[::-1],self.mass_grid[::-1],initial=0.)[::-1]
 
-                if np.array_equal(min_mass,self.mass_grid): 
+                if np.array_equal(min_mass,self.mass_grid):
                     #no need to extrapolate if already is result
                     result = mf_b_int
                 else:
@@ -232,7 +230,7 @@ class ST_hmf(object):
                 b_array = self.bias_G(mass,G)
                 result = trapz2(b_array*mf,mass)
 
-        if DEBUG: 
+        if DEBUG:
             assert np.all(result>=0.)
 
         return result

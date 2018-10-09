@@ -186,7 +186,6 @@ if __name__=='__main__':
     variances = np.zeros(k_tests.size)
 
     basis = SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_max)
-    #TODO priority check if z_fine matters make self consistent if so
     for i in range(0,k_tests.size):
         print("r_max,k_cut",r_max,k_tests[i])
         n_basis[i] = np.sum(basis.C_id[:,1]<=k_tests[i])
@@ -221,4 +220,3 @@ if __name__=='__main__':
     estim_change = approx_deriv*n_basis[-1]*2.
     estim_converge = estim_change/variances[-1]
     print("main: estimate variance converged to within an error of"+str(estim_converge*100.)+"%, first approx of true value ~"+str(estim_change+variances[-1]))
-

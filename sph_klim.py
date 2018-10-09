@@ -55,10 +55,10 @@ class SphBasisK(LWBasis):
         k2 = k**2
         dk = k[1]-k[0]
         #InterpolatedUnivariateSpline is better than interp1d here
-        #because it better approximates the spline used by camb. 
+        #because it better approximates the spline used by camb.
         #Increasing camb's accuracy would also change this functions convergence
-        #The lw covariance has 2 convergence concerns: 
-        #increasing n_bessel_oversample converges to P_lin better, 
+        #The lw covariance has 2 convergence concerns:
+        #increasing n_bessel_oversample converges to P_lin better,
         #increasing npoints gives better P_lin
         P_lin = InterpolatedUnivariateSpline(k_in,P_lin_in,k=3,ext=2)(k)
 
@@ -200,7 +200,7 @@ class SphBasisK(LWBasis):
         else:
             return fm.FisherMatrix(self.get_covar_array(),input_type=fm.REP_COVAR,initial_state=initial_state,silent=silent)
 
-    def get_variance(self,geo,k_cut_in=None,itr_in=0):
+    def get_variance(self,geo,k_cut_in=None):
         r"""get the variance  (v.T).C_lw.v where v=\frac{\partial\bar{\delta}}{\delta_\alpha} in the given geometry"""
         #v = np.array([self.D_delta_bar_D_delta_alpha(geo,tomography=True)[itr_in]]).T
         v = self.D_delta_bar_D_delta_alpha(geo,tomography=True).T

@@ -135,7 +135,7 @@ class FisherMatrix(object):
         else:
             self._internal_mat += C_n
 
-    #copy_output=True should guarantee the output will never be mutated by FisherMatrix 
+    #copy_output=True should guarantee the output will never be mutated by FisherMatrix
     #(ie copy the output matrix if necessary)
     #copy_output=False will not copy the output matrix in general,
     #which will be more memory efficient but might cause problems if the user is not careful

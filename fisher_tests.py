@@ -204,7 +204,7 @@ def test_get_eig_metric_diag_range(fisher_params):
     p_mat2_use = p_mat2-np.diag(np.diag(p_mat2))
     assert np.allclose(np.zeros(cov.shape),p_mat2_use,atol=atol_loc,rtol=rtol_use)
     assert np.allclose(np.dot(m_mat,eigvs_5),eigs_1[0]*eigvs_5,atol=atol_loc,rtol=rtol_use)
-    
+
     #test eig product matches identity
     eigs_1_prod = np.product(eigs_1[0])
     eigs_1_prod_true = np.linalg.det(cov)/np.linalg.det(metric_mat)

@@ -185,10 +185,10 @@ if __name__=='__main__':
     basis = SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_max)
 
     for i in range(0,k_tests.size):
-            print("r_max,k_cut,j",r_max,k_tests[i])
-            n_basis[i] = np.sum(basis.C_id[:,1]<=k_tests[i])
-            variances[i,:,:] = basis.get_variance(geo1,k_cut_in=k_tests[i])
-            print("main: with k_cut="+str(k_tests[i])+" size="+str(n_basis[i])+" got variance="+str(variances[i,0,0]))
+        print("r_max,k_cut,j",r_max,k_tests[i])
+        n_basis[i] = np.sum(basis.C_id[:,1]<=k_tests[i])
+        variances[i,:,:] = basis.get_variance(geo1,k_cut_in=k_tests[i])
+        print("main: with k_cut="+str(k_tests[i])+" size="+str(n_basis[i])+" got variance="+str(variances[i,0,0]))
 
     if do_plot:
         import matplotlib.pyplot as plt

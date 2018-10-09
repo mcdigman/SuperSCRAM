@@ -1,6 +1,5 @@
 """provides some useful default values"""
 from __future__ import division,print_function,absolute_import
-from builtins import range
 import numpy as np
 from param_manager import PowerParamManager
 # default cosmology is Planck 2015 TT+lowP+lensing+ext (arxiv 1502.01589v3 page 32)
@@ -31,29 +30,29 @@ cosmology = {   'Omegabh2':0.02227,
             }
 
 # wmap 9 year cosmology #TODO check with Chris which one
-cosmology_wmap = {   'Omegabh2':0.02223,
-                'Omegach2':0.1153,
-                'Omegab'  :0.04283392714316876,
-                'Omegac'  :0.22216607285683124, 
-                'Omegamh2':0.13752999999999999,
-                'OmegaL'  :0.735,
-                'OmegaLh2':0.38145113207547166,
-                'Omegam'  :0.265,
-                'H0'      :72.04034509047493,
-                'sigma8'  : 0.8269877678406697, #from the code
-                'h'       :0.7204034509047493,
-                'Omegak'  : 0.0,
-                'Omegakh2': 0.0,
-                'Omegar'  : 0.0,
-                'Omegarh2': 0.0,
-                'ns'      : 0.9608,
-                'tau'     : 0.081,
-                'Yp'      :0.299,
-                'As'      : 2.464*10**-9,
-                'LogAs'   :-19.821479791275138,
-                'w'       :-1.0,
-                'de_model':'constant_w',#dark energy model
-                'mnu'     :0.} 
+cosmology_wmap = {  'Omegabh2':0.02223,
+                    'Omegach2':0.1153,
+                    'Omegab'  :0.04283392714316876,
+                    'Omegac'  :0.22216607285683124,
+                    'Omegamh2':0.13752999999999999,
+                    'OmegaL'  :0.735,
+                    'OmegaLh2':0.38145113207547166,
+                    'Omegam'  :0.265,
+                    'H0'      :72.04034509047493,
+                    'sigma8'  : 0.8269877678406697, #from the code
+                    'h'       :0.7204034509047493,
+                    'Omegak'  : 0.0,
+                    'Omegakh2': 0.0,
+                    'Omegar'  : 0.0,
+                    'Omegarh2': 0.0,
+                    'ns'      : 0.9608,
+                    'tau'     : 0.081,
+                    'Yp'      :0.299,
+                    'As'      : 2.464*10**-9,
+                    'LogAs'   :-19.821479791275138,
+                    'w'       :-1.0,
+                    'de_model':'constant_w',#dark energy model
+                    'mnu'     :0.}
 #cosmology from jdem 2008 working group paper arxiv:0901.0721v1
 cosmology_jdem = {  'ns'      : 0.963,
                     'Omegamh2': 0.1326,
@@ -68,10 +67,7 @@ cosmology_jdem = {  'ns'      : 0.963,
                     'de_model':'constant_w',
                     'mnu'     :0.
                  }
-lensing_params = {  #'z_resolution'    :0.002, #fine resolution
-                    #'z_min_integral'  :0.0005, #lowest z
-                    #'z_max_integral'  :2,#highest z
-                    'pmodel'        :'halofit', #default method for finding p grid
+lensing_params = {  'pmodel'        :'halofit', #default method for finding p grid
                     'n_gal'           :None,#118000000*6.,#118000000 galaxies/rad^2=10 galaxies/arcmin^2
                     'delta_l'         :1., #binning window
                     'sigma2_e'        :0.27**2*2, #other noise term
@@ -107,7 +103,6 @@ nz_params = {   'data_source'   :'./data/CANDELS-GOODSS2.dat',
                 'suppress'      :True,
                 'z_cut'         :0.04}
 nz_params_wfirst_gal = {    'data_source'   :'./data/CANDELS-GOODSS2.dat',
-                            'i_cut'         :24,
                             'area_sterad'   :0.0409650328530259/3282.80635,
                             'smooth_sigma'  :0.02,
                             'n_right_extend':8,

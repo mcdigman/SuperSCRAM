@@ -4,6 +4,7 @@ from builtins import range
 import numpy as np
 from scipy.integrate import cumtrapz
 import scipy.special as spp
+import pytest
 from cosmopie import CosmoPie
 from shear_power import ShearPower,Cll_q_q
 import defaults
@@ -11,9 +12,9 @@ from lensing_weight import QShear
 import matter_power_spectrum as mps
 from sw_survey import SWSurvey
 from circle_geo import CircleGeo
-import pytest
 
 def test_cosmolike_agreement():
+    """test agreement with cosmolike"""
     base_dir = './'
     input_dir = base_dir+'test_inputs/cosmolike_1/'
     cosmo_results = np.loadtxt(input_dir+'cov_results_7.dat')
@@ -66,15 +67,15 @@ def test_cosmolike_agreement():
     n_gal_cosmo = 10.*(180**2/np.pi**2)*3600 #gal/rad^2
     sigma_e_cosmo = 0.27*np.sqrt(2)
     tomo_bins_cosmo = 4
-    amin_cosmo = 0.2
+#    amin_cosmo = 0.2
 
     n_s = sigma_e_cosmo**2/(2*n_gal_cosmo)
     print("n_s",n_s)
     #format input results
     lbin_cosmo_1 = cosmo_results[:,0]
-    lbin_cosmo_2 = cosmo_results[:,1]
-    lmid_cosmo_1 = cosmo_results[:,2]
-    lmid_cosmo_2 = cosmo_results[:,3]
+#    lbin_cosmo_2 = cosmo_results[:,1]
+#    lmid_cosmo_1 = cosmo_results[:,2]
+#    lmid_cosmo_2 = cosmo_results[:,3]
     zbin_cosmo_1 = cosmo_results[:,4]
     zbin_cosmo_2 = cosmo_results[:,5]
     zbin_cosmo_3 = cosmo_results[:,6]
@@ -152,7 +153,7 @@ def test_cosmolike_agreement():
     cum_n_z = cumtrapz(n_z,z_fine,initial=0.)
     cum_n_z = cum_n_z/cum_n_z[-1]
     z_bin_starts = np.zeros(tomo_bins_cosmo)
-    r_bins = np.zeros((tomo_bins_cosmo,2))
+#    r_bins = np.zeros((tomo_bins_cosmo,2))
     for i in range(0,tomo_bins_cosmo):
         z_bin_starts[i] = np.min(z_fine[cum_n_z>=1./tomo_bins_cosmo*i])
 
@@ -237,12 +238,12 @@ def test_cosmolike_agreement():
     sw_params = {'needs_lensing':True,'cross_bins':True}
     observable_list = np.array(['len_shear_shear'])
     sw_survey = SWSurvey(geo1,'c_s',C,sw_params,observable_list=observable_list,len_params=len_params,ps=n_z)
-    C_pow = sw_survey.len_pow.C_pow
+#    C_pow = sw_survey.len_pow.C_pow
 
     c_g_sw = sw_survey.get_non_SSC_sw_covar_arrays()[0]
     nonzero_mask = c_g_sw!=0.
     rat_c = c_g_cosmo_flat[nonzero_mask]/c_g_sw[nonzero_mask]
-    rat_m = c_g_flat[nonzero_mask]/c_g_sw[nonzero_mask]
+#    rat_m = c_g_flat[nonzero_mask]/c_g_sw[nonzero_mask]
     assert np.allclose(c_g_sw,c_g_flat)
     assert np.allclose(c_g_sw,c_g_cosmo_flat,atol=ATOL,rtol=RTOL)
 

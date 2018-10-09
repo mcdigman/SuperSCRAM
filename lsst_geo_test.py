@@ -1,16 +1,19 @@
 """test approximate a circular geometry with PolygonGeo"""
 from __future__ import print_function,division,absolute_import
 from builtins import range
+from copy import deepcopy
 import numpy as np
+from mpl_toolkits.basemap import Basemap
+import matplotlib.pyplot as plt
+import healpy as hp
 from cosmopie import CosmoPie
 import defaults
 from premade_geos import WFIRSTGeo,LSSTGeoSimpl,LSSTGeo,LSSTPixelGeo,WFIRSTPixelGeo
 from polygon_union_geo import PolygonUnionGeo
 from polygon_pixel_union_geo import PolygonPixelUnionGeo
 from polygon_utils import get_healpix_pixelation
-from polygon_display_utils import display_geo
+from polygon_display_utils import display_geo,plot_reconstruction
 from ylm_utils import reconstruct_from_alm
-from copy import deepcopy
 
 if __name__=='__main__':
     do_plot = True
@@ -39,8 +42,6 @@ if __name__=='__main__':
     if do_simpl_test:
         geo1 = LSSTGeoSimpl(zs,C,z_fine,l_max,{'n_double':30},phi0=0.,phi1=0.9202821591024097*0.8*1.0383719267257006*1.0000197370387798*1.0000197370387798*0.99998029455615*0.9999999844187037*0.9999999999876815*0.9999999999999916*1.0000000000000029,deg0=-49,deg1=-20)
         print(0.31587654497768103/geo1.angular_area())
-        import sys
-        sys.exit()
         geo2 = LSSTGeo(zs,C,z_fine,l_max,{'n_double':30})
         #geo2 = LSSTGeoSimpl(zs,C,z_fine,l_max,{'n_double':30},phi1=2.0*2.9030540874480577)
         #geo3 = WFIRSTGeo(zs,C,z_fine,l_max,{'n_double':30})
@@ -57,8 +58,6 @@ if __name__=='__main__':
 #            geo2.sp_poly.draw(m,color='blue')
 #            geo3.sp_poly.draw(m,color='green')
 #            plt.show()
-    import sys
-    sys.exit()
     do_lsst_test = False
     if do_lsst_test:
         geo4 = LSSTGeo(zs,C,z_fine,l_max,{'n_double':80})
@@ -111,7 +110,7 @@ if __name__=='__main__':
         assert np.allclose(alms5_array_2,alms4_array_2,atol=1.e-3,rtol=1.e-3)
         assert np.allclose(alms5_array_2,alms6_array_2,atol=5.e-3,rtol=5.e-3)
         assert np.allclose(alms4_array_2,alms6_array_2,atol=5.e-3,rtol=5.e-3)
-        
+
         pixels = get_healpix_pixelation(res_healpix_low)
         reconstruct4 = reconstruct_from_alm(l_max_high,pixels[:,0],pixels[:,1],alms4_2)
         reconstruct5 = reconstruct_from_alm(l_max_high,pixels[:,0],pixels[:,1],alms5_2)
@@ -119,12 +118,8 @@ if __name__=='__main__':
         assert np.allclose(reconstruct4,reconstruct5,atol=4.e-2,rtol=1.e-4)
         assert np.allclose(reconstruct4,reconstruct6,atol=4.e-1,rtol=1.e-4)
         assert np.allclose(reconstruct5,reconstruct6,atol=4.e-1,rtol=1.e-4)
-        
+
         if do_plot:
-            from mpl_toolkits.basemap import Basemap
-            import matplotlib.pyplot as plt
-            from polygon_display_utils import plot_reconstruction
-            import healpy as hp
             m = Basemap(projection='moll',lon_0=0)
             fig = plt.figure(figsize=(10,5))
             #ax = fig.add_subplot(121)
@@ -198,7 +193,7 @@ if __name__=='__main__':
         assert np.allclose(alms5_array_2,alms4_array_2,atol=1.e-3,rtol=1.e-3)
         assert np.allclose(alms5_array_2,alms6_array_2,atol=5.e-3,rtol=5.e-3)
         assert np.allclose(alms4_array_2,alms6_array_2,atol=5.e-3,rtol=5.e-3)
-        
+
         pixels = get_healpix_pixelation(res_healpix_low)
         reconstruct4 = reconstruct_from_alm(l_max_high,pixels[:,0],pixels[:,1],alms4_2)
         reconstruct5 = reconstruct_from_alm(l_max_high,pixels[:,0],pixels[:,1],alms5_2)
@@ -206,12 +201,8 @@ if __name__=='__main__':
         assert np.allclose(reconstruct4,reconstruct5,atol=4.e-2,rtol=1.e-4)
         assert np.allclose(reconstruct4,reconstruct6,atol=4.e-1,rtol=1.e-4)
         assert np.allclose(reconstruct5,reconstruct6,atol=4.e-1,rtol=1.e-4)
-        
+
         if do_plot:
-            from mpl_toolkits.basemap import Basemap
-            import matplotlib.pyplot as plt
-            #from polygon_display_utils import plot_reconstruction
-            import healpy as hp
             m = Basemap(projection='moll',lon_0=0)
             fig = plt.figure(figsize=(10,5))
             #ax = fig.add_subplot(121)
@@ -236,7 +227,7 @@ if __name__=='__main__':
             abs_error = np.abs(reconstruct6-geo6.contained*1.)
             mse = np.sqrt(np.average(abs_error**2))
 
-    
+
     do_wfirst_lsst_test = True
     if do_wfirst_lsst_test:
         res_healpix_high = 5
@@ -248,9 +239,9 @@ if __name__=='__main__':
         geo_lsst_pp1 = LSSTPixelGeo(zs,C,z_fine,l_max,res_healpix_low)
         geo_wfirst_pp2 = WFIRSTPixelGeo(zs,C,z_fine,l_max,res_healpix_high)
         geo_lsst_pp2 = LSSTPixelGeo(zs,C,z_fine,l_max,res_healpix_high)
-        geo4 = PolygonUnionGeo(geo_lsst.geos,np.append(geo_wfirst,geo_lsst.masks)) 
-        geo5 = PolygonPixelUnionGeo(geo_lsst_pp2.geos,np.append(geo_wfirst_pp2,geo_lsst_pp2.masks)) 
-        geo6 = PolygonPixelUnionGeo(geo_lsst_pp1.geos,np.append(geo_wfirst_pp1,geo_lsst_pp1.masks)) 
+        geo4 = PolygonUnionGeo(geo_lsst.geos,np.append(geo_wfirst,geo_lsst.masks))
+        geo5 = PolygonPixelUnionGeo(geo_lsst_pp2.geos,np.append(geo_wfirst_pp2,geo_lsst_pp2.masks))
+        geo6 = PolygonPixelUnionGeo(geo_lsst_pp1.geos,np.append(geo_wfirst_pp1,geo_lsst_pp1.masks))
         assert np.isclose(geo4.angular_area(),geo_lsst.angular_area()-geo_wfirst.angular_area())
         assert np.isclose(geo5.angular_area(),geo_lsst_pp2.angular_area()-geo_wfirst_pp2.angular_area())
         assert np.isclose(geo6.angular_area(),geo_lsst_pp1.angular_area()-geo_wfirst_pp1.angular_area())
@@ -361,7 +352,7 @@ if __name__=='__main__':
         assert np.allclose(alms4_array_2[0],alms_lsst_array[0]-alms_wfirst_array[0])
         assert np.allclose(alms5_array_2[0],alms_lsst_pp2_array[0]-alms_wfirst_pp2_array[0])
         assert np.allclose(alms6_array_2[0],alms_lsst_pp1_array[0]-alms_wfirst_pp1_array[0])
-        
+
         pixels = get_healpix_pixelation(res_healpix_low)
         reconstruct4 = reconstruct_from_alm(l_max_high,pixels[:,0],pixels[:,1],alms4_2)
         reconstruct5 = reconstruct_from_alm(l_max_high,pixels[:,0],pixels[:,1],alms5_2)
@@ -370,12 +361,9 @@ if __name__=='__main__':
             assert np.allclose(reconstruct4,reconstruct5,atol=4.e-2,rtol=1.e-4)
             assert np.allclose(reconstruct4,reconstruct6,atol=4.e-1,rtol=1.e-4)
             assert np.allclose(reconstruct5,reconstruct6,atol=4.e-1,rtol=1.e-4)
-        
+
         if do_plot:
             #from mpl_toolkits.basemap import Basemap
-            import matplotlib.pyplot as plt
-            from polygon_display_utils import plot_reconstruction,reconstruct_and_plot
-            import healpy as hp
             #m = Basemap(projection='moll',lon_0=0)
             fig = plt.figure(figsize=(10,5))
             ax = fig.add_subplot(221)

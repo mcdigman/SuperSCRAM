@@ -12,8 +12,6 @@ from scipy.integrate import odeint
 from scipy.interpolate import InterpolatedUnivariateSpline
 import numpy as np
 
-from algebra_utils import trapz2
-
 from dark_energy_model import DarkEnergyConstant,DarkEnergyW0Wa,DarkEnergyJDEM
 
 DEBUG=True
@@ -90,7 +88,7 @@ class CosmoPie(object):
 
         # solar mass
         #self.M_sun = 1.9885*1e30 # kg
-        self.M_sun = 1.98847541534*1e30 
+        self.M_sun = 1.98847541534*1e30
 
         # parsec
         self.pc = 3.08567758147*1e16 # m
@@ -248,7 +246,7 @@ class CosmoPie(object):
         if self.P_lin is None:
             raise ValueError('You need to provide a linear power spectrum through set_power to get sigma valeus')
         z = np.asanyarray(z)
-        k = self.P_lin.k 
+        k = self.P_lin.k
         if np.min(R)<3./np.max(k):
             #ensure resolution to at least 1./10 radius so converges to ~0.5%
             #could be less aggressive and require ~3 for ~5% convergence
@@ -450,7 +448,7 @@ def sanity_check_pars(cosmo_in):
     assert cosmo_in['Omegam']>=0.
     assert cosmo_in['Omegac']>=0.
     assert cosmo_in['Omegab']>=0.
-    assert cosmo_in['Omegar']==0. 
+    assert cosmo_in['Omegar']==0.
     assert cosmo_in['Omegarh2']==0.
     assert cosmo_in['Omegak']==0.
     assert cosmo_in['Omegakh2']==0.

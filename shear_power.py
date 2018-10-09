@@ -5,7 +5,6 @@ from __future__ import division,print_function,absolute_import
 from builtins import range
 from warnings import warn
 import numpy as np
-from scipy.interpolate import InterpolatedUnivariateSpline,interp1d
 
 from power_response import dp_ddelta
 from lensing_weight import QShear#,QMag,QNum,QK

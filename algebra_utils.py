@@ -164,7 +164,7 @@ def cholesky_inplace(A,inplace=True,fatal_errors=False,lower=True,clean=True):
         Cannot currently be done in place if the array is not F contiguous, but will compute decomposition anyway.
         in place will require less memory, and regardless this function should have less overhead than scipy/numpy (both in time and memory)
         If absolutely must be done in place, set fatal_errors=True.
-        if lower=True return lower triangular decomposition, 
+        if lower=True return lower triangular decomposition,
         otherwise upper triangular (note lower=True is numpy default,lower=False is scipy default).
         completely ignores opposite triangle of A
     """
@@ -173,7 +173,7 @@ def cholesky_inplace(A,inplace=True,fatal_errors=False,lower=True,clean=True):
 
     try_inplace = inplace
     #assert np.all(A==A.T)
-    #dpotrf will still work on C contiguous arrays but will silently fail to do them in place 
+    #dpotrf will still work on C contiguous arrays but will silently fail to do them in place
     #regardless of overwrite_a, so raise a warning or error here
     #using order='F' when creating the array or A.copy('F') when copying ensures fortran contiguous arrays.
     if (not A.flags['F_CONTIGUOUS']) and try_inplace:

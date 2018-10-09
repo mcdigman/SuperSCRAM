@@ -28,7 +28,7 @@ class MatterPower(object):
         matter_power_params,camb_params,wmatcher_params,halofit_params,fpt: dictionaries of parameters
         wm_in: input WMatcher object. Optional.
         P_fid: Fiducial  power spectrum. Optional.
-        camb_safe: If True and P_fid is not None, will borrow camb_grid from P_fid if possible. 
+        camb_safe: If True and P_fid is not None, will borrow camb_grid from P_fid if possible.
                 Useful if only linear growth factor different from P_fid.
         de_perturbative: If True, get power spectra for constant w even if w(z) in C_in is not constant
         """
@@ -109,7 +109,6 @@ class MatterPower(object):
                     cache_usable = True
             if not cache_usable:
                 #get a w grid that is no larger than it needs to be, keeping integer number of steps from w=-1 for convenience
-                #TODO could refine edge criteria
                 n_w_below = np.ceil((-1.-np.min(self.w_match_grid-self.params['w_edge']-self.params['w_step']))/self.params['w_step'])
                 n_w_above = np.ceil((1.+np.max(self.w_match_grid+self.params['w_edge']+self.params['w_step']))/self.params['w_step'])
                 self.w_min = -1.-n_w_below*self.params['w_step']
@@ -130,21 +129,11 @@ class MatterPower(object):
                 self.camb_sigma8s = np.zeros(n_cw)
                 camb_cosmos = self.cosmology.copy()
                 camb_cosmos['de_model'] = 'constant_w'
-                #k_use,P_use,sigma8_use = camb_pow(camb_cosmos,camb_params=self.camb_params)
-                #if not np.all(k_use==self.k):
-                #    P_use = InterpolatedUnivariateSpline(k_use,P_use,k=2,ext=2)(self.k)
                 for i in range(0,n_cw):
                     camb_cosmos['w'] = self.camb_w_grid[i]
                     print("camb with w=",self.camb_w_grid[i])
                     k_i,self.camb_w_pows[:,i],self.camb_sigma8s[i] = camb_pow(camb_cosmos,camb_params=self.camb_params)
-                    #self.camb_sigma8s[i] = sigma8_use*self.wm.match_scale(np.array([0.]),self.camb_w_grid[i])[0]
-                    #alt_camb_sigma8s = camb_sigma8(camb_cosmos,self.camb_params)
-                    #print(self.camb_sigma8s[i],alt_camb_sigma8s[i])
-                    #This interpolation shift shouldn't really be needed because self.k is generated with the same value of H0
                     self.camb_w_pows[:,i] = power_law_extend(k_i,self.camb_w_pows[:,i],self.k,k=3,extend_limit=self.extend_limit)
-                    #if not np.all(k_i==self.k):
-                    #    self.camb_w_pows[:,i] = InterpolatedUnivariateSpline(k_i,self.camb_w_pows[:,i],k=2,ext=2)(self.k)
-                    #self.camb_w_pows[:,i] = P_use*self.camb_sigma8s[i]**2/sigma8_use**2
                 self.camb_w_interp = RectBivariateSpline(self.k,self.camb_w_grid,self.camb_w_pows,kx=3,ky=3)
                 self.camb_sigma8_interp = InterpolatedUnivariateSpline(self.camb_w_grid,self.camb_sigma8s,k=3,ext=2)
                 self.use_camb_grid = True
@@ -217,7 +206,7 @@ class MatterPower(object):
                     cosmo_hf_i = self.cosmology.copy()
                     cosmo_hf_i['de_model'] = 'constant_w'
                     cosmo_hf_i['w'] = w_match_grid[i]
-                    G_hf = InterpolatedUnivariateSpline(self.C.z_grid,self.wm.growth_interp(w_match_grid[i],self.C.a_grid),ext=2,k=3) #TODO no k=2 spline
+                    G_hf = InterpolatedUnivariateSpline(self.C.z_grid,self.wm.growth_interp(w_match_grid[i],self.C.a_grid),ext=2,k=3)
                     hf_C_calc = cp.CosmoPie(cosmo_hf_i,self.C.p_space,silent=True,G_safe=True,G_in=G_hf)
                     hf_C_calc.k = self.k
                     hf_calc = halofit.HalofitPk(hf_C_calc,Pbases[:,i],self.power_params.halofit,self.camb_params['leave_h'])

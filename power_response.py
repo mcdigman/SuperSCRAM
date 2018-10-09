@@ -2,8 +2,6 @@
 from __future__ import division,print_function,absolute_import
 from builtins import range
 import numpy as np
-from scipy.interpolate import InterpolatedUnivariateSpline,RectBivariateSpline
-from time import time
 
 def dp_ddelta(P_a,zbar,C,pmodel,epsilon=0.0001):
     """get separate universe response of the power spectrum to a density fluctuation

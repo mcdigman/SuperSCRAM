@@ -4,7 +4,6 @@ from builtins import range
 import numpy as np
 
 from scipy.integrate import dblquad
-from scipy.interpolate import InterpolatedUnivariateSpline
 from sph_functions import Y_r
 
 #Abstract class defining a geometry for a survey.

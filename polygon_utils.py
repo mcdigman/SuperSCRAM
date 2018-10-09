@@ -1,12 +1,12 @@
 """module for holding some common utils between polygon geos"""
 from __future__ import division,print_function,absolute_import
 from builtins import range
+from copy import deepcopy
 import numpy as np
 from numpy.core.umath_tests import inner1d
 from astropy.io import fits
 import spherical_geometry.vector as sgv
 from spherical_geometry.polygon import SphericalPolygon
-from copy import deepcopy
 #import matplotlib.pyplot as plt
 #from mpl_toolkits.basemap import Basemap
 #Note these are spherical polygons so all the sides are great circles (not lines of constant theta!)

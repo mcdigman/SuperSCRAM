@@ -19,7 +19,7 @@ def camb_pow(cosmology,camb_params,zbar=0.,nonlinear_model=camb.model.NonLinear_
         raise ValueError('need camb params')
     pars = camb.CAMBparams()
     #ignores tau and YHe for now
-    pars.set_cosmology(H0=cosmology['H0'],ombh2=cosmology['Omegabh2'],omch2=cosmology['Omegach2'],omk=cosmology['Omegak'],mnu=cosmology['mnu']) 
+    pars.set_cosmology(H0=cosmology['H0'],ombh2=cosmology['Omegabh2'],omch2=cosmology['Omegach2'],omk=cosmology['Omegak'],mnu=cosmology['mnu'])
     pars.set_accuracy(camb_params['accuracy'],camb_params['accuracy'],camb_params['accuracy'])
     if cosmology.get('As') is not None:
         pars.InitPower.set_params(ns=cosmology['ns'],As=cosmology['As'],pivot_scalar=camb_params['pivot_scalar'])

@@ -303,10 +303,10 @@ if __name__=="__main__":
 #        cov_set = np.array([SS.f_set[2][2].get_covar(),SS.f_set[1][2].get_covar(),SS.f_set[0][2].get_covar()])
 #        label_set = np.array(["ssc+mit+g","ssc+g","g"])
 
-    ellipse_plot = False
-    if ellipse_plot:
+#    ellipse_plot = False
+#    if ellipse_plot:
 #        make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',cosmo_par_list,dchi2=dchi2)
-        SS.make_standard_ellipse_plot()
+#        SS.make_standard_ellipse_plot()
 
 
     #TODO make testing module for this

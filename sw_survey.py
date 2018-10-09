@@ -190,7 +190,7 @@ def generate_observable_names(geo,observable_list,cross_bins):
 
                 else:
                     name_str = name+'_'+str(i)+'_'+str(i)
-                    names[name_str] = {'z1':z1,'z2':z1} 
+                    names[name_str] = {'z1':z1,'z2':z1}
         else:
             warn('observable name \'',name,'\' unrecognized, ignoring')
     return names

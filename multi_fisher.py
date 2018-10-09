@@ -114,11 +114,11 @@ class MultiFisher(object):
     def get_fisher(self,f_spec,f_return):
         """get a list of 3 FisherMatrix objects, [long wavelength, short wavelength, cosmological parameters]
         inputs:
-            f_spec: a dictionary with keys lw, sw, and par. 
+            f_spec: a dictionary with keys lw, sw, and par.
                     If value at a key is False, return None instead of a FisherMatrix (to save memory)
-            f_return:   specification of which long wavelength fisher, short wavelength covariance, 
+            f_return:   specification of which long wavelength fisher, short wavelength covariance,
                         and cosmological prior fisher matrices to include
-                        for example the following combination would return the parameter fisher matrix 
+                        for example the following combination would return the parameter fisher matrix
                         including lw mitigation, sw gaussian and nonguassian covariance
                         f_spec = {'lw_base':True,'lw_mit':True,'sw_g':True,'sw_ng':True,'par_prior':True}
                         f_return = {'lw':False,'sw':False,'par':True}
@@ -202,7 +202,7 @@ class MultiFisher(object):
         return sw_result
 
     def get_fisher_set(self,include_priors=True):
-        """ get a 2d array of FisherMatrix objects, 
+        """ get a 2d array of FisherMatrix objects,
             1st dimension is [gaussian, no mitigation, with mitigation], 2nd dimension is [lw,sw,par]
             include_priors: if True, include cosmological priors in the cosmological parameter FisherMatrix objects"""
         result = np.zeros(3,dtype=object)
@@ -218,27 +218,13 @@ class MultiFisher(object):
                 result[2] = self.get_fisher(f_spec_mit_noprior,f_return_sw_par)
         return result
 
-    #TODO handle caching better to avoid this logic
     def get_eig_set(self,fisher_set,ssc_metric=False,include_sw=False):
-        """Get 2d array of eigensystems for C^{ij}metric^{-1 ij}v=lambda v 
+        """Get 2d array of eigensystems for C^{ij}metric^{-1 ij}v=lambda v
             with 1st dimension [no mitigation, with mitigation] 2nd dimension [sw,par]
             inputs:
                 fisher_set: an output from get_fisher_set
                 ssc_metric: if True, use the no mitigation SSC covariance as the metric instead of the gaussian covariance"""
-        result = np.zeros((2,2),dtype=object)
-        f_set_par = np.zeros(3,dtype=object)
-        for i in range(0,3):
-            f_set_par[i] = fisher_set[i][2]
-        if ssc_metric:
-            metrics = np.array([fisher_set[1][1],f_set_par[1]])
-        else:
-            metrics = np.array([fisher_set[0][1],f_set_par[0]])
-        if include_sw:
-            result[0,0] = fisher_set[1][1].get_cov_eig_metric(metrics[0])
-            result[0,1] = fisher_set[2][1].get_cov_eig_metric(metrics[0])
-        result[1,0] = f_set_par[1].get_cov_eig_metric(metrics[1])
-        result[1,1] = f_set_par[2].get_cov_eig_metric(metrics[1])
-        return result
+        return get_eig_set(fisher_set,ssc_metric,include_sw)
 
     def get_lw_to_sw_array(self):
         """get the matrix for projecting long wavelength observables to sw basis"""
@@ -268,3 +254,24 @@ class MultiFisher(object):
             else:
                 a_mit = 0.
             return np.array([a_no_mit,a_mit])
+
+def get_eig_set(fisher_set,ssc_metric=False,include_sw=False):
+    """Get 2d array of eigensystems for C^{ij}metric^{-1 ij}v=lambda v
+        with 1st dimension [no mitigation, with mitigation] 2nd dimension [sw,par]
+        inputs:
+            fisher_set: an output from get_fisher_set
+            ssc_metric: if True, use the no mitigation SSC covariance as the metric instead of the gaussian covariance"""
+    result = np.zeros((2,2),dtype=object)
+    f_set_par = np.zeros(3,dtype=object)
+    for i in range(0,3):
+        f_set_par[i] = fisher_set[i][2]
+    if ssc_metric:
+        metrics = np.array([fisher_set[1][1],f_set_par[1]])
+    else:
+        metrics = np.array([fisher_set[0][1],f_set_par[0]])
+    if include_sw:
+        result[0,0] = fisher_set[1][1].get_cov_eig_metric(metrics[0])
+        result[0,1] = fisher_set[2][1].get_cov_eig_metric(metrics[0])
+    result[1,0] = f_set_par[1].get_cov_eig_metric(metrics[1])
+    result[1,1] = f_set_par[2].get_cov_eig_metric(metrics[1])
+    return result

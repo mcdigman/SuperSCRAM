@@ -34,7 +34,7 @@ def reconstruct_and_plot(geo,l_max,pixels,title,fig,cmap='Greys'):
 
 def display_geo(geo,l_max,res_healpix=5,title='geo display',fig=None,cmap='Greys',display=True):
     """plot the area enclosed by a geo on a pixelated map"""
-    pixels = get_healpix_pixelation(res_healpix)  
+    pixels = get_healpix_pixelation(res_healpix)
     alms = geo.get_alm_table(l_max)
     reconstruction = reconstruct_from_alm(l_max,pixels[:,0],pixels[:,1],alms)
     if fig is None:
@@ -42,6 +42,4 @@ def display_geo(geo,l_max,res_healpix=5,title='geo display',fig=None,cmap='Greys
     plot_reconstruction(reconstruction,title,fig,cmap)
     if display:
         plt.show(fig)
-    else:
-        return fig
-    
+    return fig
