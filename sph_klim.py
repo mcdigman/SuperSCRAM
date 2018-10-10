@@ -20,7 +20,6 @@ import fisher_matrix as fm
 eps = np.finfo(float).eps
 
 
-#TODO test analytic result for power law power spectrum
 class SphBasisK(LWBasis):
     """ get the long wavelength basis with spherical bessel functions described in the paper
         basis modes are selected by the k value of the bessel function zero, which approximates order of importance"""
@@ -34,9 +33,9 @@ class SphBasisK(LWBasis):
         """
         print("sph_klim: begin init basis id: "+str(id(self))+" with r_max="+str(r_max)+" k_cut="+str(k_cut))
         LWBasis.__init__(self,C)
-        #TODO check correct power spectrum
         self.r_max = r_max
         P_lin_in = self.C.P_lin.get_matter_power(np.array([0.]),pmodel='linear')[:,0]
+        #P_lin_in = 1./(self.C.k*r_max)
         camb_params2 = self.C.P_lin.camb_params.copy()
         camb_params2['npoints'] = params['n_bessel_oversample']
         #P_lin_in,k_in = camb_pow(self.C.cosmology,camb_params=camb_params2)
@@ -125,7 +124,6 @@ class SphBasisK(LWBasis):
 
                 for d in range(0,b+1):
                     coeff = 8.*np.sqrt(kk[b]*kk[d])*kk[b]*kk[d]/(np.pi*self.r_max**2*jv(ll+1.5,kk[b]*self.r_max)*jv(ll+1.5,kk[d]*self.r_max))
-                    #TODO convergence test
                     #note: this integrand is highly oscillatory, and some integration methods may produce inaccurate results,
                     #especially for off diagonal elements. Tightly sampled trapezoidal rule is at least stable, be careful switching to anything else
                     self.C_compact[ll][b,d] = coeff*integrated_bd[d]

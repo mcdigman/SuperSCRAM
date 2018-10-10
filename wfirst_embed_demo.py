@@ -58,8 +58,10 @@ if __name__=='__main__':
     prior_params = defaults.prior_fisher_params.copy()
     dn_params = defaults.dn_params.copy()
     dn_params['nz_select'] = 'LSST'
+    dn_params['sigma0'] = 0.1
     lw_param_list = np.array([{'dn_params':dn_params,'n_params':n_params_lsst,'mf_params':mf_params}])
     basis_params = defaults.basis_params.copy()
+    basis_params['n_bessel_oversample'] = 400000#*10
 
     #creat a CosmoPie object to manage the cosmology details
     print("main: begin constructing CosmoPie")
@@ -78,17 +80,17 @@ if __name__=='__main__':
     #TODO check no off by one errors in final bin
     zs = np.arange(0.2,3.21,0.40)
     #zs = np.linspace(0.2,3.01,3)
-    zs_lsst = np.linspace(0.,1.2,5)
+    zs_lsst = np.linspace(0.,1.8,7)
     #zs = np.array([0.2,0.4,0.6])
     #z_fine are the resolution redshift slices to be integrated over
-    z_fine = np.linspace(0.001,np.max([zs[-1],zs_lsst[-1]]),16000)
+    z_fine = np.linspace(0.001,np.max([zs[-1],zs_lsst[-1]]),1000)
 
     #z_fine[0] = 0.0001
 
     #l_max is the highest l that should be precomputed
-    l_max = 50
+    l_max = 24
     res_healpix = 6
-    use_pixels = True
+    use_pixels = False
     print("main: begin constructing WFIRST PolygonGeo")
     if use_pixels:
         #geo_wfirst = WFIRSTPixelGeo(zs,C,z_fine,l_max,res_healpix)

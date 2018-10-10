@@ -154,6 +154,7 @@ class DNumberDensityObservable(LWObservable):
                 dN_wind[range1] = self.dNdzs[range1]
                 sigma = self.sigma0*(1.+self.geo2.zs[itr])/(self.z_fine[2]-self.z_fine[1])
                 dN_smooth = gaussian_filter1d(dN_wind,sigma,mode='mirror',truncate=10.)
+                #must cut off at z_max by construction of basis decomposition
                 dN_smooth = dN_smooth[0:self.z_fine.size]
                 print("tot acc",np.trapz(dN_smooth,self.z_fine)/np.trapz(dN_wind,self.z_extra))
                 print("outside",np.trapz(dN_smooth[range1],self.z_fine[range1])/np.trapz(dN_wind,self.z_extra))
