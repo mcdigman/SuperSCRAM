@@ -78,9 +78,9 @@ if __name__=='__main__':
     #zs are the bounding redshifts of the tomographic bins
     #zs = np.array([0.2,0.43,.63,0.9, 1.3])
     #TODO check no off by one errors in final bin
-    zs = np.arange(0.2,3.21,0.40)
+    zs = np.arange(0.2,1.21,0.20)
     #zs = np.linspace(0.2,3.01,3)
-    zs_lsst = np.linspace(0.,1.8,7)
+    zs_lsst = np.linspace(0.,1.2,5)
     #zs = np.array([0.2,0.4,0.6])
     #z_fine are the resolution redshift slices to be integrated over
     z_fine = np.linspace(0.001,np.max([zs[-1],zs_lsst[-1]]),1000)
@@ -90,14 +90,15 @@ if __name__=='__main__':
     #l_max is the highest l that should be precomputed
     l_max = 24
     res_healpix = 6
-    use_pixels = False
+    use_pixels = True
     print("main: begin constructing WFIRST PolygonGeo")
     if use_pixels:
         #geo_wfirst = WFIRSTPixelGeo(zs,C,z_fine,l_max,res_healpix)
-        #geo_wfirst = LSSTPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
-        geo_wfirst = FullSkyPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
+        geo_wfirst = LSSTPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
+        #geo_wfirst = FullSkyPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
     else:
-        geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,poly_params)
+        #geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,poly_params)
+        geo_wfirst = LSSTGeo(zs,C,z_fine,l_max,poly_params)
         #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.9202821591024097,deg0=-59,deg1=-10)
         #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.7644912273732581,deg0=-49,deg1=-20)
 
@@ -108,8 +109,8 @@ if __name__=='__main__':
     print("main: begin constructing LSST PolygonGeo")
     if use_pixels:
         #geo_wfirst = WFIRSTPixelGeo(zs,C,z_fine,l_max,res_healpix)
-        #geo_lsst = LSSTPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
-        geo_lsst = FullSkyPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
+        geo_lsst = LSSTPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
+        #geo_lsst = FullSkyPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
     else:
         geo_lsst = LSSTGeo(zs_lsst,C,z_fine,l_max,poly_params)
     print("main: finish constructing LSST PolygonGeo")

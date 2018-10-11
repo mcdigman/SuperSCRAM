@@ -30,18 +30,21 @@ if __name__=='__main__':
     C = CosmoPie(defaults.cosmology.copy(),p_space='jdem')
     P_lin = mps.MatterPower(C,power_params)
     C.set_power(P_lin)
+    time1 = time()
 
     #x_cut = 527.
-    #l_max = 515
+    #l_max = 511
     #x_cut = 360
-    #l_max = 347
+    #l_max = 346
     #x_cut = 150
-    #l_max = 140
-    x_cut = 30
-    l_max = 30
+    #l_max = 139
+    #x_cut = 30
+    #l_max = 23
+    x_cut = 93
+    l_max = 84
 
     param_use = 7
-    do_plot = True
+    do_plot = False
     if param_use==1:
         #matches to  0.918455921357 for l_max=340,x_cut=360, not monotonic
         theta0 = np.pi/2.-np.pi*0.21644180767757945
@@ -159,11 +162,29 @@ if __name__=='__main__':
     #z_coarse = np.arange(0.2,3.01,0.2)#np.array([0.2,0.4])
     z_coarse = np.array([0.2,0.4])
     #z_max = np.max(z_coarse)
-    z_max = 0.501
+    z_max = 3.01
     #z_fine = np.arange(0.0001,z_max,0.0001)
     z_fine = np.linspace(0.001,z_max,2)
-    #geo1 = WFIRSTGeo(z_coarse,C,z_fine,l_max,polygon_params) #best con 2.43117008e-06
+
+    print("main: building basis")
+    basis_params = defaults.basis_params.copy()
+    basis_params['n_bessel_oversample'] = 400000
+    basis_params['x_grid_size'] = 100000
+
+    r_max = C.D_comov(z_max)
+    k_cut = x_cut/r_max
+    k_tests = np.linspace(20./r_max,k_cut,25)
+    n_basis = np.zeros(k_tests.size)
+    variances = np.zeros((k_tests.size,z_coarse.size-1,z_coarse.size-1))
+
+    time4 = time()
+    basis = SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_max)
+    time5 = time()
+    time2 = time()
     geo1 = LSSTGeoSimpl(z_coarse,C,z_fine,l_max,polygon_params,phi0=0.,phi1=0.9202821591024097,deg0=-59,deg1=-10)#WFIRSTGeo(z_coarse,C,z_fine,l_max,polygon_params) #best con 2.43117008e-06
+    time3 = time()
+
+    #geo1 = WFIRSTGeo(z_coarse,C,z_fine,l_max,polygon_params) #best con 2.43117008e-06
     #geo1 = CircleGeo(z_coarse,C,0.45509788222857989,100,z_fine,l_max,polygon_params)
     #geo1 = LSSTGeoSimpl(z_coarse,C,z_fine,l_max,defaults.polygon_params) #best con 2.43117008e-06
     print('main: r diffs',np.diff(geo1.rs))
@@ -174,18 +195,7 @@ if __name__=='__main__':
 #    #geo1 = RectGeo(z_coarse,np.array([theta0,theta1]),np.array([phi0,phi1]),C,z_fine)
 #    #geo2 = RectGeo(z_coarse,np.array([theta0,theta1]),np.array([phi0,phi1])+phi1,C,z_fine)
 
-    print("main: building basis")
-    basis_params = defaults.basis_params.copy()
-    basis_params['n_bessel_oversample']*=1
-    basis_params['x_grid_size']*=1
 
-    r_max = C.D_comov(z_max)
-    k_cut = x_cut/r_max
-    k_tests = np.linspace(20./r_max,k_cut,25)
-    n_basis = np.zeros(k_tests.size)
-    variances = np.zeros((k_tests.size,z_coarse.size-1,z_coarse.size-1))
-
-    basis = SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_max)
 
     for i in range(0,k_tests.size):
         print("r_max,k_cut,j",r_max,k_tests[i])
@@ -195,8 +205,12 @@ if __name__=='__main__':
 
     print("main: getting variance")
     variance_res = basis.get_variance(geo1)
-    time1 = time()
-    print("main: finished building in "+str(time1-time0)+"s")
+    time6 = time()
+    print("main: finished geo in "+str(time3-time2)+" s")
+    print("main: finished basis in "+str(time5-time4)+" s")
+    print("main: finished getting in "+str(time6-time5)+" s")
+    print("main: finished all in "+str(time6-time0)+" s")
+    times = np.array([time0,time1,time2,time3,time4,time5,time6])
 
     if do_plot:
         import matplotlib.pyplot as plt
@@ -229,7 +243,7 @@ if __name__=='__main__':
     do_dump = True
     if do_dump:
         import dill
-        results = [z_coarse,z_fine,k_cut,l_max,camb_params,power_params,l_sw,z_max,r_max,k_tests,n_basis,variances,variance_res,r_width,theta_width,phi_width,volume,square_equiv]
+        results = [z_coarse,z_fine,k_cut,l_max,camb_params,power_params,l_sw,z_max,r_max,k_tests,n_basis,variances,variance_res,r_width,theta_width,phi_width,volume,square_equiv,times]
         dump_f = open('dump_var_con.pkl','w')
         dill.dump(results,dump_f)
         dump_f.close()

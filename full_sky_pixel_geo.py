@@ -10,7 +10,7 @@ from pixel_geo import PixelGeo
 class FullSkyPixelGeo(PixelGeo):
     """healpix pixelated geo of entire sky"""
     def __init__(self,zs,C,z_fine,l_max,res_healpix):
-        """create a spherical polygon defined by vertices
+        """create a healpix pixelated geo of the full sky
                 inputs:
                     zs: the tomographic z bins
                     C: a CosmoPie object
