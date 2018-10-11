@@ -107,12 +107,12 @@ if __name__=='__main__':
     #create the LSST geometry, for our purposes, a 20000 square degree survey
     #encompassing the wfirst survey with galactic plane masked)
     print("main: begin constructing LSST PolygonGeo")
-    if use_pixels:
-        #geo_wfirst = WFIRSTPixelGeo(zs,C,z_fine,l_max,res_healpix)
-        geo_lsst = LSSTPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
-        #geo_lsst = FullSkyPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
-    else:
-        geo_lsst = LSSTGeo(zs_lsst,C,z_fine,l_max,poly_params)
+#    if use_pixels:
+#        #geo_wfirst = WFIRSTPixelGeo(zs,C,z_fine,l_max,res_healpix)
+#        geo_lsst = LSSTPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
+#        #geo_lsst = FullSkyPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
+#    else:
+#        geo_lsst = LSSTGeo(zs_lsst,C,z_fine,l_max,poly_params)
     print("main: finish constructing LSST PolygonGeo")
 
     #create the short wavelength survey (SWSurvey) object
@@ -138,7 +138,7 @@ if __name__=='__main__':
     len_params['smodel'] = 'nzmatcher'
     #len_params['z_min_dist'] = np.min(zs)
     #len_params['z_max_dist'] = np.max(zs)
-    len_params['pmodel'] = 'fastpt'
+    len_params['pmodel'] = 'halofit'
 
     #create the lw basis
     #z_max is the maximum radial extent of the basis
@@ -157,9 +157,10 @@ if __name__=='__main__':
     print("main: finish constructing basis for long wavelength fluctuations")
 
     #create the lw survey
-    geos = np.array([geo_wfirst,geo_lsst],dtype=object)
+    geos = np.array([],dtype=object)
     print("main: begin constructing LWSurvey for mitigation")
-    survey_lw = LWSurvey(geos,'combined_survey',basis,C,lw_params,observable_list=lw_observable_list,param_list=lw_param_list)
+    #survey_lw = LWSurvey(geos,'combined_survey',basis,C,lw_params,observable_list=lw_observable_list,param_list=lw_param_list)
+    survey_lw = LWSurvey(geos,'combined_survey',basis,C,lw_params,np.array([]),np.array([]))#,observable_list=lw_observable_list,param_list=lw_param_list)
     print("main: finish constructing LWSurvey for mitigation")
     surveys_lw = np.array([survey_lw])
 
@@ -171,7 +172,7 @@ if __name__=='__main__':
 
     #create the SuperSurvey with mitigation
     print("main: begin constructing SuperSurvey")
-    SS = SuperSurvey(surveys_sw,surveys_lw,basis,C,prior_params,get_a=False,do_unmitigated=True,do_mitigated=True)
+    SS = SuperSurvey(surveys_sw,surveys_lw,basis,C,prior_params,get_a=False,do_unmitigated=True,do_mitigated=False)
 
     time1 = time()
     print("main: finished construction tasks in "+str(time1-time0)+" s")

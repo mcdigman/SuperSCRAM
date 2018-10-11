@@ -35,6 +35,10 @@ class RingPixelGeo(PixelGeo):
         print("RingPixelGeo: total contained pixels in polygon: "+str(np.sum(self.contained*1.)))
         PixelGeo.__init__(self,zs,contained_pixels,C,z_fine,l_max,hard_l_max)
 
+    def get_overlap_fraction(self,geo2):
+        """get overlap fraction between this geometry and another PolygonPixelGeo"""
+        result = np.sum(self.contained*geo2.contained)*1./np.sum(self.contained)
+        return result
 #    def get_overlap_fraction(self,geo2):
 #        """get overlap fraction between this geometry and another PolygonPixelGeo"""
 #        return geo2.angular_area()/self.angular_area()
