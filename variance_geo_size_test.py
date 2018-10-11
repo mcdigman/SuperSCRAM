@@ -40,10 +40,10 @@ if __name__=='__main__':
     #l_max = 346
     #x_cut = 150
     #l_max = 139
-    x_cut = 93
+    #x_cut = 93
     l_max = 84
-    #x_cut = 5
-    #l_max = 5
+    x_cut = 5
+    #l_max = 20
 
     do_plot = True
 
@@ -76,18 +76,23 @@ if __name__=='__main__':
     time2 = time()
     res_healpix = 4
     max_n_pixels = 12*(2**res_healpix)**2
-    n_pixels = np.unique(np.hstack([np.logspace(0,np.log10(max_n_pixels),40).astype(np.int),np.linspace(1,max_n_pixels,40).astype(np.int)]))
+    n_pixels = np.array([100])#np.unique(np.hstack([np.logspace(0,np.log10(max_n_pixels),40).astype(np.int),np.linspace(1,max_n_pixels,40).astype(np.int)]))
     #n_pixels = np.linspace(1,max_n_pixels,80).astype(np.int)#np.unique(np.hstack([np.logspace(0,np.log10(max_n_pixels),40).astype(np.int),np.linspace(1,max_n_pixels,40).astype(np.int)]))
-    n_bins = n_pixels.size
+    radii = np.array([0.1,0.2,0.3,0.4,0.8,1.6,3.])
+    #n_bins = n_pixels.size
+    n_bins = radii.size
     variances_res = np.zeros(n_bins)
     areas_res = np.zeros(n_bins)
     all_pixels = get_healpix_pixelation(res_choose=res_healpix)
     geo1s = np.zeros(n_bins,dtype=object)
     for itr in range(0,n_bins):
-        geo1s[itr] = RingPixelGeo(z_coarse,C,z_fine,l_max,res_healpix,n_pixels[itr],all_pixels)
+        #geo1s[itr] = RingPixelGeo(z_coarse,C,z_fine,l_max,res_healpix,n_pixels[itr],all_pixels)
+        geo1s[itr] = CircleGeo(z_coarse,C,radii[itr],20,z_fine,l_max,polygon_params)
         variances_res[itr] = basis.get_variance(geo1s[itr])
         areas_res[itr] = geo1s[itr].angular_area()
     time3 = time()
+    from polygon_display_utils import display_geo
+    display_geo(geo1s[0],l_max)
 
 
     time6 = time()

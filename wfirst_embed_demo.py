@@ -160,9 +160,10 @@ if __name__=='__main__':
     geos = np.array([],dtype=object)
     print("main: begin constructing LWSurvey for mitigation")
     #survey_lw = LWSurvey(geos,'combined_survey',basis,C,lw_params,observable_list=lw_observable_list,param_list=lw_param_list)
-    survey_lw = LWSurvey(geos,'combined_survey',basis,C,lw_params,np.array([]),np.array([]))#,observable_list=lw_observable_list,param_list=lw_param_list)
+    #survey_lw = LWSurvey(geos,'combined_survey',basis,C,lw_params,np.array([]),np.array([]))#,observable_list=lw_observable_list,param_list=lw_param_list)
     print("main: finish constructing LWSurvey for mitigation")
-    surveys_lw = np.array([survey_lw])
+    surveys_lw = np.array([])
+    #surveys_lw = np.array([survey_lw])
 
     #create the actual sw survey
     print("main: begin constructing SWSurvey for wfirst")
@@ -224,7 +225,7 @@ cov_set_1 = np.array([c_rot_eig_g,c_rot_eig_no_mit,c_rot_eig_mit])
 cov_set_2 = np.array([c_rot_eig_g[-2:,-2:],c_rot_eig_no_mit[-2:,-2:],c_rot_eig_mit[-2:,-2:]])
 #cov_set_3 = np.array([c_rot_eig_g[-3:,-3:],c_rot_eig_no_mit[-3:,-3:],c_rot_eig_mit[-3:,-3:]])
 #import matplotlib.pyplot as plt
-Dn = survey_lw.observables[0]
+#Dn = survey_lw.observables[0]
 #make_ellipse_plot(cov_set_2,colors,opacities,names,np.array([0.0002,0.0025]),pnames[-2:],dchi2,1.05)
 #make_ellipse_plot(cov_set_1,colors,opacities,names,boxes,pnames,dchi2,1.05,True,'equal')
 #make_ellipse_plot(cov_set_2,colors,opacities,names,boxes[-2:],pnames[-2:],dchi2,1.05)

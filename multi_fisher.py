@@ -211,11 +211,15 @@ class MultiFisher(object):
             result[1] = self.get_fisher(f_spec_no_mit,f_return_sw_par)
             if self.do_mit:
                 result[2] = self.get_fisher(f_spec_mit,f_return_sw_par)
+            else:
+                result[2] = result[1]
         else:
             result[0] = self.get_fisher(f_spec_g_noprior,f_return_sw_par)
             result[1] = self.get_fisher(f_spec_no_mit_noprior,f_return_sw_par)
             if self.do_mit:
                 result[2] = self.get_fisher(f_spec_mit_noprior,f_return_sw_par)
+            else:
+                result[2] = result[1]
         return result
 
     def get_eig_set(self,fisher_set,ssc_metric=False,include_sw=False):
