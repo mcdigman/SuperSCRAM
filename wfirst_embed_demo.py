@@ -17,6 +17,7 @@ from nz_candel import NZCandel
 from premade_geos import WFIRSTGeo,LSSTGeo,WFIRSTPixelGeo,LSSTPixelGeo,LSSTGeoSimpl
 from full_sky_pixel_geo import FullSkyPixelGeo
 from half_sky_geo import HalfSkyGeo
+from full_sky_geo import FullSkyGeo
 
 import defaults
 
@@ -99,7 +100,8 @@ if __name__=='__main__':
         #geo_wfirst = FullSkyPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
     else:
         #geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,poly_params)
-        geo_wfirst = HalfSkyGeo(zs_lsst,C,z_fine,top=True)
+        #geo_wfirst = HalfSkyGeo(zs_lsst,C,z_fine,top=True)
+        geo_wfirst = FullSkyGeo(zs_lsst,C,z_fine)
         #geo_wfirst = LSSTGeo(zs,C,z_fine,l_max,poly_params)
         #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.9202821591024097,deg0=-59,deg1=-10)
         #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.7644912273732581,deg0=-49,deg1=-20)

@@ -35,7 +35,7 @@ class HalfSkyGeo(Geo):
         return geo2.angular_area()/self.angular_area()
 
     def angular_area(self):
-        return 4.*np.pi
+        return 2.*np.pi
 
     #use mpmath to avoid overflow in gamma
     def a_lm(self,ll,mm):

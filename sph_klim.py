@@ -36,6 +36,7 @@ class SphBasisK(LWBasis):
         LWBasis.__init__(self,C)
         self.r_max = r_max
         P_lin_in = self.C.P_lin.get_matter_power(np.array([0.]),pmodel='linear')[:,0]
+        #P_lin_in = np.zeros_like(C.k)+1.
         #P_lin_in = 1./(self.C.k*r_max)
         camb_params2 = self.C.P_lin.camb_params.copy()
         camb_params2['npoints'] = params['n_bessel_oversample']
@@ -242,35 +243,24 @@ class SphBasisK(LWBasis):
     #ignoring z>0.6 gives ~3.6% eig accuracy without mit, ~1.8% accuracy with
     #ignoring z>0.4 gives ~20% eig accuracy without mit, ~3% accuracy with
     #interpretation: information adds info at higher redshift but not much variance there.
-    def D_O_I_D_delta_alpha(self,geo,integrand,use_r=True,range_spec=None):
+    def D_O_I_D_delta_alpha(self,geo,integrand):
         r"""Get \frac{\partial O^I}{\partial \delta_\alpha} for an observable.
             inputs:
                 geo: a Geo object for the geometry
                 integrand: \frac{\partial O^I}{\partial \bar{\delta}} as a function of geo.r_fine, which must be integrated over
-                use_r: if False, use geo.z_fine instead of geo.r_fine for integration
-                range_spec: array slice specification for geo.r_fine to limit range of integration for tomographic bins
         """
         print("sph_klim: calculating D_O_I_D_delta_alpha")
         d_delta_bar = self.D_delta_bar_D_delta_alpha(geo,tomography=False)
 #        d_delta_bar = (d_delta_bar.T*(geo.z_fine<0.4)).T
 #        result = np.zeros((d_delta_bar.shape[1],integrand.shape[1]))
         #the variable to integrate over
-        if use_r:
-            x = geo.r_fine
-        else:
-            x = geo.z_fine
+        x = geo.r_fine
         #allow a restriction to the range of r_fine or z_fine
         if x.size != integrand.shape[0]:
             raise ValueError('invalid input x with shape '+str(x.shape)+' does not match '+str(integrand.shape))
-
-        if range_spec is not None:
-            x_cut = x[range_spec]
-            d_delta_bar_cut = d_delta_bar[range_spec,:]
-            integrand_cut = integrand[range_spec]
-        else:
-            x_cut = x
-            d_delta_bar_cut = d_delta_bar
-            integrand_cut = integrand
+        x_cut = x
+        d_delta_bar_cut = d_delta_bar
+        integrand_cut = integrand
 
         delta_x = np.diff(x_cut)
         dx1s = (delta_x*d_delta_bar_cut[1::].T)/2.

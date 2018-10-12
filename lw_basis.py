@@ -16,11 +16,10 @@ class LWBasis(object):
         """get number of basis elements"""
         raise NotImplementedError('subclasses of LWBasis must implement get_size')
 
-    def D_O_I_D_delta_alpha(self,geo,integrand,use_r=True,range_spec=None):
+    def D_O_I_D_delta_alpha(self,geo,integrand,range_spec=None):
         """get partial derivative of observable in the basis
         inputs:
             geo: a Geo object
             integrand: an array including r dependence to integrate over
-            use_r: whether to use r or z grid for integration
             range_spec: specify range to integrate over"""
         raise NotImplementedError('subclasses of LWBasis must implement D_O_I_D_delta_alpha')
