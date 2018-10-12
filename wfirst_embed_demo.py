@@ -16,6 +16,7 @@ from nz_wfirst import NZWFirst
 from nz_candel import NZCandel
 from premade_geos import WFIRSTGeo,LSSTGeo,WFIRSTPixelGeo,LSSTPixelGeo,LSSTGeoSimpl
 from full_sky_pixel_geo import FullSkyPixelGeo
+from half_sky_geo import HalfSkyGeo
 
 import defaults
 
@@ -88,17 +89,18 @@ if __name__=='__main__':
     #z_fine[0] = 0.0001
 
     #l_max is the highest l that should be precomputed
-    l_max = 24
+    l_max = 71
     res_healpix = 6
-    use_pixels = True
+    use_pixels = False
     print("main: begin constructing WFIRST PolygonGeo")
     if use_pixels:
-        #geo_wfirst = WFIRSTPixelGeo(zs,C,z_fine,l_max,res_healpix)
-        geo_wfirst = LSSTPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
+        geo_wfirst = WFIRSTPixelGeo(zs,C,z_fine,l_max,res_healpix)
+        #geo_wfirst = LSSTPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
         #geo_wfirst = FullSkyPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
     else:
         #geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,poly_params)
-        geo_wfirst = LSSTGeo(zs,C,z_fine,l_max,poly_params)
+        geo_wfirst = HalfSkyGeo(zs_lsst,C,z_fine,top=True)
+        #geo_wfirst = LSSTGeo(zs,C,z_fine,l_max,poly_params)
         #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.9202821591024097,deg0=-59,deg1=-10)
         #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.7644912273732581,deg0=-49,deg1=-20)
 
@@ -148,12 +150,12 @@ if __name__=='__main__':
     #x_cut = 80.
     #x_cut = 100.
     #x_cut = 85
-    x_cut = 30.
-    #x_cut = 80.
+    #x_cut = 30.
+    x_cut = 80.
     k_cut = x_cut/r_max
     #l_max caps maximum l regardless of k
     print("main: begin constructing basis for long wavelength fluctuations")
-    basis = SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_max)
+    basis = SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_max,needs_m=True)
     print("main: finish constructing basis for long wavelength fluctuations")
 
     #create the lw survey

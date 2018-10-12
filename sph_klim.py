@@ -23,12 +23,13 @@ eps = np.finfo(float).eps
 class SphBasisK(LWBasis):
     """ get the long wavelength basis with spherical bessel functions described in the paper
         basis modes are selected by the k value of the bessel function zero, which approximates order of importance"""
-    def __init__(self,r_max,C,k_cut,params,l_ceil=100):#,geometry,CosmoPie):
+    def __init__(self,r_max,C,k_cut,params,l_ceil=100,needs_m=True):#,geometry,CosmoPie):
         """ inputs:
                 r_max: the maximum radius of the sector
                 C: CosmoPie object
                 k_cut: cutoff k value for mode selection
                 l_ceil: maximum l value allowed independent of k_cut, mainly because limited table of bessel function zeros available
+                needs_m: if False, fix m=0 (for debugging/convergence testing)
                 important! no little h in any of the calculations
         """
         print("sph_klim: begin init basis id: "+str(id(self))+" with r_max="+str(r_max)+" k_cut="+str(k_cut))
@@ -46,6 +47,7 @@ class SphBasisK(LWBasis):
         self.k_cut = k_cut
         self.kmin = np.min(k_in)
         self.kmax = np.max(k_in)
+        self.needs_m = needs_m
 
         self.ddelta_bar_cache = {}
 
@@ -62,7 +64,7 @@ class SphBasisK(LWBasis):
         P_lin = InterpolatedUnivariateSpline(k_in,P_lin_in,k=3,ext=2)(k)
 
         #P_lin = interp1d(k_in,k_in)(k)
-
+        ######
         # define the super mode wave vector k alpha
         # and also make the map from l_alpha to k_alpha
         t1 = time()
@@ -85,7 +87,10 @@ class SphBasisK(LWBasis):
 #        self.lm = np.zeros((l_alpha.size,2),dtype=object)
         C_size = 0
         for i in range(l_alpha.size):
-            m = np.arange(-l_alpha[i], l_alpha[i]+1)
+            if needs_m:
+                m = np.arange(-l_alpha[i], l_alpha[i]+1)
+            else:
+                m = np.array([0])
             self.lm_map[i,0] = l_alpha[i]
             self.lm_map[i,1] = self.k_zeros[i]
             self.lm_map[i,2] = m
@@ -157,7 +162,7 @@ class SphBasisK(LWBasis):
         itr_ll = 0
         for ll in range(0,self.n_l):
             n_k = self.C_compact[ll].shape[0]
-            for _m_itr in range(0,2*ll+1):
+            for _m_itr in range(0,self.lm_map[ll,2].size):
                 result[itr_ll:itr_ll+n_k,itr_ll:itr_ll+n_k] = self.C_compact[ll]
                 itr_ll+=n_k
         return result
@@ -170,7 +175,7 @@ class SphBasisK(LWBasis):
             n_k = self.C_compact[ll].shape[0]
             res = spl.solve(self.C_compact[ll],np.identity(n_k),sym_pos=True,lower=True,check_finite=False,overwrite_b=True)
             res = (res+res.T)/2.
-            for _m_itr in range(0,2*ll+1):
+            for _m_itr in range(0,self.lm_map[ll,2].size):
                 result[itr_ll:itr_ll+n_k,itr_ll:itr_ll+n_k] = res
                 itr_ll+=n_k
         return result
@@ -182,7 +187,7 @@ class SphBasisK(LWBasis):
         for ll in range(0,self.n_l):
             n_k = self.C_compact[ll].shape[0]
             res = cholesky_inplace(self.C_compact[ll],inplace=False,lower=True)
-            for _m_itr in range(0,2*ll+1):
+            for _m_itr in range(0,self.lm_map[ll,2].size):
                 result[itr_ll:itr_ll+n_k,itr_ll:itr_ll+n_k] = res
                 itr_ll+=n_k
         return result
@@ -220,7 +225,7 @@ class SphBasisK(LWBasis):
                     break
             #if n_break==0:
             #    continue
-            for _m_itr in range(0,2*ll+1):
+            for _m_itr in range(0,self.lm_map[ll,2].size):#2*ll+1):
                 variance+=np.dot(v[itr_ll:itr_ll+n_break].T,np.dot(res[0:n_break,0:n_break],v[itr_ll:itr_ll+n_break]))
                 itr_ll+=n_k
             res = None

@@ -20,6 +20,7 @@ from pixel_geo import PixelGeo
 from polygon_pixel_geo import PolygonPixelGeo
 from polygon_union_geo import PolygonUnionGeo
 from polygon_pixel_union_geo import PolygonPixelUnionGeo
+from alm_difference_geo import AlmDifferenceGeo
 #LSST sigma/(1+z)<0.05 required 0.02 goal for i<25.3 (lsst science book 3.8.1)
 import fisher_matrix as fm
 #NOTE if doing photozs tomo must go to z=0 or photoz uncertainty
@@ -44,35 +45,43 @@ class DNumberDensityObservable(LWObservable):
         self.basis = basis
         self.nz_select = params['nz_select']
         self.nz_params = nz_params
-
+        
         #self.geo2 should be area in mitigation survey but not in original survey
-        #TODO this is a bit hackish, but works for now
-        if isinstance(geos[0],PolygonGeo):
-            if isinstance(geos[1],PolygonGeo):
-                self.geo2 = PolygonUnionGeo(np.array([geos[1]]),np.array([geos[0]]),zs=geos[1].zs,z_fine=geos[1].z_fine)
-            elif isinstance(geos[1],PolygonUnionGeo):
-                self.geo2 = PolygonUnionGeo(geos[1].geos,np.append(geos[0],geos[1].masks),zs=geos[1].zs,z_fine=geos[1].z_fine)
-            else:
-                raise ValueError('unsupported type for geo2')
-        elif isinstance(self.geos[0],PixelGeo):
-#            if isinstance(geos[1],PolygonPixelUnionGeo):
-#                self.geo2 = PolygonPixelUnionGeo(geos[1].geos,np.append(geos[0],geos[1].masks),zs=geos[1].zs,z_fine=geos[1].z_fine)
-            if isinstance(geos[1],PixelGeo):
-                self.geo2 = PolygonPixelUnionGeo(np.array([geos[1]]),np.array([geos[0]]),zs=geos[1].zs,z_fine=geos[1].z_fine)
-            else:
-                raise ValueError('unsupported type for geo2')
-            #if isinstance(geos[1],PolygonPixelGeo):
-            #    self.geo2 = PolygonPixelUnionGeo(np.array([geos[1]]),np.array([geos[0]]))
-            #else:
-            #    raise ValueError('unsupported type for geo2')
-        else:
-            raise ValueError('unsupported type for geo1')
-
+        #assume overlap is total and use AlmDifferenceGeo to avoid complications with calculating intersecions
+        self.geo2 = AlmDifferenceGeo(geos[1],geos[0],geos[1].C,geos[1].zs,geos[1].z_fine)
         #self.geo1 should be intersect of mitigation survey and original survey
-        if np.isclose(geos[0].get_overlap_fraction(geos[1]),1.):
-            self.geo1 = geos[0]
-        else:
-            raise RuntimeError('partial overlap not yet implemented')
+        self.geo1 = geos[0]
+
+        #TODO this is a bit hackish, but works for now
+#        if isinstance(geos[0],PolygonGeo):
+#            if isinstance(geos[1],PolygonGeo):
+#                self.geo2 = PolygonUnionGeo(np.array([geos[1]]),np.array([geos[0]]),zs=geos[1].zs,z_fine=geos[1].z_fine)
+#            elif isinstance(geos[1],PolygonUnionGeo):
+#                self.geo2 = PolygonUnionGeo(geos[1].geos,np.append(geos[0],geos[1].masks),zs=geos[1].zs,z_fine=geos[1].z_fine)
+#            else:
+#                raise ValueError('unsupported type for geo2')
+#        elif isinstance(self.geos[0],PixelGeo):
+##            if isinstance(geos[1],PolygonPixelUnionGeo):
+##                self.geo2 = PolygonPixelUnionGeo(geos[1].geos,np.append(geos[0],geos[1].masks),zs=geos[1].zs,z_fine=geos[1].z_fine)
+#            if isinstance(geos[1],PixelGeo):
+#                self.geo2 = PolygonPixelUnionGeo(np.array([geos[1]]),np.array([geos[0]]),zs=geos[1].zs,z_fine=geos[1].z_fine)
+#            else:
+#                raise ValueError('unsupported type for geo2')
+#            #if isinstance(geos[1],PolygonPixelGeo):
+#            #    self.geo2 = PolygonPixelUnionGeo(np.array([geos[1]]),np.array([geos[0]]))
+#            #else:
+#            #    raise ValueError('unsupported type for geo2')
+#        elif isinstance(self.geos[0],HalfSkyGeo) and isinstance(self.geos[1],FullSkyGeo):
+#            #self.geo2 = HalfSkyGeo(geos[1].zs,geos[1].C,geos[1].z_fine,not geos[0].top)
+#            self.geo2 = AlmDifferenceGeo(geos[1],geos[0],geos[1].C,geos[1].zs,geos[1].z_fine)
+#        else:
+#            raise ValueError('unsupported type for geo1')
+
+#TODO add ability to check overlap
+#        if np.isclose(geos[0].get_overlap_fraction(geos[1]),1.):
+#            self.geo1 = geos[0]
+#        else:
+#            raise RuntimeError('partial overlap not yet implemented')
 #            if isinstance(geos[0],PolygonGeo):
 #                raise RuntimeError('partial overlap not yet implemented')
 #        #        self.geo1 = PolygonUnionGeo(np.array([geos[0]]),np.array([self.geo2]))

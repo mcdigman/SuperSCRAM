@@ -10,7 +10,10 @@ import defaults
 from sph_klim import SphBasisK
 import matter_power_spectrum as mps
 from premade_geos import LSSTGeoSimpl,WFIRSTGeo
+from full_sky_geo import FullSkyGeo
+from full_sky_pixel_geo import FullSkyPixelGeo
 from circle_geo import CircleGeo
+from half_sky_geo import HalfSkyGeo
 
 if __name__=='__main__':
     time0 = time()
@@ -178,10 +181,13 @@ if __name__=='__main__':
     variances = np.zeros((k_tests.size,z_coarse.size-1,z_coarse.size-1))
 
     time4 = time()
-    basis = SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_max)
+    basis = SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_max,needs_m=False)
     time5 = time()
     time2 = time()
-    geo1 = LSSTGeoSimpl(z_coarse,C,z_fine,l_max,polygon_params,phi0=0.,phi1=0.9202821591024097,deg0=-59,deg1=-10)#WFIRSTGeo(z_coarse,C,z_fine,l_max,polygon_params) #best con 2.43117008e-06
+    #geo1 = LSSTGeoSimpl(z_coarse,C,z_fine,l_max,polygon_params,phi0=0.,phi1=0.9202821591024097,deg0=-59,deg1=-10)#WFIRSTGeo(z_coarse,C,z_fine,l_max,polygon_params) #best con 2.43117008e-06
+    #geo1 = FullSkyGeo(z_coarse,C,z_fine)
+    geo1 = HalfSkyGeo(z_coarse,C,z_fine)
+    #geo1 = FullSkyPixelGeo(z_coarse,C,z_fine,l_max,6)
     time3 = time()
 
     #geo1 = WFIRSTGeo(z_coarse,C,z_fine,l_max,polygon_params) #best con 2.43117008e-06

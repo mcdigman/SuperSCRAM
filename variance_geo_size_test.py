@@ -12,6 +12,7 @@ import matter_power_spectrum as mps
 from premade_geos import LSSTGeoSimpl,WFIRSTGeo
 from circle_geo import CircleGeo
 from ring_pixel_geo import RingPixelGeo
+from half_sky_geo import HalfSkyGeo
 from polygon_utils import get_healpix_pixelation
 
 if __name__=='__main__':
@@ -52,7 +53,7 @@ if __name__=='__main__':
     print("main: building geometries")
     polygon_params = defaults.polygon_params
     polygon_params['n_double'] = 80
-    z_coarse = np.array([0.2,0.4])
+    z_coarse = np.array([0.,3.])
     #z_max = np.max(z_coarse)
     z_max = 3.01
     #z_fine = np.arange(0.0001,z_max,0.0001)
@@ -74,25 +75,31 @@ if __name__=='__main__':
     time5 = time()
 
     time2 = time()
-    res_healpix = 4
-    max_n_pixels = 12*(2**res_healpix)**2
-    n_pixels = np.array([100])#np.unique(np.hstack([np.logspace(0,np.log10(max_n_pixels),40).astype(np.int),np.linspace(1,max_n_pixels,40).astype(np.int)]))
-    #n_pixels = np.linspace(1,max_n_pixels,80).astype(np.int)#np.unique(np.hstack([np.logspace(0,np.log10(max_n_pixels),40).astype(np.int),np.linspace(1,max_n_pixels,40).astype(np.int)]))
-    radii = np.array([0.1,0.2,0.3,0.4,0.8,1.6,3.])
-    #n_bins = n_pixels.size
-    n_bins = radii.size
+    pixelated = True
+    if pixelated:
+        res_healpix = 9
+        max_n_pixels = 12*(2**res_healpix)**2
+        #n_pixels = np.unique(np.hstack([np.logspace(3,np.log10(max_n_pixels),40).astype(np.int),np.linspace(1000,max_n_pixels,40).astype(np.int)]))
+        n_pixels = np.array([max_n_pixels/2]).astype(np.int)
+        #n_pixels = np.array([1000,2000,3000,4000,5000,10000,20000,30000,40000,49152]) 
+        n_bins = n_pixels.size
+        all_pixels = get_healpix_pixelation(res_choose=res_healpix)
+        #n_pixels = np.linspace(1,max_n_pixels,80).astype(np.int)#np.unique(np.hstack([np.logspace(0,np.log10(max_n_pixels),40).astype(np.int),np.linspace(1,max_n_pixels,40).astype(np.int)]))
+    else:
+        radii = np.array([0.1,0.2,0.3,0.4,0.8,1.6,3.])
+        n_bins = radii.size
+
     variances_res = np.zeros(n_bins)
     areas_res = np.zeros(n_bins)
-    all_pixels = get_healpix_pixelation(res_choose=res_healpix)
     geo1s = np.zeros(n_bins,dtype=object)
     for itr in range(0,n_bins):
-        #geo1s[itr] = RingPixelGeo(z_coarse,C,z_fine,l_max,res_healpix,n_pixels[itr],all_pixels)
-        geo1s[itr] = CircleGeo(z_coarse,C,radii[itr],20,z_fine,l_max,polygon_params)
+        if pixelated:
+            geo1s[itr] = RingPixelGeo(z_coarse,C,z_fine,l_max,res_healpix,n_pixels[itr],all_pixels)
+        else:
+            geo1s[itr] = CircleGeo(z_coarse,C,radii[itr],20,z_fine,l_max,polygon_params)
         variances_res[itr] = basis.get_variance(geo1s[itr])
         areas_res[itr] = geo1s[itr].angular_area()
     time3 = time()
-    from polygon_display_utils import display_geo
-    display_geo(geo1s[0],l_max)
 
 
     time6 = time()
@@ -102,7 +109,8 @@ if __name__=='__main__':
     times = np.array([time0,time1,time2,time3,time4,time5,time6])
     if do_plot:
         import matplotlib.pyplot as plt
-        plt.plot(areas_res,variances_res)
+        plt.loglog(areas_res,1./areas_res*areas_res[-10]*variances_res[-10])
+        plt.loglog(areas_res,variances_res)
         plt.show()
 
     do_dump = False
