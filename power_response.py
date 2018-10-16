@@ -22,7 +22,6 @@ def dp_ddelta(P_a,zbar,C,pmodel,epsilon=0.0001):
         dpdlnk = np.gradient(pza,dlnk,axis=0)
         dp = 47./21.*pza-1./3.*dpdlnk
     elif pmodel=='halofit':
-        #TODO insert prescription to handle the spike when this switches to using the linear matter power spectrum
         pza = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=1.)
         pzb = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=(1.+epsilon/C.get_sigma8())**2)
         pzc = P_a.get_matter_power(zbar,pmodel='halofit',const_pow_mult=(1.-epsilon/C.get_sigma8())**2)

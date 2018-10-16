@@ -6,7 +6,6 @@ from warnings import warn
 import numpy as np
 import cosmopie as cp
 import matter_power_spectrum as mps
-#TODO there may be a little h handling bug somewhere, see test case 2
 def get_perturbed_cosmopies(C_fid,pars,epsilons,log_par_derivs=None,override_safe=False):
     """get set of 2 perturbed cosmopies, above and below (including camb linear power spectrum) for getting partial derivatives
         using central finite difference method
@@ -82,23 +81,14 @@ def get_perturbed_cosmology(cosmo_old,parameter,epsilon,log_param_deriv=False):
         else:
             cosmo_new[parameter]+=epsilon
 
-        if cosmo_old['de_model']=='w0wa' and parameter=='w':
-            warn('given parameter should not be used in w0wa parameterization, use w0 instead')
-            cosmo_new['w0'] = cosmo_new['w']
+        if cosmo_old['de_model']=='w0wa':
+            if parameter=='w':
+                cosmo_new['w0'] = cosmo_new['w']
+            elif parameter=='w0':
+                cosmo_new['w'] = cosmo_new['w0']
 
         if parameter not in cp.P_SPACES.get(cosmo_new.get('p_space')) and parameter not in cp.DE_METHODS[cosmo_new.get('de_model')]:
             warn('parameter \''+str(parameter)+'\' may not support derivatives with the parameter set \''+str(cosmo_new.get('p_space'))+'\'')
         return cp.add_derived_pars(cosmo_new)
     else:
         raise ValueError('undefined parameter in cosmology \''+str(parameter)+'\'')
-
-#def dp_dpar(C_fid,parameter,log_param_deriv,pmodel,epsilon,log_deriv=False):
-#    """get derivative of power spectrum with respect to an observable, may not currently work"""
-#    Cs = get_perturbed_cosmopies(C_fid,np.array([parameter]),np.array([epsilon]),np.array([log_param_deriv]),override_safe=True)
-#    if log_deriv:
-#        pza = C_fid.k**3/(2.*np.pi**2.)*Cs[0][0].P_lin.get_matter_power(np.array([0.]),pmodel=pmodel)
-#        pzb = C_fid.k**3/(2.*np.pi**2.)*Cs[0][1].P_lin.get_matter_power(np.array([0.]),pmodel=pmodel)
-#        result = (np.log(pza)-np.log(pzb))/(2*epsilon)
-#    else:
-#        result = (Cs[0][0].P_lin.get_matter_power(np.array([0.]),pmodel=pmodel)-Cs[0][1].P_lin.get_matter_power(np.array([0.]),pmodel=pmodel))/(2*epsilon)
-#    return result

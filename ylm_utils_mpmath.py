@@ -9,8 +9,7 @@ from ylm_utils import get_lm_dict
 #set precision to 20 because really need arbitrary length more than precision
 mp.dps = 20
 
-#TODO can be consistent with table vs dict logic
-#TODO could clean up and write iterator logic like in ylm_utils
+#NOTE could clean up and write iterator logic like in ylm_utils
 def reconstruct_from_alm(l_max,thetas,phis,alms):
     """reconstruct a survey window from its spherical harmonic decomposition"""
     thetas = mp.matrix(thetas)

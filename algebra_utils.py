@@ -7,7 +7,7 @@ import scipy.linalg as spl
 
 DEBUG = False
 
-#TODO inplace not tested for get_inv_cholesky, get_cholesky_inv,invert_triangular
+#NOTE inplace not tested for get_inv_cholesky, get_cholesky_inv,invert_triangular
 def get_inv_cholesky(A,lower=True,inplace=False,clean=True):
     """Get the inverse cholesky decomposition of a matrix A
         inplace: allow overwriting A, does not guarantee overwriting A
@@ -80,7 +80,7 @@ def get_mat_from_inv_cholesky(A,lower=True,inplace=False,clean=True):
     return result
 
 #cholesky_given = True if A already is the cholesky decomposition of the covariance
-#TODO add test cases for ignoring opposite triangle
+#NOTE add test cases for ignoring opposite triangle
 def ch_inv(A,cholesky_given=False,lower=True,inplace=False,clean=True):
     """ compute inverse of positive definite matrix using cholesky decomposition
         clean: whether to symmetrize output
@@ -109,7 +109,7 @@ def ch_inv(A,cholesky_given=False,lower=True,inplace=False,clean=True):
     return result
 
 
-#TODO could add option to permit inplace if helpful
+#NOTE could add option to permit inplace if helpful
 def cholesky_inv_contract(A,vec1,vec2,cholesky_given=False,identical_inputs=False,lower=True):
     """compute vec.(A)^-1.vec2 using inverse cholesky decomposition,
         opposite triangle of A completely ignored"""
@@ -232,7 +232,6 @@ def clean_triangle(A,lower=True,inplace=False):
     return np.asfortranarray(A)
 
 #ie similar to np.trapz(A,xs,axis=0)
-#TODO what if xs is a matrix?
 def trapz2(A,xs=None,dx=None):
     """faster trapz than numpy built in for 2d matrices along 1st dimension"""
     if xs is None:

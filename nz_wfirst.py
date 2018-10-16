@@ -5,7 +5,6 @@ from builtins import range
 import numpy as np
 from nz_matcher import NZMatcher,get_gaussian_smoothed_dN_dz
 
-#TODO: check get_nz and get_M_cut agree
 class NZWFirst(NZMatcher):
     """Match n(z) using the CANDELS dataset with pre applied cut"""
     def __init__(self,params):

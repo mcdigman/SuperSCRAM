@@ -12,7 +12,6 @@ from sph_functions import Y_r
 #2) Have a definite fine z bin structure (for integrating over z)
 #3) Be able to compute some kind of surface integral
 #Most of the behavior should be defined in subclasses
-#TODO watch out for dangerous behavior with changing cosmology and r bin structure,
 #ie Geo is a function of cosmology due to that
 class Geo(object):
     """Abstract class for a survey geometry"""
@@ -50,7 +49,6 @@ class Geo(object):
         for i in range(0,self.rs.size-1):
             self.rbins[i,:] = self.rs[i:i+2]
             self.zbins[i,:] = self.zs[i:i+2]
-        #TODO go to 0 more elegantly maybe
         self.rbins_fine = np.zeros((self.r_fine.size,2))
         self.zbins_fine = np.zeros((self.z_fine.size,2))
         self.rbins_fine[0,:] = np.array([0.,self.r_fine[0]])

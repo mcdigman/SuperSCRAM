@@ -101,10 +101,8 @@ class PolygonGeo(Geo):
             else:
                 self.z_hats[itr1] = cross_12/sin_beta12 #direction of cross product
 
-            #three euler rotation angles #TODO check, especially signs
-            #TODO maybe be more specific than isclose here, specify tolerance
+            #three euler rotation angles
             if not (np.isclose(self.z_hats[itr1,1],0.) and np.isclose(self.z_hats[itr1,0],0.)):
-                #TODO can theta_alphas be defined with an arctan2?
                 self.theta_alphas[itr1] = -np.arccos(self.z_hats[itr1,2])
                 y1 = np.cross(self.z_hats[itr1],pa1)
                 self.y_hats[itr1] = y1

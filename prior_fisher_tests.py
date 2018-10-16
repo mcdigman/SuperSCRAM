@@ -4,8 +4,7 @@ from __future__ import print_function,division,absolute_import
 from builtins import range
 import pytest
 import numpy as np
-#import defaults
-#from prior_fisher import fix_elements,read_prior_fisher,project_w0,project_w0wa,PriorFisher,JDEM_LABELS
+import prior_fisher as pf
 from prior_fisher import PriorFisher,JDEM_LABELS
 EIG_SMALL = 1e-7
 class PriorFisherTest(object):
@@ -113,80 +112,126 @@ def test_de(prior_fisher):
     eig_process = np.linalg.eigh(processed)
     assert np.all(eig_process[0][np.abs(eig_process[0])>EIG_SMALL]>0.)
 
-#TODO is ther a useful eigenvalue or similar test?
-#def test_multi_project():
-#    """test that information is removed each time matrix projected down"""
-#    prior_fisher_params = {  'row_strip'     :np.array([3,5,6,7]),
-#                            'fisher_source' :'data/F_Planck_tau0.01.dat',
-#                            'n_full'        :45,
-#                            'n_de'          :36,
-#                            'z_step'        :0.025
-#                         }
-#    prior0 = PriorFisher('none',prior_fisher_params)
-#    prior1 = PriorFisher('constant_w',prior_fisher_params)
-#    prior2 = PriorFisher('w0wa',prior_fisher_params)
-#    prior3 = PriorFisher('jdem',prior_fisher_params)
-#    eig0 = np.linalg.eigh(prior0.get_fisher().get_fisher())[0]
-#    eig1 = np.linalg.eigh(prior1.get_fisher().get_fisher())[0]
-#    eig2 = np.linalg.eigh(prior2.get_fisher().get_fisher())[0]
-#    eig3 = np.linalg.eigh(prior3.get_fisher().get_fisher())[0]
-#    assert np.all(eig0<=eig1[-5:])
-#    assert np.all(eig0<=eig2[-5:])
-#    assert np.all(eig0<=eig3[-5:])
-#    assert np.all(eig1[-5:]<=eig2[-5:])
-#    #assert np.all(eig1[-1:]<=eig3[-1:])
-#    #assert np.all(eig2[-1:]<=eig3[-1:])
+def test_consistency():
+    """do some consistency checks for the projection"""
+    prior_fisher_params = { 'row_strip'     :np.array([3,5,6,7]),
+                            'fisher_source' :'data/F_Planck_tau0.01.dat',
+                            'n_full'        :45,
+                            'n_de'          :36,
+                            'z_step'        :0.025
+                          }
+    mat = np.random.rand(45,45)
+    mat = np.dot(mat.T,mat)
+    priors = np.random.rand(45,45)
+    priors = np.dot(priors.T,priors)
+    assert np.all(np.linalg.eigh(mat)[0]>=0.)
+    assert np.all(np.linalg.eigh(priors)[0]>=0.)
+
+    fp1 = PriorFisher('jdem',prior_fisher_params,fisher_in=mat,labels_in=JDEM_LABELS)
+    fp2 = PriorFisher('w0wa',prior_fisher_params,fisher_in=mat,labels_in=JDEM_LABELS)
+    fp3 = PriorFisher('constant_w',prior_fisher_params,fisher_in=mat,labels_in=JDEM_LABELS)
+    res0 = fp3.get_fisher().get_fisher()
+    res1 = pf.project_w0wa_to_w0(fp2.get_fisher().get_fisher(),prior_fisher_params,fp2.processed_labels)[0]
+    res2 = pf.project_w0(fp1.get_fisher().get_fisher(),prior_fisher_params,fp1.processed_labels)[0]
+    res3_int = pf.project_w0wa(fp1.get_fisher().get_fisher(),prior_fisher_params,fp1.processed_labels)[0]
+    res3 = pf.project_w0wa_to_w0(res3_int,prior_fisher_params,fp2.processed_labels)[0]
+    assert np.allclose(res3_int[0:6,0:6],res3)
+    assert np.all(np.linalg.eigh(res0)[0]>=0.)
+    assert np.all(np.linalg.eigh(res1)[0]>=0.)
+    assert np.all(np.linalg.eigh(res2)[0]>=0.)
+    assert np.all(np.linalg.eigh(res3_int)[0]>=0.)
+    assert np.all(np.linalg.eigh(res3)[0]>=0.)
+    assert np.allclose(res0,res1)
+    assert np.allclose(res0,res2)
+    assert np.allclose(res0,res3)
+    assert np.allclose(fp2.get_fisher().get_fisher(),res3_int)
+    assert np.isclose(np.linalg.det(res0),np.linalg.det(res1))
+    assert np.isclose(np.linalg.det(res0),np.linalg.det(res2))
+    assert np.isclose(np.linalg.det(res0),np.linalg.det(res3))
+    priors = priors
+    fp1p = PriorFisher('jdem',prior_fisher_params,fisher_in=priors,labels_in=JDEM_LABELS)
+    fp2p = PriorFisher('w0wa',prior_fisher_params,fisher_in=priors,labels_in=JDEM_LABELS)
+    fp3p = PriorFisher('constant_w',prior_fisher_params,fisher_in=priors,labels_in=JDEM_LABELS)
+    res0p = fp3p.get_fisher().get_fisher()
+    res1p = pf.project_w0wa_to_w0(fp2p.get_fisher().get_fisher(),prior_fisher_params,fp2p.processed_labels)[0]
+    res2p = pf.project_w0(fp1p.get_fisher().get_fisher(),prior_fisher_params,fp1p.processed_labels)[0]
+    res3_intp = pf.project_w0wa(fp1p.get_fisher().get_fisher(),prior_fisher_params,fp1p.processed_labels)[0]
+    res3p = pf.project_w0wa_to_w0(res3_intp,prior_fisher_params,fp2p.processed_labels)[0]
+    assert np.allclose(res3_intp[0:6,0:6],res3p)
+    assert np.all(np.linalg.eigh(res0p)[0]>=0.)
+    assert np.all(np.linalg.eigh(res1p)[0]>=0.)
+    assert np.all(np.linalg.eigh(res2p)[0]>=0.)
+    assert np.all(np.linalg.eigh(res3_intp)[0]>=0.)
+    assert np.all(np.linalg.eigh(res3p)[0]>=0.)
+    assert np.allclose(res0p,res1p)
+    assert np.allclose(res0p,res2p)
+    assert np.allclose(res0p,res3p)
+    assert np.allclose(fp2p.get_fisher().get_fisher(),res3_intp)
+    assert np.isclose(np.linalg.det(res0p),np.linalg.det(res1p))
+    assert np.isclose(np.linalg.det(res0p),np.linalg.det(res2p))
+    assert np.isclose(np.linalg.det(res0p),np.linalg.det(res3p))
+
+    
+    alt_prior_fisher_params = { 'row_strip'     :np.array([]),
+                            'fisher_source' :'data/F_Planck_tau0.01.dat',
+                            'n_full'        :41,
+                            'n_de'          :36,
+                            'z_step'        :0.025
+                          }
+    prior_mat = priors+mat
+    fp1c = PriorFisher('jdem',prior_fisher_params,fisher_in=prior_mat,labels_in=JDEM_LABELS)
+    fp2c = PriorFisher('w0wa',prior_fisher_params,fisher_in=prior_mat,labels_in=JDEM_LABELS)
+    fp3c = PriorFisher('constant_w',prior_fisher_params,fisher_in=prior_mat,labels_in=JDEM_LABELS)
+    fp1c2 = PriorFisher('jdem',alt_prior_fisher_params,fisher_in=fp1p.get_fisher().get_fisher()+fp1.get_fisher().get_fisher(),labels_in=fp1.processed_labels)
+    fp2c2 = PriorFisher('w0wa',alt_prior_fisher_params,fisher_in=fp1p.get_fisher().get_fisher()+fp1.get_fisher().get_fisher(),labels_in=fp1.processed_labels)
+    fp3c2 = PriorFisher('constant_w',alt_prior_fisher_params,fisher_in=fp1p.get_fisher().get_fisher()+fp1.get_fisher().get_fisher(),labels_in=fp1.processed_labels)
+    sum_in1 = fp1p.get_fisher().get_fisher()+fp1.get_fisher().get_fisher()
+    sum_in2 = fp2p.get_fisher().get_fisher()+fp2.get_fisher().get_fisher()
+    sum_in3 = fp3p.get_fisher().get_fisher()+fp3.get_fisher().get_fisher()
+    res4 = fp1c.get_fisher().get_fisher()
+    res5 = fp2c.get_fisher().get_fisher()
+    res6 = fp3c.get_fisher().get_fisher()
+    res7 = pf.project_w0wa_to_w0(fp2c.get_fisher().get_fisher(),alt_prior_fisher_params,fp2c.processed_labels)[0]
+    res8 = pf.project_w0wa(fp1c.get_fisher().get_fisher(),alt_prior_fisher_params,fp3c.processed_labels)[0]
+    res9 = pf.project_w0wa_to_w0(res8,alt_prior_fisher_params,fp2c.processed_labels)[0]
+    res10 = fp1c2.get_fisher().get_fisher()
+    res11 = fp2c2.get_fisher().get_fisher()
+    res12 = fp3c2.get_fisher().get_fisher()
+    assert np.allclose(res8[0:6,0:6],res9)
+    assert np.all(np.linalg.eigh(res4)[0]>=0.)
+    assert np.all(np.linalg.eigh(res5)[0]>=0.)
+    assert np.all(np.linalg.eigh(res6)[0]>=0.)
+    assert np.all(np.linalg.eigh(res7)[0]>=0.)
+    assert np.all(np.linalg.eigh(res8)[0]>=0.)
+    assert np.all(np.linalg.eigh(res9)[0]>=0.)
+    assert np.all(np.linalg.eigh(res10)[0]>=0.)
+    assert np.all(np.linalg.eigh(res11)[0]>=0.)
+    assert np.all(np.linalg.eigh(res12)[0]>=0.)
+    assert np.allclose(res4,sum_in1)
+    assert np.allclose(res5,sum_in2)
+    assert np.allclose(res6,sum_in3)
+    assert np.allclose(res6,res7)
+    assert np.allclose(res5,res8)
+    assert np.allclose(res6,res9)
+    assert np.allclose(res4,res10)
+    assert np.allclose(res5,res11)
+    assert np.allclose(res6,res12)
+
+    #interlace tests
+    eig2 = np.linalg.eigh(res2)[0]
+    eig3 = np.linalg.eigh(res3)[0]
+    eig_diff = (eig2[::-1][1:eig3.size]-eig3[::-1][0:eig3.size-1])
+    eig2p = np.linalg.eigh(res2p)[0]
+    eig3p = np.linalg.eigh(res3p)[0]
+    eig_diffp = (eig2p[::-1][1:eig3p.size]-eig3p[::-1][0:eig3p.size-1])
+    assert np.all(eig_diffp<=0.)
+    eig2c = np.linalg.eigh(res5)[0]
+    eig3c = np.linalg.eigh(res6)[0]
+    eig_diffc = (eig2c[::-1][1:eig3c.size]-eig3c[::-1][0:eig3c.size-1])
+    assert np.all(eig_diffc<=0.)
+    
+
 
 
 if __name__=='__main__':
     pytest.cmdline.main(['prior_fisher_tests.py'])
-#if __name__=='__main__':
-#    param_1 = defaults.prior_fisher_params.copy()
-#    param_1['row_strip'] = np.array([3,5,6,7])
-#    fisher_mat = read_prior_fisher(params=param_1)
-#    assert fisher_mat.shape==(45,45)
-#    assert np.all(fisher_mat==fisher_mat.T)
-#    fisher_strip = fix_elements(fisher_mat,param_1)
-#    assert fisher_strip.shape==(41,41)
-#    param_2 = defaults.prior_fisher_params.copy()
-#    param_2['row_strip'] = np.array([5,6,7])
-#    param_3 = defaults.prior_fisher_params.copy()
-#    param_3['row_strip'] = np.array([3])
-#    fisher_strip_567 = fix_elements(fisher_mat,params=param_2)
-#    fisher_strip_3567 = fix_elements(fisher_strip_567,params=param_3)
-#    assert np.all(fisher_strip_3567==fisher_strip)
-#    #check stripping worked as expected
-#    assert np.all(fisher_strip==fisher_strip.T)
-#    assert np.all(fisher_strip_567==fisher_strip_567.T)
-#    n_r = 5
-#    n_c = 3
-#    n_skip = 0
-#    assert np.all(fisher_strip_567[0:n_r-n_skip,0:n_r-n_skip]==fisher_mat[0:n_r-n_skip,0:n_r-n_skip])
-#    assert np.all(fisher_strip_567[0:n_r-n_skip,n_r::]==fisher_mat[0:n_r-n_skip,n_r+n_c::])
-#    assert np.all(fisher_strip_567[n_r::,n_r::]==fisher_mat[n_r+n_c::,n_r+n_c::])
-#
-#    n_r = 3
-#    n_c = 1
-#    n_skip = 0
-#    assert np.all(fisher_strip_3567[0:n_r-n_skip,0:n_r-n_skip]==fisher_strip_567[0:n_r-n_skip,0:n_r-n_skip])
-#    assert np.all(fisher_strip_3567[0:n_r-n_skip,n_r::]==fisher_strip_567[0:n_r-n_skip,n_r+n_c::])
-#    assert np.all(fisher_strip_3567[n_r::,n_r::]==fisher_strip_567[n_r+n_c::,n_r+n_c::])
-#
-#    fisher_project,project_mat = project_w0(fisher_strip,params=param_1,return_project=True)
-#    assert fisher_project.shape==(6,6)
-#    #projection matrix must be idempotent, have determinant 0, trace=dimension of subspace projected 2,all eigenvalues 0 or 1
-#    assert np.all(np.dot(project_mat,project_mat)==project_mat)
-#    assert np.linalg.det(project_mat)==0.
-#    assert np.trace(project_mat)==6
-#    project_eig = np.linalg.eig(project_mat)[0]
-#    assert np.all((project_eig==0) | (project_eig==1))
-#
-#    fisher_project2,project_mat2 = project_w0(fisher_mat,params=param_1,return_project=True)
-#    assert np.all(np.dot(project_mat2,project_mat2)==project_mat2)
-#    assert np.linalg.det(project_mat2)==0.
-#    assert np.trace(project_mat2)==10
-#    project_eig2 = np.linalg.eig(project_mat2)[0]
-#    assert np.all((project_eig2==0) | (project_eig2==1))
-#
-#    fisher_strip2 = fix_elements(fisher_project2)
-#    assert np.all(fisher_strip2==fisher_project)

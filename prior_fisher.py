@@ -98,7 +98,6 @@ def project_w0wa(fisher_mat,params,labels):
     project_mat[n_new-2,n_new-2::] = dwzdw0
     #z_step = params['z_step']
     #zs = z_step*np.arange(0,n_de)/(1-z_step*np.arange(0,n_de))
-    #TODO make sure doing this correctly
     #a_s = 1.-np.arange(0,36)*0.025+0.0125
     #zs = 1./(1.+a_s)
     #change in wa is z*a
@@ -120,7 +119,6 @@ def project_w0(fisher_mat,params,labels):
     project_mat[0:n_new-1,0:n_new-1] = np.identity(n_new-1)
     dwzdw0 = np.zeros(n_de)+1.
     project_mat[n_new-1,n_new-1::] = dwzdw0
-    #TODO are project_mats transposed?
     fisher_new = np.dot(np.dot(project_mat,fisher_mat),project_mat.T)
     fisher_new = fisher_new[0:n_new,0:n_new]
     fisher_new = (fisher_new+fisher_new.T)/2.
@@ -138,6 +136,25 @@ def project_no_de(fisher_mat,params,labels):
     #project_mat[0:n_new,0:n_new] = np.identity(n_new)
     labels_new = labels[0:n_new].copy()
     return (fisher_new+fisher_new.T)/2.,labels_new
+
+def project_w0wa_to_w0(fisher_mat,params,labels):
+    """project w0wa parametrization to w0"""
+    n_de = 2 
+    n_new = fisher_mat.shape[0]-(n_de-1) #will project 2 dark energy entries to 1
+    fisher_new = np.zeros((n_new,n_new))
+    #all the bins have constant change wrt w0
+    project_mat = np.zeros((n_new,fisher_mat.shape[0]))
+    project_mat[0:n_new-1,0:n_new-1] = np.identity(n_new-1)
+    project_mat[n_new-1,n_new-1] = 1.
+    #dwzdw0 = np.zeros(n_de)+1.
+    #dwzdwa = np.arange(0,36)*0.025+0.0125
+    #project_mat[n_new-1,n_new-1] = 1.
+    #change in wa is z*a
+    #project_mat[n_new-1,n_new-2] = dwzdwa
+    fisher_new = np.dot(np.dot(project_mat,fisher_mat),project_mat.T)
+    fisher_new = (fisher_new+fisher_new.T)/2.
+    labels_new = np.hstack([labels[0:n_new-2].copy(),'w0'])
+    return fisher_new,labels_new
 
 #def get_jdem_projected(params):
 #    """get matrix in jdem parametrization"""

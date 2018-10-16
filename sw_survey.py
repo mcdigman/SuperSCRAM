@@ -13,7 +13,6 @@ from sw_cov_mat import SWCovMat
 
 DEBUG = True
 
-#TODO evaluate if param_list as used by LWSurvey more elegant
 class SWSurvey(object):
     """Short wavelength survey: manage short wavelength observables and get their non SSC covariances and derivatives"""
     def __init__(self,geo,survey_id,C,params,cosmo_par_list=None,cosmo_par_eps=None,observable_list=None,len_params=None,ps=None,nz_matcher=None):

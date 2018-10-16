@@ -92,7 +92,6 @@ class ST_hmf(object):
 
         bias = self.bias_nu(nu)
         f = self.f_nu(nu)
-        #TODO can fix to use trapz2
         norm = np.trapz(f*bias,nu,axis=0)
         return norm
 

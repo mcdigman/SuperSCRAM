@@ -20,7 +20,6 @@ eps = np.finfo(float).eps
 #TODO ensure safe sigma8
 class CosmoPie(object):
     """stores and calculates various parameters for a cosmology"""
-    #TODO convergence test a grid values
     #TODO reduce possibility of circular reference to MatterPower
     def __init__(self,cosmology,p_space,P_lin=None,k=None,a_step=0.001,G_in=None,G_safe=False,silent=False):
         """
@@ -135,6 +134,9 @@ class CosmoPie(object):
 
         self.P_lin = P_lin
         self.k = k
+        if DEBUG:
+            if self.cosmology['de_model'] == 'w0wa':
+                assert self.cosmology['w0']==self.cosmology['w']
 
         if not silent:
             print("cosmopie "+str(id(self))+": finished initialization")

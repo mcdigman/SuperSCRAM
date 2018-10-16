@@ -103,13 +103,12 @@ class WMatcher(object):
         """get an interpolated growth factor for a given w, a_in is a vector"""
         return self.G_interp(w_in,a_in,grid=False).T
 
-    #TODO check
-    def match_scale(self,z_in,w_in):
-        """match scaling (ie sigma8) for the input model compared to the fiducial model, not used"""
-        n_z_in = z_in.size
-        pow_scale = np.zeros(n_z_in)
-        G_fid = self.C_fid.G(0)
-        for itr in range(0,n_z_in):
-            pow_scale[itr]=(self.G_interp(w_in,1./(1.+z_in))/G_fid)**2
-        #return multiplier for linear power spectrum from effective constant w model
-        return pow_scale
+#    def match_scale(self,z_in,w_in):
+#        """match scaling (ie sigma8) for the input model compared to the fiducial model, not used"""
+#        n_z_in = z_in.size
+#        pow_scale = np.zeros(n_z_in)
+#        G_fid = self.C_fid.G(0)
+#        for itr in range(0,n_z_in):
+#            pow_scale[itr]=(self.G_interp(w_in,1./(1.+z_in))/G_fid)**2
+#        #return multiplier for linear power spectrum from effective constant w model
+#        return pow_scale

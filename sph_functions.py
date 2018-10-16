@@ -21,8 +21,6 @@ data[data<0.] = np.inf
 
 l_max_zeros = data.shape[0]-1
 
-#TODO make sure array size logic is consistent
-#TODO check if warning necessary at high n
 def j_n(n,z):
     """spherical bessel function n for array of z values"""
     z = np.asarray(z)

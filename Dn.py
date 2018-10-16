@@ -52,7 +52,6 @@ class DNumberDensityObservable(LWObservable):
         #self.geo1 should be intersect of mitigation survey and original survey
         self.geo1 = geos[0]
 
-        #TODO this is a bit hackish, but works for now
 #        if isinstance(geos[0],PolygonGeo):
 #            if isinstance(geos[1],PolygonGeo):
 #                self.geo2 = PolygonUnionGeo(np.array([geos[1]]),np.array([geos[0]]),zs=geos[1].zs,z_fine=geos[1].z_fine)

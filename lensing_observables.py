@@ -40,7 +40,6 @@ class LensingPowerBase(object):
             self.dC_dpars[i,0] = sp.ShearPower(self.Cs_pert[i,0],self.geo.z_fine,f_sky,params,'power',ps,self.nz_matcher)
             self.dC_dpars[i,1] = sp.ShearPower(self.Cs_pert[i,1],self.geo.z_fine,f_sky,params,'power',ps,self.nz_matcher)
 
-#TODO observables should know their name
 class LensingObservable(SWObservable):
     """Generic lensing observable, subclass only need to define a function handle self.len_handle for which obserable to use"""
     def __init__(self,len_pow,z1,z2,q1_handle,q2_handle):

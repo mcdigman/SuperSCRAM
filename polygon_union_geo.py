@@ -6,8 +6,7 @@ import spherical_geometry.vector as sgv
 
 from polygon_geo import PolygonGeo
 from geo import Geo
-#from spherical_geometry.polygon import SphericalPolygon
-#TODO standardize inputs
+
 class PolygonUnionGeo(Geo):
     """get the geo represented by the union of geos minus anything covered by masks, all PolygonGeo objects"""
     def __init__(self,geos,masks,C=None,zs=None,z_fine=None,l_max=None,poly_params=None):

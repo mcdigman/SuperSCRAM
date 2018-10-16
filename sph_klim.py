@@ -277,7 +277,6 @@ class SphBasisK(LWBasis):
                 geo: an input Geo object for the geometry
                 tomography: if True use tomographic (coarse) bins, otherwise use resolution (fine) bins for r integrals
         """
-        #TODO Check this
         print("sph_klim: begin D_delta_bar_D_delta_alpha with geo id: ",id(geo))
 
         #Caching implements significant speedup, check caches

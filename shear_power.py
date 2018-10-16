@@ -25,6 +25,7 @@ class ShearPower(object):
                 nz_matcher: an NZMatcher object, for getting source distribution and n_gal if not None
                 params: see line by line description in defaults.py
         """
+        print("Getting ShearPower")
         self.k_in = C.k
         self.k_max = np.max(self.k_in)
         self.k_min = np.min(self.k_in)
@@ -76,7 +77,7 @@ class ShearPower(object):
         else:
             raise ValueError('unrecognized mode \''+str(self.mode)+'\'')
         self.rs = self.C.D_comov(self.zs)
-        #TODO if using Omegak not 0, make sure rs and r_As used consistently
+        #NOTE if using Omegak not 0, make sure rs and r_As used consistently
         if self.C.Omegak==0:
             self.r_As = self.rs
         else:
@@ -116,6 +117,7 @@ class ShearPower(object):
         self.k_use.flags['WRITEABLE'] = False
         self.l_starts.flags['WRITEABLE'] = False
         self.l_mids.flags['WRITEABLE'] = False
+        print("Got ShearPower")
 
     def r_corr(self):
         """get correlation r between galaxy and dm power spectra, will be 1 unless input model for bias"""

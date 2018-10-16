@@ -42,6 +42,8 @@ class MatterPower(object):
 
         self.C = C_in
         self.cosmology = self.C.cosmology
+        if self.cosmology['de_model'] == 'w0wa':
+            assert self.cosmology['w0']==self.cosmology['w']
 
         #give error if extrapolation is more than offset between camb default H0 and our H0
         self.extend_limit = self.cosmology['H0']/71.902712048990196

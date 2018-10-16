@@ -31,7 +31,7 @@ class HalfSkyGeo(Geo):
 
     def get_overlap_fraction(self,geo2):
         """get overlap fraction between this geometry and another geo"""
-        #TODO don't use
+        #don't use
         return geo2.angular_area()/self.angular_area()
 
     def angular_area(self):

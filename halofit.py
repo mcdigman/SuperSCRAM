@@ -51,7 +51,6 @@ class HalofitPk(object):
             self.linear_cutoff = self.linear_cutoff*self.C.cosmology['h']
         #extrapolated internal power spectrum to avoid spurious dependence on input k_max
         k_max_in = np.max(k_in)
-        #TODO probably should low extrap as well
         if self.params['extrap_wint'] and k_max_in<self.k_fix:
             #assume log spaced k_in
             log_k_space = np.average(np.diff(np.log(k_in)))
@@ -74,7 +73,6 @@ class HalofitPk(object):
         #spline might be more accurate, although slower
         self.p_interp = interp1d(self.k,self.p_input)
 
-        #TODO check necessary r_min,r_max,n_r nint in wint are good
         r_min = halofit_params['r_min']
         r_max = halofit_params['r_max']
         r_step = halofit_params['r_step']
@@ -175,18 +173,15 @@ class HalofitPk(object):
         variance, calculated at the nonlinear wavenumber. rncur is the
         second derivative of variance at rknl.
         '''
-        #TODO consider handling upper limit differently
         #current method introduces dependence of k_max of input power spectrum, which is not ideal.
         #nint = 1000
         #nint=np.floor((self.k_max)/2.)
         #print(self.k_max/2.)
-        #TODO figure out what to do if k_max<2
         nint = min(np.int(self.k_max/2.),np.int(self.k_fix/2.))
         #nint = np.int(self.k_fix/2.)
         t = ( np.arange(nint)+0.5 )/nint
         y = 1./t - 1.
         #rk = y
-        #TODO check this is correct way to get d2
         d2 = self.D2_L(y,0.)
         mult = d2/y/t**2/nint
         x2 = np.outer(r**2,y**2)
@@ -392,7 +387,6 @@ class HalofitPk(object):
         else:
             return pnl
 
-    #TODO use or eliminate as obsolete
     def P_NL(self,k,z,return_components=False):
         """Nonlinear power spectrum"""
         if return_components:

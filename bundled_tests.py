@@ -20,3 +20,4 @@ if __name__=='__main__':
     pytest.cmdline.main(['polygon_geo_tests.py'])
     pytest.cmdline.main(['prior_fisher_tests.py'])
     pytest.cmdline.main(['sph_basis_tests.py'])
+    pytest.cmdline.main(['super_survey_test.py'])

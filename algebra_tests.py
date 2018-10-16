@@ -12,7 +12,7 @@ from algebra_utils import cholesky_inplace,get_inv_cholesky,ch_inv,invert_triang
 from algebra_utils import cholesky_inv_contract,get_cholesky_inv,cholesky_contract,check_is_cholesky
 from algebra_utils import check_is_cholesky_inv,trapz2,clean_triangle,mirror_symmetrize
 au.DEBUG = True
-#TODO add testing for inplace and clean parameters
+#NOTE should add testing for inplace and clean parameters
 def get_test_mat(key):
     """get a test mat for the numerical key key"""
     if key==1:

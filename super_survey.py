@@ -6,7 +6,6 @@ from time import time
 import numpy as np
 
 import multi_fisher as mf
-#TODO maybe make possible to serialize/pickle or at least provide a standardized way of storing run information
 class SuperSurvey(object):
     """ This class holds and returns information for all surveys
     """
@@ -53,9 +52,8 @@ class SuperSurvey(object):
 
         self.f_set_nopriors = self.multi_f.get_fisher_set(include_priors=False)
         self.f_set = self.multi_f.get_fisher_set(include_priors=True)
-        self.eig_set = self.multi_f.get_eig_set(self.f_set_nopriors,include_sw=include_sw)
-        self.eig_set_ssc = self.multi_f.get_eig_set(self.f_set_nopriors,ssc_metric=True,include_sw=include_sw)
-        #TODO get this before changing shape in multi_fisher
+        #self.eig_set = self.multi_f.get_eig_set(self.f_set_nopriors,include_sw=include_sw)
+        #self.eig_set_ssc = self.multi_f.get_eig_set(self.f_set_nopriors,ssc_metric=True,include_sw=include_sw)
         if self.get_a:
             self.a_vals = self.multi_f.get_a_lw()
             print("SuperSurvey: mitigated run gave a="+str(self.a_vals))

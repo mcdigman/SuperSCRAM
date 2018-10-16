@@ -53,7 +53,6 @@ def rot_alm_x(d_alm_table_in,angles,ls,n_double=30,debug=True):
             assert np.all(el_mat_real==-el_mat_real.T)
             #check m_mat is actually unitary
             assert np.allclose(np.identity(m_mat.shape[0]),np.dot(np.conjugate(m_mat.T),m_mat))
-            #TODO add assertion  for correct sparseness structure
         #print(ll)
 
         for itr in range(0,n_v):

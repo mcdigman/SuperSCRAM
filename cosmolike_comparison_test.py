@@ -28,6 +28,7 @@ def test_cosmolike_agreement():
     camb_params['minkh'] = 1.1e-4
     camb_params['maxkh'] = 100.
     camb_params['kmax'] = 1.
+    camb_params['pivot_scalar'] = 0.05
     power_params = defaults.power_params.copy()
     power_params.camb = camb_params
 
@@ -138,10 +139,12 @@ def test_cosmolike_agreement():
     l_starts = np.zeros(n_b)
     log_dl = (np.log(lmax_cosmo)-np.log(lmin_cosmo))/n_b
     l_mids = np.zeros(n_b)
+    l_ends = np.zeros(n_b)
     dls = np.zeros(n_b)
 
     for i in range(l_mids.size):
         l_starts[i] = np.exp(np.log(lmin_cosmo)+i*log_dl)
+        l_ends[i] = np.exp(np.log(lmin_cosmo)+(i+1)*log_dl)
         l_mids[i] = np.exp(np.log(lmin_cosmo)+(i+0.5)*log_dl)
         dls[i] = (np.exp(np.log(lmin_cosmo)+(i+1.)*log_dl)- np.exp(np.log(lmin_cosmo)+i*log_dl))
 
@@ -183,7 +186,7 @@ def test_cosmolike_agreement():
     len_params['n_gal'] = n_gal_cosmo
     len_params['sigma2_e'] = sigma_e_cosmo**2
     len_params['l_min'] = np.min(l_starts)
-    len_params['l_max'] = np.max(l_starts)
+    len_params['l_max'] = np.max(l_ends)
     len_params['n_l'] = l_starts.size
     len_params['pmodel'] = 'halofit'
     #test lensing observables
