@@ -78,8 +78,8 @@ class LensingObservable(SWObservable):
         r"""Get \partial{O_I}\partial{\Theta_i} for the set of observables as set up in LensingPowerBase"""
         dO_dpars = np.zeros((self.get_dimension(),self.len_pow.cosmo_par_list.size))
         for itr in range(0,dO_dpars.shape[1]):
-            Cll_low = sp.Cll_q_q(self.len_pow.dC_dpars[itr,0],self.q1_dpars[itr,0],self.q2_dpars[itr,0]).Cll()
-            Cll_high = sp.Cll_q_q(self.len_pow.dC_dpars[itr,1],self.q1_dpars[itr,1],self.q2_dpars[itr,1]).Cll()
+            Cll_high = sp.Cll_q_q(self.len_pow.dC_dpars[itr,0],self.q1_dpars[itr,0],self.q2_dpars[itr,0]).Cll()
+            Cll_low = sp.Cll_q_q(self.len_pow.dC_dpars[itr,1],self.q1_dpars[itr,1],self.q2_dpars[itr,1]).Cll()
             dO_dpars[:,itr] = (Cll_high-Cll_low)/(2.*self.len_pow.cosmo_par_eps[itr])
         return dO_dpars
 

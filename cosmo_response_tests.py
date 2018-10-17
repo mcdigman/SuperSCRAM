@@ -1,0 +1,193 @@
+"""test consistency of perturbing cosmopies"""
+from __future__ import division,print_function,absolute_import
+from builtins import range
+import numpy as np
+import pytest
+import cosmopie as cp
+import defaults
+import power_parameter_response as ppr
+import matter_power_spectrum as mps
+import sw_survey as sws
+from full_sky_geo import FullSkyGeo
+from nz_wfirst_eff import NZWFirstEff
+from super_survey import SuperSurvey
+from sph_klim import SphBasisK
+
+def test_power_agreement():
+    """test agreement of powers extracted in two different cosmological parametrizations"""
+    cosmo_base = defaults.cosmology_wmap.copy()
+    cosmo_base = cp.add_derived_pars(cosmo_base,'jdem')
+    cosmo_base['de_model'] = 'constant_w'
+    cosmo_base['w'] = -1.
+    power_params = defaults.power_params.copy()
+    power_params.camb['maxkh'] = 3.
+    power_params.camb['kmax'] = 10.
+    power_params.camb['npoints'] = 1000
+    power_params.camb['accuracy'] = 1
+    power_params.camb['leave_h'] = False
+
+    cosmo_jdem = cosmo_base.copy()
+    cosmo_jdem['p_space'] = 'jdem'
+    C_fid_jdem = cp.CosmoPie(cosmo_jdem,'jdem')
+    P_jdem = mps.MatterPower(C_fid_jdem,power_params.copy())
+    C_fid_jdem.set_power(P_jdem)
+
+    cosmo_lihu = cosmo_base.copy()
+    cosmo_lihu['p_space'] = 'lihu'
+    C_fid_lihu = cp.CosmoPie(cosmo_lihu,'lihu')
+    P_lihu = mps.MatterPower(C_fid_lihu,power_params.copy())
+    C_fid_lihu.set_power(P_lihu)
+
+    jdem_pars = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs'])
+    jdem_eps = np.array([0.002,0.00025,0.0001,0.00025,0.1])
+    C_pert_jdem = ppr.get_perturbed_cosmopies(C_fid_jdem,jdem_pars,jdem_eps)
+
+    lihu_pars = np.array(['ns','Omegach2','Omegabh2','h','LogAs'])
+    lihu_eps = np.array([0.002,0.00025,0.0001,0.00025,0.1])
+    C_pert_lihu = ppr.get_perturbed_cosmopies(C_fid_lihu,lihu_pars,lihu_eps)
+    
+    response_pars = np.array(['Omegach2','Omegabh2','Omegamh2','OmegaLh2','h'])
+    response_derivs_jdem = np.zeros((response_pars.size,3))
+    response_derivs_jdem_pred = np.array([[1.,0.,1.,0.,1./(2.*C_fid_jdem.cosmology['h'])],[-1.,1.,0.,0.,0.],[0.,0.,0.,1.,1./(2.*C_fid_jdem.cosmology['h'])]]).T
+    response_derivs_lihu = np.zeros((response_pars.size,3))
+    response_derivs_lihu_pred = np.array([[1.,0.,1.,-1.,0.],[0.,1.,1.,-1.,0.],[0.,0.,0.,2.*C_fid_lihu.cosmology['h'],1.]]).T
+    for i in range(0,response_pars.size):
+        for j in range(1,4):
+            response_derivs_jdem[i,j-1] = (C_pert_jdem[j,0].cosmology[response_pars[i]]-C_pert_jdem[j,1].cosmology[response_pars[i]])/(jdem_eps[j]*2.)
+            response_derivs_lihu[i,j-1] = (C_pert_lihu[j,0].cosmology[response_pars[i]]-C_pert_lihu[j,1].cosmology[response_pars[i]])/(lihu_eps[j]*2.)
+    assert np.allclose(response_derivs_jdem_pred,response_derivs_jdem)
+    assert np.allclose(response_derivs_lihu_pred,response_derivs_lihu)
+
+    power_derivs_jdem = np.zeros((3,C_fid_jdem.k.size))
+    power_derivs_lihu = np.zeros((3,C_fid_lihu.k.size))
+
+    for pmodel in ['linear','fastpt','halofit']:
+        for j in range(1,4):
+            power_derivs_jdem[j-1] = (C_pert_jdem[j,0].P_lin.get_matter_power([0.],pmodel=pmodel)[:,0]-C_pert_jdem[j,1].P_lin.get_matter_power([0.],pmodel=pmodel)[:,0])/(jdem_eps[j]*2.)
+            power_derivs_lihu[j-1] = (C_pert_lihu[j,0].P_lin.get_matter_power([0.],pmodel=pmodel)[:,0]-C_pert_lihu[j,1].P_lin.get_matter_power([0.],pmodel=pmodel)[:,0])/(lihu_eps[j]*2.)
+
+        tot_derivs_jdem = np.zeros((3,C_fid_jdem.k.size))
+        tot_derivs_lihu = np.zeros((3,C_fid_jdem.k.size))
+        assert np.allclose((power_derivs_jdem[1]+power_derivs_jdem[0]-power_derivs_jdem[2]),power_derivs_lihu[1],rtol=1.e-2,atol=1.e-5*np.max(np.abs(power_derivs_lihu[1])))
+        assert np.allclose((power_derivs_jdem[0]-power_derivs_jdem[2]),power_derivs_lihu[0],rtol=1.e-2,atol=1.e-5*np.max(np.abs(power_derivs_lihu[0])))
+        assert np.allclose(power_derivs_jdem[2]*2*C_fid_lihu.cosmology['h'],power_derivs_lihu[2],rtol=1.e-2,atol=1.e-5*np.max(np.abs(power_derivs_lihu[2])))
+def test_pipeline_consistency():
+    """test full pipeline consistency with rotation jdem vs lihu"""
+    cosmo_base = defaults.cosmology_wmap.copy()
+    cosmo_base = cp.add_derived_pars(cosmo_base,'jdem')
+    cosmo_base['de_model'] = 'constant_w'
+    cosmo_base['w'] = -1.
+    power_params = defaults.power_params.copy()
+    power_params.camb['maxkh'] = 3.
+    power_params.camb['kmax'] = 10.
+    power_params.camb['npoints'] = 1000
+    power_params.camb['accuracy'] = 1
+    power_params.camb['leave_h'] = False
+
+    cosmo_jdem = cosmo_base.copy()
+    cosmo_jdem['p_space'] = 'jdem'
+    C_fid_jdem = cp.CosmoPie(cosmo_jdem,'jdem')
+    P_jdem = mps.MatterPower(C_fid_jdem,power_params.copy())
+    C_fid_jdem.set_power(P_jdem)
+
+    cosmo_lihu = cosmo_base.copy()
+    cosmo_lihu['p_space'] = 'lihu'
+    C_fid_lihu = cp.CosmoPie(cosmo_lihu,'lihu')
+    P_lihu = mps.MatterPower(C_fid_lihu,power_params.copy())
+    C_fid_lihu.set_power(P_lihu)
+
+    zs = np.arange(0.2,1.41,0.40)
+    z_fine = np.linspace(0.001,1.4,1000)
+    
+    geo_jdem = FullSkyGeo(zs,C_fid_jdem,z_fine)
+    geo_lihu = FullSkyGeo(zs,C_fid_lihu,z_fine)
+
+    jdem_pars = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w'])
+    jdem_eps = np.array([0.002,0.00025,0.0001,0.00025,0.1,0.01])
+
+    lihu_pars = np.array(['ns','Omegach2','Omegabh2','h','LogAs','w'])
+    lihu_eps = np.array([0.002,0.00025,0.0001,0.00025,0.1,0.01])
+
+    sw_params = defaults.sw_survey_params.copy()
+    len_params = defaults.lensing_params.copy()
+    sw_observable_list = defaults.sw_observable_list.copy()
+    nz_wfirst_lens = NZWFirstEff(defaults.nz_params_wfirst_lens.copy())
+    prior_params = defaults.prior_fisher_params.copy()
+    basis_params = defaults.basis_params.copy()
+
+    sw_survey_jdem = sws.SWSurvey(geo_jdem,'wfirst',C_fid_jdem,sw_params,jdem_pars,jdem_eps,sw_observable_list,len_params,None,nz_wfirst_lens)
+    sw_survey_lihu = sws.SWSurvey(geo_lihu,'wfirst',C_fid_lihu,sw_params,lihu_pars,lihu_eps,sw_observable_list,len_params,None,nz_wfirst_lens)
+    
+    dO_dpar_jdem = sw_survey_jdem.get_dO_I_dpar_array()
+    dO_dpar_lihu = sw_survey_lihu.get_dO_I_dpar_array()
+
+    response_pars = np.array(['ns','Omegach2','Omegabh2','Omegamh2','OmegaLh2','h','LogAs','w'])
+    response_derivs_jdem_pred = np.array([[1.,0.,0.,0.,0.,0.,0.,0.],[0.,1.,0.,1.,0.,1./(2.*C_fid_jdem.cosmology['h']),0.,0.],[0.,-1.,1.,0.,0.,0.,0.,0.],[0.,0.,0.,0.,1.,1./(2.*C_fid_jdem.cosmology['h']),0.,0.],[0.,0.,0.,0.,0.,0.,1.,0.],[0.,0.,0.,0.,0.,0.,0.,1.]]).T
+    response_derivs_lihu_pred = np.array([[1.,0.,0.,0.,0.,0.,0.,0.],[0.,1.,0.,1.,-1.,0.,0.,0.],[0.,0.,1.,1.,-1.,0.,0.,0.],[0.,0.,0.,0.,2.*C_fid_lihu.cosmology['h'],1.,0.,0.],[0.,0.,0.,0.,0.,0.,1.,0.],[0.,0.,0.,0.,0.,0.,0.,1.]]).T
+
+    l_max = 24
+
+    r_max_jdem = geo_jdem.r_fine[-1]
+    k_cut_jdem = 30./r_max_jdem
+    basis_jdem = SphBasisK(r_max_jdem,C_fid_jdem,k_cut_jdem,basis_params,l_ceil=l_max,needs_m=True)
+    SS_jdem = SuperSurvey(np.array([sw_survey_jdem]),np.array([]),basis_jdem,C_fid_jdem,prior_params,get_a=False,do_unmitigated=True,do_mitigated=False)
+
+    r_max_lihu = geo_lihu.r_fine[-1]
+    k_cut_lihu = 30./r_max_lihu
+    basis_lihu = SphBasisK(r_max_lihu,C_fid_lihu,k_cut_lihu,basis_params,l_ceil=l_max,needs_m=True)
+    SS_lihu = SuperSurvey(np.array([sw_survey_lihu]),np.array([]),basis_lihu,C_fid_lihu,prior_params,get_a=False,do_unmitigated=True,do_mitigated=False)
+
+    dO_dpar_jdem_to_lihu = np.zeros_like(dO_dpar_jdem)
+    dO_dpar_lihu_to_jdem = np.zeros_like(dO_dpar_lihu)
+    
+    project_lihu_to_jdem = np.zeros((jdem_pars.size,lihu_pars.size))
+
+    #f_g_jdem_to_lihu = np.zeros((lihu_pars.size,lihu_pars.size))
+    #f_g_lihu_to_jdem = np.zeros((jdem_pars.size,jdem_pars.size))
+    response_derivs_jdem = np.zeros((response_pars.size,jdem_pars.size))
+    response_derivs_lihu = np.zeros((response_pars.size,lihu_pars.size))
+    for i in range(0,response_pars.size):
+        for j in range(0,jdem_pars.size):
+            response_derivs_jdem[i,j] = (sw_survey_jdem.len_pow.Cs_pert[j,0].cosmology[response_pars[i]]-sw_survey_jdem.len_pow.Cs_pert[j,1].cosmology[response_pars[i]])/(jdem_eps[j]*2.)
+            response_derivs_lihu[i,j] = (sw_survey_lihu.len_pow.Cs_pert[j,0].cosmology[response_pars[i]]-sw_survey_lihu.len_pow.Cs_pert[j,1].cosmology[response_pars[i]])/(lihu_eps[j]*2.)
+    assert np.allclose(response_derivs_jdem,response_derivs_jdem_pred)
+    assert np.allclose(response_derivs_lihu,response_derivs_lihu_pred)
+        
+    project_jdem_to_lihu = np.zeros((lihu_pars.size,jdem_pars.size))
+    project_lihu_to_jdem = np.zeros((jdem_pars.size,lihu_pars.size))
+    for itr1 in range(0,lihu_pars.size):
+        for itr2 in range(0,response_pars.size):
+            if response_pars[itr2] in jdem_pars:
+                name = response_pars[itr2]
+                i = np.argwhere(jdem_pars==name)[0,0]
+                project_jdem_to_lihu[itr1,i] = response_derivs_lihu[itr2,itr1]
+    for itr1 in range(0,jdem_pars.size):
+        for itr2 in range(0,response_pars.size):
+            if response_pars[itr2] in lihu_pars:
+                name = response_pars[itr2]
+                i = np.argwhere(lihu_pars==name)[0,0]
+                project_lihu_to_jdem[itr1,i] = response_derivs_jdem[itr2,itr1]
+    assert np.allclose(np.dot(dO_dpar_jdem,project_jdem_to_lihu.T),dO_dpar_lihu,rtol=1.e-3,atol=np.max(dO_dpar_lihu)*1.e-4)
+    assert np.allclose(np.dot(dO_dpar_lihu,project_lihu_to_jdem.T),dO_dpar_jdem,rtol=1.e-3,atol=np.max(dO_dpar_jdem)*1.e-4)
+    
+    #lihu p_space cannot currently do priors by itself
+    f_p_priors_lihu = np.dot(project_jdem_to_lihu,np.dot(SS_jdem.multi_f.fisher_priors.get_fisher(),project_jdem_to_lihu.T))
+
+    for i in range(0,3):
+        f_np_jdem = SS_jdem.f_set_nopriors[i][2].get_fisher().copy()
+        f_np_lihu = SS_lihu.f_set_nopriors[i][2].get_fisher().copy()
+        f_np_jdem_to_lihu = np.dot(project_jdem_to_lihu,np.dot(f_np_jdem,project_jdem_to_lihu.T))
+        f_np_lihu_to_jdem = np.dot(project_lihu_to_jdem,np.dot(f_np_lihu,project_lihu_to_jdem.T))
+        assert np.allclose(f_np_jdem_to_lihu,f_np_lihu,rtol=1.e-3)
+        assert np.allclose(f_np_lihu_to_jdem,f_np_jdem,rtol=1.e-3)
+
+        f_p_jdem = SS_jdem.f_set[i][2].get_fisher().copy()
+        f_p_lihu = SS_lihu.f_set_nopriors[i][2].get_fisher().copy()+f_p_priors_lihu.copy()
+        f_p_jdem_to_lihu = np.dot(project_jdem_to_lihu,np.dot(f_p_jdem,project_jdem_to_lihu.T))
+        f_p_lihu_to_jdem = np.dot(project_lihu_to_jdem,np.dot(f_p_lihu,project_lihu_to_jdem.T))
+        assert np.allclose(f_p_jdem_to_lihu,f_p_lihu,rtol=1.e-3)
+        assert np.allclose(f_p_lihu_to_jdem,f_p_jdem,rtol=1.e-3)
+
+
+if __name__=='__main__':
+    pytest.cmdline.main(['cosmo_response_tests.py'])

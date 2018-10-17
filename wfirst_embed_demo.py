@@ -28,7 +28,7 @@ if __name__=='__main__':
     time0 = time()
     #get dictionaries of parameters that various functions will need
     cosmo = defaults.cosmology_wmap.copy()
-    cosmo['de_model'] = 'w0wa'
+    cosmo['de_model'] = 'constant_w'
     cosmo['wa'] = 0.
     cosmo['w0'] = -1.
     cosmo['w'] = -1.
@@ -110,7 +110,7 @@ if __name__=='__main__':
     else:
         #geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,poly_params)
         #geo_wfirst = HalfSkyGeo(zs_lsst,C,z_fine,top=True)
-        geo_wfirst = FullSkyGeo(zs_lsst,C,z_fine)
+        geo_wfirst = FullSkyGeo(zs,C,z_fine)
         #geo_wfirst = LSSTGeo(zs,C,z_fine,l_max,poly_params)
         #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.9202821591024097,deg0=-59,deg1=-10)
         #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.7644912273732581,deg0=-49,deg1=-20)

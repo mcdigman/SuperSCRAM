@@ -4,6 +4,7 @@ from builtins import range
 from warnings import warn
 import camb
 
+#TODO set pivot_scalar to be a parameter
 #Note force_sigma8 forces sigma8_nl(z) to be the sigma8 in the cosmology, not sigma8_lin(z=0.), which may not be ideal behavior
 def camb_pow(cosmology,camb_params,zbar=0.,nonlinear_model=camb.model.NonLinear_none):
     """get camb linear power spectrum
@@ -27,8 +28,7 @@ def camb_pow(cosmology,camb_params,zbar=0.,nonlinear_model=camb.model.NonLinear_
     #pars.set_for_lmax(2500,lens_potential_accuracy=1)
 
     #pars.omegav=cosmology['OmegaL']
-    if cosmology['de_model'] == 'w0wa':
-        assert cosmology['w0']==cosmology['w']
+
     pars.set_dark_energy(cosmology['w']) #re-set defaults
 
     #Not non-linear corrections couples to smaller scales than you want

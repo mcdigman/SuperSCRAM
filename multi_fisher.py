@@ -2,6 +2,7 @@
 and getting results in cosmological parameter space"""
 from __future__ import division,print_function,absolute_import
 from builtins import range
+from warnings import warn
 
 import copy
 import numpy as np
@@ -106,8 +107,13 @@ class MultiFisher(object):
         self.sw_g_covar = fm.FisherMatrix(self.sw_non_SSC_covars[0],fm.REP_COVAR,fm.REP_COVAR,silent=True)
         self.sw_ng_covar = fm.FisherMatrix(self.sw_non_SSC_covars[1],fm.REP_COVAR,fm.REP_COVAR,silent=True)
 
-        self.fisher_prior_obj = prior_fisher.PriorFisher(self.sw_survey.C.de_model,self.prior_params)
-        self.fisher_priors = self.fisher_prior_obj.get_fisher()
+        if self.sw_survey.C.p_space=='jdem':
+            self.fisher_prior_obj = prior_fisher.PriorFisher(self.sw_survey.C.de_model,self.prior_params)
+            self.fisher_priors = self.fisher_prior_obj.get_fisher()
+        else:
+            warn('Current priors do not support p_space '+str(self.sw_survey.C.p_space)+' using 0 priors')
+            self.fisher_prior_obj = None
+            self.fisher_priors = fm.FisherMatrix(np.zeros((self.sw_to_par_array.shape[1],self.sw_to_par_array.shape[1])),fm.REP_FISHER,fm.REP_FISHER,silent=True)
 
         print("MultiFisher: finished initialization")
 

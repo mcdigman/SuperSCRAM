@@ -357,7 +357,7 @@ def strip_cosmology(cosmo_old,p_space,overwride=None):
 
         for req in P_SPACES[p_space]:
             if req not in cosmo_new:
-                raise ValueError('cosmology is missing required argument '+str(req))
+                warn('cosmology is missing required argument '+str(req))
         #        cosmo_new[req] = defaults.cosmology_jdem[req]
 
     else:
