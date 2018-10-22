@@ -17,11 +17,9 @@ from dark_energy_model import DarkEnergyConstant,DarkEnergyW0Wa,DarkEnergyJDEM
 DEBUG=True
 
 eps = np.finfo(float).eps
-#TODO ensure safe sigma8
 class CosmoPie(object):
     """stores and calculates various parameters for a cosmology"""
-    #TODO reduce possibility of circular reference to MatterPower
-    def __init__(self,cosmology,p_space,P_lin=None,k=None,a_step=0.001,G_in=None,G_safe=False,silent=False):
+    def __init__(self,cosmology,p_space,a_step=0.001,G_in=None,G_safe=False,silent=False):
         """
         Set up for cosmological parameters in input cosmology.
         Inputs:
@@ -98,10 +96,10 @@ class CosmoPie(object):
         # speed of light
         self.c        = 2.997924580*1e5 #km/s
 
-        self.DH       = self.c/self.H0
+        self.DH       = self.c/self.cosmology['H0']
 
         #curvature
-        self.K = -self.Omegak*(self.H0/self.c)**2
+        self.K = -self.Omegak*(self.cosmology['H0']/self.c)**2
 
         #precompute the normalization factor from the differential equation
         self.a_step = a_step
@@ -132,8 +130,6 @@ class CosmoPie(object):
         else:
             self.G_p = G_in
 
-        self.P_lin = P_lin
-        self.k = k
         if DEBUG:
             if self.cosmology['de_model'] == 'w0wa':
                 assert self.cosmology['w0']==self.cosmology['w']
@@ -260,7 +256,6 @@ class CosmoPie(object):
             kr = self.P_lin.k*R
         W = 3.0*(np.sin(kr)/kr**3-np.cos(kr)/kr**2)
         #P=self.G_norm(z)**2*self.P_lin
-        #TODO should scale to input sigma8 if set?
         P = self.P_lin.get_matter_power(z,pmodel='linear')[:,0]
         result = np.trapz(((W*W).T*P*k**3).T,np.log(k),axis=0).T/2./np.pi**2
 
@@ -301,7 +296,7 @@ class CosmoPie(object):
 
     def get_P_lin(self):
         """Get stored linear power spectrum"""
-        return self.P_lin.k, self.P_lin
+        return self.P_lin
 
     #use this instead of storing sigma8 because isn't simple analytic formula
     def get_sigma8(self):
@@ -314,7 +309,6 @@ class CosmoPie(object):
         else:
             return self.P_lin.get_sigma8_eff(np.array([0.]))[0]
 
-    #TODO be consistent about use of this function
     def set_power(self,P_in):
         """set the matter power spectrum for the CosmoPie
             inputs:
@@ -322,6 +316,7 @@ class CosmoPie(object):
         """
         self.P_lin = P_in
         self.k = P_in.k
+        self.cosmology['sigma8'] = self.P_lin.get_sigma8_eff(np.array([0.]))[0]
 
     # -----------------------------------------------------------------------------
 
@@ -358,7 +353,6 @@ def strip_cosmology(cosmo_old,p_space,overwride=None):
         for req in P_SPACES[p_space]:
             if req not in cosmo_new:
                 warn('cosmology is missing required argument '+str(req))
-        #        cosmo_new[req] = defaults.cosmology_jdem[req]
 
     else:
         raise ValueError('unrecognized p_space \''+str(p_space)+'\'')
@@ -374,7 +368,7 @@ def add_derived_pars(cosmo_old,p_space=None):
     Omegam,Omegac,Omegab,Omegak,OmegaL,Omegar
     Omegamh2,Omegach2,Omegabh2,Omegakh2,OmegaLh2,Omegarh2
     H0,h
-    LogAs,As,sigma8 #TODO check
+    LogAs,As,sigma8
     """
     cosmo_new = cosmo_old.copy()
     if p_space is None:

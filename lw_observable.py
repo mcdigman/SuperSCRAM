@@ -11,12 +11,12 @@ class LWObservable(object):
             geos: a numpy array of geos
             params: a dictionary of params
             survey_id: an id from the associated LWSurvey
-            C: a CosmoPie object"""
+            C: a CosmoPie object
+            fisher_type is True, will get_fisher from this object, otherwise use get_perturbing_vector"""
         self.geos = geos
         self.C = C
         self.params = params
         self.survey_id = survey_id
-        #TODO formalize fisher_type
         self.fisher_type = True
 
 #    def get_dO_a_ddelta_bar(self):

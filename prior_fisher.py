@@ -139,7 +139,7 @@ def project_no_de(fisher_mat,params,labels):
 
 def project_w0wa_to_w0(fisher_mat,params,labels):
     """project w0wa parametrization to w0"""
-    n_de = 2 
+    n_de = 2
     n_new = fisher_mat.shape[0]-(n_de-1) #will project 2 dark energy entries to 1
     fisher_new = np.zeros((n_new,n_new))
     #all the bins have constant change wrt w0

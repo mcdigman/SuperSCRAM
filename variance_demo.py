@@ -163,14 +163,14 @@ if __name__=='__main__':
     l_sw = np.logspace(np.log(30),np.log(5000),base=np.exp(1.),num=40)
 
     print("main: building geometries")
-    polygon_params = defaults.polygon_params
+    polygon_params = defaults.polygon_params.copy()
     polygon_params['n_double'] = 80
-    geo1 = PolygonGeo(z_coarse,thetas,phis,theta_in,phi_in,C,z_fine,l_max,defaults.polygon_params)
+    geo1 = PolygonGeo(z_coarse,thetas,phis,theta_in,phi_in,C,z_fine,l_max,polygon_params)
     print('main: r diffs',np.diff(geo1.rs))
     print('main: theta width',(geo1.rs[1]+geo1.rs[0])/2.*(theta1-theta0))
     #print('main: phi width',(geo1.rs[1]+geo1.rs[0])/2.*(phi1-phi0)*np.sin((theta1+theta0)/2))
     print('main: phi width',(geo1.rs[1]+geo1.rs[0])/2.*(phi1-phi0))
-#    geo2 = PolygonGeo(z_coarse,thetas,phis+phi1,theta_in,phi_in+phi1,C,z_fine,l_max,defaults.polygon_params)
+#    geo2 = PolygonGeo(z_coarse,thetas,phis+phi1,theta_in,phi_in+phi1,C,z_fine,l_max,polygon_params)
 #    #geo1 = RectGeo(z_coarse,np.array([theta0,theta1]),np.array([phi0,phi1]),C,z_fine)
 #    #geo2 = RectGeo(z_coarse,np.array([theta0,theta1]),np.array([phi0,phi1])+phi1,C,z_fine)
 

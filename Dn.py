@@ -15,11 +15,11 @@ from nz_lsst import NZLSST
 from nz_constant import NZConstant
 from lw_observable import LWObservable
 from algebra_utils import trapz2
-from polygon_geo import PolygonGeo
-from pixel_geo import PixelGeo
-from polygon_pixel_geo import PolygonPixelGeo
-from polygon_union_geo import PolygonUnionGeo
-from polygon_pixel_union_geo import PolygonPixelUnionGeo
+#from polygon_geo import PolygonGeo
+#from pixel_geo import PixelGeo
+#from polygon_pixel_geo import PolygonPixelGeo
+#from polygon_union_geo import PolygonUnionGeo
+#from polygon_pixel_union_geo import PolygonPixelUnionGeo
 from alm_difference_geo import AlmDifferenceGeo
 #LSST sigma/(1+z)<0.05 required 0.02 goal for i<25.3 (lsst science book 3.8.1)
 import fisher_matrix as fm
@@ -45,7 +45,7 @@ class DNumberDensityObservable(LWObservable):
         self.basis = basis
         self.nz_select = params['nz_select']
         self.nz_params = nz_params
-        
+
         #self.geo2 should be area in mitigation survey but not in original survey
         #assume overlap is total and use AlmDifferenceGeo to avoid complications with calculating intersecions
         self.geo2 = AlmDifferenceGeo(geos[1],geos[0],geos[1].C,geos[1].zs,geos[1].z_fine)
@@ -176,10 +176,10 @@ class DNumberDensityObservable(LWObservable):
                 Nab_itr = n_avg*(1./self.V1s[itr]+1./self.V2s[itr])
                 self.Nab_i[itr] = 1./Nab_itr
                 self.vs[itr] = DO_a.flatten()
-            d1s_alt = self.basis.D_O_I_D_delta_alpha(self.geo1,self.integrands_smooth)
-            d2s_alt = self.basis.D_O_I_D_delta_alpha(self.geo2,self.integrands_smooth)
-            self.DO_a_alt = ((d2s_alt-d1s_alt).T*self.r_vols).T
-            self.vs_alt = self.DO_a_alt.flatten()
+            #d1s_alt = self.basis.D_O_I_D_delta_alpha(self.geo1,self.integrands_smooth)
+            #d2s_alt = self.basis.D_O_I_D_delta_alpha(self.geo2,self.integrands_smooth)
+            #self.DO_a_alt = ((d2s_alt-d1s_alt).T*self.r_vols).T
+            #self.vs_alt = self.DO_a_alt.flatten()
 
     def get_rank(self):
         """get the rank of the perturbation, ie the number of vectors summed in F=v^Tv"""

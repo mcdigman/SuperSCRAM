@@ -52,8 +52,8 @@ if __name__=='__main__':
     nz_params_wfirst_lens = defaults.nz_params_wfirst_lens.copy()
     sw_params = defaults.sw_survey_params.copy()
     lw_params = defaults.lw_survey_params.copy()
-    sw_observable_list = defaults.sw_observable_list
-    lw_observable_list = defaults.lw_observable_list
+    sw_observable_list = defaults.sw_observable_list.copy()
+    lw_observable_list = defaults.lw_observable_list.copy()
     mf_params = defaults.hmf_params.copy()
     mf_params['n_grid'] = 2000
     mf_params['log10_min_mass'] = 10.
@@ -89,12 +89,12 @@ if __name__=='__main__':
     #create the WFIRST geometry
     #zs are the bounding redshifts of the tomographic bins
     #zs = np.array([0.2,0.43,.63,0.9, 1.3])
-    zs = np.arange(0.2,1.21,0.20)
+    zs = np.arange(0.2,3.01,0.1)
     #zs = np.linspace(0.2,3.01,3)
     zs_lsst = np.linspace(0.,1.2,5)
     #zs = np.array([0.2,0.4,0.6])
     #z_fine are the resolution redshift slices to be integrated over
-    z_fine = np.linspace(0.001,np.max([zs[-1],zs_lsst[-1]]),1000)
+    z_fine = np.linspace(0.001,np.max([zs[-1],zs_lsst[-1]]),3000)
 
     #z_fine[0] = 0.0001
 
@@ -186,7 +186,7 @@ if __name__=='__main__':
 
     #create the actual sw survey
     print("main: begin constructing SWSurvey for wfirst")
-    sw_survey_wfirst = SWSurvey(geo_wfirst,'wfirst',C,sw_params,cosmo_par_list,cosmo_par_eps,sw_observable_list,len_params,None,nz_wfirst_lens)
+    sw_survey_wfirst = SWSurvey(geo_wfirst,'wfirst',C,sw_params,cosmo_par_list,cosmo_par_eps,sw_observable_list,len_params,nz_wfirst_lens)
     print("main: finish constructing SWSurvey for wfirst")
     surveys_sw = np.array([sw_survey_wfirst])
 

@@ -171,13 +171,13 @@ def test_consistency():
     assert np.isclose(np.linalg.det(res0p),np.linalg.det(res2p))
     assert np.isclose(np.linalg.det(res0p),np.linalg.det(res3p))
 
-    
+
     alt_prior_fisher_params = { 'row_strip'     :np.array([]),
-                            'fisher_source' :'data/F_Planck_tau0.01.dat',
-                            'n_full'        :41,
-                            'n_de'          :36,
-                            'z_step'        :0.025
-                          }
+                                'fisher_source' :'data/F_Planck_tau0.01.dat',
+                                'n_full'        :41,
+                                'n_de'          :36,
+                                'z_step'        :0.025
+                              }
     prior_mat = priors+mat
     fp1c = PriorFisher('jdem',prior_fisher_params,fisher_in=prior_mat,labels_in=JDEM_LABELS)
     fp2c = PriorFisher('w0wa',prior_fisher_params,fisher_in=prior_mat,labels_in=JDEM_LABELS)
@@ -229,7 +229,7 @@ def test_consistency():
     eig3c = np.linalg.eigh(res6)[0]
     eig_diffc = (eig2c[::-1][1:eig3c.size]-eig3c[::-1][0:eig3c.size-1])
     assert np.all(eig_diffc<=0.)
-    
+
 
 
 

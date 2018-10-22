@@ -41,7 +41,7 @@ class Geo(object):
                 raise ValueError('total area '+str(tot_area)+' cannot be negative')
             else:
                 tot_area = 0.
-        self.v_total = np.sum(self.volumes) #total volume of geo
+        #self.v_total = np.sum(self.volumes) #total volume of geo
 
         #list r and  z bins as [rmin,rmax] pairs (min in bin, max in bin) for convenience
         self.rbins = np.zeros((self.rs.size-1,2))

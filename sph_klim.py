@@ -88,7 +88,7 @@ class SphBasisK(LWBasis):
 #        self.lm = np.zeros((l_alpha.size,2),dtype=object)
         C_size = 0
         for i in range(l_alpha.size):
-            if needs_m:
+            if self.needs_m:
                 m = np.arange(-l_alpha[i], l_alpha[i]+1)
             else:
                 m = np.array([0])
@@ -153,9 +153,9 @@ class SphBasisK(LWBasis):
         """Get number of basis elements"""
         return self.C_size
 
-    def get_n_l(self):
-        """get the number of l values"""
-        return self.n_l
+#    def get_n_l(self):
+#        """get the number of l values"""
+#        return self.n_l
 
     def get_covar_array(self):
         """get the covariance matrix for the basis as an array"""
@@ -233,9 +233,9 @@ class SphBasisK(LWBasis):
         return variance
 
 
-    def k_LW(self):
-        """return the long-wavelength wave vector k"""
-        return self.C_id[:,1]
+#    def k_LW(self):
+#        """return the long-wavelength wave vector k"""
+#        return self.C_id[:,1]
 
     #get the partial derivatives of an sw observable wrt the basis given an integrand
     #with elements at each r_fine i.e.  \frac{\partial O_i}{\partial \bar(\delta)(r_{fine})}

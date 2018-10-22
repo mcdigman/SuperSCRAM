@@ -234,7 +234,6 @@ class ST_hmf(object):
 
         return result
 
-    #TODO PRIORTIY check for factor h**3
     def n_avg(self,min_mass,z):
         """ M is lower cutoff mass
             min_mass can be a function of z or a constant

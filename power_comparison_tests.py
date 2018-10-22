@@ -21,7 +21,7 @@ def param_set(request):
     """choose params from test_list"""
     return request.param
 
-vary_list = list(defaults.cosmology)
+vary_list = list(defaults.cosmology.copy())
 #vary_list = ['OmegaLh2']
 @pytest.fixture(params=vary_list)
 def param_vary(request):
@@ -101,9 +101,8 @@ if __name__=='__main__':
             C_fid = cp.CosmoPie(cosmo_fid,p_space='jdem')
             P_fid = mps.MatterPower(C_fid,power_params)
             k_fid = P_fid.k
-            C_fid.P_lin = P_fid
+            C_fid.set_power(P_fid)
             P_lin1 = P_fid.get_matter_power(np.array([0.]),pmodel='linear')[:,0]
-            C_fid.k = k_fid
 
             P_res1 = P_fid.get_matter_power(np.array([0.]),pmodel=param[2])[:,0]
             if param[2]=='halofit':

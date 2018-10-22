@@ -14,26 +14,23 @@ from extrap_utils import power_law_extend
 
 class ShearPower(object):
     """handles lensing power spectra"""
-    def __init__(self,C,z_fine,f_sky,params,mode='power',ps=None,nz_matcher=None):
+    def __init__(self,C,z_fine,f_sky,params,mode='power',nz_matcher=None):
         """
             inputs:
                 C: CosmoPie object
                 z_fine: z grid
                 f_sky: angular area of window in sky fraction
                 mode: whether to get power spectrum 'power' or dC/d\\bar{\\delta} 'dc_ddelta'
-                ps: lensing source distribution. Optional.
                 nz_matcher: an NZMatcher object, for getting source distribution and n_gal if not None
                 params: see line by line description in defaults.py
         """
         print("Getting ShearPower")
         self.k_in = C.k
         self.k_max = np.max(self.k_in)
-        self.k_min = np.min(self.k_in)
         self.C = C
         #self.zs = zs
         self.zs = z_fine
         self.params = params
-        self.ps_in = ps
         self.nz_matcher = nz_matcher
 
         #self.l_starts = np.logspace(np.log(params['l_min']),np.log(params['l_max']),params['n_l'],base=np.exp(1.))
@@ -102,7 +99,7 @@ class ShearPower(object):
         self.p_gg_use = self.p_dd_use
         self.p_gd_use = self.p_dd_use
 
-        self.source_dist = get_source_distribution(self.params['smodel'],self.zs,self.rs,self.C,self.params,ps,self.nz_matcher)
+        self.source_dist = get_source_distribution(self.params['smodel'],self.zs,self.rs,self.C,self.params,None,self.nz_matcher)
         self.ps = self.source_dist.ps
 
         #used in getting Cll_q_q for a given ShearPower

@@ -21,7 +21,7 @@ def test_cosmolike_agreement():
     cosmo_shear = np.loadtxt(input_dir+'shear_shear_cosmo_3.dat')
     cosmo_nz = np.loadtxt(input_dir+'n_z_2.dat')
 
-    camb_params = defaults.camb_params
+    camb_params = defaults.camb_params.copy()
     camb_params['force_sigma8'] = True
     camb_params['leave_h'] = False
     camb_params['npoints'] = 1000
@@ -161,9 +161,7 @@ def test_cosmolike_agreement():
         z_bin_starts[i] = np.min(z_fine[cum_n_z>=1./tomo_bins_cosmo*i])
 
     P_in = mps.MatterPower(C,power_params)
-    k_in = P_in.k
-    C.k = k_in
-    C.P_lin = P_in
+    C.set_power(P_in)
     #theta0 = np.pi/4.
     #theta1 = np.pi/2.
     #theta_in = np.pi/3.
@@ -177,12 +175,13 @@ def test_cosmolike_agreement():
     #geo1 = PolygonGeo(z_coarse,thetas,phis,theta_in,phi_in,C,z_fine.copy(),40,{'n_double':30})
     geo1 = CircleGeo(z_coarse,C,0.31275863997971481,100,z_fine.copy(),40,{'n_double':30})
     assert np.isclose((geo1.angular_area()*180**2/np.pi**2),1000.)
-    r_bins = geo1.rbins
+    #r_bins = geo1.rbins
     z_bins = geo1.zbins
 
 
     len_params = defaults.lensing_params.copy()
-    len_params['smodel'] = 'custom_z'
+    len_params['smodel'] = 'gaussian'
+    len_params['zbar'] = 1.
     len_params['n_gal'] = n_gal_cosmo
     len_params['sigma2_e'] = sigma_e_cosmo**2
     len_params['l_min'] = np.min(l_starts)
@@ -190,7 +189,7 @@ def test_cosmolike_agreement():
     len_params['n_l'] = l_starts.size
     len_params['pmodel'] = 'halofit'
     #test lensing observables
-    sp = ShearPower(C,z_fine,fsky_cosmo,len_params,mode='power',ps=n_z)
+    sp = ShearPower(C,z_fine,fsky_cosmo,len_params,mode='power')
     qs = np.zeros(tomo_bins_cosmo,dtype=object)
     for i in range(qs.size):
         qs[i] = QShear(sp,z_bins[i,0],z_bins[i,1])
@@ -240,7 +239,7 @@ def test_cosmolike_agreement():
     #test with SWSurvey pipeline with 1000 sq deg spherical rectangle geo
     sw_params = {'needs_lensing':True,'cross_bins':True}
     observable_list = np.array(['len_shear_shear'])
-    sw_survey = SWSurvey(geo1,'c_s',C,sw_params,observable_list=observable_list,len_params=len_params,ps=n_z)
+    sw_survey = SWSurvey(geo1,'c_s',C,sw_params,observable_list=observable_list,len_params=len_params)
 #    C_pow = sw_survey.len_pow.C_pow
 
     c_g_sw = sw_survey.get_non_SSC_sw_covar_arrays()[0]

@@ -10,7 +10,7 @@ import lensing_weight as len_w
 import power_parameter_response as ppr
 class LensingPowerBase(object):
     """Shared object to generate and store things that will be needed my multiple LensingObservable objects, such as the lensing weight functions"""
-    def __init__(self,geo,survey_id,C,cosmo_par_list,cosmo_par_eps,params,log_par_derivs=None,ps=None,nz_matcher=None):
+    def __init__(self,geo,survey_id,C,cosmo_par_list,cosmo_par_eps,params,log_par_derivs=None,nz_matcher=None):
         r"""inputs:
             geo: a Geo object for the geometry
             survey_id: an identifier for the SWSurvey this object is associated with
@@ -30,15 +30,15 @@ class LensingPowerBase(object):
         self.nz_matcher = nz_matcher
 
         f_sky = self.geo.angular_area()/(4.*np.pi)
-        self.C_pow = sp.ShearPower(C,self.geo.z_fine,f_sky,params,'power',ps,self.nz_matcher)
-        self.dC_ddelta = sp.ShearPower(C,self.geo.z_fine,f_sky,params,'dc_ddelta',ps,self.nz_matcher)
+        self.C_pow = sp.ShearPower(C,self.geo.z_fine,f_sky,params,'power',self.nz_matcher)
+        self.dC_ddelta = sp.ShearPower(C,self.geo.z_fine,f_sky,params,'dc_ddelta',self.nz_matcher)
 
         self.dC_dpars = np.zeros((cosmo_par_list.size,2),dtype=object)
         self.Cs_pert = ppr.get_perturbed_cosmopies(C,cosmo_par_list,cosmo_par_eps,log_par_derivs)
 
         for i in range(0,cosmo_par_list.size):
-            self.dC_dpars[i,0] = sp.ShearPower(self.Cs_pert[i,0],self.geo.z_fine,f_sky,params,'power',ps,self.nz_matcher)
-            self.dC_dpars[i,1] = sp.ShearPower(self.Cs_pert[i,1],self.geo.z_fine,f_sky,params,'power',ps,self.nz_matcher)
+            self.dC_dpars[i,0] = sp.ShearPower(self.Cs_pert[i,0],self.geo.z_fine,f_sky,params,'power',self.nz_matcher)
+            self.dC_dpars[i,1] = sp.ShearPower(self.Cs_pert[i,1],self.geo.z_fine,f_sky,params,'power',self.nz_matcher)
 
 class LensingObservable(SWObservable):
     """Generic lensing observable, subclass only need to define a function handle self.len_handle for which obserable to use"""
@@ -94,8 +94,3 @@ class GalaxyGalaxyLensingObservable(LensingObservable):
     def __init__(self,len_pow,z1,z2):
         """See LensingObservable"""
         LensingObservable.__init__(self,len_pow,z1,z2,len_w.QNum,len_w.QNum)
-#TODO build this
-#class MatterPowerObservable(SWObservable):
-#    """Class for matter power spectrum as an observable"""
-#    def __init__(self,len_pow):
-#        """len_pow: a LensingPowerBase object"""

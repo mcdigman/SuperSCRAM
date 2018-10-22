@@ -81,12 +81,12 @@ if __name__=='__main__':
 import prior_fisher as pf
 import defaults
 if cosmo['de_model'] == 'jdem':
-    f_g_w0wa = pf.project_w0wa(f_set_nopriors[0][2].get_fisher(),defaults.prior_fisher_params,np.array([]))[0]
-    f_g_w0 = pf.project_w0(f_set_nopriors[0][2].get_fisher(),defaults.prior_fisher_params,np.array([]))[0]
+    f_g_w0wa = pf.project_w0wa(f_set_nopriors[0][2].get_fisher(),defaults.prior_fisher_params.copy(),np.array([]))[0]
+    f_g_w0 = pf.project_w0(f_set_nopriors[0][2].get_fisher(),defaults.prior_fisher_params.copy(),np.array([]))[0]
     eig_g_w0wa  = np.linalg.eigh(f_g_w0wa)[0]
 elif cosmo['de_model'] == 'w0wa':
     f_g_w0wa = f_set_nopriors[0][2].get_fisher()
-    f_g_w0 = pf.project_w0wa_to_w0(f_set_nopriors[0][2].get_fisher(),defaults.prior_fisher_params,np.array([]))[0]
+    f_g_w0 = pf.project_w0wa_to_w0(f_set_nopriors[0][2].get_fisher(),defaults.prior_fisher_params.copy(),np.array([]))[0]
     eig_g_w0wa  = np.linalg.eigh(f_g_w0wa)[0]
 elif cosmo['de_model'] == 'constant_w':
     f_g_w0 = f_set_nopriors[0][2].get_fisher()

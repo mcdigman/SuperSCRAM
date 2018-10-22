@@ -12,7 +12,7 @@ import matter_power_spectrum as mps
 
 def test_hmf():
     """run various hmf tests as a block"""
-    cosmo_fid = defaults.cosmology
+    cosmo_fid = defaults.cosmology.copy()
 
     cosmo_fid['h'] = 0.65
     cosmo_fid['Omegamh2'] = 0.148
@@ -29,8 +29,7 @@ def test_hmf():
     power_params.camb['accuracy'] = 2.
     C = cp.CosmoPie(cosmo_fid,'basic')
     P = mps.MatterPower(C,power_params)
-    C.P_lin = P
-    C.k = P.k
+    C.set_power(P)
     params = defaults.hmf_params.copy()
     params['z_min'] = 0.0
     params['z_max'] = 5.0
@@ -55,7 +54,7 @@ def test_hmf():
         #check normalized to unity (all dark matter is in some halo)
 
 
-        f_norm_residual = trapz(hmf.f_sigma(Ms,Gs).T,np.log(hmf.sigma[:-1:]**-1),axis=1)
+#        f_norm_residual = trapz(hmf.f_sigma(Ms,Gs).T,np.log(hmf.sigma[:-1:]**-1),axis=1)
         #assert np.allclose(np.zeros(Gs.size)+1.,norm_residual)
         _,_,dndM = hmf.mass_func(Ms,Gs)
         n_avgs_alt = np.zeros(zs.size)
@@ -106,15 +105,15 @@ def test_hmf():
         assert np.allclose(bias_G,bias_z)
         assert np.all(bias_nu>=0)
         dndm = hmf.dndM_G(Ms,1.)
-        bias_avg = np.trapz(bias_nu*dndm,Ms)
+#        bias_avg = np.trapz(bias_nu*dndm,Ms)
 
         n_avg2 = hmf.n_avg(Ms,0.)
         assert np.all(n_avg2>=0.)
-        bias_n_avg1 = bias_nu*n_avg2
+#        bias_n_avg1 = bias_nu*n_avg2
         #bias_n_avg2 = hmf.bias_n_avg(Ms)
 
-        integ_pred = np.trapz(hmf.f_sigma(Ms,1.,1.),np.log(1./hmf.sigma[:-1:]))
-        integ_res = np.trapz(Ms*hmf.dndM_G(Ms,1.),Ms)/C.rho_bar(0.)
+#        integ_pred = np.trapz(hmf.f_sigma(Ms,1.,1.),np.log(1./hmf.sigma[:-1:]))
+#        integ_res = np.trapz(Ms*hmf.dndM_G(Ms,1.),Ms)/C.rho_bar(0.)
         #assert np.isclose(integ_res,integ_pred,rtol=1.e-2)
         #xs n#np.linspace(np.log(np.sqrt(nu[0])),np.log(nu[-1]),10000)
         #xs = np.exp(np.linspace(np.log(np.sqrt(nu[0]),np.log(1.e36),10000))
@@ -200,8 +199,7 @@ def test_hmf():
             cosmo_fid2 = cp.add_derived_pars(cosmo_fid2,p_space='basic')
             C2 = cp.CosmoPie(cosmo_fid2,'basic')
             P2 = mps.MatterPower(C2,power_params)
-            C2.P_lin = P2
-            C2.k = P2.k
+            C2.set_power(P2)
             params2 = params.copy()
             hmf2 = ST_hmf(C2,params=params2)
             zs = np.array([0.,1.,2.,4.])
@@ -228,7 +226,7 @@ def test_hmf():
             cosmo_fid2 = cp.add_derived_pars(cosmo_fid2,p_space='basic')
             C2 = cp.CosmoPie(cosmo_fid2,'basic')
             P2 = mps.MatterPower(C2,power_params)
-            C2.P_lin = P2
+            C2.set_power(P2)
             C2.k = P2.k
             params2 = params.copy()
             hmf2 = ST_hmf(C2,params=params2)
@@ -251,7 +249,7 @@ def test_hmf():
             bias = hmf.bias_G(Ms,Gs,1.)[:,0] #why 1
             #maybe should have k pivot 0.01
             input_bias = np.loadtxt('test_inputs/hmf/dig_hu_bias2.csv',delimiter=',')
-            masses = 10**np.linspace(np.log10(10**11),np.log10(10**16),100)
+#            masses = 10**np.linspace(np.log10(10**11),np.log10(10**16),100)
             bias_hu_i = 10**input_bias[:,1]#InterpolatedUnivariateSpline(10**input_bias[:,0],10**input_bias[:,1])(masses)
             bias_i = hmf.bias_G(10**input_bias[:,0],Gs,1.)[:,0]
             assert np.max(np.abs(bias_hu_i/bias_i-1.))<0.06
@@ -271,7 +269,7 @@ def test_hmf():
 if __name__=="__main__":
     pytest.cmdline.main(['hmf_tests.py'])
 #if __name__=="__main__":
-#    cosmo_fid = defaults.cosmology
+#    cosmo_fid = defaults.cosmology.copy()
 #
 #    cosmo_fid['h'] = 0.65
 #    cosmo_fid['Omegamh2'] = 0.148
@@ -288,8 +286,7 @@ if __name__=="__main__":
 #    power_params.camb['accuracy'] = 2.
 #    C = cp.CosmoPie(cosmo_fid,'basic')
 #    P = mps.MatterPower(C,power_params)
-#    C.P_lin = P
-#    C.k = P.k
+#    C.set_power(P)
 #    params = defaults.hmf_params.copy()
 #    params['z_min'] = 0.0
 #    params['z_max'] = 5.0
@@ -474,8 +471,7 @@ if __name__=="__main__":
 #            cosmo_fid2 = cp.add_derived_pars(cosmo_fid2,p_space='basic')
 #            C2 = cp.CosmoPie(cosmo_fid2,'basic')
 #            P2 = mps.MatterPower(C2,power_params)
-#            C2.P_lin = P2
-#            C2.k = P2.k
+#            C2.set_power(P2)
 #            params2 = params.copy()
 #            hmf2 = ST_hmf(C2,params=params2)
 #            zs = np.array([0.,1.,2.,4.])
@@ -508,7 +504,7 @@ if __name__=="__main__":
 #            cosmo_fid2 = cp.add_derived_pars(cosmo_fid2,p_space='basic')
 #            C2 = cp.CosmoPie(cosmo_fid2,'basic')
 #            P2 = mps.MatterPower(C2,power_params)
-#            C2.P_lin = P2
+#            C2.set_power(P2)
 #            C2.k = P2.k
 #            params2 = params.copy()
 #            hmf2 = ST_hmf(C2,params=params2)
@@ -604,7 +600,7 @@ if __name__=="__main__":
 #            cosmo_fid2 = cp.add_derived_pars(cosmo_fid2,p_space='basic')
 #            C2 = cp.CosmoPie(cosmo_fid2,'basic')
 #            P2 = mps.MatterPower(C2,power_params)
-#            C2.P_lin = P2
+#            C2.set_power(P2)
 #            C2.k = P2.k
 #            zs = np.array([0.])
 #            Gs = C2.G_norm(zs)
@@ -647,8 +643,7 @@ if __name__=="__main__":
 ##        power_params.camb['kmax'] = 0.899999976158
 ##        C = cp.CosmoPie(cosmo_fid,'basic')
 ##        P = mps.MatterPower(C,power_params)
-##        C.P_lin = P
-##        C.k = P.k
+##        C.set_power(P)
 ##        params = defaults.hmf_params.copy()
 ##        params['z_min'] = 0.0
 ##        params['z_max'] = 5.0

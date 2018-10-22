@@ -17,11 +17,9 @@ def util_set():
     """get set of things needed for tests"""
     omega_s = 0.02
     power_params = defaults.power_params.copy()
-    C = CosmoPie(defaults.cosmology,p_space='jdem')
+    C = CosmoPie(defaults.cosmology.copy(),p_space='jdem')
     P_in = mps.MatterPower(C,power_params)
-    k_in = P_in.k
-    C.P_lin = P_in
-    C.k = k_in
+    C.set_power(P_in)
 
     len_params = defaults.lensing_params.copy()
     len_params['z_bar'] = 1.0

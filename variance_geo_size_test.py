@@ -51,7 +51,7 @@ if __name__=='__main__':
     l_sw = np.logspace(np.log(30),np.log(5000),base=np.exp(1.),num=20)
 
     print("main: building geometries")
-    polygon_params = defaults.polygon_params
+    polygon_params = defaults.polygon_params.copy()
     polygon_params['n_double'] = 80
     z_coarse = np.array([0.,3.])
     #z_max = np.max(z_coarse)
@@ -81,7 +81,7 @@ if __name__=='__main__':
         max_n_pixels = 12*(2**res_healpix)**2
         #n_pixels = np.unique(np.hstack([np.logspace(3,np.log10(max_n_pixels),40).astype(np.int),np.linspace(1000,max_n_pixels,40).astype(np.int)]))
         n_pixels = np.array([max_n_pixels/2]).astype(np.int)
-        #n_pixels = np.array([1000,2000,3000,4000,5000,10000,20000,30000,40000,49152]) 
+        #n_pixels = np.array([1000,2000,3000,4000,5000,10000,20000,30000,40000,49152])
         n_bins = n_pixels.size
         all_pixels = get_healpix_pixelation(res_choose=res_healpix)
         #n_pixels = np.linspace(1,max_n_pixels,80).astype(np.int)#np.unique(np.hstack([np.logspace(0,np.log10(max_n_pixels),40).astype(np.int),np.linspace(1,max_n_pixels,40).astype(np.int)]))
@@ -113,12 +113,12 @@ if __name__=='__main__':
         plt.loglog(areas_res,variances_res)
         plt.show()
 
-    do_dump = False
-    if do_dump:
-        import dill
-        results = [z_coarse,z_fine,k_cut,l_max,camb_params,power_params,l_sw,z_max,r_max,k_tests,n_basis,variances,variance_res,r_width,theta_width,phi_width,volume,square_equiv,times]
-        dump_f = open('dump_var_con.pkl','w')
-        dill.dump(results,dump_f)
-        dump_f.close()
+#    do_dump = False
+#    if do_dump:
+#        import dill
+#        results = [z_coarse,z_fine,k_cut,l_max,camb_params,power_params,l_sw,z_max,r_max,k_tests,n_basis,variances,variance_res,r_width,theta_width,phi_width,volume,square_equiv,times]
+#        dump_f = open('dump_var_con.pkl','w')
+#        dill.dump(results,dump_f)
+#        dump_f.close()
 
 

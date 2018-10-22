@@ -14,6 +14,7 @@ from full_sky_geo import FullSkyGeo
 import defaults
 
 def test_full_sky():
+    """do some tests with a full sky geo known results"""
     #get dictionaries of parameters that various functions will need
     cosmo = defaults.cosmology_wmap.copy()
     cosmo['de_model'] = 'constant_w'
@@ -80,6 +81,7 @@ def test_full_sky():
 
 
 def test_half_sky():
+    """do some tests with a half sky geo known results"""
     #get dictionaries of parameters that various functions will need
     cosmo = defaults.cosmology_wmap.copy()
     cosmo['de_model'] = 'constant_w'
@@ -120,7 +122,7 @@ def test_half_sky():
     geo1 = HalfSkyGeo(zs,C,z_fine)
 
     P = MatterPower(C,power_params)
-    P.P_lin = 1./(P.k*r_max) 
+    P.P_lin = 1./(P.k*r_max)
     C.set_power(P)
 
     basis = SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_max,needs_m=False)
@@ -166,4 +168,3 @@ def test_half_sky():
 
 if __name__=='__main__':
     pytest.cmdline.main(['sph_basis_tests.py'])
-

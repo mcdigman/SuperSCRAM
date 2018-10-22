@@ -115,7 +115,7 @@ def test_jdem_w0wa_match(w0_test,wa_test,cosmo_input):
     cosmo_match_w0wa['de_model'] = 'w0wa'
     cosmo_match_w0wa['w0'] = w0_use
     cosmo_match_w0wa['wa'] = wa_use
-    cosmo_match_w0wa['w'] = w0_use+0.9*wa_use
+    cosmo_match_w0wa['w'] = w0_use#+0.9*wa_use
 
     cosmo_match_jdem['de_model'] = 'jdem'
     cosmo_match_jdem['w'] = w0_use+0.9*wa_use
@@ -223,8 +223,8 @@ def test_casarini_match(cosmo_input):
 
 
 if __name__=='__main__':
-    do_test_battery = True
-    do_other_tests = False
+    do_test_battery = False
+    do_other_tests = True
     if do_test_battery:
         pytest.cmdline.main(['w_matcher_tests.py'])
 

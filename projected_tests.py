@@ -137,8 +137,7 @@ def test_cosmosis_match():
     C = cp.CosmoPie(cosmology=COSMOLOGY_COSMOSIS2.copy(),p_space='jdem')
     P_in = mps.MatterPower(C,power_params)
     k_in = P_in.k
-    C.k = k_in
-    C.P_lin = P_in
+    C.set_power(P_in)
     zs = np.loadtxt('test_inputs/proj_2/z.txt')
     zs[0] = 10**-3
 

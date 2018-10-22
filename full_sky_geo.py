@@ -27,8 +27,8 @@ class FullSkyGeo(Geo):
     def angular_area(self):
         return 4.*np.pi
 
-    def a_lm(self,ll,mm):
-        if ll==0 and mm==0:
+    def a_lm(self,l,m):
+        if l==0 and m==0:
             return np.sqrt(4.*np.pi)
         else:
             return 0.

@@ -15,7 +15,7 @@ DEBUG = True
 
 class SWSurvey(object):
     """Short wavelength survey: manage short wavelength observables and get their non SSC covariances and derivatives"""
-    def __init__(self,geo,survey_id,C,params,cosmo_par_list=None,cosmo_par_eps=None,observable_list=None,len_params=None,ps=None,nz_matcher=None):
+    def __init__(self,geo,survey_id,C,params,cosmo_par_list=None,cosmo_par_eps=None,observable_list=None,len_params=None,nz_matcher=None):
         """ inputs:
                 geo: a Geo object
                 survey_id: some identifier for the survey
@@ -24,7 +24,6 @@ class SWSurvey(object):
                 cosmo_par_eps: amount to vary cosmological paramters by when getting partial derivatives
                 params, len_params: parameters
                 observable_list: list of observable names to get
-                ps: lensing source distribution. optional
                 nz_matcher: NZMatcher object. optional
         """
 
@@ -46,13 +45,17 @@ class SWSurvey(object):
         self.nz_matcher = nz_matcher
         self.len_params = len_params
         if self.needs_lensing:
-            self.len_pow = lo.LensingPowerBase(self.geo,survey_id,C,self.cosmo_par_list,self.cosmo_par_eps,self.len_params,None,ps,self.nz_matcher)
+            self.len_pow = lo.LensingPowerBase(self.geo,survey_id,C,self.cosmo_par_list,self.cosmo_par_eps,self.len_params,None,self.nz_matcher)
         else:
             self.len_pow = None
         self.n_param = self.cosmo_par_list.size
 
         self.observable_names = generate_observable_names(self.geo,observable_list,params['cross_bins'])
         self.observables = self.names_to_observables(self.observable_names)
+
+        if DEBUG:
+            if C.p_space=='jdem':
+                assert np.all(self.cosmo_par_list[0:5]==np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs']))
         print("sw_survey: finished initializing survey: "+str(survey_id))
 
 

@@ -52,13 +52,11 @@ def get_perturbed_cosmopies(C_fid,pars,epsilons,log_par_derivs=None,override_saf
             else:
                 P_a = mps.MatterPower(C_a,power_params,k_in=k_fid,de_perturbative=True)
                 P_b = mps.MatterPower(C_b,power_params,k_in=k_fid,de_perturbative=True)
-        k_a = P_a.k
-        k_b = P_b.k
+        #k_a = P_a.k
+        #k_b = P_b.k
 
-        C_a.P_lin = P_a
-        C_a.k = k_a
-        C_b.P_lin = P_b
-        C_b.k = k_b
+        C_a.set_power(P_a)
+        C_b.set_power(P_b)
 
         Cs_pert[i,0] = C_a
         Cs_pert[i,1] = C_b

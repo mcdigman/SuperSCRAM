@@ -4,8 +4,7 @@ from builtins import range
 from warnings import warn
 import camb
 
-#TODO set pivot_scalar to be a parameter
-#Note force_sigma8 forces sigma8_nl(z) to be the sigma8 in the cosmology, not sigma8_lin(z=0.), which may not be ideal behavior
+#Note if nonlinear force_sigma8 forces sigma8_nl(z) to be the sigma8 in the cosmology, not sigma8_lin(z=0.), which may not be ideal behavior
 def camb_pow(cosmology,camb_params,zbar=0.,nonlinear_model=camb.model.NonLinear_none):
     """get camb linear power spectrum
         inputs:
@@ -18,7 +17,7 @@ def camb_pow(cosmology,camb_params,zbar=0.,nonlinear_model=camb.model.NonLinear_
         raise ValueError('need camb params')
     pars = camb.CAMBparams()
     #ignores tau and YHe for now
-    pars.set_cosmology(H0=cosmology['H0'],ombh2=cosmology['Omegabh2'],omch2=cosmology['Omegach2'],omk=cosmology['Omegak'],mnu=cosmology['mnu']) 
+    pars.set_cosmology(H0=cosmology['H0'],ombh2=cosmology['Omegabh2'],omch2=cosmology['Omegach2'],omk=cosmology['Omegak'],mnu=cosmology['mnu'])
     pars.set_accuracy(camb_params['accuracy'],camb_params['accuracy'],camb_params['accuracy'])
     if cosmology.get('As') is not None:
         pars.InitPower.set_params(ns=cosmology['ns'],As=cosmology['As'],pivot_scalar=camb_params['pivot_scalar'])

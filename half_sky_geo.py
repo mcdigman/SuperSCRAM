@@ -38,11 +38,11 @@ class HalfSkyGeo(Geo):
         return 2.*np.pi
 
     #use mpmath to avoid overflow in gamma
-    def a_lm(self,ll,mm):
-        ll_m = mp.mpf(ll)
-        if ll==0 and mm==0:
+    def a_lm(self,l,m):
+        ll_m = mp.mpf(l)
+        if l==0 and m==0:
             return np.sqrt(np.pi)
-        elif mm==0 and np.mod(ll,2)==1:
+        elif m==0 and np.mod(l,2)==1:
             return float(self.sign*mp.sqrt(1+2*ll_m)*mp.pi/(ll_m*mp.gamma(-ll_m/2)*mp.gamma((3+ll_m)/2.)))
         else:
             return 0.

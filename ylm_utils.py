@@ -61,8 +61,8 @@ def _legendre_iterate(l_max,thetas,phis,function,args):
 
             function(ll,mm,base,prefactor,cos_phi_m,sin_phi_m,args)
 
-        if mm<=ll-2:
-            known_legendre.pop((ll-2,mm),None)
+            if mm<=ll-2:
+                known_legendre.pop((ll-2,mm),None)
 
     return args
 

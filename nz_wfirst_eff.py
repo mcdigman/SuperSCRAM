@@ -4,9 +4,8 @@ from __future__ import division,print_function,absolute_import
 from builtins import range
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
-from nz_matcher import NZMatcher,get_gaussian_smoothed_dN_dz
+from nz_matcher import NZMatcher
 
-#TODO: check get_nz and get_M_cut agree
 class NZWFirstEff(NZMatcher):
     """Match n(z) using given dNdz
     """

@@ -35,10 +35,10 @@ class GeoTestSet(object):
     """class wrapping a testing geometry"""
     def __init__(self,params):
         """some setup to make an actual geo"""
-        d = np.loadtxt('camb_m_pow_l.dat')
-        k = d[:,0]
-        P = d[:,1]
-        self.C = CosmoPie(defaults.cosmology,k=k,P_lin=P,p_space='jdem')
+        #d = np.loadtxt('camb_m_pow_l.dat')
+        #k = d[:,0]
+        #P = d[:,1]
+        self.C = CosmoPie(defaults.cosmology.copy(),p_space='jdem')
         self.zs = np.array([.01,1.01])
         self.z_fine = np.arange(0.0005,np.max(self.zs),0.002)
 
@@ -466,7 +466,7 @@ if __name__=='__main__':
         l_max_in = 10
         zs = np.array([0.01,1.01])
         z_fine = np.arange(0.01,1.05,0.01)
-        C = CosmoPie(defaults.cosmology,p_space='jdem')
+        C = CosmoPie(defaults.cosmology.copy(),p_space='jdem')
         thetas_wfirst = np.array([-50.,-35.,-35.,-19.,-19.,-19.,-15.8,-15.8,-40.,-40.,-55.,-78.,-78.,-78.,-55.,-55.,-50.,-50.])*np.pi/180.+np.pi/2.
         phis_wfirst = np.array([-19.,-19.,-11.,-11.,7.,25.,25.,43.,43.,50.,50.,50.,24.,5.,5.,7.,7.,-19.])*np.pi/180.
         phi_in_wfirst = 7./180.*np.pi

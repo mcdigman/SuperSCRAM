@@ -16,15 +16,13 @@ import w_matcher
 from extrap_utils import power_law_extend
 #class for a matter power spectrum which can get both linear and nonlinear power spectra as needed
 #TODO clean up
-#TODO treat w0 and w consistently
 class MatterPower(object):
     """A generic matter power spectrum which can provide different types of linear or nonlinear (halofit, FAST-PT) power spectra as needed"""
-    def __init__(self,C_in,power_params,P_lin=None,k_in=None,wm_in=None,P_fid=None,camb_safe=False,de_perturbative=False):
+    def __init__(self,C_in,power_params,k_in=None,wm_in=None,P_fid=None,camb_safe=False,de_perturbative=False):
         """Generate matter power spectrum for input cosmology
         linear power spectrum use camb, nonlinear can use halofit or FAST-PT
         Inputs:
         C_in: input CosmoPie
-        P_lin: Input matter power spectrum. Optional.
         matter_power_params,camb_params,wmatcher_params,halofit_params,fpt: dictionaries of parameters
         wm_in: input WMatcher object. Optional.
         P_fid: Fiducial  power spectrum. Optional.
@@ -46,20 +44,13 @@ class MatterPower(object):
         #give error if extrapolation is more than offset between camb default H0 and our H0
         self.extend_limit = self.cosmology['H0']/71.902712048990196
         self.extend_limit = np.max([self.extend_limit,1./self.extend_limit])+0.001
-        if P_lin is None or k_in is None:
-            k_camb,self.P_lin,self.sigma8_in = camb_pow(self.cosmology,camb_params=self.camb_params)
-            self.k_camb = k_camb
-            #TODO check handling fixing sigma8 right
-            if k_in is None:
-                self.k = k_camb
-            else:
-                self.P_lin = power_law_extend(k_camb,self.P_lin,k_in,k=3,extend_limit=self.extend_limit)
-                self.k = k_in
+
+        self.k_camb,self.P_lin,self.sigma8_in = camb_pow(self.cosmology,camb_params=self.camb_params)
+        if k_in is None:
+            self.k = self.k_camb
         else:
+            self.P_lin = power_law_extend(self.k_camb,self.P_lin,k_in,k=3,extend_limit=self.extend_limit)
             self.k = k_in
-            self.P_lin = P_lin
-            #TODO this cannot be right, because C_in needs MatterPower to get sigma8
-            self.sigma8_in = C_in.get_sigma8()
 
         self.a_grid = np.arange(self.params['a_max'],self.params['a_min']-self.params['a_step']/10.,-self.params['a_step'])
         self.z_grid = 1./self.a_grid-1.

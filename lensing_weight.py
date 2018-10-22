@@ -50,7 +50,7 @@ def _gs(sp,z_min=0.,z_max=np.inf):
         for i in range(0,sp.n_z):
             if z_max<sp.zs[i]:
                 break
-            if sp.C.Omegak>0.0: #TODO handle curvature
+            if sp.C.Omegak>0.0:
                 sqrtK = np.sqrt(sp.C.K)
                 g_vals[i] = trapz2(ps_norm[i:sp.n_z]*sp.rs[i]*1./sqrtK*(1./np.tan(sqrtK*sp.rs[i])-1./np.tan(sqrtK*sp.rs[i:sp.n_z])),sp.rs[i:sp.n_z])
             else:
