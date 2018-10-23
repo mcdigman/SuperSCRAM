@@ -23,3 +23,5 @@ if __name__=='__main__':
     pytest.cmdline.main(['sph_basis_tests.py'])
     pytest.cmdline.main(['super_survey_test.py'])
     pytest.cmdline.main(['nz_tests.py'])
+    pytest.cmdline.main(['lsst_geo_test.py'])
+    pytest.cmdline.main(['variance_rot_test.py'])

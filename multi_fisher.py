@@ -60,10 +60,10 @@ class MultiFisher(object):
         #TODO eliminate from main loop
         if self.needs_a:
             print("MultiFisher: getting lw no mit variance")
-            self.a_vals = np.zeros(2)
+            self.a_vals = np.zeros(2,dtype=object)
             self.lw_F_no_mit = self.get_lw_fisher(f_spec_SSC_no_mit,initial_state=fm.REP_COVAR)
-            self.project_lw_a = self.basis.D_delta_bar_D_delta_alpha(self.sw_survey.geo,tomography=True)[0]
-            self.a_vals[0] = self.lw_F_no_mit.project_covar(self.project_lw_a,destructive=True).get_covar()
+            self.project_lw_a = self.basis.D_delta_bar_D_delta_alpha(self.sw_survey.geo,tomography=True)
+            self.a_vals[0] = self.lw_F_no_mit.project_covar(self.project_lw_a.T,destructive=True).get_covar()
             self.lw_F_no_mit = None
         else:
             self.a_vals = None
@@ -83,7 +83,7 @@ class MultiFisher(object):
 
             if self.needs_a:
                 print("MultiFisher: getting lw mit variance ")
-                self.a_vals[1] = self.lw_F_mit.project_covar(self.project_lw_a).get_covar()
+                self.a_vals[1] = self.lw_F_mit.project_covar(self.project_lw_a.T).get_covar()
 
             print("MultiFisher: projecting lw mit covariance")
             self.sw_f_ssc_mit = self.lw_F_mit.project_covar(self.get_lw_to_sw_array(),destructive=True)
@@ -111,7 +111,7 @@ class MultiFisher(object):
             self.fisher_prior_obj = prior_fisher.PriorFisher(self.sw_survey.C.de_model,self.prior_params)
             self.fisher_priors = self.fisher_prior_obj.get_fisher()
         else:
-            warn('Current priors do not support p_space '+str(self.sw_survey.C.p_space)+' using 0 priors')
+            warn('Current priors do not support p_space '+str(self.sw_survey.C.p_space)+', defaulting to 0 priors')
             self.fisher_prior_obj = None
             self.fisher_priors = fm.FisherMatrix(np.zeros((self.sw_to_par_array.shape[1],self.sw_to_par_array.shape[1])),fm.REP_FISHER,fm.REP_FISHER,silent=True)
 

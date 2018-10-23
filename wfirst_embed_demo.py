@@ -28,7 +28,7 @@ if __name__=='__main__':
     time0 = time()
     #get dictionaries of parameters that various functions will need
     cosmo = defaults.cosmology_wmap.copy()
-    cosmo['de_model'] = 'constant_w'
+    cosmo['de_model'] = 'w0wa'
     cosmo['wa'] = 0.
     cosmo['w0'] = -1.
     cosmo['w'] = -1.
@@ -62,7 +62,7 @@ if __name__=='__main__':
 
     power_params = defaults.power_params.copy()
     power_params.camb = camb_params
-    power_params.camb['accuracy'] = 2
+    power_params.camb['accuracy'] = 1
     power_params.matter_power['w_step'] = 0.2
     power_params.matter_power['a_step'] = 0.05
     power_params.wmatcher['a_step'] = 0.0001
@@ -89,12 +89,12 @@ if __name__=='__main__':
     #create the WFIRST geometry
     #zs are the bounding redshifts of the tomographic bins
     #zs = np.array([0.2,0.43,.63,0.9, 1.3])
-    zs = np.arange(0.2,3.01,0.1)
+    zs = np.arange(0.2,3.01,0.4)
     #zs = np.linspace(0.2,3.01,3)
     zs_lsst = np.linspace(0.,1.2,5)
     #zs = np.array([0.2,0.4,0.6])
     #z_fine are the resolution redshift slices to be integrated over
-    z_fine = np.linspace(0.001,np.max([zs[-1],zs_lsst[-1]]),3000)
+    z_fine = np.linspace(0.001,np.max([zs[-1],zs_lsst[-1]]),1000)
 
     #z_fine[0] = 0.0001
 

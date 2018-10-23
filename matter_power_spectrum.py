@@ -28,7 +28,7 @@ class MatterPower(object):
         P_fid: Fiducial  power spectrum. Optional.
         camb_safe: If True and P_fid is not None, will borrow camb_grid from P_fid if possible.
                 Useful if only linear growth factor different from P_fid.
-        de_perturbative: If True, get power spectra for constant w even if w(z) in C_in is not constant
+        de_perturbative: If True, the fiducial cosmology has w(z)=constant and the altered parameter will not affect w(z).
         """
 
         #save all the input parameter sets
@@ -104,9 +104,12 @@ class MatterPower(object):
                 n_w_above = np.ceil((1.+np.max(self.w_match_grid+self.params['w_edge']+self.params['w_step']))/self.params['w_step'])
                 self.w_min = -1.-n_w_below*self.params['w_step']
                 self.w_max = -1.+n_w_above*self.params['w_step']
-                min_step = np.min(np.abs(np.diff(self.w_match_grid)))
-                if min_step<self.params['w_step']:
-                    warn('step size '+str(self.params['w_step'])+' may be insufficient for grid with min step '+str(min_step))
+                if np.allclose(np.abs(np.diff(self.w_match_grid)),0.,atol=1.e-13):
+                    print("matter_power_spectrum: w_match_grid is effectively constant")
+                else:
+                    min_step = np.min(np.abs(np.diff(self.w_match_grid)))
+                    if min_step<self.params['w_step']:
+                        warn('step size '+str(self.params['w_step'])+' may be insufficient for grid with min step '+str(min_step))
                 self.camb_w_grid = np.arange(self.w_min,self.w_max,self.params['w_step'])
                 #make sure the grid has at least some minimum number of values
                 if self.camb_w_grid.size<self.params['min_n_w']:

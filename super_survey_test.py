@@ -20,7 +20,11 @@ import prior_fisher
 import matter_power_spectrum as mps
 import cosmopie as cp
 
-def test_super_survey():
+@pytest.fixture(params=['constant_w','w0wa'])
+def de_model(request):
+    return request.param
+
+def test_super_survey(de_model):
     """run some eigenvalue tests of SuperSurvey pipeline"""
     t1 = time()
     z_max = 1.35
@@ -34,7 +38,7 @@ def test_super_survey():
     cosmo_fid['w'] = -1.
     cosmo_fid['w0'] = cosmo_fid['w']
     cosmo_fid['wa'] = 0.
-    cosmo_fid['de_model'] = 'constant_w'
+    cosmo_fid['de_model'] = de_model
     if cosmo_fid['de_model']=='jdem':
         for i in range(0,36):
             cosmo_fid['ws36_'+str(i).zfill(2)] = cosmo_fid['w']
@@ -143,14 +147,15 @@ def test_super_survey():
     mit_eigs_par = SS.eig_set[1,1]
     no_mit_eigs_par = SS.eig_set[1,0]
     #TODO check eigenvalue interlace for this projection
-    print("main: unmitigated sw lambda1,2: "+str(no_mit_eigs_sw[0][-1])+","+str(no_mit_eigs_sw[0][-2]))
-    print("main: mitigated sw lambda1,2: "+str(mit_eigs_sw[0][-1])+","+str(mit_eigs_sw[0][-2]))
-    print("main: n sw mit lambda>1.00000001: "+str(np.sum(np.abs(mit_eigs_sw[0])>1.00000001)))
-    print("main: n sw no mit lambda>1.00000001: "+str(np.sum(np.abs(no_mit_eigs_sw[0])>1.00000001)))
-    print("main: unmitigated par lambda1,2: "+str(no_mit_eigs_par[0][-1])+","+str(no_mit_eigs_par[0][-2]))
-    print("main: mitigated par lambda1,2: "+str(mit_eigs_par[0][-1])+","+str(mit_eigs_par[0][-2]))
-    print("main: n par mit lambda>1.00000001: "+str(np.sum(np.abs(mit_eigs_par[0])>1.00000001)))
-    print("main: n par no mit lambda>1.00000001: "+str(np.sum(np.abs(no_mit_eigs_par[0])>1.00000001)))
+    SS.print_standard_analysis()
+#    print("main: unmitigated sw lambda1,2: "+str(no_mit_eigs_sw[0][-1])+","+str(no_mit_eigs_sw[0][-2]))
+#    print("main: mitigated sw lambda1,2: "+str(mit_eigs_sw[0][-1])+","+str(mit_eigs_sw[0][-2]))
+#    print("main: n sw mit lambda>1.00000001: "+str(np.sum(np.abs(mit_eigs_sw[0])>1.00000001)))
+#    print("main: n sw no mit lambda>1.00000001: "+str(np.sum(np.abs(no_mit_eigs_sw[0])>1.00000001)))
+#    print("main: unmitigated par lambda1,2: "+str(no_mit_eigs_par[0][-1])+","+str(no_mit_eigs_par[0][-2]))
+#    print("main: mitigated par lambda1,2: "+str(mit_eigs_par[0][-1])+","+str(mit_eigs_par[0][-2]))
+#    print("main: n par mit lambda>1.00000001: "+str(np.sum(np.abs(mit_eigs_par[0])>1.00000001)))
+#    print("main: n par no mit lambda>1.00000001: "+str(np.sum(np.abs(no_mit_eigs_par[0])>1.00000001)))
     v_no_mit_par = np.dot(SS.f_set_nopriors[0][2].get_cov_cholesky(),no_mit_eigs_par[1])
     v_mit_par = np.dot(SS.f_set_nopriors[0][2].get_cov_cholesky(),mit_eigs_par[1])
 
