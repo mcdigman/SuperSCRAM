@@ -26,7 +26,7 @@ def test_power_agreement():
     power_params.camb['maxkh'] = 3.
     power_params.camb['kmax'] = 10.
     power_params.camb['npoints'] = 1000
-    power_params.camb['accuracy'] = 1
+    power_params.camb['accuracy'] = 2
     power_params.camb['leave_h'] = False
 
     cosmo_jdem = cosmo_base.copy()
@@ -69,9 +69,9 @@ def test_power_agreement():
             power_derivs_jdem[j-1] = (C_pert_jdem[j,0].P_lin.get_matter_power([0.],pmodel=pmodel)[:,0]-C_pert_jdem[j,1].P_lin.get_matter_power([0.],pmodel=pmodel)[:,0])/(jdem_eps[j]*2.)
             power_derivs_lihu[j-1] = (C_pert_lihu[j,0].P_lin.get_matter_power([0.],pmodel=pmodel)[:,0]-C_pert_lihu[j,1].P_lin.get_matter_power([0.],pmodel=pmodel)[:,0])/(lihu_eps[j]*2.)
 
-        assert np.allclose((power_derivs_jdem[1]+power_derivs_jdem[0]-power_derivs_jdem[2]),power_derivs_lihu[1],rtol=1.e-2,atol=1.e-5*np.max(np.abs(power_derivs_lihu[1])))
-        assert np.allclose((power_derivs_jdem[0]-power_derivs_jdem[2]),power_derivs_lihu[0],rtol=1.e-2,atol=1.e-5*np.max(np.abs(power_derivs_lihu[0])))
-        assert np.allclose(power_derivs_jdem[2]*2*C_fid_lihu.cosmology['h'],power_derivs_lihu[2],rtol=1.e-2,atol=1.e-5*np.max(np.abs(power_derivs_lihu[2])))
+        assert np.allclose((power_derivs_jdem[1]+power_derivs_jdem[0]-power_derivs_jdem[2]),power_derivs_lihu[1],rtol=1.e-2,atol=1.e-4*np.max(np.abs(power_derivs_lihu[1])))
+        assert np.allclose((power_derivs_jdem[0]-power_derivs_jdem[2]),power_derivs_lihu[0],rtol=1.e-2,atol=1.e-4*np.max(np.abs(power_derivs_lihu[0])))
+        assert np.allclose(power_derivs_jdem[2]*2*C_fid_lihu.cosmology['h'],power_derivs_lihu[2],rtol=1.e-2,atol=1.e-4*np.max(np.abs(power_derivs_lihu[2])))
 
 def test_pipeline_consistency():
     """test full pipeline consistency with rotation jdem vs lihu"""
@@ -83,7 +83,7 @@ def test_pipeline_consistency():
     power_params.camb['maxkh'] = 3.
     power_params.camb['kmax'] = 10.
     power_params.camb['npoints'] = 1000
-    power_params.camb['accuracy'] = 1
+    power_params.camb['accuracy'] = 2
     power_params.camb['leave_h'] = False
 
     cosmo_jdem = cosmo_base.copy()
@@ -189,7 +189,9 @@ def test_pipeline_consistency():
         f_p_lihu_to_jdem = np.dot(project_lihu_to_jdem,np.dot(f_p_lihu,project_lihu_to_jdem.T))
         assert np.allclose(f_p_jdem_to_lihu,f_p_lihu,rtol=1.e-3)
         assert np.allclose(f_p_lihu_to_jdem,f_p_jdem,rtol=1.e-3)
+
 def test_agreement_with_sigma8():
+    """test sigma8 works basic to jdem"""
     cosmo_base = defaults.cosmology_wmap.copy()
     cosmo_base = cp.add_derived_pars(cosmo_base,'jdem')
     cosmo_base['de_model'] = 'constant_w'
@@ -199,7 +201,7 @@ def test_agreement_with_sigma8():
     power_params.camb['maxkh'] = 3.
     power_params.camb['kmax'] = 10.
     power_params.camb['npoints'] = 1000
-    power_params.camb['accuracy'] = 1
+    power_params.camb['accuracy'] = 2
     power_params.camb['leave_h'] = False
     power_params_jdem = deepcopy(power_params)
     power_params_jdem.camb['force_sigma8'] = False
@@ -326,4 +328,62 @@ def test_agreement_with_sigma8():
     print(f_np_basi/f_np_jdem_to_basi)
 
 if __name__=='__main__':
-    pytest.cmdline.main(['cosmo_response_tests.py'])
+    """test agreement of powers extracted in two different cosmological parametrizations"""
+    cosmo_base = defaults.cosmology_wmap.copy()
+    cosmo_base = cp.add_derived_pars(cosmo_base,'jdem')
+    cosmo_base['de_model'] = 'constant_w'
+    cosmo_base['w'] = -1.
+    power_params = defaults.power_params.copy()
+    power_params.camb['maxkh'] = 3.
+    power_params.camb['kmax'] = 10.
+    power_params.camb['npoints'] = 5000
+    power_params.camb['accuracy'] = 2
+    power_params.camb['leave_h'] = False
+
+    cosmo_jdem = cosmo_base.copy()
+    cosmo_jdem['p_space'] = 'jdem'
+    C_fid_jdem = cp.CosmoPie(cosmo_jdem,'jdem')
+    P_jdem = mps.MatterPower(C_fid_jdem,power_params.copy())
+    C_fid_jdem.set_power(P_jdem)
+
+    cosmo_lihu = cosmo_base.copy()
+    cosmo_lihu['p_space'] = 'lihu'
+    C_fid_lihu = cp.CosmoPie(cosmo_lihu,'lihu')
+    P_lihu = mps.MatterPower(C_fid_lihu,power_params.copy())
+    C_fid_lihu.set_power(P_lihu)
+
+    jdem_pars = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs'])
+    jdem_eps = np.array([0.002,0.00025,0.0001,0.00025,0.1])
+    C_pert_jdem = ppr.get_perturbed_cosmopies(C_fid_jdem,jdem_pars,jdem_eps)
+
+    lihu_pars = np.array(['ns','Omegach2','Omegabh2','h','LogAs'])
+    lihu_eps = np.array([0.002,0.00025,0.0001,0.00025,0.1])
+    C_pert_lihu = ppr.get_perturbed_cosmopies(C_fid_lihu,lihu_pars,lihu_eps)
+
+    response_pars = np.array(['Omegach2','Omegabh2','Omegamh2','OmegaLh2','h'])
+    response_derivs_jdem = np.zeros((response_pars.size,3))
+    response_derivs_jdem_pred = np.array([[1.,0.,1.,0.,1./(2.*C_fid_jdem.cosmology['h'])],[-1.,1.,0.,0.,0.],[0.,0.,0.,1.,1./(2.*C_fid_jdem.cosmology['h'])]]).T
+    response_derivs_lihu = np.zeros((response_pars.size,3))
+    response_derivs_lihu_pred = np.array([[1.,0.,1.,-1.,0.],[0.,1.,1.,-1.,0.],[0.,0.,0.,2.*C_fid_lihu.cosmology['h'],1.]]).T
+    for i in range(0,response_pars.size):
+        for j in range(1,4):
+            response_derivs_jdem[i,j-1] = (C_pert_jdem[j,0].cosmology[response_pars[i]]-C_pert_jdem[j,1].cosmology[response_pars[i]])/(jdem_eps[j]*2.)
+            response_derivs_lihu[i,j-1] = (C_pert_lihu[j,0].cosmology[response_pars[i]]-C_pert_lihu[j,1].cosmology[response_pars[i]])/(lihu_eps[j]*2.)
+    assert np.allclose(response_derivs_jdem_pred,response_derivs_jdem)
+    assert np.allclose(response_derivs_lihu_pred,response_derivs_lihu)
+
+    power_derivs_jdem = np.zeros((3,C_fid_jdem.k.size))
+    power_derivs_lihu = np.zeros((3,C_fid_lihu.k.size))
+
+    for pmodel in ['linear','fastpt','halofit']:
+        for j in range(1,4):
+            power_derivs_jdem[j-1] = (C_pert_jdem[j,0].P_lin.get_matter_power([0.],pmodel=pmodel)[:,0]-C_pert_jdem[j,1].P_lin.get_matter_power([0.],pmodel=pmodel)[:,0])/(jdem_eps[j]*2.)
+            power_derivs_lihu[j-1] = (C_pert_lihu[j,0].P_lin.get_matter_power([0.],pmodel=pmodel)[:,0]-C_pert_lihu[j,1].P_lin.get_matter_power([0.],pmodel=pmodel)[:,0])/(lihu_eps[j]*2.)
+        import matplotlib.pyplot as plt
+        plt.semilogx(P_jdem.k,(power_derivs_jdem[0]+power_derivs_jdem[1]-power_derivs_jdem[2]))
+        plt.semilogx(P_jdem.k,power_derivs_lihu[1])
+        plt.show()
+
+        assert np.allclose((power_derivs_jdem[1]+power_derivs_jdem[0]-power_derivs_jdem[2]),power_derivs_lihu[1],rtol=1.e-2,atol=1.e-4*np.max(np.abs(power_derivs_lihu[1])))
+        assert np.allclose((power_derivs_jdem[0]-power_derivs_jdem[2]),power_derivs_lihu[0],rtol=1.e-2,atol=1.e-4*np.max(np.abs(power_derivs_lihu[0])))
+        assert np.allclose(power_derivs_jdem[2]*2*C_fid_lihu.cosmology['h'],power_derivs_lihu[2],rtol=1.e-2,atol=1.e-4*np.max(np.abs(power_derivs_lihu[2])))

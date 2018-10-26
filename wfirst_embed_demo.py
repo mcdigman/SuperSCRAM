@@ -28,11 +28,11 @@ if __name__=='__main__':
     time0 = time()
     #get dictionaries of parameters that various functions will need
     cosmo = defaults.cosmology_wmap.copy()
-    cosmo['de_model'] = 'w0wa'
+    cosmo['de_model'] = 'constant_w'
     cosmo['wa'] = 0.
     cosmo['w0'] = -1.
     cosmo['w'] = -1.
-    p_space = 'jdem'
+    p_space = 'lihu'
 
     if cosmo['de_model']=='jdem':
         for i in range(0,36):
@@ -40,10 +40,10 @@ if __name__=='__main__':
 
     camb_params = defaults.camb_params.copy()
     camb_params['force_sigma8'] = False
-    camb_params['maxkh'] = 100.
+    camb_params['maxkh'] = 200.
     camb_params['kmax'] = 30.
-    camb_params['npoints'] = 2000
-    camb_params['pivot_scalar'] = 0.002
+    camb_params['npoints'] = 4000
+    camb_params['pivot_scalar'] = 0.05
     poly_params = {'n_double':80}
     len_params = defaults.lensing_params.copy()
     len_params['l_max'] = 5000
@@ -99,21 +99,21 @@ if __name__=='__main__':
     #z_fine[0] = 0.0001
 
     #l_max is the highest l that should be precomputed
-    l_max = 71
+    l_max = 300
     res_healpix = 6
     use_pixels = False
     print("main: begin constructing WFIRST PolygonGeo")
-    if use_pixels:
-        geo_wfirst = WFIRSTPixelGeo(zs,C,z_fine,l_max,res_healpix)
-        #geo_wfirst = LSSTPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
-        #geo_wfirst = FullSkyPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
-    else:
-        #geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,poly_params)
-        #geo_wfirst = HalfSkyGeo(zs_lsst,C,z_fine,top=True)
-        geo_wfirst = FullSkyGeo(zs,C,z_fine)
-        #geo_wfirst = LSSTGeo(zs,C,z_fine,l_max,poly_params)
-        #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.9202821591024097,deg0=-59,deg1=-10)
-        #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.7644912273732581,deg0=-49,deg1=-20)
+#    if use_pixels:
+#        geo_wfirst = WFIRSTPixelGeo(zs,C,z_fine,l_max,res_healpix)
+#        #geo_wfirst = LSSTPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
+#        #geo_wfirst = FullSkyPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
+#    else:
+#        #geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,poly_params)
+#        #geo_wfirst = HalfSkyGeo(zs_lsst,C,z_fine,top=True)
+#        geo_wfirst = FullSkyGeo(zs,C,z_fine)
+#        #geo_wfirst = LSSTGeo(zs,C,z_fine,l_max,poly_params)
+#        #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.9202821591024097,deg0=-59,deg1=-10)
+#        #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.7644912273732581,deg0=-49,deg1=-20)
 
     print("main: finish constructing WFIRST PolygonGeo")
 
@@ -134,7 +134,9 @@ if __name__=='__main__':
         cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w0','wa'])
         cosmo_par_eps = np.array([0.002,0.00025,0.0001,0.00025,0.1,0.01,0.035])
     elif cosmo['de_model']=='constant_w':
-        cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w'])
+        #cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w'])
+        #cosmo_par_eps = np.array([0.002,0.00025,0.0001,0.00025,0.1,0.01])
+        cosmo_par_list = np.array(['ns','Omegach2','Omegabh2','h','LogAs','w'])
         cosmo_par_eps = np.array([0.002,0.00025,0.0001,0.00025,0.1,0.01])
     elif cosmo['de_model']=='jdem':
         cosmo_par_list = ['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs']
@@ -168,7 +170,7 @@ if __name__=='__main__':
     #x_cut = 100.
     #x_cut = 85
     #x_cut = 30.
-    x_cut = 80.
+    x_cut = 138.
     k_cut = x_cut/r_max
     #l_max caps maximum l regardless of k
     print("main: begin constructing basis for long wavelength fluctuations")
@@ -225,16 +227,31 @@ if __name__=='__main__':
 #
 ##do_c_rots = True
 ##if do_c_rots:
-#cov_g_inv = SS.f_set_nopriors[0][2].get_fisher()
-#chol_g = SS.f_set_nopriors[0][2].get_cov_cholesky()
-#u_no_mit = SS.eig_set[1][0][1]
-#v_no_mit = np.dot(chol_g,u_no_mit)
-#of_no_mit = np.dot(cov_g_inv,v_no_mit)
+cov_g_inv = SS.f_set_nopriors[0][2].get_fisher()
+cov_ssc_inv = SS.f_set_nopriors[1][2].get_fisher()
+chol_g = SS.f_set_nopriors[0][2].get_cov_cholesky()
+chol_inv_g = SS.f_set_nopriors[0][2].get_cov_cholesky_inv()
+chol_ssc = SS.f_set_nopriors[1][2].get_cov_cholesky()
+chol_inv_ssc = SS.f_set_nopriors[1][2].get_cov_cholesky_inv()
+u_no_mit = SS.eig_set[1][0][1]
+v_no_mit = np.dot(chol_g,u_no_mit)
+of_no_mit = np.dot(cov_g_inv,v_no_mit)
+x_no_mit = np.dot(chol_ssc.T,chol_inv_g.T)
+t_no_mit = np.dot(x_no_mit,u_no_mit)
+m_tilde = np.dot(chol_inv_g,np.dot(SS.f_set_nopriors[1][2].get_covar(),chol_inv_g.T))
+
+c_rot_eig_no_mit = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[1][2].get_covar(),of_no_mit))
+c_rot_eig_mit = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[2][2].get_covar(),of_no_mit))
+c_rot_eig_g = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[0][2].get_covar(),of_no_mit))
+
+c_rot_eig_no_mit2 = np.dot(u_no_mit.T,np.dot(m_tilde,u_no_mit))
+assert np.allclose(c_rot_eig_no_mit,c_rot_eig_no_mit2)
+assert np.allclose(np.dot(x_no_mit.T,x_no_mit),m_tilde)
+assert np.allclose(c_rot_eig_no_mit,np.diagflat(SS.eig_set[1][0][0]))
+assert np.allclose(c_rot_eig_g,np.eye(c_rot_eig_g.shape[0]))
+assert np.allclose(np.dot(u_no_mit,np.dot(c_rot_eig_no_mit,u_no_mit.T)),m_tilde)
 #
-#c_rot_eig_no_mit = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[1][2].get_covar(),of_no_mit))
 #
-#c_rot_eig_mit = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[2][2].get_covar(),of_no_mit))
-#c_rot_eig_g = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[0][2].get_covar(),of_no_mit))
 #opacities = np.array([1.,1.,1.])
 #colors = np.array([[0,1,0],[1,0,0],[0,0,1]])
 #pnames = np.array(['p7','p6','p5','p4','p3','p2','p1'])
