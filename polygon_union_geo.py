@@ -49,10 +49,14 @@ class PolygonUnionGeo(Geo):
         self.union_in = list(self.union_pos.inside)
         self.n_union = len(self.union_xyz)
         self.union_geos = np.zeros(self.n_union,dtype=object)
-        for itr in range(0,self.n_union):
-            union_ra,union_dec = sgv.vector_to_radec(self.union_xyz[itr][:,0],self.union_xyz[itr][:,1],self.union_xyz[itr][:,2],degrees=False)
-            in_ra,in_dec = sgv.vector_to_radec(self.union_in[itr][0],self.union_in[itr][1],self.union_in[itr][2],degrees=False)
-            self.union_geos[itr] = PolygonGeo(zs,union_dec+np.pi/2.,union_ra,in_dec+np.pi/2.,in_ra,C,z_fine,l_max,poly_params)
+
+        if self.n_g==1:
+            self.union_geos[0] = self.geos[0]
+        else:
+            for itr in range(0,self.n_union):
+                union_ra,union_dec = sgv.vector_to_radec(self.union_xyz[itr][:,0],self.union_xyz[itr][:,1],self.union_xyz[itr][:,2],degrees=False)
+                in_ra,in_dec = sgv.vector_to_radec(self.union_in[itr][0],self.union_in[itr][1],self.union_in[itr][2],degrees=False)
+                self.union_geos[itr] = PolygonGeo(zs,union_dec+np.pi/2.,union_ra,in_dec+np.pi/2.,in_ra,C,z_fine,l_max,poly_params)
 
         if self.n_m>0:
             #get union of all the masks with the union of the inside, ie the intersection, which is the mask to use

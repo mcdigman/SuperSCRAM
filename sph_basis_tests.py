@@ -16,7 +16,30 @@ import defaults
 def test_full_sky():
     """do some tests with a full sky geo known results"""
     #get dictionaries of parameters that various functions will need
-    cosmo = defaults.cosmology_wmap.copy()
+    #cosmo = defaults.cosmology_wmap.copy()
+    cosmo = {   'Omegabh2':0.02223,
+                    'Omegach2':0.1153,
+                    'Omegab'  :0.04283392714316876,
+                    'Omegac'  :0.22216607285683124,
+                    'Omegamh2':0.13752999999999999,
+                    'OmegaL'  :0.735,
+                    'OmegaLh2':0.38145113207547166,
+                    'Omegam'  :0.265,
+                    'H0'      :72.04034509047493,
+                    'sigma8'  : 0.8269877678406697, #from the code
+                    'h'       :0.7204034509047493,
+                    'Omegak'  : 0.0,
+                    'Omegakh2': 0.0,
+                    'Omegar'  : 0.0,
+                    'Omegarh2': 0.0,
+                    'ns'      : 0.9608,
+                    'tau'     : 0.081,
+                    'Yp'      :0.299,
+                    'As'      : 2.464*10**-9,
+                    'LogAs'   :-19.821479791275138,
+                    'w'       :-1.0,
+                    'de_model':'constant_w',#dark energy model
+                    'mnu'     :0.}
     cosmo['de_model'] = 'constant_w'
     cosmo['wa'] = 0.
     cosmo['w0'] = -1.
@@ -83,7 +106,29 @@ def test_full_sky():
 def test_half_sky():
     """do some tests with a half sky geo known results"""
     #get dictionaries of parameters that various functions will need
-    cosmo = defaults.cosmology_wmap.copy()
+    cosmo = {   'Omegabh2':0.02223,
+                    'Omegach2':0.1153,
+                    'Omegab'  :0.04283392714316876,
+                    'Omegac'  :0.22216607285683124,
+                    'Omegamh2':0.13752999999999999,
+                    'OmegaL'  :0.735,
+                    'OmegaLh2':0.38145113207547166,
+                    'Omegam'  :0.265,
+                    'H0'      :72.04034509047493,
+                    'sigma8'  : 0.8269877678406697, #from the code
+                    'h'       :0.7204034509047493,
+                    'Omegak'  : 0.0,
+                    'Omegakh2': 0.0,
+                    'Omegar'  : 0.0,
+                    'Omegarh2': 0.0,
+                    'ns'      : 0.9608,
+                    'tau'     : 0.081,
+                    'Yp'      :0.299,
+                    'As'      : 2.464*10**-9,
+                    'LogAs'   :-19.821479791275138,
+                    'w'       :-1.0,
+                    'de_model':'constant_w',#dark energy model
+                    'mnu'     :0.}
     cosmo['de_model'] = 'constant_w'
     cosmo['wa'] = 0.
     cosmo['w0'] = -1.

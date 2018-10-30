@@ -10,6 +10,7 @@ import pytest
 import algebra_utils as au
 from algebra_utils import cholesky_inplace,ch_inv,invert_triangular
 import fisher_matrix as fm
+np.random.seed(31415)
 au.DEBUG = True
 fm.DEBUG = True
 def check_is_cholesky(A,B,atol_rel=1e-08,rtol=1e-05,lower=True):
@@ -99,6 +100,7 @@ rtol_use = 1e-6
 #includes random tests
 test_list = [[1,1],[2,1],[3,1],[4,1],[5,1],[7,1],[8,1],[8,1],[1,0],[2,0],[3,0],[4,0],[5,0],[7,0],[8,0],[8,0]]
 #test_list = [[1,1],[2,1],[3,1],[4,1],[5,1],[7,1],[1,0],[2,0],[3,0],[4,0],[5,0],[7,0]]
+#test_list = [[1,1]]
 @pytest.fixture(params=test_list)
 def fisher_input(request):
     """iterate through test matrixes"""
@@ -155,6 +157,82 @@ def test_basic_setup_succeeded(fisher_input):
     assert check_is_cholesky_inv(chol_cov_i,cov,atol_rel=atol_rel_use,rtol=rtol_use)
     assert np.allclose(np.tril(chol_cov_i),chol_cov_i,atol=atol_loc4,rtol=rtol_use)
     assert check_is_cholesky_inv(chol_cov_i,cov,atol_rel=atol_rel_use,rtol=rtol_use)
+
+def test_perturb_fisher_vec_1(fisher_params):
+    """test perturb_fisher"""
+    fisher_1 = copy.deepcopy(fisher_params.fisher)
+    fisher_2 = copy.deepcopy(fisher_params.fisher)
+    fisher_3 = copy.deepcopy(fisher_params.fisher)
+    fisher_4 = copy.deepcopy(fisher_params.fisher)
+    fab = fisher_params.fisher_input.fab.copy()
+    cov = fisher_params.fisher_input.cov.copy()
+
+    vec = np.random.rand(1,fab.shape[0])
+    sigma2_1 = np.random.uniform(0.1,0.99,1)**2
+    sigma2_2 = np.random.uniform(1.,5.,1)**2
+
+    fab2_1 = fab+np.dot(vec.T*sigma2_1,vec)
+    fab2_2 = fab+np.dot(vec.T*sigma2_2,vec)
+    cov2_1 = np.linalg.inv(fab2_1)
+    cov2_2 = np.linalg.inv(fab2_2)
+
+    fisher_1.perturb_fisher(vec,sigma2_1)
+    cov3_1 = fisher_1.get_covar()
+    fab3_1 = fisher_1.get_fisher()
+    fisher_3.perturb_fisher(vec,sigma2_1,force_sherman=True)
+    cov3_3 = fisher_3.get_covar()
+    fab3_3 = fisher_3.get_fisher()
+    fisher_2.perturb_fisher(vec,sigma2_2)
+    cov3_2 = fisher_2.get_covar()
+    fab3_2 = fisher_2.get_fisher()
+    fisher_4.perturb_fisher(vec,sigma2_2,force_sherman=True)
+    cov3_4 = fisher_4.get_covar()
+    fab3_4 = fisher_4.get_fisher()
+
+    atol_loc1 = np.max(np.abs(cov))*atol_rel_use
+    atol_loc2 = np.max(np.abs(fab))*atol_rel_use
+
+    assert np.allclose(fab2_1,fab3_1,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(cov2_1,cov3_1,atol=atol_loc1,rtol=rtol_use)
+    assert np.allclose(cov3_1,cov3_3,atol=atol_loc1,rtol=rtol_use)
+    assert np.allclose(fab3_1,fab3_3,atol=atol_loc2,rtol=rtol_use)
+
+    assert np.allclose(fab2_2,fab3_2,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(cov2_2,cov3_2,atol=atol_loc1,rtol=rtol_use)
+    assert np.allclose(fab3_2,fab3_4,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(cov3_2,cov3_4,atol=atol_loc2,rtol=rtol_use)
+
+def test_perturb_fisher_vec_5(fisher_params):
+    """test perturb_fisher"""
+    fisher_1 = copy.deepcopy(fisher_params.fisher)
+    fisher_2 = copy.deepcopy(fisher_params.fisher)
+    fab = fisher_params.fisher_input.fab.copy()
+    cov = fisher_params.fisher_input.cov.copy()
+
+    vec = np.random.rand(5,fab.shape[0])
+    sigma2_1 = np.random.uniform(0.1,0.99,5)**2
+    sigma2_2 = np.random.uniform(1.,5.,5)**2
+
+    fab2_1 = fab+np.dot(vec.T*sigma2_1,vec)
+    fab2_2 = fab+np.dot(vec.T*sigma2_2,vec)
+    cov2_1 = np.linalg.inv(fab2_1)
+    cov2_2 = np.linalg.inv(fab2_2)
+
+    fisher_1.perturb_fisher(vec,sigma2_1)
+    cov3_1 = fisher_1.get_covar()
+    fab3_1 = fisher_1.get_fisher()
+    fisher_2.perturb_fisher(vec,sigma2_2)
+    cov3_2 = fisher_2.get_covar()
+    fab3_2 = fisher_2.get_fisher()
+
+    atol_loc1 = np.max(np.abs(cov))*atol_rel_use
+    atol_loc2 = np.max(np.abs(fab))*atol_rel_use
+
+    assert np.allclose(fab2_1,fab3_1,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(cov2_1,cov3_1,atol=atol_loc1,rtol=rtol_use)
+
+    assert np.allclose(fab2_2,fab3_2,atol=atol_loc2,rtol=rtol_use)
+    assert np.allclose(cov2_2,cov3_2,atol=atol_loc1,rtol=rtol_use)
 
 
 def test_get_eig_metric_diag_range(fisher_params):
@@ -275,69 +353,6 @@ def test_get_eig_metric_rand(fisher_params):
 #    atol_loc2 = np.max(np.abs(fab))*atol_rel_use
 #    assert np.allclose(fab2,fab3,atol=atol_loc2,rtol=rtol_use)
 
-def test_perturb_fisher_vec_1(fisher_params):
-    """test perturb_fisher"""
-    fisher_1 = copy.deepcopy(fisher_params.fisher)
-    fisher_2 = copy.deepcopy(fisher_params.fisher)
-    fab = fisher_params.fisher_input.fab.copy()
-    cov = fisher_params.fisher_input.cov.copy()
-
-    vec = np.random.rand(1,fab.shape[0])
-    sigma2_1 = np.random.uniform(0.1,0.99,1)**2
-    sigma2_2 = np.random.uniform(1.,5.,1)**2
-
-    fab2_1 = fab+np.dot(vec.T*sigma2_1,vec)
-    fab2_2 = fab+np.dot(vec.T*sigma2_2,vec)
-    cov2_1 = np.linalg.inv(fab2_1)
-    cov2_2 = np.linalg.inv(fab2_2)
-
-    fisher_1.perturb_fisher(vec,sigma2_1)
-    cov3_1 = fisher_1.get_covar()
-    fab3_1 = fisher_1.get_fisher()
-    fisher_2.perturb_fisher(vec,sigma2_2)
-    cov3_2 = fisher_2.get_covar()
-    fab3_2 = fisher_2.get_fisher()
-
-    atol_loc1 = np.max(np.abs(cov))*atol_rel_use
-    atol_loc2 = np.max(np.abs(fab))*atol_rel_use
-
-    assert np.allclose(fab2_1,fab3_1,atol=atol_loc2,rtol=rtol_use)
-    assert np.allclose(cov2_1,cov3_1,atol=atol_loc1,rtol=rtol_use)
-
-    assert np.allclose(fab2_2,fab3_2,atol=atol_loc2,rtol=rtol_use)
-    assert np.allclose(cov2_2,cov3_2,atol=atol_loc1,rtol=rtol_use)
-
-def test_perturb_fisher_vec_5(fisher_params):
-    """test perturb_fisher"""
-    fisher_1 = copy.deepcopy(fisher_params.fisher)
-    fisher_2 = copy.deepcopy(fisher_params.fisher)
-    fab = fisher_params.fisher_input.fab.copy()
-    cov = fisher_params.fisher_input.cov.copy()
-
-    vec = np.random.rand(5,fab.shape[0])
-    sigma2_1 = np.random.uniform(0.1,0.99,5)**2
-    sigma2_2 = np.random.uniform(1.,5.,5)**2
-
-    fab2_1 = fab+np.dot(vec.T*sigma2_1,vec)
-    fab2_2 = fab+np.dot(vec.T*sigma2_2,vec)
-    cov2_1 = np.linalg.inv(fab2_1)
-    cov2_2 = np.linalg.inv(fab2_2)
-
-    fisher_1.perturb_fisher(vec,sigma2_1)
-    cov3_1 = fisher_1.get_covar()
-    fab3_1 = fisher_1.get_fisher()
-    fisher_2.perturb_fisher(vec,sigma2_2)
-    cov3_2 = fisher_2.get_covar()
-    fab3_2 = fisher_2.get_fisher()
-
-    atol_loc1 = np.max(np.abs(cov))*atol_rel_use
-    atol_loc2 = np.max(np.abs(fab))*atol_rel_use
-
-    assert np.allclose(fab2_1,fab3_1,atol=atol_loc2,rtol=rtol_use)
-    assert np.allclose(cov2_1,cov3_1,atol=atol_loc1,rtol=rtol_use)
-
-    assert np.allclose(fab2_2,fab3_2,atol=atol_loc2,rtol=rtol_use)
-    assert np.allclose(cov2_2,cov3_2,atol=atol_loc1,rtol=rtol_use)
 
 
 def test_fab_any_input_any_initial(fisher_params):

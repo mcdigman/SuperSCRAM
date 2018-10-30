@@ -170,7 +170,7 @@ if __name__=='__main__':
     #x_cut = 100.
     #x_cut = 85
     #x_cut = 30.
-    x_cut = 138.
+    x_cut = 190.
     k_cut = x_cut/r_max
     #l_max caps maximum l regardless of k
     print("main: begin constructing basis for long wavelength fluctuations")

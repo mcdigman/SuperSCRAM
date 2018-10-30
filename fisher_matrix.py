@@ -77,9 +77,9 @@ class FisherMatrix(object):
         if not self.silent:
             print("FisherMatrix "+str(id(self))+": internal state changed from "+str(self.internal_state)+" to "+str(new_state))
 
-    def perturb_fisher(self,vs,sigma2s):
+    def perturb_fisher(self,vs,sigma2s,force_sherman=False):
         """add perturbation the fisher matrix in the form sigma2*v^Tv,
-        use Sherman-Morrison formula to avoid inverting/for numerical stability"""
+        use Sherman-Morrison formula/Woodbury Matrix identity to avoid inverting/for numerical stability"""
         if not self.silent:
             print("FisherMatrix ",id(self)," perturbing fisher matrix")
         #internal state must be fisher to add right now: could possibly be changed back
@@ -93,18 +93,33 @@ class FisherMatrix(object):
         else:
             self.switch_rep(REP_COVAR)
             self._internal_mat = np.asfortranarray(self._internal_mat)
-            for itr in range(0,sigma2s.size):
-                v = vs[itr:itr+1]
-                lhs = spl.blas.dsymm(1.,self._internal_mat,v.T,lower=True,overwrite_c=False,side=False)
-                #use more numerically stable form for large sigma2s, although mathematically equivalent
-                if sigma2s[itr]>1.:
-                    mult = -1./(1./sigma2s[itr]+np.dot(v,lhs)[0,0])
-                elif sigma2s[itr]>0.:
-                    mult = -sigma2s[itr]/(1.+sigma2s[itr]*np.dot(v,lhs)[0,0])
-                else: #don't bother perturbing the matrix if nothing to add
-                    continue
+            #self._internal_mat2 = self._internal_mat.copy()
+            if force_sherman:
+                for itr in range(0,sigma2s.size):
+                    v = vs[itr:itr+1]
+                    lhs = spl.blas.dsymm(1.,self._internal_mat,v.T,lower=True,overwrite_c=False,side=False)
+                    #use more numerically stable form for large sigma2s, although mathematically equivalent
+                    if sigma2s[itr]>1.:
+                        mult = -1./(1./sigma2s[itr]+np.dot(v,lhs)[0,0])
+                    elif sigma2s[itr]>0.:
+                        mult = -sigma2s[itr]/(1.+sigma2s[itr]*np.dot(v,lhs)[0,0])
+                    else: #don't bother perturbing the matrix if nothing to add
+                        continue
+                    self._internal_mat2 = spl.blas.dsyrk(mult,lhs,1.,c=self._internal_mat,lower=True,trans=False,overwrite_c=True)
+            else:
+                lhs1 = np.asfortranarray(spl.blas.dsymm(1.,self._internal_mat,vs,lower=True,overwrite_c=False,side=True))
+                mult_mat = np.asfortranarray(np.diag(1./sigma2s))+spl.blas.dgemm(1.,vs,lhs1,trans_b=True)
+                mult_mat_chol_inv = get_cholesky_inv(mult_mat,lower=True,inplace=False,clean=False)
+                mult_mat=None
+                lhs2 = spl.blas.dtrmm(1.,mult_mat_chol_inv,lhs1,side=False,lower=True,trans_a=True)
+                mult_mat_chol_inv = None
+                lhs1=None
+                self._internal_mat = spl.blas.dsyrk(-1.,lhs2,1.,self._internal_mat,trans=True,lower=True,overwrite_c=True)
+                #self._internal_mat = mirror_symmetrize(self._internal_mat,lower=True,inplace=True)
+                #self._internal_mat2 = mirror_symmetrize(self._internal_mat2,lower=True,inplace=True)
 
-                self._internal_mat = spl.blas.dsyrk(mult,lhs,1.,c=self._internal_mat,lower=True,trans=False,overwrite_c=True)
+
+
 
         if not self.silent:
             print("FisherMatrix ",id(self)," finished perturbing fisher matrix")
