@@ -5,7 +5,7 @@ from copy import deepcopy
 import numpy as np
 from cosmopie import CosmoPie
 import defaults
-from premade_geos import WFIRSTGeo,LSSTGeoSimpl,LSSTGeo,LSSTPixelGeo,WFIRSTPixelGeo
+from premade_geos import WFIRSTGeo,LSSTGeoSimpl,LSSTGeo,LSSTPixelGeo,WFIRSTPixelGeo,StripeGeo
 from polygon_union_geo import PolygonUnionGeo
 from polygon_pixel_union_geo import PolygonPixelUnionGeo
 from alm_difference_geo import AlmDifferenceGeo
@@ -219,15 +219,29 @@ if __name__=='__main__':
 #        error_old = error_new
 #        error_new = np.abs(area2*180**2/np.pi**2-area_goal)
 #    print("radius for n_x="+str(n_x)+" 1000 deg^2="+str(radius))
-    do_ring_test = True
+    do_ring_test = False
     if do_ring_test:
         geo1 = RingPixelGeo(zs,C,z_fine,l_max,6,10000)
         display_geo(geo1,l_max)
-    do_simpl_test = False
+    do_simpl_test = True
     if do_simpl_test:
-        geo1 = LSSTGeoSimpl(zs,C,z_fine,l_max,{'n_double':30},phi0=0.,phi1=0.9202821591024097*0.8*1.0383719267257006*1.0000197370387798*1.0000197370387798*0.99998029455615*0.9999999844187037*0.9999999999876815*0.9999999999999916*1.0000000000000029,deg0=-49,deg1=-20)
-        print(0.31587654497768103/geo1.angular_area())
+        #geo1 = LSSTGeoSimpl(zs,C,z_fine,l_max,{'n_double':30},phi0=0.,phi1=0.9202821591024097*0.8*1.0383719267257006*1.0000197370387798*1.0000197370387798*0.99998029455615*0.9999999844187037*0.9999999999876815*0.9999999999999916*1.0000000000000029,deg0=-49,deg1=-20)
+        #phi1 = 0.9202821591024097
+        #for itr in range(0,10):
+        #    geo1 = LSSTGeoSimpl(zs,C,z_fine,l_max,{'n_double':30},phi0=0.,phi1=phi1,deg0=-59,deg1=-10)
+        #    phi1 = phi1*0.6391491408402885/geo1.angular_area()
+        #    print(geo1.angular_area()/0.6391491408402885)
+        theta_width = 6.109913056693067
+        #for itr in range(0,20):
+        #    theta_width = theta_width*0.6391491408402885/geo1.angular_area()
+        #    print(geo1.angular_area()/0.6391491408402885)
+        geo1 = StripeGeo(zs,C,z_fine,l_max,{'n_double':30},-30.+theta_width,-35.-theta_width,120.,95.,80)
         geo2 = LSSTGeo(zs,C,z_fine,l_max,{'n_double':30})
+        geo3 = AlmDifferenceGeo(geo2,geo1,C,zs,z_fine)
+        display_geo(geo3,l_max)
+        import sys
+        sys.exit()
+        
         #geo2 = LSSTGeoSimpl(zs,C,z_fine,l_max,{'n_double':30},phi1=2.0*2.9030540874480577)
         #geo3 = WFIRSTGeo(zs,C,z_fine,l_max,{'n_double':30})
         geo4 = PolygonUnionGeo(geo2.geos,np.append(geo1,geo2.masks))

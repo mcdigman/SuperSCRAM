@@ -111,6 +111,7 @@ class FisherMatrix(object):
                 mult_mat = np.asfortranarray(np.diag(1./sigma2s))+spl.blas.dgemm(1.,vs,lhs1,trans_b=True)
                 mult_mat_chol_inv = get_cholesky_inv(mult_mat,lower=True,inplace=False,clean=False)
                 mult_mat=None
+
                 lhs2 = spl.blas.dtrmm(1.,mult_mat_chol_inv,lhs1,side=False,lower=True,trans_a=True)
                 mult_mat_chol_inv = None
                 lhs1=None

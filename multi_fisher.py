@@ -61,7 +61,7 @@ class MultiFisher(object):
         if self.needs_a:
             print("MultiFisher: getting lw no mit variance")
             self.a_vals = np.zeros(2,dtype=object)
-            self.lw_F_no_mit = self.get_lw_fisher(f_spec_SSC_no_mit,initial_state=fm.REP_COVAR)
+            self.lw_F_no_mit = self.get_lw_fisher(f_spec_SSC_no_mit,initial_state=fm.REP_CHOL)
             self.project_lw_a = self.basis.D_delta_bar_D_delta_alpha(self.sw_survey.geo,tomography=True)
             self.a_vals[0] = self.lw_F_no_mit.project_covar(self.project_lw_a.T,destructive=True).get_covar()
             self.lw_F_no_mit = None
@@ -70,7 +70,7 @@ class MultiFisher(object):
             self.project_lw_a = None
 
 
-        self.lw_F_no_mit = self.get_lw_fisher(f_spec_SSC_no_mit,initial_state=fm.REP_COVAR)
+        self.lw_F_no_mit = self.get_lw_fisher(f_spec_SSC_no_mit,initial_state=fm.REP_CHOL)
 
         print("MultiFisher: projecting lw no mit covariance")
         self.sw_f_ssc_no_mit = self.lw_F_no_mit.project_covar(self.get_lw_to_sw_array(),destructive=True)

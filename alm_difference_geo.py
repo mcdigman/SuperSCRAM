@@ -35,7 +35,6 @@ class AlmDifferenceGeo(Geo):
     def a_lm(self,l,m):
         """get a(l,m) for the geometry"""
         if l>self._l_max:
-            print("PolygonUnionGeo: l value "+str(l)+" exceeds maximum precomputed l "+str(self._l_max)+",expanding table")
             self.expand_alm_table(l)
         alm = self.alm_table.get((l,m))
         if alm is None:

@@ -32,7 +32,7 @@ if __name__=='__main__':
     cosmo['wa'] = 0.
     cosmo['w0'] = -1.
     cosmo['w'] = -1.
-    p_space = 'lihu'
+    p_space = 'jdem'
 
     if cosmo['de_model']=='jdem':
         for i in range(0,36):
@@ -99,33 +99,36 @@ if __name__=='__main__':
     #z_fine[0] = 0.0001
 
     #l_max is the highest l that should be precomputed
-    l_max = 300
+    l_max = 81
     res_healpix = 6
     use_pixels = False
     print("main: begin constructing WFIRST PolygonGeo")
-#    if use_pixels:
-#        geo_wfirst = WFIRSTPixelGeo(zs,C,z_fine,l_max,res_healpix)
-#        #geo_wfirst = LSSTPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
-#        #geo_wfirst = FullSkyPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
-#    else:
-#        #geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,poly_params)
-#        #geo_wfirst = HalfSkyGeo(zs_lsst,C,z_fine,top=True)
-#        geo_wfirst = FullSkyGeo(zs,C,z_fine)
-#        #geo_wfirst = LSSTGeo(zs,C,z_fine,l_max,poly_params)
-#        #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.9202821591024097,deg0=-59,deg1=-10)
-#        #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.7644912273732581,deg0=-49,deg1=-20)
+    if use_pixels:
+        geo_wfirst = WFIRSTPixelGeo(zs,C,z_fine,l_max,res_healpix)
+        #geo_wfirst = LSSTPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
+        #geo_wfirst = FullSkyPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
+    else:
+        geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,poly_params)
+        #geo_wfirst = HalfSkyGeo(zs_lsst,C,z_fine,top=True)
+        #geo_wfirst = FullSkyGeo(zs,C,z_fine)
+        #geo_wfirst = LSSTGeo(zs,C,z_fine,l_max,poly_params)
+        #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.9310048450824275,deg0=-59,deg1=-10)
+        #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.7644912273732581,deg0=-49,deg1=-20)
+        theta_width = 6.109913056693067
+        geo_wfirst = StripeGeo(zs,C,z_fine,l_max,poly_params,-30.+theta_width,-35.-theta_width,120.,95.,80)
+
 
     print("main: finish constructing WFIRST PolygonGeo")
 
     #create the LSST geometry, for our purposes, a 20000 square degree survey
     #encompassing the wfirst survey with galactic plane masked)
     print("main: begin constructing LSST PolygonGeo")
-#    if use_pixels:
-#        #geo_wfirst = WFIRSTPixelGeo(zs,C,z_fine,l_max,res_healpix)
-#        geo_lsst = LSSTPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
-#        #geo_lsst = FullSkyPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
-#    else:
-#        geo_lsst = LSSTGeo(zs_lsst,C,z_fine,l_max,poly_params)
+    if use_pixels:
+        #geo_wfirst = WFIRSTPixelGeo(zs,C,z_fine,l_max,res_healpix)
+        geo_lsst = LSSTPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
+        #geo_lsst = FullSkyPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
+    else:
+        geo_lsst = LSSTGeo(zs_lsst,C,z_fine,l_max,poly_params)
     print("main: finish constructing LSST PolygonGeo")
 
     #create the short wavelength survey (SWSurvey) object
@@ -134,10 +137,10 @@ if __name__=='__main__':
         cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w0','wa'])
         cosmo_par_eps = np.array([0.002,0.00025,0.0001,0.00025,0.1,0.01,0.035])
     elif cosmo['de_model']=='constant_w':
-        #cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w'])
-        #cosmo_par_eps = np.array([0.002,0.00025,0.0001,0.00025,0.1,0.01])
-        cosmo_par_list = np.array(['ns','Omegach2','Omegabh2','h','LogAs','w'])
+        cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w'])
         cosmo_par_eps = np.array([0.002,0.00025,0.0001,0.00025,0.1,0.01])
+        #cosmo_par_list = np.array(['ns','Omegach2','Omegabh2','h','LogAs','w'])
+        #cosmo_par_eps = np.array([0.002,0.00025,0.0001,0.00025,0.1,0.01])
     elif cosmo['de_model']=='jdem':
         cosmo_par_list = ['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs']
         cosmo_par_list.extend(cp.JDEM_LIST)
@@ -170,7 +173,7 @@ if __name__=='__main__':
     #x_cut = 100.
     #x_cut = 85
     #x_cut = 30.
-    x_cut = 190.
+    x_cut = 90
     k_cut = x_cut/r_max
     #l_max caps maximum l regardless of k
     print("main: begin constructing basis for long wavelength fluctuations")
@@ -178,13 +181,13 @@ if __name__=='__main__':
     print("main: finish constructing basis for long wavelength fluctuations")
 
     #create the lw survey
-    geos = np.array([],dtype=object)
+    geos = np.array([geo_lsst,geo_wfirst],dtype=object)
     print("main: begin constructing LWSurvey for mitigation")
-    #survey_lw = LWSurvey(geos,'combined_survey',basis,C,lw_params,observable_list=lw_observable_list,param_list=lw_param_list)
+    survey_lw = LWSurvey(geos,'combined_survey',basis,C,lw_params,observable_list=lw_observable_list,param_list=lw_param_list)
     #survey_lw = LWSurvey(geos,'combined_survey',basis,C,lw_params,np.array([]),np.array([]))#,observable_list=lw_observable_list,param_list=lw_param_list)
     print("main: finish constructing LWSurvey for mitigation")
-    surveys_lw = np.array([])
-    #surveys_lw = np.array([survey_lw])
+    #surveys_lw = np.array([])
+    surveys_lw = np.array([survey_lw])
 
     #create the actual sw survey
     print("main: begin constructing SWSurvey for wfirst")
@@ -194,7 +197,7 @@ if __name__=='__main__':
 
     #create the SuperSurvey with mitigation
     print("main: begin constructing SuperSurvey")
-    SS = SuperSurvey(surveys_sw,surveys_lw,basis,C,prior_params,get_a=False,do_unmitigated=True,do_mitigated=False)
+    SS = SuperSurvey(surveys_sw,surveys_lw,basis,C,prior_params,get_a=False,do_unmitigated=True,do_mitigated=True)
 
     time1 = time()
     print("main: finished construction tasks in "+str(time1-time0)+" s")

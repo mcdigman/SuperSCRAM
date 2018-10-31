@@ -100,6 +100,8 @@ class SphBasisK(LWBasis):
 #            self.lm[i,1] = m
         self.C_size = C_size
         print("sph_klim: basis size: ",self.C_size)
+#        import sys
+#        sys.exit()
         self.C_id = np.zeros((C_size,3))
 
         self.C_compact = np.zeros(self.n_l,dtype=object)
