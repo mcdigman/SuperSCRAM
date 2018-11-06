@@ -22,24 +22,29 @@ from polygon_utils import get_healpix_pixelation
 #    X1, Y1 = np.meshgrid(xedges1, yedges1)
 #    pc1 = ax.pcolormesh(X1,Y1,-H1,cmap='gray')
 #    ax.set_aspect('equal')
-def plot_reconstruction(reconstruction,title,fig,cmap='Greys'):
+def plot_reconstruction(reconstruction,title,fig,cmap='Greys',cbar=True,notext=False):
     """plot the reconstruction of pixels"""
-    hp.mollview(reconstruction,title=title,fig=fig,hold=True,cmap=cmap)
+    hp.mollview(reconstruction,title=title,fig=fig,hold=True,cmap=cmap,cbar=cbar,notext=notext)
 
-def reconstruct_and_plot(geo,l_max,pixels,title,fig,cmap='Greys'):
+def reconstruct_and_plot(geo,l_max,pixels,title,fig,cmap='Greys',do_round=False,cbar=True,notext=False):
     """plot the area enclosed by a geo on a pixelated map"""
     alms = geo.get_alm_table(l_max)
     reconstruction = reconstruct_from_alm(l_max,pixels[:,0],pixels[:,1],alms)
-    plot_reconstruction(reconstruction,title,fig,cmap)
+    if do_round:
+        reconstruction = np.round(reconstruction)
+    plot_reconstruction(reconstruction,title,fig,cmap,cbar=cbar,notext=notext)
 
-def display_geo(geo,l_max,res_healpix=5,title='geo display',fig=None,cmap='Greys',display=True):
+def display_geo(geo,l_max,res_healpix=5,title='geo display',fig=None,cmap='Greys',display=True,do_round=False,cbar=True,notext=False):
     """plot the area enclosed by a geo on a pixelated map"""
     pixels = get_healpix_pixelation(res_healpix)
     alms = geo.get_alm_table(l_max)
     reconstruction = reconstruct_from_alm(l_max,pixels[:,0],pixels[:,1],alms)
     if fig is None:
         fig = plt.figure()
-    plot_reconstruction(reconstruction,title,fig,cmap)
+    if do_round:
+        reconstruction = np.round(reconstruction)
+
+    plot_reconstruction(reconstruction,title,fig,cmap,cbar=cbar,notext=notext)
     if display:
         plt.show(fig)
     return fig

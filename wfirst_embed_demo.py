@@ -91,15 +91,15 @@ if __name__=='__main__':
     #zs = np.array([0.2,0.43,.63,0.9, 1.3])
     zs = np.arange(0.2,3.01,0.4)
     #zs = np.linspace(0.2,3.01,3)
-    zs_lsst = np.linspace(0.,1.2,5)
+    zs_lsst = np.linspace(0.,1.2,3)
     #zs = np.array([0.2,0.4,0.6])
     #z_fine are the resolution redshift slices to be integrated over
-    z_fine = np.linspace(0.001,np.max([zs[-1],zs_lsst[-1]]),1000)
+    z_fine = np.linspace(0.001,np.max([zs[-1],zs_lsst[-1]]),500)
 
     #z_fine[0] = 0.0001
 
     #l_max is the highest l that should be precomputed
-    l_max = 81
+    l_max = 30
     res_healpix = 6
     use_pixels = False
     print("main: begin constructing WFIRST PolygonGeo")
@@ -114,8 +114,8 @@ if __name__=='__main__':
         #geo_wfirst = LSSTGeo(zs,C,z_fine,l_max,poly_params)
         #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.9310048450824275,deg0=-59,deg1=-10)
         #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.7644912273732581,deg0=-49,deg1=-20)
-        theta_width = 6.109913056693067
-        geo_wfirst = StripeGeo(zs,C,z_fine,l_max,poly_params,-30.+theta_width,-35.-theta_width,120.,95.,80)
+        #theta_width = 6.109913056693067
+        #geo_wfirst = StripeGeo(zs,C,z_fine,l_max,poly_params,-30.+theta_width,-35.-theta_width,120.,95.,80)
 
 
     print("main: finish constructing WFIRST PolygonGeo")
@@ -129,6 +129,7 @@ if __name__=='__main__':
         #geo_lsst = FullSkyPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
     else:
         geo_lsst = LSSTGeo(zs_lsst,C,z_fine,l_max,poly_params)
+        #geo_lsst = HalfSkyGeo(zs_lsst,C,z_fine)
     print("main: finish constructing LSST PolygonGeo")
 
     #create the short wavelength survey (SWSurvey) object
@@ -173,7 +174,7 @@ if __name__=='__main__':
     #x_cut = 100.
     #x_cut = 85
     #x_cut = 30.
-    x_cut = 90
+    x_cut = 30.
     k_cut = x_cut/r_max
     #l_max caps maximum l regardless of k
     print("main: begin constructing basis for long wavelength fluctuations")
@@ -181,7 +182,7 @@ if __name__=='__main__':
     print("main: finish constructing basis for long wavelength fluctuations")
 
     #create the lw survey
-    geos = np.array([geo_lsst,geo_wfirst],dtype=object)
+    geos = np.array([geo_wfirst,geo_lsst],dtype=object)
     print("main: begin constructing LWSurvey for mitigation")
     survey_lw = LWSurvey(geos,'combined_survey',basis,C,lw_params,observable_list=lw_observable_list,param_list=lw_param_list)
     #survey_lw = LWSurvey(geos,'combined_survey',basis,C,lw_params,np.array([]),np.array([]))#,observable_list=lw_observable_list,param_list=lw_param_list)
@@ -219,7 +220,7 @@ if __name__=='__main__':
 #    cov_set = np.array([SS.f_set[2][2].get_covar(),SS.f_set[1][2].get_covar(),SS.f_set[0][2].get_covar()])
 #    label_set = np.array(["ssc+mit+g","ssc+g","g"])
 #
-#    SS.print_standard_analysis()
+    SS.print_standard_analysis()
 #    #make the ellipse plot
 #    #import matplotlib.pyplot as plt
 #    print('\a')

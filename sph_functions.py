@@ -16,7 +16,8 @@ from scipy.special import sph_harm as Y_lm, jv
 #Z_CUT = 1e-2
 
 #data = np.loadtxt('data/spherical_bessel_zeros_360.dat')
-data = np.loadtxt('data/spherical_bessel_zeros_527.dat')
+#data = np.loadtxt('data/spherical_bessel_zeros_527.dat')
+data = np.loadtxt('data/spherical_bessel_zeros_704.dat')
 data[data<0.] = np.inf
 
 l_max_zeros = data.shape[0]-1

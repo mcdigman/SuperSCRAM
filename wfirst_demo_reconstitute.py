@@ -25,7 +25,10 @@ if __name__=='__main__':
     #dump_f = open('record/run_x80_con167/dump_x80_1653526_con167.pkl','r')
     #dump_f = open('record/run_x80_con183/dump_x80_1664605_con183.pkl','r')
     #dump_f = open('record/run_x80_con184/dump_x80_1667612_con184.pkl','r')
-    dump_f = open('record/run_x80_con185/dump_x80_1667614_con185.pkl','r')
+    #dump_f = open('record/run_x80_con185/dump_x80_1667614_con185.pkl','r')
+    #dump_f = open('record/run_x80_con213/dump_x80_15942.pitzer-batch.ten.osc.edu_con213.pkl','r')
+    dump_f = open('record/run_x80_con215/dump_x80_16227.pitzer-batch.ten.osc.edu_con215.pkl','r')
+    #dump_f = open('record/run_x80_con201/dump_x80_15582.pitzer-batch.ten.osc.edu_con201.pkl','r')
     dump_set = dill.load(dump_f)
     f_set_nopriors = np.array([[None,None,None],[None,None,None],[None,None,None]])
     f_set = np.array([[None,None,None],[None,None,None],[None,None,None]])
@@ -62,6 +65,9 @@ if __name__=='__main__':
     u_no_mit = eig_set[1][0][1]
     v_no_mit = np.dot(chol_g,u_no_mit)
     of_no_mit = np.dot(cov_g_inv,v_no_mit)
+    u_mit = eig_set[1][1][1]
+    v_mit = np.dot(chol_g,u_mit)
+    of_mit = np.dot(cov_g_inv,v_mit)
 
     c_rot_eig_no_mit = np.dot(of_no_mit.T,np.dot(f_set_nopriors[1][2].get_covar(),of_no_mit))
     c_rot_eig_mit = np.dot(of_no_mit.T,np.dot(f_set_nopriors[2][2].get_covar(),of_no_mit))

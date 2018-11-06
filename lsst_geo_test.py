@@ -6,6 +6,8 @@ import numpy as np
 from cosmopie import CosmoPie
 import defaults
 from premade_geos import WFIRSTGeo,LSSTGeoSimpl,LSSTGeo,LSSTPixelGeo,WFIRSTPixelGeo,StripeGeo
+from circle_geo import CircleGeo
+from alm_rot_geo import AlmRotGeo
 from polygon_union_geo import PolygonUnionGeo
 from polygon_pixel_union_geo import PolygonPixelUnionGeo
 from alm_difference_geo import AlmDifferenceGeo
@@ -193,11 +195,6 @@ def test_wfirst_lsst_embed():
 
 if __name__=='__main__':
     do_plot = True
-    if do_plot:
-        import healpy as hp
-        from polygon_display_utils import display_geo,plot_reconstruction
-        from mpl_toolkits.basemap import Basemap
-        import matplotlib.pyplot as plt
     do_approximate_checks = False
 
     cosmo_fid =  defaults.cosmology.copy()
@@ -223,7 +220,7 @@ if __name__=='__main__':
     if do_ring_test:
         geo1 = RingPixelGeo(zs,C,z_fine,l_max,6,10000)
         display_geo(geo1,l_max)
-    do_simpl_test = True
+    do_simpl_test = False
     if do_simpl_test:
         #geo1 = LSSTGeoSimpl(zs,C,z_fine,l_max,{'n_double':30},phi0=0.,phi1=0.9202821591024097*0.8*1.0383719267257006*1.0000197370387798*1.0000197370387798*0.99998029455615*0.9999999844187037*0.9999999999876815*0.9999999999999916*1.0000000000000029,deg0=-49,deg1=-20)
         #phi1 = 0.9202821591024097
@@ -231,14 +228,44 @@ if __name__=='__main__':
         #    geo1 = LSSTGeoSimpl(zs,C,z_fine,l_max,{'n_double':30},phi0=0.,phi1=phi1,deg0=-59,deg1=-10)
         #    phi1 = phi1*0.6391491408402885/geo1.angular_area()
         #    print(geo1.angular_area()/0.6391491408402885)
-        theta_width = 6.109913056693067
-        #for itr in range(0,20):
-        #    theta_width = theta_width*0.6391491408402885/geo1.angular_area()
-        #    print(geo1.angular_area()/0.6391491408402885)
-        geo1 = StripeGeo(zs,C,z_fine,l_max,{'n_double':30},-30.+theta_width,-35.-theta_width,120.,95.,80)
+#        theta_width = 33
+#        phi_width = 6.747231368088425
+        #radius = 0.4585878729513186
+#        for itr in range(0,20):
+#
+#            geo_base1 = CircleGeo(zs,C,3./4.*radius,n_x,z_fine,l_max,{'n_double':80})
+#            geo_base2 = CircleGeo(zs,C,5./4.*radius,n_x,z_fine,l_max,{'n_double':80})
+#            geo_base3 = AlmDifferenceGeo(geo_base2,geo_base1,C,zs,z_fine)
+###            geo1 = StripeGeo(zs,C,z_fine,l_max,{'n_double':30},-30.+theta_width,-35.-theta_width+4,180-phi_width,180-25-phi_width,20)
+##            geo1 = CircleGeo(zs,C,radius,n_x,z_fine,l_max,{'n_double':30})
+#            radius = radius*np.sqrt(0.6391491408402885/geo_base3.angular_area())
+###            phi_width = phi_width*0.6391491408402885/geo1.angular_area()
+#            print(geo_base3.angular_area()/0.6391491408402885)
+#            print(radius)
+#        theta_width = 33
+#        phi_width = 6.747231368088425
+#        geo_wfirst = StripeGeo(zs,C,z_fine,l_max,{'n_double':80},-30.+theta_width,-35.-theta_width+4,180-phi_width,180-25-phi_width,20)
+        
+        print("getting geo1")
+        #geo1 = StripeGeo(zs,C,z_fine,l_max,{'n_double':30},-30.+theta_width,-35.-theta_width+4,175,150,20)
+        radius = 0.4626495014759003
+        n_x = 20
+        geo_base1 = CircleGeo(zs,C,3./4.*radius,n_x,z_fine,l_max,{'n_double':80})
+        geo_base2 = CircleGeo(zs,C,5./4.*radius,n_x,z_fine,l_max,{'n_double':80})
+        geo_base3 = AlmDifferenceGeo(geo_base2,geo_base1,C,zs,z_fine)
+#        geo_base = RingPixelGeo(zs,C,z_fine,l_max,8,10000)
+        geo1 = AlmRotGeo(geo_base3,C,zs,z_fine,np.array([0.,3.*np.pi/8.-0.15,np.pi/2.+0.05]),30)
+        print("getting geo2")
         geo2 = LSSTGeo(zs,C,z_fine,l_max,{'n_double':30})
+        print("getting geo3")
         geo3 = AlmDifferenceGeo(geo2,geo1,C,zs,z_fine)
-        display_geo(geo3,l_max)
+        print("plotting")
+        if do_plot:
+            import healpy as hp
+            from polygon_display_utils import display_geo,plot_reconstruction
+            from mpl_toolkits.basemap import Basemap
+            import matplotlib.pyplot as plt
+            display_geo(geo3,l_max,do_round=True)
         import sys
         sys.exit()
         
@@ -257,6 +284,74 @@ if __name__=='__main__':
 #            geo2.sp_poly.draw(m,color='blue')
 #            geo3.sp_poly.draw(m,color='green')
 #            plt.show()
+    do_plot_comparison = True
+    if do_plot_comparison:
+        print("getting geo_lsst")
+        geo_lsst = LSSTGeo(zs,C,z_fine,l_max,{'n_double':30})
+        print("getting geo donut")
+        radius_donut = 0.4626495014759003
+        n_x = 20
+        geo_donut_base1 = CircleGeo(zs,C,3./4.*radius_donut,n_x,z_fine,l_max,{'n_double':80})
+        geo_donut_base2 = CircleGeo(zs,C,5./4.*radius_donut,n_x,z_fine,l_max,{'n_double':80})
+        geo_donut_base3 = AlmDifferenceGeo(geo_donut_base2,geo_donut_base1,C,zs,z_fine)
+        geo_donut = AlmRotGeo(geo_donut_base3,C,zs,z_fine,np.array([0.,3.*np.pi/8.-0.15,np.pi/2.+0.05]),30)
+        print("getting geo long strip")
+        theta_width_long_strip = 6.109913056693067
+        geo_long_strip = StripeGeo(zs,C,z_fine,l_max,{'n_double':80},-30.+theta_width_long_strip,-35.-theta_width_long_strip,120.,95.,80)
+        print("getting geo circle")
+        radius_circle = 0.4585878729513186
+        geo_base_circle = CircleGeo(zs,C,radius_circle,n_x,z_fine,l_max,{'n_double':80})
+        geo_circle = AlmRotGeo(geo_base_circle,C,zs,z_fine,np.array([0.,3.*np.pi/8.-0.1,np.pi/2.+0.05]),80)
+        print("getting geo narrow strip")
+        theta_width_narrow_strip = 33
+        phi_width_narrow_strip = 6.747231368088425
+        geo_narrow_strip = StripeGeo(zs,C,z_fine,l_max,{'n_double':80},-30.+theta_width_narrow_strip,-35.-theta_width_narrow_strip+4,180-phi_width_narrow_strip,180-25-phi_width_narrow_strip,20)
+        print("getting geo rectangle")
+        geo_rectangle = LSSTGeoSimpl(zs,C,z_fine,l_max,{'n_double':80},phi0=0.,phi1=0.9310048450824275,deg0=-59,deg1=-10)
+        print("getting geo WFIRST")
+        geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,{'n_double':80})
+
+
+        print("getting geo3")
+        geo_donut_diff = AlmDifferenceGeo(geo_lsst,geo_donut,C,zs,z_fine)
+        geo_long_strip_diff = AlmDifferenceGeo(geo_lsst,geo_long_strip,C,zs,z_fine)
+        geo_circle_diff = AlmDifferenceGeo(geo_lsst,geo_circle,C,zs,z_fine)
+        geo_narrow_strip_diff = AlmDifferenceGeo(geo_lsst,geo_narrow_strip,C,zs,z_fine)
+        geo_wfirst_diff = AlmDifferenceGeo(geo_lsst,geo_wfirst,C,zs,z_fine)
+        geo_rectangle_diff = AlmDifferenceGeo(geo_lsst,geo_rectangle,C,zs,z_fine)
+        print("plotting")
+        if do_plot:
+            import healpy as hp
+            from polygon_display_utils import display_geo,plot_reconstruction,reconstruct_and_plot
+            from mpl_toolkits.basemap import Basemap
+            import matplotlib.pyplot as plt
+            fig = plt.figure()
+            res_healpix = 7
+            pixels = get_healpix_pixelation(res_healpix)
+            ax = fig.add_subplot('231')
+            reconstruct_and_plot(geo_donut_diff,l_max,pixels,do_round=True,fig=fig,title='Donut',cbar=False)
+            ax = fig.add_subplot('232')
+            reconstruct_and_plot(geo_circle_diff,l_max,pixels,do_round=True,fig=fig,title='Circle',cbar=False)
+            ax = fig.add_subplot('233')
+            reconstruct_and_plot(geo_long_strip_diff,l_max,pixels,do_round=True,fig=fig,title='Long Strip',cbar=False)
+            ax = fig.add_subplot('234')
+            reconstruct_and_plot(geo_narrow_strip_diff,l_max,pixels,do_round=True,fig=fig,title='Narrow Strip',cbar=False)
+            ax = fig.add_subplot('235')
+            reconstruct_and_plot(geo_rectangle_diff,l_max,pixels,do_round=True,fig=fig,title='Rectangle',cbar=False)
+            ax = fig.add_subplot('236')
+            reconstruct_and_plot(geo_wfirst_diff,l_max,pixels,do_round=True,fig=fig,title='WFIRST',cbar=False)
+            plt.show(fig)
+        import sys
+        sys.exit()
+        
+        #geo2 = LSSTGeoSimpl(zs,C,z_fine,l_max,{'n_double':30},phi1=2.0*2.9030540874480577)
+        #geo3 = WFIRSTGeo(zs,C,z_fine,l_max,{'n_double':30})
+        geo4 = PolygonUnionGeo(geo2.geos,np.append(geo1,geo2.masks))
+        print(geo4.angular_area(),geo2.angular_area()-geo1.angular_area(),geo4.angular_area()-geo2.angular_area()+geo1.angular_area())
+        #assert geo1.angular_area()<geo2.angular_area()
+        #assert geo3.angular_area()<geo1.angular_area()
+        if do_plot:
+            display_geo(geo4,l_max)
     do_lsst_test = False
     if do_lsst_test:
         geo4 = LSSTGeo(zs,C,z_fine,l_max,{'n_double':80})

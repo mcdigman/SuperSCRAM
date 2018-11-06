@@ -2,6 +2,7 @@
 from __future__ import division,print_function,absolute_import
 from builtins import range
 import numpy as np
+import scipy.linalg as spl
 
 def rot_alm_z(d_alm_table_in,angles,ls):
     """rotate alms around z axis by angle gamma_alpha"""
@@ -54,14 +55,20 @@ def rot_alm_x(d_alm_table_in,angles,ls,n_double=30,debug=True):
             #check m_mat is actually unitary
             assert np.allclose(np.identity(m_mat.shape[0]),np.dot(np.conjugate(m_mat.T),m_mat))
         #print(ll)
-
+        el_mat = np.empty_like(el_mat_real,order='F')
+        el_mat2 = np.empty_like(el_mat_real,order='F')
         for itr in range(0,n_v):
             epsilon = angles[itr]/2.**n_double
-            el_mat = epsilon*el_mat_real.copy()
+            #el_mat = epsilon*el_mat_real.copy()
+            el_mat[:] = epsilon*el_mat_real
+            el_mat2[:] = el_mat
             #use angle doubling fomula to get to correct angle
             for _itr2 in range(0,n_double):
-                el_mat = 2.*el_mat+np.dot(el_mat,el_mat)
-                #el_mat = spl.blas.dgemm(1.,el_mat,el_mat,2.,el_mat,overwrite_c=False)
+                #el_mat = 2.*el_mat+np.dot(el_mat,el_mat)
+                #2 arrays necessary to prevent overwrite from clobbering data, faster to maintain 2 specific arrays with no copies
+                el_mat2 = spl.blas.dgemm(1.,el_mat,el_mat,2.,el_mat2,overwrite_c=True)
+                el_mat[:] = el_mat2
+                #assert np.allclose(el_mat,el_mat2,atol=1.e-15)
             ######Walled
 #            for itr3 in range(1,3):
 #                epsilon2 = angles[itr]/2.**(n_double+itr3)

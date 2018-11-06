@@ -260,21 +260,21 @@ class SphBasisK(LWBasis):
             n_break = n_k
             for _m_itr in range(0,self.lm_map[ll,2].size):
                 rhs1 = spl.blas.dtrmm(1.,res,perturb_v[itr_ll:itr_ll+n_break],trans_a=True,lower=True)
-                denom_result = spl.blas.dsyrk(1.,rhs1,1.,denom_result,lower=True,trans=True,overwrite_c=True)
-                rhs1 = None
                 rhs2 = spl.blas.dtrmm(1.,res,project_v[itr_ll:itr_ll+n_break],trans_a=True,lower=True)
-                covar_result = spl.blas.dsyrk(1.,rhs2,1.,covar_result,lower=True,trans=True,overwrite_c=True)
+                denom_result = spl.blas.dsyrk(1.,rhs1,1.,denom_result,lower=True,trans=True)
+                covar_result = spl.blas.dsyrk(1.,rhs2,1.,covar_result,lower=True,trans=True)
+                rhs1 = None
                 rhs2 = None
                 itr_ll+=n_k
             res = None
 
         mult_mat = np.asfortranarray(np.diag(1./perturb_sigma2s))+denom_result
         denom_result = None
-        mult_mat_chol_inv = get_cholesky_inv(mult_mat,lower=True,inplace=False,clean=False)
+        mult_mat_chol_inv = get_cholesky_inv(mult_mat,lower=True,inplace=False,clean=True)
         mult_mat = None
         pert_in = spl.blas.dtrmm(1.,mult_mat_chol_inv,perturb_v.T,side=False,lower=True,trans_a=True)
         mult_mat_chol_inv = None
-        project_v = np.asfortranarray(project_v.T)
+
         proj_out = np.zeros_like(project_v,order='F')
         itr_ll = 0
         for ll in range(0,self.n_l):
@@ -282,10 +282,10 @@ class SphBasisK(LWBasis):
             res = self.C_compact[ll]
             n_break = n_k
             for _m_itr in range(0,self.lm_map[ll,2].size):
-                proj_out[:,itr_ll:itr_ll+n_break] = spl.blas.dsymm(1.,res,project_v[:,itr_ll:itr_ll+n_break],lower=True,side=True)
+                proj_out[itr_ll:itr_ll+n_break] = spl.blas.dsymm(1.,res,project_v[itr_ll:itr_ll+n_break],lower=True)
                 itr_ll+=n_k
             res = None
-        rhs_req = np.asfortranarray(np.dot(pert_in,proj_out.T))
+        rhs_req = np.asfortranarray(np.dot(pert_in,proj_out))
         mit_result = spl.blas.dsyrk(-1.,rhs_req,1.,covar_result,lower=True,trans=True)#covar_result-np.dot(rhs_req.T,rhs_req)
         return covar_result,mit_result
 
@@ -327,7 +327,7 @@ class SphBasisK(LWBasis):
 #        result = np.dot(dxs,integrand)
 #        dxs = np.hstack([delta_x[0],(delta_x[:-1:]+delta_x[1::]),delta_x[-1]])*d_delta_bar.T
 #        assert np.allclose(dxs,dxs_alt2,atol=1.e-50,rtol=1.e-10)
-#        print("XXXXXXXXXXX")
+        print("XXXXXXXXXXX")
         result = np.dot(np.asfortranarray(np.hstack([delta_x[0],(delta_x[:-1:]+delta_x[1::]),delta_x[-1]]))*d_delta_bar.T,integrand)
         print(np.hstack([delta_x[0],(delta_x[:-1:]+delta_x[1::]),delta_x[-1]]).shape,d_delta_bar.shape,integrand.shape,result.shape)
 #        assert np.allclose(result,result2,atol=1.e-50,rtol=1.e-10)
