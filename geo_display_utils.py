@@ -1,4 +1,4 @@
-"""utils for displaying polygon classes"""
+"""utils for displaying geos"""
 from __future__ import print_function,division,absolute_import
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
@@ -24,7 +24,9 @@ from polygon_utils import get_healpix_pixelation
 #    ax.set_aspect('equal')
 def plot_reconstruction(reconstruction,title,fig,cmap='Greys',cbar=True,notext=False):
     """plot the reconstruction of pixels"""
+    #hp.mollview(reconstruction,title=title,fig=fig,hold=True,cmap=cmap,cbar=cbar,notext=notext,xsize=2000,margins=[0.,0.,0.,0.])
     hp.mollview(reconstruction,title=title,fig=fig,hold=True,cmap=cmap,cbar=cbar,notext=notext)
+    hp.graticule(dmer=360,dpar=360,alpha=0)
 
 def reconstruct_and_plot(geo,l_max,pixels,title,fig,cmap='Greys',do_round=False,cbar=True,notext=False):
     """plot the area enclosed by a geo on a pixelated map"""

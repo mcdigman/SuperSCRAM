@@ -27,7 +27,7 @@ if __name__=='__main__':
     #dump_f = open('record/run_x80_con184/dump_x80_1667612_con184.pkl','r')
     #dump_f = open('record/run_x80_con185/dump_x80_1667614_con185.pkl','r')
     #dump_f = open('record/run_x80_con213/dump_x80_15942.pitzer-batch.ten.osc.edu_con213.pkl','r')
-    dump_f = open('record/run_x80_con215/dump_x80_16227.pitzer-batch.ten.osc.edu_con215.pkl','r')
+    dump_f = open('record/run_x80_con215/dump_x80_16227.pitzer-batch.ten.osc.edu_con215.pkl','r') #527 used for aps_talk
     #dump_f = open('record/run_x80_con201/dump_x80_15582.pitzer-batch.ten.osc.edu_con201.pkl','r')
     dump_set = dill.load(dump_f)
     f_set_nopriors = np.array([[None,None,None],[None,None,None],[None,None,None]])
@@ -92,9 +92,9 @@ if __name__=='__main__':
 #        f_set_2[0][2] = fm.FisherMatrix(f_set[0][2].get_fisher()[0:5,0:5]-f_set_nopriors[0][2].get_fisher()[0:5,0:5],input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER)
 #        f_set_2[1][2] = fm.FisherMatrix(f_set[0][2].get_fisher()[0:5,0:5],input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER)
 #        f_set_2[2][2] = fm.FisherMatrix(f_set[1][2].get_fisher()[0:5,0:5],input_type=fm.REP_FISHER,initial_state=fm.REP_FISHER)
-        fig1 = make_standard_ellipse_plot(f_set,cosmo_par_list)
+        fig1 = make_standard_ellipse_plot(f_set,cosmo_par_list,fontsize=12,labelsize=6,fontsize_legend=9,left_space=0.08,bottom_space=0.06)
         plt.show(fig1)
-        fig2 = make_ellipse_plot(cov_set_2,colors,opacities,names,boxes[-2:],pnames[-2:],dchi2,1.05,False,'equal',2.,(4,4),0.17,0.99,0.99,0.05,nticks=4,tickrange=0.8)
+        fig2 = make_ellipse_plot(cov_set_2[::-1],colors,opacities,names[::-1],boxes[-2::],pnames[-2::],dchi2,1.05,False,'equal',2.,(4,4),0.17,0.99,0.99,0.05,nticks=4,tickrange=0.8)
         plt.show(fig2)
 #        dump_set = [f_set_nopriors[0][2],f_set_nopriors[1][2],f_set_nopriors[2][2],f_set[0][2],f_set[1][2],f_set[2][2],cosmo_par_list,eig_set[1],eig_set_ssc[1],lw_param_list,n_params_wfirst,power_params,nz_params_wfirst_lens,sw_observable_list,lw_observable_list,sw_params,len_params,x_cut,l_max,zs,zs_lsst,z_fine,mf_params,basis_params,cosmo_par_eps,cosmo,poly_params]
 #TODO need sw correlation matrix
@@ -112,3 +112,38 @@ elif cosmo['de_model'] == 'constant_w':
     f_g_w0 = f_set_nopriors[0][2].get_fisher()
 
 eig_g_w0  = np.linalg.eigh(f_g_w0)[0]
+
+lihu_pars = np.array(['ns','Omegach2','Omegabh2','h','LogAs','w0','wa'])
+f_set_lihu_prior = np.zeros(3,dtype=object)
+f_set_jdem_prior = np.zeros(3,dtype=object)
+f_set_lihu = np.zeros(3,dtype=object)
+f_set_mat_jdem1 = np.zeros(3,dtype=object)
+for i in range(0,3):
+    f_set_mat_jdem1[i] = f_set[i][2].get_fisher()
+    f_set_lihu_prior[i] = np.zeros(3,dtype=object)
+    f_set_lihu[i] = np.zeros(3,dtype=object)
+    f_set_jdem_prior[i] = np.zeros(3,dtype=object)
+
+from change_parameters import rotate_jdem_to_lihu,rotate_lihu_to_jdem
+from copy import deepcopy
+from cosmopie import CosmoPie
+C = CosmoPie(cosmo.copy(),'jdem')
+f_set_mat_lihu1 = rotate_jdem_to_lihu(deepcopy(f_set_mat_jdem1),C)
+f_set_mat_lihu_h_prior = deepcopy(f_set_mat_lihu1)
+f_set_mat_lihu_h_prior[0][3,3] += 1.e4
+f_set_mat_lihu_h_prior[1][3,3] += 1.e4
+f_set_mat_lihu_h_prior[2][3,3] += 1.e4
+f_set_mat_jdem_h_prior = deepcopy(rotate_lihu_to_jdem(f_set_mat_lihu_h_prior,C))
+import fisher_matrix as fm
+for i in range(0,3):
+    f_set_lihu_prior[i][2] = fm.FisherMatrix(f_set_mat_lihu_h_prior[i],fm.REP_FISHER)
+    f_set_lihu[i][2] = fm.FisherMatrix(f_set_mat_lihu1[i],fm.REP_FISHER)
+    f_set_jdem_prior[i][2] = fm.FisherMatrix(f_set_mat_jdem_h_prior[i],fm.REP_FISHER)
+import matplotlib.pyplot as plt
+#fig1 = make_standard_ellipse_plot(f_set_lihu,lihu_pars)
+#fig2 = make_standard_ellipse_plot(f_set_lihu_prior,lihu_pars)
+#plt.show(fig2)
+#fig3 = make_standard_ellipse_plot(f_set_jdem_prior,cosmo_par_list)
+fig3 = make_standard_ellipse_plot(f_set_jdem_prior,cosmo_par_list,fontsize=12,labelsize=6,fontsize_legend=10,left_space=0.08,bottom_space=0.06)
+#fig4 = make_standard_ellipse_plot(f_set,cosmo_par_list)
+plt.show(fig3)

@@ -119,7 +119,7 @@ class SuperSurvey(object):
         print("----------------------------------------------------")
         print("----------------------------------------------------")
 
-def make_standard_ellipse_plot(f_set,cosmo_par_list,c_extra=None,include_base=True,dchi2=2.3,include_diag=True,margin=2.,plot_dim=(10,7),left_space=0.06,right_space=0.99,top_space=0.99,bottom_space=0.05,labelsize=6,pad=2,fontsize=8,nticks=2,tickrange=0.7):
+def make_standard_ellipse_plot(f_set,cosmo_par_list,c_extra=None,include_base=True,dchi2=2.3,include_diag=True,margin=2.,plot_dim=(10,7),left_space=0.06,right_space=0.99,top_space=0.99,bottom_space=0.05,labelsize=6,pad=2,fontsize=8,nticks=2,tickrange=0.7,fontsize_legend=8):
     """make a standardized ellipse plot for the object"""
     if c_extra is None:
         n_s = cosmo_par_list.size
@@ -143,7 +143,7 @@ def make_standard_ellipse_plot(f_set,cosmo_par_list,c_extra=None,include_base=Tr
         label_set = np.full(c_extra.shape[0],'extra')
     #box_widths = np.array([0.015,0.005,0.0005,0.005,0.1,0.05])*3.
     #cov_set = np.array([SS.covs_params[1],SS.covs_params[0],SS.covs_g_pars[0]])
-    return make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',cosmo_par_list,dchi2=dchi2,include_diag=include_diag,margin=margin,plot_dim=plot_dim,left_space=left_space,right_space=right_space,top_space=top_space,bottom_space=bottom_space,labelsize=labelsize,pad=pad,fontsize=fontsize,nticks=nticks,tickrange=tickrange)
+    return make_ellipse_plot(cov_set,color_set,opacity_set,label_set,'adaptive',cosmo_par_list,dchi2=dchi2,include_diag=include_diag,margin=margin,plot_dim=plot_dim,left_space=left_space,right_space=right_space,top_space=top_space,bottom_space=bottom_space,labelsize=labelsize,pad=pad,fontsize=fontsize,nticks=nticks,tickrange=tickrange,fontsize_legend=fontsize_legend)
 
 
 def get_ellipse_specs(covs,dchi2=2.3):
@@ -184,7 +184,7 @@ FORMATTED_LABELS = {"ns":"$n_s$",
                     "Omegach2":r"$\Omega_c h^2$",
                     "Omegac":r"$\Omega_c$"
                    }
-def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_par_list,dchi2,adaptive_mult=1.05,include_diag=True,aspect='auto',margin=2.,plot_dim=(10,7),left_space=0.06,right_space=0.99,top_space=0.99,bottom_space=0.05,labelsize=6,pad=2,fontsize=8,nticks=2,tickrange=0.7):
+def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_par_list,dchi2,adaptive_mult=1.05,include_diag=True,aspect='auto',margin=2.,plot_dim=(10,7),left_space=0.06,right_space=0.99,top_space=0.99,bottom_space=0.05,labelsize=6,pad=2,fontsize=8,nticks=2,tickrange=0.7,fontsize_legend=8):
     """make the plot of error ellipses given the set of covariance matrices"""
     import matplotlib.pyplot as plt
     import matplotlib.ticker as ticker
@@ -233,6 +233,9 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
             ax.set_axisbelow(True)
             if itr2<itr1:
                 ax.axis('off')
+                if itr1==1 and itr2==0 or (not include_diag) and itr1==0 and itr2==1:
+                    #ax.set_ylabel("$\\Delta$"+str(param2_pretty),fontsize=fontsize)
+                    ax.legend(handles=es.tolist(),loc=2,prop={'size':fontsize_legend})
                 continue
             param1 = cosmo_par_list[itr1]
             param2 = cosmo_par_list[itr2]
@@ -292,9 +295,10 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
             if param2_pretty is None:
                 param2_pretty = param2
 
-            if itr1==itr2==0 or (not include_diag) and itr1==0 and itr2==1:
+            #if itr1==itr2==0 or (not include_diag) and itr1==0 and itr2==1:
+            if itr1==1 and itr2==0 or (not include_diag) and itr1==0 and itr2==1:
                 #ax.set_ylabel("$\\Delta$"+str(param2_pretty),fontsize=fontsize)
-                ax.legend(handles=es.tolist(),loc=2,prop={'size':fontsize})
+                ax.legend(handles=es.tolist(),loc=2,prop={'size':fontsize_legend})
             if itr1==0:
                 ax.set_ylabel("$\\Delta$"+str(param2_pretty),fontsize=fontsize)
                 ax.tick_params(axis='y',labelsize=labelsize,labelleft='on',pad=pad,bottom='on',left='on',right='on',top='on',direction='in')

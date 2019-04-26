@@ -62,7 +62,7 @@ class MultiFisher(object):
             print("MultiFisher: getting lw no mit variance")
             self.a_vals = np.zeros(2,dtype=object)
             self.lw_F_no_mit = self.get_lw_fisher(f_spec_SSC_no_mit,initial_state=fm.REP_CHOL)
-            self.project_lw_a = self.basis.D_delta_bar_D_delta_alpha(self.sw_survey.geo,tomography=True)
+            self.project_lw_a = self.basis.get_ddelta_bar_ddelta_alpha(self.sw_survey.geo,tomography=True)
             self.a_vals[0] = self.lw_F_no_mit.project_covar(self.project_lw_a.T,destructive=True).get_covar()
             self.lw_F_no_mit = None
         else:
@@ -248,7 +248,7 @@ class MultiFisher(object):
     def get_lw_to_sw_array(self):
         """get the matrix for projecting long wavelength observables to sw basis"""
         if self.lw_to_sw_array is None:
-            lw_to_sw_array = self.basis.D_O_I_D_delta_alpha(self.sw_survey.geo,self.sw_survey.get_dO_I_ddelta_bar_array())
+            lw_to_sw_array = self.basis.get_dO_I_ddelta_alpha(self.sw_survey.geo,self.sw_survey.get_dO_I_ddelta_bar_array())
         else:
             lw_to_sw_array = self.lw_to_sw_array
         return lw_to_sw_array
@@ -261,7 +261,7 @@ class MultiFisher(object):
             return self.a_vals
         else:
             d_no_mit = destructive or self.lw_F_no_mit is None
-            project_lw_a = self.basis.D_delta_bar_D_delta_alpha(self.sw_survey.geo,tomography=True)
+            project_lw_a = self.basis.get_ddelta_bar_ddelta_alpha(self.sw_survey.geo,tomography=True)
             a_no_mit = self.get_lw_fisher(f_spec_SSC_no_mit,fm.REP_COVAR).project_covar(project_lw_a.T,destructive=d_no_mit).get_covar()
             if d_no_mit:
                 self.lw_F_no_mit = None

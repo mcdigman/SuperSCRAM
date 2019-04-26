@@ -27,7 +27,7 @@ f_return_sw = {'lw':False,'sw':True,'par':False}
 f_return_lw = {'lw':True,'sw':False,'par':False}
 class MultiFisher(object):
     """master class for managing fisher matrix manipulations between bases"""
-    def __init__(self,basis,sw_survey,lw_surveys, prior_params,needs_a=False,do_mit=True):
+    def __init__(self,basis,sw_survey,lw_surveys, prior_params,needs_a=False,do_mit=True,do_fast=True):
         """
         master class for managing fisher matrix manipulations between bases
         inputs:
@@ -35,6 +35,7 @@ class MultiFisher(object):
             sw_survey: an SWSurvey object
             lw_surveys: a list of LWSurvey objects to be combined into mitigation strategy
             prior_params: params for the prior fisher matrix to use in cosmological parameter space
+            do_fast: allow using woodbury matrix identity to never creates the lw fisher matrix in memory
         """
         print("MultiFisher: began initialization")
         self.basis = basis
@@ -57,58 +58,51 @@ class MultiFisher(object):
 
 
 
-        #TODO eliminate from main loop
         if self.needs_a:
             print("MultiFisher: getting lw no mit variance")
             self.a_vals = np.zeros(2,dtype=object)
-            self.lw_F_no_mit = self.get_lw_fisher(f_spec_SSC_no_mit,initial_state=fm.REP_CHOL)
-            self.project_lw_a = self.basis.D_delta_bar_D_delta_alpha(self.sw_survey.geo,tomography=True)
-            self.a_vals[0] = self.lw_F_no_mit.project_covar(self.project_lw_a.T,destructive=True).get_covar()
-            self.lw_F_no_mit = None
+            self.project_lw_a = self.basis.get_ddelta_bar_ddelta_alpha(self.sw_survey.geo,tomography=True)
         else:
             self.a_vals = None
             self.project_lw_a = None
 
 
-        #self.lw_F_no_mit = self.get_lw_fisher(f_spec_SSC_no_mit,initial_state=fm.REP_CHOL)
 
-        print("MultiFisher: projecting lw no mit covariance")
-        #self.sw_f_ssc_no_mit = self.lw_F_no_mit.project_covar(self.get_lw_to_sw_array(),destructive=False)
-        vs_perturb,sigma2s_perturb = self.lw_surveys[0].observables[0].get_perturbing_vector()
-        sw_cov_ssc,sw_cov_ssc_mit = self.basis.perturb_and_project_covar(vs_perturb,self.get_lw_to_sw_array(),sigma2s_perturb)
-        self.sw_f_ssc_no_mit = fm.FisherMatrix(sw_cov_ssc,fm.REP_COVAR,fm.REP_COVAR)
-        self.sw_f_ssc_mit = fm.FisherMatrix(sw_cov_ssc_mit,fm.REP_COVAR,fm.REP_COVAR)
-        sw_cov_ssc = None
-        sw_cov_ssc_mit = None
-        vs_perturb = None
-        sigma2s_perturb=None
-        #self.sw_f_ssc_mit2 = fm.FisherMatrix(self.basis.perturb_and_project_covar(vs_perturb,self.get_lw_to_sw_array(),sigma2s_perturb),fm.REP_COVAR,fm.REP_COVAR)
-        #self.lw_F_no_mit = None
 
-        if do_mit:
-            print("MultiFisher: getting lw mit covariance")
-            #self.lw_F_mit = self.get_lw_fisher(f_spec_SSC_mit,initial_state=fm.REP_FISHER)
-            #self.lw_F_mit = self.get_lw_fisher(f_spec_SSC_mit,initial_state=fm.REP_COVAR)
-
+        if do_fast and do_mit and self.lw_surveys.size==1 and self.lw_surveys[0].observables.size==1:
+            #
+            print("MultiFisher: projecting lw covariance")
+            vs_perturb,sigma2s_perturb = self.lw_surveys[0].observables[0].get_perturbing_vector()
+            sw_cov_ssc,sw_cov_ssc_mit = self.basis.perturb_and_project_covar(vs_perturb,self.get_lw_to_sw_array(),sigma2s_perturb)
             if self.needs_a:
-                print("MultiFisher: getting lw mit variance ")
-                self.a_vals[1] = self.lw_F_mit.project_covar(self.project_lw_a.T).get_covar()
-
-            print("MultiFisher: projecting lw mit covariance")
-            #self.sw_f_ssc_mit = self.lw_F_mit.project_covar(self.get_lw_to_sw_array(),destructive=False)
-            #self.lw_F_mit = None
+                self.a_vals[0],self.a_vals[1] = self.basis.perturb_and_project_covar(vs_perturb,self.project_lw_a.T,sigma2s_perturb)
+                self.project_lw_a = None
+            self.lw_to_sw_array = None
+            vs_perturb = None
+            sigma2s_perturb=None
+            self.sw_f_ssc_no_mit = fm.FisherMatrix(sw_cov_ssc,fm.REP_COVAR,fm.REP_COVAR)
+            sw_cov_ssc = None
+            self.sw_f_ssc_mit = fm.FisherMatrix(sw_cov_ssc_mit,fm.REP_COVAR,fm.REP_COVAR)
+            sw_cov_ssc_mit = None
         else:
-            self.sw_f_ssc_mit = None
-        #accumulate lw covariances onto fisher_tot
-
-        #for i in range(0,self.lw_surveys.size):
-        #    self.lw_surveys[i].fisher_accumulate(self.lw_F_mit)
-        #self.lw_F_mit.switch_rep(fm.REP_CHOL_INV)
-        #self.lw_F_no_mit.switch_rep(fm.REP_CHOL_INV)
-
-
-        #self.lw_F_mit = None
-        self.lw_to_sw_array = None
+            print("MultiFisher: projecting lw no mit covariance")
+            sw_cov_ssc = self.basis.project_covar(self.get_lw_to_sw_array())
+            self.sw_f_ssc_no_mit = fm.FisherMatrix(sw_cov_ssc,fm.REP_COVAR,fm.REP_COVAR)
+            sw_cov_ssc = None
+            if self.needs_a: 
+                self.a_vals[0] = self.basis.project_covar(vs_perturb,self.project_lw_a.T)
+            if do_mit:
+                print("MultiFisher: getting lw mit covariance")
+                self.lw_F_mit = self.get_lw_fisher(f_spec_SSC_mit,initial_state=fm.REP_COVAR)
+                print("MultiFisher: projecting lw mit covariance")
+                self.sw_f_ssc_mit = self.lw_F_mit.project_covar(self.get_lw_to_sw_array(),destructive=self.needs_a)
+                if self.needs_a:
+                    self.a_vals[1] = self.lw_F_mit.project_covar(self.project_lw_a.T).get_covar()
+            else:
+                self.sw_f_ssc_mit = None
+            self.project_lw_a = None
+            self.lw_F_mit = None
+            self.lw_to_sw_array = None
 
         #sw covariances to add
         print("MultiFisher: getting sw covariance matrices")
@@ -248,7 +242,7 @@ class MultiFisher(object):
     def get_lw_to_sw_array(self):
         """get the matrix for projecting long wavelength observables to sw basis"""
         if self.lw_to_sw_array is None:
-            lw_to_sw_array = self.basis.D_O_I_D_delta_alpha(self.sw_survey.geo,self.sw_survey.get_dO_I_ddelta_bar_array())
+            lw_to_sw_array = self.basis.get_dO_I_ddelta_alpha(self.sw_survey.geo,self.sw_survey.get_dO_I_ddelta_bar_array())
         else:
             lw_to_sw_array = self.lw_to_sw_array
         return lw_to_sw_array
@@ -261,7 +255,7 @@ class MultiFisher(object):
             return self.a_vals
         else:
             d_no_mit = destructive or self.lw_F_no_mit is None
-            project_lw_a = self.basis.D_delta_bar_D_delta_alpha(self.sw_survey.geo,tomography=True)
+            project_lw_a = self.basis.get_ddelta_bar_ddelta_alpha(self.sw_survey.geo,tomography=True)
             a_no_mit = self.get_lw_fisher(f_spec_SSC_no_mit,fm.REP_COVAR).project_covar(project_lw_a.T,destructive=d_no_mit).get_covar()
             if d_no_mit:
                 self.lw_F_no_mit = None

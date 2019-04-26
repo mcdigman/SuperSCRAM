@@ -77,7 +77,7 @@ def test_full_sky():
 
     basis = SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_max,needs_m=True)
 
-    ddbar = basis.D_delta_bar_D_delta_alpha(geo1,tomography=True)
+    ddbar = basis.get_ddelta_bar_ddelta_alpha(geo1,tomography=True)
     ns = np.arange(1,ddbar.size+1)
     ddbar_pred = -3./(2.*np.pi**(5./2.))*(-1)**ns/ns**2
     assert np.allclose(ddbar,ddbar_pred)
@@ -97,16 +97,16 @@ def test_full_sky():
     assert np.allclose(basis.C_id[:,1],ns*np.pi/r_max)
     assert np.allclose(cov_pred,cov_got,atol=1.e-15,rtol=1.e-3)
     assert np.isclose(var_got[0,0],var_pred,atol=1.e-15,rtol=1.e-3)
-    ddbar_got2 = basis.D_O_I_D_delta_alpha(geo1,geo1.r_fine**2)*3./r_max**3
+    ddbar_got2 = basis.get_dO_I_ddelta_alpha(geo1,geo1.r_fine**2)*3./r_max**3
     assert np.allclose(ddbar,ddbar_got2,rtol=1.e-3)
-    #ddbar_got1_fine = basis.D_delta_bar_D_delta_alpha(geo1,tomography=False)
-    #ddbar_got2_fine = basis.D_O_I_D_delta_alpha(geo1,tomography=False)
+    #ddbar_got1_fine = basis.get_ddelta_bar_ddelta_alpha(geo1,tomography=False)
+    #ddbar_got2_fine = basis.get_dO_I_ddelta_alpha(geo1,tomography=False)
 
 
 def test_half_sky():
     """do some tests with a half sky geo known results"""
     #get dictionaries of parameters that various functions will need
-    cosmo = {   'Omegabh2':0.02223,
+    cosmo = {   'Omegabh2':0.0222,
                     'Omegach2':0.1153,
                     'Omegab'  :0.04283392714316876,
                     'Omegac'  :0.22216607285683124,
@@ -173,9 +173,9 @@ def test_half_sky():
     basis = SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_max,needs_m=False)
     basis2 = SphBasisK(r_max,C,k_cut,basis_params,l_ceil=l_max,needs_m=True)
 
-    ddbar = basis.D_delta_bar_D_delta_alpha(geo1,tomography=True)
-    ddbar2 = basis2.D_delta_bar_D_delta_alpha(geo1,tomography=True)
-    ddbar_got2 = basis.D_O_I_D_delta_alpha(geo1,geo1.r_fine**2)*3./r_max**3
+    ddbar = basis.get_ddelta_bar_ddelta_alpha(geo1,tomography=True)
+    ddbar2 = basis2.get_ddelta_bar_ddelta_alpha(geo1,tomography=True)
+    ddbar_got2 = basis.get_dO_I_ddelta_alpha(geo1,geo1.r_fine**2)*3./r_max**3
 
     ns = np.arange(1,ddbar.size+1)
     cov_got = basis.get_covar_array()

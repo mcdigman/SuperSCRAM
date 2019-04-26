@@ -208,8 +208,8 @@ class SphBasisK(LWBasis):
 
     def get_variance(self,geo,k_cut_in=None):
         r"""get the variance  (v.T).C_lw.v where v=\frac{\partial\bar{\delta}}{\delta_\alpha} in the given geometry"""
-        #v = np.array([self.D_delta_bar_D_delta_alpha(geo,tomography=True)[itr_in]]).T
-        v = self.D_delta_bar_D_delta_alpha(geo,tomography=True).T
+        #v = np.array([self.get_ddelta_bar_ddelta_alpha(geo,tomography=True)[itr_in]]).T
+        v = self.get_ddelta_bar_ddelta_alpha(geo,tomography=True).T
         variance = np.zeros((v.shape[1],v.shape[1]))
 
         if k_cut_in is None:
@@ -236,7 +236,7 @@ class SphBasisK(LWBasis):
 
     def project_covar(self,v):
         r"""get the variance  (v.T).C_lw.v where v=\frac{\partial\bar{\delta}}{\delta_\alpha} in the given geometry"""
-        result = np.zeros((v.shape[1],v.shape[1]))
+        result = np.zeros((v.shape[1],v.shape[1]),order='F')
         itr_ll = 0
         for ll in range(0,self.n_l):
             n_k = self.C_compact[ll].shape[0]
@@ -245,9 +245,11 @@ class SphBasisK(LWBasis):
             for _m_itr in range(0,self.lm_map[ll,2].size):
                 rhs = spl.blas.dtrmm(1.,res,v[itr_ll:itr_ll+n_break],trans_a=True,lower=True)
                 result = spl.blas.dsyrk(1.,rhs,1.,result,lower=True,trans=True)
+                rhs = None
                 itr_ll+=n_k
             res = None
-        return result
+        return mirror_symmetrize(result,lower=True,inplace=True)
+
     def perturb_and_project_covar(self,perturb_v,project_v,perturb_sigma2s):
         r"""get the variance  (v.T).C_lw.v where v=\frac{\partial\bar{\delta}}{\delta_\alpha} in the given geometry"""
         perturb_v = np.ascontiguousarray(perturb_v.T)
@@ -260,21 +262,21 @@ class SphBasisK(LWBasis):
             n_break = n_k
             for _m_itr in range(0,self.lm_map[ll,2].size):
                 rhs1 = spl.blas.dtrmm(1.,res,perturb_v[itr_ll:itr_ll+n_break],trans_a=True,lower=True)
-                denom_result = spl.blas.dsyrk(1.,rhs1,1.,denom_result,lower=True,trans=True,overwrite_c=True)
-                rhs1 = None
                 rhs2 = spl.blas.dtrmm(1.,res,project_v[itr_ll:itr_ll+n_break],trans_a=True,lower=True)
-                covar_result = spl.blas.dsyrk(1.,rhs2,1.,covar_result,lower=True,trans=True,overwrite_c=True)
+                denom_result = spl.blas.dsyrk(1.,rhs1,1.,denom_result,lower=True,trans=True)
+                covar_result = spl.blas.dsyrk(1.,rhs2,1.,covar_result,lower=True,trans=True)
+                rhs1 = None
                 rhs2 = None
                 itr_ll+=n_k
             res = None
 
         mult_mat = np.asfortranarray(np.diag(1./perturb_sigma2s))+denom_result
         denom_result = None
-        mult_mat_chol_inv = get_cholesky_inv(mult_mat,lower=True,inplace=False,clean=False)
+        mult_mat_chol_inv = get_cholesky_inv(mult_mat,lower=True,inplace=False,clean=True)
         mult_mat = None
         pert_in = spl.blas.dtrmm(1.,mult_mat_chol_inv,perturb_v.T,side=False,lower=True,trans_a=True)
         mult_mat_chol_inv = None
-        project_v = np.asfortranarray(project_v.T)
+
         proj_out = np.zeros_like(project_v,order='F')
         itr_ll = 0
         for ll in range(0,self.n_l):
@@ -282,12 +284,12 @@ class SphBasisK(LWBasis):
             res = self.C_compact[ll]
             n_break = n_k
             for _m_itr in range(0,self.lm_map[ll,2].size):
-                proj_out[:,itr_ll:itr_ll+n_break] = spl.blas.dsymm(1.,res,project_v[:,itr_ll:itr_ll+n_break],lower=True,side=True)
+                proj_out[itr_ll:itr_ll+n_break] = spl.blas.dsymm(1.,res,project_v[itr_ll:itr_ll+n_break],lower=True)
                 itr_ll+=n_k
             res = None
-        rhs_req = np.asfortranarray(np.dot(pert_in,proj_out.T))
+        rhs_req = np.asfortranarray(np.dot(pert_in,proj_out))
         mit_result = spl.blas.dsyrk(-1.,rhs_req,1.,covar_result,lower=True,trans=True)#covar_result-np.dot(rhs_req.T,rhs_req)
-        return covar_result,mit_result
+        return mirror_symmetrize(covar_result,lower=True,inplace=True),mirror_symmetrize(mit_result,lower=True,inplace=True)
 
 
 
@@ -301,14 +303,14 @@ class SphBasisK(LWBasis):
     #ignoring z>0.6 gives ~3.6% eig accuracy without mit, ~1.8% accuracy with
     #ignoring z>0.4 gives ~20% eig accuracy without mit, ~3% accuracy with
     #interpretation: information adds info at higher redshift but not much variance there.
-    def D_O_I_D_delta_alpha(self,geo,integrand):
+    def get_dO_I_ddelta_alpha(self,geo,integrand):
         r"""Get \frac{\partial O^I}{\partial \delta_\alpha} for an observable.
             inputs:
                 geo: a Geo object for the geometry
                 integrand: \frac{\partial O^I}{\partial \bar{\delta}} as a function of geo.r_fine, which must be integrated over
         """
-        print("sph_klim: calculating D_O_I_D_delta_alpha")
-        d_delta_bar = self.D_delta_bar_D_delta_alpha(geo,tomography=False)
+        print("sph_klim: calculating dO_I_ddelta_alpha")
+        d_delta_bar = self.get_ddelta_bar_ddelta_alpha(geo,tomography=False)
 #        d_delta_bar = (d_delta_bar.T*(geo.z_fine<0.4)).T
 #        result = np.zeros((d_delta_bar.shape[1],integrand.shape[1]))
         #the variable to integrate over
@@ -327,21 +329,19 @@ class SphBasisK(LWBasis):
 #        result = np.dot(dxs,integrand)
 #        dxs = np.hstack([delta_x[0],(delta_x[:-1:]+delta_x[1::]),delta_x[-1]])*d_delta_bar.T
 #        assert np.allclose(dxs,dxs_alt2,atol=1.e-50,rtol=1.e-10)
-#        print("XXXXXXXXXXX")
         result = np.dot(np.asfortranarray(np.hstack([delta_x[0],(delta_x[:-1:]+delta_x[1::]),delta_x[-1]]))*d_delta_bar.T,integrand)
-        print(np.hstack([delta_x[0],(delta_x[:-1:]+delta_x[1::]),delta_x[-1]]).shape,d_delta_bar.shape,integrand.shape,result.shape)
 #        assert np.allclose(result,result2,atol=1.e-50,rtol=1.e-10)
-        print("sph_klim: got D_O_I_D_delta_alpha")
+        print("sph_klim: got dO_I_ddelta_alpha")
         return result
 
     #Note: Cacheing is potentially dangerous if the geo changes, so it should not be allowed to.
-    def D_delta_bar_D_delta_alpha(self,geo,tomography=True):
+    def get_ddelta_bar_ddelta_alpha(self,geo,tomography=True):
         r"""Calculate \frac{\partial\bar{\delta}}{\partial\delta_\alpha}
             inputs:
                 geo: an input Geo object for the geometry
                 tomography: if True use tomographic (coarse) bins, otherwise use resolution (fine) bins for r integrals
         """
-        print("sph_klim: begin D_delta_bar_D_delta_alpha with geo id: ",id(geo))
+        print("sph_klim: begin get_ddelta_bar_ddelta_alpha with geo id: ",id(geo))
 
         #Caching implements significant speedup, check caches
         result_cache = self.ddelta_bar_cache.get(str(id(geo)))
@@ -402,7 +402,7 @@ class SphBasisK(LWBasis):
         return result
 
     def gen_R_cache(self,rbins):
-        """generate the r_cache dict needed by  D_delta_bar_D_delta_alpha"""
+        """generate the r_cache dict needed by  get_ddelta_bar_ddelta_alpha"""
         x_grid = np.linspace(0.,np.max(self.C_id[:,1])*self.r_max,self.params['x_grid_size'])
         ll_old = -1
         r_cache = {}

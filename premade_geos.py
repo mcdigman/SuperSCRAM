@@ -7,7 +7,7 @@ from polygon_geo import PolygonGeo
 from polygon_pixel_geo import PolygonPixelGeo
 from polygon_union_geo import PolygonUnionGeo
 from polygon_pixel_union_geo import PolygonPixelUnionGeo
-from polygon_display_utils import display_geo
+from geo_display_utils import display_geo
 
 class WFIRSTGeo(PolygonGeo):
     """replicate WFIRST geometry"""

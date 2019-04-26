@@ -16,8 +16,8 @@ class QWeight(object):
                 z_min: the minimum redshift to use in integrations
                 z_max: the maximum redshift to use in integrations
         """
-        assert z_min<5.
-        assert z_max<5. or z_max==np.inf
+        #assert z_min<5.
+        #assert z_max<5. or z_max==np.inf
         self.z_min = z_min
         self.z_max = z_max
         self.rs = rs

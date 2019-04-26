@@ -28,7 +28,7 @@ if __name__=='__main__':
     time0 = time()
     #get dictionaries of parameters that various functions will need
     cosmo = defaults.cosmology_wmap.copy()
-    cosmo['de_model'] = 'constant_w'
+    cosmo['de_model'] = 'w0wa'
     cosmo['wa'] = 0.
     cosmo['w0'] = -1.
     cosmo['w'] = -1.
@@ -99,7 +99,7 @@ if __name__=='__main__':
     #z_fine[0] = 0.0001
 
     #l_max is the highest l that should be precomputed
-    l_max = 30
+    l_max = 72
     res_healpix = 6
     use_pixels = False
     print("main: begin constructing WFIRST PolygonGeo")
@@ -173,8 +173,8 @@ if __name__=='__main__':
     #x_cut = 80.
     #x_cut = 100.
     #x_cut = 85
-    #x_cut = 30.
-    x_cut = 30.
+    x_cut = 80.
+    #x_cut = 208.3
     k_cut = x_cut/r_max
     #l_max caps maximum l regardless of k
     print("main: begin constructing basis for long wavelength fluctuations")
@@ -254,6 +254,37 @@ assert np.allclose(np.dot(x_no_mit.T,x_no_mit),m_tilde)
 assert np.allclose(c_rot_eig_no_mit,np.diagflat(SS.eig_set[1][0][0]))
 assert np.allclose(c_rot_eig_g,np.eye(c_rot_eig_g.shape[0]))
 assert np.allclose(np.dot(u_no_mit,np.dot(c_rot_eig_no_mit,u_no_mit.T)),m_tilde)
+
+f_set = SS.f_set
+lihu_pars = np.array(['ns','Omegach2','Omegabh2','h','LogAs','w'])
+f_set_lihu_prior = np.zeros(3,dtype=object)
+f_set_jdem_prior = np.zeros(3,dtype=object)
+f_set_lihu = np.zeros(3,dtype=object)
+f_set_mat_jdem1 = np.zeros(3,dtype=object)
+for i in range(0,3):
+    f_set_mat_jdem1[i] = SS.f_set[i][2].get_fisher()
+    f_set_lihu_prior[i] = np.zeros(3,dtype=object)
+    f_set_lihu[i] = np.zeros(3,dtype=object)
+    f_set_jdem_prior[i] = np.zeros(3,dtype=object)
+
+from change_parameters import rotate_jdem_to_lihu,rotate_lihu_to_jdem
+from copy import deepcopy
+f_set_mat_lihu1 = rotate_jdem_to_lihu(f_set_mat_jdem1,C)
+f_set_mat_lihu_h_prior = deepcopy(f_set_mat_lihu1)
+f_set_mat_lihu_h_prior[0][3,3] += 1.e4
+f_set_mat_lihu_h_prior[1][3,3] += 1.e4
+f_set_mat_lihu_h_prior[2][3,3] += 1.e4
+f_set_mat_jdem_h_prior = deepcopy(rotate_lihu_to_jdem(f_set_mat_lihu_h_prior,C))
+import fisher_matrix as fm
+for i in range(0,3):
+    f_set_lihu_prior[i][2] = fm.FisherMatrix(f_set_mat_lihu_h_prior[i],fm.REP_FISHER)
+    f_set_lihu[i][2] = fm.FisherMatrix(f_set_mat_lihu1[i],fm.REP_FISHER)
+    f_set_jdem_prior[i][2] = fm.FisherMatrix(f_set_mat_jdem_h_prior[i],fm.REP_FISHER)
+import matplotlib.pyplot as plt
+#fig1 = make_standard_ellipse_plot(f_set_lihu,lihu_pars)
+#fig2 = make_standard_ellipse_plot(f_set_lihu_prior,lihu_pars)
+fig3 = make_standard_ellipse_plot(f_set_jdem_prior,cosmo_par_list)
+plt.show(fig3)
 #
 #
 #opacities = np.array([1.,1.,1.])

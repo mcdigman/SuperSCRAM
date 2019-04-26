@@ -170,14 +170,14 @@ class DNumberDensityObservable(LWObservable):
                 bn_smooth = n_smooth*self.bias
                 integrand_smooth = np.expand_dims(bn_smooth*self.r_fine**2,axis=1)
                 self.integrands_smooth[:,itr] = integrand_smooth[:,0]
-                d1 = self.basis.D_O_I_D_delta_alpha(self.geo1,integrand_smooth)
-                d2 = self.basis.D_O_I_D_delta_alpha(self.geo2,integrand_smooth)
+                d1 = self.basis.get_dO_I_ddelta_alpha(self.geo1,integrand_smooth)
+                d2 = self.basis.get_dO_I_ddelta_alpha(self.geo2,integrand_smooth)
                 DO_a = (d2-d1)*self.r_vols[itr]
                 Nab_itr = n_avg*(1./self.V1s[itr]+1./self.V2s[itr])
                 self.Nab_i[itr] = 1./Nab_itr
                 self.vs[itr] = DO_a.flatten()
-            #d1s_alt = self.basis.D_O_I_D_delta_alpha(self.geo1,self.integrands_smooth)
-            #d2s_alt = self.basis.D_O_I_D_delta_alpha(self.geo2,self.integrands_smooth)
+            #d1s_alt = self.basis.get_dO_I_ddelta_alpha(self.geo1,self.integrands_smooth)
+            #d2s_alt = self.basis.get_dO_I_ddelta_alpha(self.geo2,self.integrands_smooth)
             #self.DO_a_alt = ((d2s_alt-d1s_alt).T*self.r_vols).T
             #self.vs_alt = self.DO_a_alt.flatten()
 

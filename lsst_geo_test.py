@@ -262,7 +262,7 @@ if __name__=='__main__':
         print("plotting")
         if do_plot:
             import healpy as hp
-            from polygon_display_utils import display_geo,plot_reconstruction
+            from geo_display_utils import display_geo,plot_reconstruction
             from mpl_toolkits.basemap import Basemap
             import matplotlib.pyplot as plt
             display_geo(geo3,l_max,do_round=True)
@@ -288,13 +288,13 @@ if __name__=='__main__':
     if do_plot_comparison:
         print("getting geo_lsst")
         geo_lsst = LSSTGeo(zs,C,z_fine,l_max,{'n_double':30})
-        print("getting geo donut")
-        radius_donut = 0.4626495014759003
         n_x = 20
-        geo_donut_base1 = CircleGeo(zs,C,3./4.*radius_donut,n_x,z_fine,l_max,{'n_double':80})
-        geo_donut_base2 = CircleGeo(zs,C,5./4.*radius_donut,n_x,z_fine,l_max,{'n_double':80})
-        geo_donut_base3 = AlmDifferenceGeo(geo_donut_base2,geo_donut_base1,C,zs,z_fine)
-        geo_donut = AlmRotGeo(geo_donut_base3,C,zs,z_fine,np.array([0.,3.*np.pi/8.-0.15,np.pi/2.+0.05]),30)
+#        print("getting geo donut")
+#        radius_donut = 0.4626495014759003
+#        geo_donut_base1 = CircleGeo(zs,C,3./4.*radius_donut,n_x,z_fine,l_max,{'n_double':80})
+#        geo_donut_base2 = CircleGeo(zs,C,5./4.*radius_donut,n_x,z_fine,l_max,{'n_double':80})
+#        geo_donut_base3 = AlmDifferenceGeo(geo_donut_base2,geo_donut_base1,C,zs,z_fine)
+#        geo_donut = AlmRotGeo(geo_donut_base3,C,zs,z_fine,np.array([0.,3.*np.pi/8.-0.15,np.pi/2.+0.05]),30)
         print("getting geo long strip")
         theta_width_long_strip = 6.109913056693067
         geo_long_strip = StripeGeo(zs,C,z_fine,l_max,{'n_double':80},-30.+theta_width_long_strip,-35.-theta_width_long_strip,120.,95.,80)
@@ -302,45 +302,52 @@ if __name__=='__main__':
         radius_circle = 0.4585878729513186
         geo_base_circle = CircleGeo(zs,C,radius_circle,n_x,z_fine,l_max,{'n_double':80})
         geo_circle = AlmRotGeo(geo_base_circle,C,zs,z_fine,np.array([0.,3.*np.pi/8.-0.1,np.pi/2.+0.05]),80)
-        print("getting geo narrow strip")
-        theta_width_narrow_strip = 33
-        phi_width_narrow_strip = 6.747231368088425
-        geo_narrow_strip = StripeGeo(zs,C,z_fine,l_max,{'n_double':80},-30.+theta_width_narrow_strip,-35.-theta_width_narrow_strip+4,180-phi_width_narrow_strip,180-25-phi_width_narrow_strip,20)
-        print("getting geo rectangle")
-        geo_rectangle = LSSTGeoSimpl(zs,C,z_fine,l_max,{'n_double':80},phi0=0.,phi1=0.9310048450824275,deg0=-59,deg1=-10)
+#        print("getting geo narrow strip")
+#        theta_width_narrow_strip = 33
+#        phi_width_narrow_strip = 6.747231368088425
+#        geo_narrow_strip = StripeGeo(zs,C,z_fine,l_max,{'n_double':80},-30.+theta_width_narrow_strip,-35.-theta_width_narrow_strip+4,180-phi_width_narrow_strip,180-25-phi_width_narrow_strip,20)
+#        print("getting geo rectangle")
+#        geo_rectangle = LSSTGeoSimpl(zs,C,z_fine,l_max,{'n_double':80},phi0=0.,phi1=0.9310048450824275,deg0=-59,deg1=-10)
         print("getting geo WFIRST")
         geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,{'n_double':80})
 
 
         print("getting geo3")
-        geo_donut_diff = AlmDifferenceGeo(geo_lsst,geo_donut,C,zs,z_fine)
         geo_long_strip_diff = AlmDifferenceGeo(geo_lsst,geo_long_strip,C,zs,z_fine)
         geo_circle_diff = AlmDifferenceGeo(geo_lsst,geo_circle,C,zs,z_fine)
-        geo_narrow_strip_diff = AlmDifferenceGeo(geo_lsst,geo_narrow_strip,C,zs,z_fine)
         geo_wfirst_diff = AlmDifferenceGeo(geo_lsst,geo_wfirst,C,zs,z_fine)
-        geo_rectangle_diff = AlmDifferenceGeo(geo_lsst,geo_rectangle,C,zs,z_fine)
+        #geo_narrow_strip_diff = AlmDifferenceGeo(geo_lsst,geo_narrow_strip,C,zs,z_fine)
+        #geo_rectangle_diff = AlmDifferenceGeo(geo_lsst,geo_rectangle,C,zs,z_fine)
+        #geo_donut_diff = AlmDifferenceGeo(geo_lsst,geo_donut,C,zs,z_fine)
         print("plotting")
         if do_plot:
             import healpy as hp
-            from polygon_display_utils import display_geo,plot_reconstruction,reconstruct_and_plot
+            from geo_display_utils import display_geo,plot_reconstruction,reconstruct_and_plot
             from mpl_toolkits.basemap import Basemap
             import matplotlib.pyplot as plt
-            fig = plt.figure()
-            res_healpix = 7
-            pixels = get_healpix_pixelation(res_healpix)
-            ax = fig.add_subplot('231')
-            reconstruct_and_plot(geo_donut_diff,l_max,pixels,do_round=True,fig=fig,title='Donut',cbar=False)
-            ax = fig.add_subplot('232')
-            reconstruct_and_plot(geo_circle_diff,l_max,pixels,do_round=True,fig=fig,title='Circle',cbar=False)
-            ax = fig.add_subplot('233')
-            reconstruct_and_plot(geo_long_strip_diff,l_max,pixels,do_round=True,fig=fig,title='Long Strip',cbar=False)
-            ax = fig.add_subplot('234')
-            reconstruct_and_plot(geo_narrow_strip_diff,l_max,pixels,do_round=True,fig=fig,title='Narrow Strip',cbar=False)
-            ax = fig.add_subplot('235')
-            reconstruct_and_plot(geo_rectangle_diff,l_max,pixels,do_round=True,fig=fig,title='Rectangle',cbar=False)
-            ax = fig.add_subplot('236')
-            reconstruct_and_plot(geo_wfirst_diff,l_max,pixels,do_round=True,fig=fig,title='WFIRST',cbar=False)
-            plt.show(fig)
+            #ax = fig.add_subplot('231')
+            #reconstruct_and_plot(geo_donut_diff,l_max,pixels,do_round=True,fig=fig,title='Donut',cbar=False)
+            #ax = fig.add_subplot('232')
+            #reconstruct_and_plot(geo_circle_diff,l_max,pixels,do_round=True,fig=fig,title='Circle',cbar=False)
+            #ax = fig.add_subplot('233')
+            #reconstruct_and_plot(geo_long_strip_diff,l_max,pixels,do_round=True,fig=fig,title='Long Strip',cbar=False)
+            #ax = fig.add_subplot('234')
+            #reconstruct_and_plot(geo_narrow_strip_diff,l_max,pixels,do_round=True,fig=fig,title='Narrow Strip',cbar=False)
+            #ax = fig.add_subplot('235')
+            #reconstruct_and_plot(geo_rectangle_diff,l_max,pixels,do_round=True,fig=fig,title='Rectangle',cbar=False)
+            #ax = fig.add_subplot('236')
+            #reconstruct_and_plot(geo_wfirst_diff,l_max,pixels,do_round=True,fig=fig,title='WFIRST',cbar=False)
+            #plt.show(fig)
+        res_healpix = 9
+        pixels = get_healpix_pixelation(res_healpix)
+        fig = plt.figure(figsize=(7.,2.))
+        ax = fig.add_subplot('131')
+        reconstruct_and_plot(geo_long_strip_diff,l_max,pixels,do_round=True,fig=fig,title='Strip',cbar=False,notext=True)
+        ax = fig.add_subplot('132')
+        reconstruct_and_plot(geo_circle_diff,l_max,pixels,do_round=True,fig=fig,title='Circle',cbar=False,notext=True)
+        ax = fig.add_subplot('133')
+        reconstruct_and_plot(geo_wfirst_diff,l_max,pixels,do_round=True,fig=fig,title='WFIRST',cbar=False,notext=True)
+        plt.show(fig)
         import sys
         sys.exit()
         

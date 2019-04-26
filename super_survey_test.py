@@ -533,7 +533,7 @@ if __name__=="__main__":
 #    print("main: total run time "+str(t2-t1)+" s")
 #
 #    #print("fractional mitigation: ", SS.a_no_mit/SS.a_mit)
-#    #coeff = SS.basis.D_delta_bar_D_delta_alpha(SS.surveys_sw[0].geo,tomography=True)[0]
+#    #coeff = SS.basis.get_ddelta_bar_ddelta_alpha(SS.surveys_sw[0].geo,tomography=True)[0]
 #    #rel_weights1 = coeff*np.dot(SS.multi_f.get_fisher(mf.f_spec_no_mit,mf.f_return_lw)[0].get_cov_cholesky(),coeff)
 #    #rel_weights2 = coeff*np.dot(SS.multi_f.get_fisher(mf.f_spec_mit   ,mf.f_return_lw)[0].get_cov_cholesky(),coeff)
 #
