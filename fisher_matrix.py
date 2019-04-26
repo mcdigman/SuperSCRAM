@@ -93,7 +93,6 @@ class FisherMatrix(object):
         else:
             self.switch_rep(REP_COVAR)
             self._internal_mat = np.asfortranarray(self._internal_mat)
-            #self._internal_mat2 = self._internal_mat.copy()
             if force_sherman:
                 for itr in range(0,sigma2s.size):
                     v = vs[itr:itr+1]
@@ -105,7 +104,7 @@ class FisherMatrix(object):
                         mult = -sigma2s[itr]/(1.+sigma2s[itr]*np.dot(v,lhs)[0,0])
                     else: #don't bother perturbing the matrix if nothing to add
                         continue
-                    self._internal_mat2 = spl.blas.dsyrk(mult,lhs,1.,c=self._internal_mat,lower=True,trans=False,overwrite_c=True)
+                    self._internal_mat = spl.blas.dsyrk(mult,lhs,1.,c=self._internal_mat,lower=True,trans=False,overwrite_c=True)
             else:
                 lhs1 = np.asfortranarray(spl.blas.dsymm(1.,self._internal_mat,vs,lower=True,overwrite_c=False,side=True))
                 mult_mat = np.asfortranarray(np.diag(1./sigma2s))+spl.blas.dgemm(1.,vs,lhs1,trans_b=True)
@@ -116,8 +115,6 @@ class FisherMatrix(object):
                 mult_mat_chol_inv = None
                 lhs1=None
                 self._internal_mat = spl.blas.dsyrk(-1.,lhs2,1.,self._internal_mat,trans=True,lower=True,overwrite_c=True)
-                #self._internal_mat = mirror_symmetrize(self._internal_mat,lower=True,inplace=True)
-                #self._internal_mat2 = mirror_symmetrize(self._internal_mat2,lower=True,inplace=True)
 
 
 
@@ -477,7 +474,7 @@ class FisherMatrix(object):
         """get the correlation matrix corresponding to the fisher matrix"""
         return np.corrcoef(self.get_covar(copy_output=False,internal=False,inplace=False))
 
-    #TODO actually gets eigensystem with u
+    #TODO fix description, actually gets eigensystem with u
     def get_cov_eig_metric(self,metric):
         """get the eigensystem solving C^{ij}metric^{-1 ij}v=lambda v
             metric is itself a FisherMatrix object"""

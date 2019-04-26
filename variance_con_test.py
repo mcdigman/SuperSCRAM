@@ -4,15 +4,10 @@ from builtins import range
 from time import time
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
-#from polygon_geo import PolygonGeo
 from cosmopie import CosmoPie
 import defaults
 from sph_klim import SphBasisK
 import matter_power_spectrum as mps
-from premade_geos import LSSTGeoSimpl,WFIRSTGeo
-from full_sky_geo import FullSkyGeo
-from full_sky_pixel_geo import FullSkyPixelGeo
-from circle_geo import CircleGeo
 from half_sky_geo import HalfSkyGeo
 
 if __name__=='__main__':
@@ -253,5 +248,3 @@ if __name__=='__main__':
         dump_f = open('dump_var_con.pkl','w')
         dill.dump(results,dump_f)
         dump_f.close()
-
-

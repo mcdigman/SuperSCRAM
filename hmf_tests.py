@@ -104,7 +104,7 @@ def test_hmf():
         assert np.allclose(bias_nu,bias_z)
         assert np.allclose(bias_G,bias_z)
         assert np.all(bias_nu>=0)
-        dndm = hmf.dndM_G(Ms,1.)
+#        dndm = hmf.dndM_G(Ms,1.)
 #        bias_avg = np.trapz(bias_nu*dndm,Ms)
 
         n_avg2 = hmf.n_avg(Ms,0.)

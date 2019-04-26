@@ -18,28 +18,28 @@ def test_full_sky():
     #get dictionaries of parameters that various functions will need
     #cosmo = defaults.cosmology_wmap.copy()
     cosmo = {   'Omegabh2':0.02223,
-                    'Omegach2':0.1153,
-                    'Omegab'  :0.04283392714316876,
-                    'Omegac'  :0.22216607285683124,
-                    'Omegamh2':0.13752999999999999,
-                    'OmegaL'  :0.735,
-                    'OmegaLh2':0.38145113207547166,
-                    'Omegam'  :0.265,
-                    'H0'      :72.04034509047493,
-                    'sigma8'  : 0.8269877678406697, #from the code
-                    'h'       :0.7204034509047493,
-                    'Omegak'  : 0.0,
-                    'Omegakh2': 0.0,
-                    'Omegar'  : 0.0,
-                    'Omegarh2': 0.0,
-                    'ns'      : 0.9608,
-                    'tau'     : 0.081,
-                    'Yp'      :0.299,
-                    'As'      : 2.464*10**-9,
-                    'LogAs'   :-19.821479791275138,
-                    'w'       :-1.0,
-                    'de_model':'constant_w',#dark energy model
-                    'mnu'     :0.}
+                'Omegach2':0.1153,
+                'Omegab'  :0.04283392714316876,
+                'Omegac'  :0.22216607285683124,
+                'Omegamh2':0.13752999999999999,
+                'OmegaL'  :0.735,
+                'OmegaLh2':0.38145113207547166,
+                'Omegam'  :0.265,
+                'H0'      :72.04034509047493,
+                'sigma8'  : 0.8269877678406697, #from the code
+                'h'       :0.7204034509047493,
+                'Omegak'  : 0.0,
+                'Omegakh2': 0.0,
+                'Omegar'  : 0.0,
+                'Omegarh2': 0.0,
+                'ns'      : 0.9608,
+                'tau'     : 0.081,
+                'Yp'      :0.299,
+                'As'      : 2.464*10**-9,
+                'LogAs'   :-19.821479791275138,
+                'w'       :-1.0,
+                'de_model':'constant_w',#dark energy model
+                'mnu'     :0.}
     cosmo['de_model'] = 'constant_w'
     cosmo['wa'] = 0.
     cosmo['w0'] = -1.
@@ -55,7 +55,7 @@ def test_full_sky():
     power_params = defaults.power_params.copy()
     power_params.camb = camb_params
     power_params.camb['accuracy'] = 1
-    prior_params = defaults.prior_fisher_params.copy()
+    #prior_params = defaults.prior_fisher_params.copy()
 
 
     zs = np.array([0.0001,3.])
@@ -107,28 +107,28 @@ def test_half_sky():
     """do some tests with a half sky geo known results"""
     #get dictionaries of parameters that various functions will need
     cosmo = {   'Omegabh2':0.0222,
-                    'Omegach2':0.1153,
-                    'Omegab'  :0.04283392714316876,
-                    'Omegac'  :0.22216607285683124,
-                    'Omegamh2':0.13752999999999999,
-                    'OmegaL'  :0.735,
-                    'OmegaLh2':0.38145113207547166,
-                    'Omegam'  :0.265,
-                    'H0'      :72.04034509047493,
-                    'sigma8'  : 0.8269877678406697, #from the code
-                    'h'       :0.7204034509047493,
-                    'Omegak'  : 0.0,
-                    'Omegakh2': 0.0,
-                    'Omegar'  : 0.0,
-                    'Omegarh2': 0.0,
-                    'ns'      : 0.9608,
-                    'tau'     : 0.081,
-                    'Yp'      :0.299,
-                    'As'      : 2.464*10**-9,
-                    'LogAs'   :-19.821479791275138,
-                    'w'       :-1.0,
-                    'de_model':'constant_w',#dark energy model
-                    'mnu'     :0.}
+                'Omegach2':0.1153,
+                'Omegab'  :0.04283392714316876,
+                'Omegac'  :0.22216607285683124,
+                'Omegamh2':0.13752999999999999,
+                'OmegaL'  :0.735,
+                'OmegaLh2':0.38145113207547166,
+                'Omegam'  :0.265,
+                'H0'      :72.04034509047493,
+                'sigma8'  : 0.8269877678406697, #from the code
+                'h'       :0.7204034509047493,
+                'Omegak'  : 0.0,
+                'Omegakh2': 0.0,
+                'Omegar'  : 0.0,
+                'Omegarh2': 0.0,
+                'ns'      : 0.9608,
+                'tau'     : 0.081,
+                'Yp'      :0.299,
+                'As'      : 2.464*10**-9,
+                'LogAs'   :-19.821479791275138,
+                'w'       :-1.0,
+                'de_model':'constant_w',#dark energy model
+                'mnu'     :0.}
     cosmo['de_model'] = 'constant_w'
     cosmo['wa'] = 0.
     cosmo['w0'] = -1.
@@ -144,7 +144,7 @@ def test_half_sky():
     power_params = defaults.power_params.copy()
     power_params.camb = camb_params
     power_params.camb['accuracy'] = 1
-    prior_params = defaults.prior_fisher_params.copy()
+    #prior_params = defaults.prior_fisher_params.copy()
 
 
     zs = np.array([0.0001,3.])
@@ -177,7 +177,7 @@ def test_half_sky():
     ddbar2 = basis2.get_ddelta_bar_ddelta_alpha(geo1,tomography=True)
     ddbar_got2 = basis.get_dO_I_ddelta_alpha(geo1,geo1.r_fine**2)*3./r_max**3
 
-    ns = np.arange(1,ddbar.size+1)
+    #ns = np.arange(1,ddbar.size+1)
     cov_got = basis.get_covar_array()
     cov_got2 = basis2.get_covar_array()
     var_got = basis.get_variance(geo1)

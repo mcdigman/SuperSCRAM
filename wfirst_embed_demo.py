@@ -1,11 +1,15 @@
-"""demonstration case for wfirst embeded in lsst footprint to mitigate covariance"""
+"""Mathtew Digman 2019 
+Demonstration case for SUPERSCRAM code with wfirst embeded in lsst footprint 
+to mitigate covariance as shown in paper"""
 from __future__ import division,print_function,absolute_import
 from builtins import range
 from time import time
 
 import numpy as np
 
-from super_survey import SuperSurvey,make_ellipse_plot,make_standard_ellipse_plot
+import matplotlib.pyplot as plt
+
+from super_survey import SuperSurvey,make_standard_ellipse_plot
 from lw_survey import LWSurvey
 from sw_survey import SWSurvey
 from cosmopie import CosmoPie
@@ -13,12 +17,7 @@ import cosmopie as cp
 from sph_klim import SphBasisK
 from matter_power_spectrum import MatterPower
 from nz_wfirst_eff import NZWFirstEff
-from nz_wfirst import NZWFirst
-from nz_candel import NZCandel
-from premade_geos import WFIRSTGeo,LSSTGeo,WFIRSTPixelGeo,LSSTPixelGeo,LSSTGeoSimpl
-from full_sky_pixel_geo import FullSkyPixelGeo
-from half_sky_geo import HalfSkyGeo
-from full_sky_geo import FullSkyGeo
+from premade_geos import WFIRSTGeo,LSSTGeo,WFIRSTPixelGeo,LSSTPixelGeo
 
 import defaults
 
@@ -88,15 +87,10 @@ if __name__=='__main__':
 
     #create the WFIRST geometry
     #zs are the bounding redshifts of the tomographic bins
-    #zs = np.array([0.2,0.43,.63,0.9, 1.3])
     zs = np.arange(0.2,3.01,0.4)
-    #zs = np.linspace(0.2,3.01,3)
     zs_lsst = np.linspace(0.,1.2,3)
-    #zs = np.array([0.2,0.4,0.6])
     #z_fine are the resolution redshift slices to be integrated over
     z_fine = np.linspace(0.001,np.max([zs[-1],zs_lsst[-1]]),500)
-
-    #z_fine[0] = 0.0001
 
     #l_max is the highest l that should be precomputed
     l_max = 72
@@ -105,18 +99,8 @@ if __name__=='__main__':
     print("main: begin constructing WFIRST PolygonGeo")
     if use_pixels:
         geo_wfirst = WFIRSTPixelGeo(zs,C,z_fine,l_max,res_healpix)
-        #geo_wfirst = LSSTPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
-        #geo_wfirst = FullSkyPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
     else:
         geo_wfirst = WFIRSTGeo(zs,C,z_fine,l_max,poly_params)
-        #geo_wfirst = HalfSkyGeo(zs_lsst,C,z_fine,top=True)
-        #geo_wfirst = FullSkyGeo(zs,C,z_fine)
-        #geo_wfirst = LSSTGeo(zs,C,z_fine,l_max,poly_params)
-        #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.9310048450824275,deg0=-59,deg1=-10)
-        #geo_wfirst = LSSTGeoSimpl(zs,C,z_fine,l_max,poly_params,phi0=0.,phi1=0.7644912273732581,deg0=-49,deg1=-20)
-        #theta_width = 6.109913056693067
-        #geo_wfirst = StripeGeo(zs,C,z_fine,l_max,poly_params,-30.+theta_width,-35.-theta_width,120.,95.,80)
-
 
     print("main: finish constructing WFIRST PolygonGeo")
 
@@ -124,12 +108,9 @@ if __name__=='__main__':
     #encompassing the wfirst survey with galactic plane masked)
     print("main: begin constructing LSST PolygonGeo")
     if use_pixels:
-        #geo_wfirst = WFIRSTPixelGeo(zs,C,z_fine,l_max,res_healpix)
         geo_lsst = LSSTPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
-        #geo_lsst = FullSkyPixelGeo(zs_lsst,C,z_fine,l_max,res_healpix)
     else:
         geo_lsst = LSSTGeo(zs_lsst,C,z_fine,l_max,poly_params)
-        #geo_lsst = HalfSkyGeo(zs_lsst,C,z_fine)
     print("main: finish constructing LSST PolygonGeo")
 
     #create the short wavelength survey (SWSurvey) object
@@ -140,8 +121,6 @@ if __name__=='__main__':
     elif cosmo['de_model']=='constant_w':
         cosmo_par_list = np.array(['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs','w'])
         cosmo_par_eps = np.array([0.002,0.00025,0.0001,0.00025,0.1,0.01])
-        #cosmo_par_list = np.array(['ns','Omegach2','Omegabh2','h','LogAs','w'])
-        #cosmo_par_eps = np.array([0.002,0.00025,0.0001,0.00025,0.1,0.01])
     elif cosmo['de_model']=='jdem':
         cosmo_par_list = ['ns','Omegamh2','Omegabh2','OmegaLh2','LogAs']
         cosmo_par_list.extend(cp.JDEM_LIST)
@@ -156,13 +135,9 @@ if __name__=='__main__':
     nz_params_wfirst_lens['i_cut'] = 26.3
     nz_params_wfirst_lens['data_source'] = './data/CANDELS-GOODSS2.dat'
     nz_wfirst_lens = NZWFirstEff(nz_params_wfirst_lens)
-    #nz_wfirst_lens = NZWFirst(nz_params_wfirst_lens)
-    #nz_wfirst_lens = NZCandel(nz_params_wfirst_lens)
     print("main: finish constructing lensing source density for WFIRST")
     #set some parameters for lensing
     len_params['smodel'] = 'nzmatcher'
-    #len_params['z_min_dist'] = np.min(zs)
-    #len_params['z_max_dist'] = np.max(zs)
     len_params['pmodel'] = 'halofit'
 
     #create the lw basis
@@ -170,11 +145,7 @@ if __name__=='__main__':
     z_max = z_fine[-1]+0.001
     r_max = C.D_comov(z_max)
     #k_cut is the maximum k value for the bessel function zeros that define the basis
-    #x_cut = 80.
-    #x_cut = 100.
-    #x_cut = 85
     x_cut = 80.
-    #x_cut = 208.3
     k_cut = x_cut/r_max
     #l_max caps maximum l regardless of k
     print("main: begin constructing basis for long wavelength fluctuations")
@@ -185,7 +156,6 @@ if __name__=='__main__':
     geos = np.array([geo_wfirst,geo_lsst],dtype=object)
     print("main: begin constructing LWSurvey for mitigation")
     survey_lw = LWSurvey(geos,'combined_survey',basis,C,lw_params,observable_list=lw_observable_list,param_list=lw_param_list)
-    #survey_lw = LWSurvey(geos,'combined_survey',basis,C,lw_params,np.array([]),np.array([]))#,observable_list=lw_observable_list,param_list=lw_param_list)
     print("main: finish constructing LWSurvey for mitigation")
     #surveys_lw = np.array([])
     surveys_lw = np.array([survey_lw])
@@ -203,145 +173,9 @@ if __name__=='__main__':
     time1 = time()
     print("main: finished construction tasks in "+str(time1-time0)+" s")
 
-#    mit_eigs_par = SS.eig_set[1,1]
-#    no_mit_eigs_par = SS.eig_set[1,0]
-#    print("main: unmitigated parameter lambda1,2: "+str(no_mit_eigs_par[0][-1])+", "+str(no_mit_eigs_par[0][-2]))
-#    print("main: mitigated parameter lambda1,2: "+str(mit_eigs_par[0][-1])+", "+str(mit_eigs_par[0][-2]))
-#
-#    #needed to make ellipse plot
-#    no_mit_color = np.array([1.,0.,0.])
-#    mit_color = np.array([0.,1.,0.])
-#    g_color = np.array([0.,0.,1.])
-#    color_set = np.array([mit_color,no_mit_color,g_color])
-#    opacity_set = np.array([1.0,1.0,1.0])
-#    box_widths = np.array([0.015,0.005,0.0005,0.005,0.1,0.05])
-#    dchi2 = 2.3
-#    #cov_set = np.array([SS.covs_params[1],SS.covs_params[0],SS.covs_g_pars[0]])
-#    cov_set = np.array([SS.f_set[2][2].get_covar(),SS.f_set[1][2].get_covar(),SS.f_set[0][2].get_covar()])
-#    label_set = np.array(["ssc+mit+g","ssc+g","g"])
-#
     SS.print_standard_analysis()
-#    #make the ellipse plot
-#    #import matplotlib.pyplot as plt
-#    print('\a')
-#    #fig1 = make_standard_ellipse_plot(SS.f_set_nopriors,cosmo_par_list)
-#    #fig1.savefig('ellipse_plot_test_save.png')
-#    #plt.show(fig1)
-#
-#
-##do_c_rots = True
-##if do_c_rots:
-cov_g_inv = SS.f_set_nopriors[0][2].get_fisher()
-cov_ssc_inv = SS.f_set_nopriors[1][2].get_fisher()
-chol_g = SS.f_set_nopriors[0][2].get_cov_cholesky()
-chol_inv_g = SS.f_set_nopriors[0][2].get_cov_cholesky_inv()
-chol_ssc = SS.f_set_nopriors[1][2].get_cov_cholesky()
-chol_inv_ssc = SS.f_set_nopriors[1][2].get_cov_cholesky_inv()
-u_no_mit = SS.eig_set[1][0][1]
-v_no_mit = np.dot(chol_g,u_no_mit)
-of_no_mit = np.dot(cov_g_inv,v_no_mit)
-x_no_mit = np.dot(chol_ssc.T,chol_inv_g.T)
-t_no_mit = np.dot(x_no_mit,u_no_mit)
-m_tilde = np.dot(chol_inv_g,np.dot(SS.f_set_nopriors[1][2].get_covar(),chol_inv_g.T))
-
-c_rot_eig_no_mit = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[1][2].get_covar(),of_no_mit))
-c_rot_eig_mit = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[2][2].get_covar(),of_no_mit))
-c_rot_eig_g = np.dot(of_no_mit.T,np.dot(SS.f_set_nopriors[0][2].get_covar(),of_no_mit))
-
-c_rot_eig_no_mit2 = np.dot(u_no_mit.T,np.dot(m_tilde,u_no_mit))
-assert np.allclose(c_rot_eig_no_mit,c_rot_eig_no_mit2)
-assert np.allclose(np.dot(x_no_mit.T,x_no_mit),m_tilde)
-assert np.allclose(c_rot_eig_no_mit,np.diagflat(SS.eig_set[1][0][0]))
-assert np.allclose(c_rot_eig_g,np.eye(c_rot_eig_g.shape[0]))
-assert np.allclose(np.dot(u_no_mit,np.dot(c_rot_eig_no_mit,u_no_mit.T)),m_tilde)
 
 f_set = SS.f_set
-lihu_pars = np.array(['ns','Omegach2','Omegabh2','h','LogAs','w'])
-f_set_lihu_prior = np.zeros(3,dtype=object)
-f_set_jdem_prior = np.zeros(3,dtype=object)
-f_set_lihu = np.zeros(3,dtype=object)
-f_set_mat_jdem1 = np.zeros(3,dtype=object)
-for i in range(0,3):
-    f_set_mat_jdem1[i] = SS.f_set[i][2].get_fisher()
-    f_set_lihu_prior[i] = np.zeros(3,dtype=object)
-    f_set_lihu[i] = np.zeros(3,dtype=object)
-    f_set_jdem_prior[i] = np.zeros(3,dtype=object)
 
-from change_parameters import rotate_jdem_to_lihu,rotate_lihu_to_jdem
-from copy import deepcopy
-f_set_mat_lihu1 = rotate_jdem_to_lihu(f_set_mat_jdem1,C)
-f_set_mat_lihu_h_prior = deepcopy(f_set_mat_lihu1)
-f_set_mat_lihu_h_prior[0][3,3] += 1.e4
-f_set_mat_lihu_h_prior[1][3,3] += 1.e4
-f_set_mat_lihu_h_prior[2][3,3] += 1.e4
-f_set_mat_jdem_h_prior = deepcopy(rotate_lihu_to_jdem(f_set_mat_lihu_h_prior,C))
-import fisher_matrix as fm
-for i in range(0,3):
-    f_set_lihu_prior[i][2] = fm.FisherMatrix(f_set_mat_lihu_h_prior[i],fm.REP_FISHER)
-    f_set_lihu[i][2] = fm.FisherMatrix(f_set_mat_lihu1[i],fm.REP_FISHER)
-    f_set_jdem_prior[i][2] = fm.FisherMatrix(f_set_mat_jdem_h_prior[i],fm.REP_FISHER)
-import matplotlib.pyplot as plt
-#fig1 = make_standard_ellipse_plot(f_set_lihu,lihu_pars)
-#fig2 = make_standard_ellipse_plot(f_set_lihu_prior,lihu_pars)
-fig3 = make_standard_ellipse_plot(f_set_jdem_prior,cosmo_par_list)
-plt.show(fig3)
-#
-#
-#opacities = np.array([1.,1.,1.])
-#colors = np.array([[0,1,0],[1,0,0],[0,0,1]])
-#pnames = np.array(['p7','p6','p5','p4','p3','p2','p1'])
-#names = np.array(['g','no mit','mit'])
-#boxes = np.array([5.,5.,5.,5.,5.,5.,5.,])
-#cov_set_1 = np.array([c_rot_eig_g,c_rot_eig_no_mit,c_rot_eig_mit])
-#cov_set_2 = np.array([c_rot_eig_g[-2:,-2:],c_rot_eig_no_mit[-2:,-2:],c_rot_eig_mit[-2:,-2:]])
-##cov_set_3 = np.array([c_rot_eig_g[-3:,-3:],c_rot_eig_no_mit[-3:,-3:],c_rot_eig_mit[-3:,-3:]])
-##import matplotlib.pyplot as plt
-##Dn = survey_lw.observables[0]
-##make_ellipse_plot(cov_set_2,colors,opacities,names,np.array([0.0002,0.0025]),pnames[-2:],dchi2,1.05)
-##make_ellipse_plot(cov_set_1,colors,opacities,names,boxes,pnames,dchi2,1.05,True,'equal')
-##make_ellipse_plot(cov_set_2,colors,opacities,names,boxes[-2:],pnames[-2:],dchi2,1.05)
-##make_ellipse_plot(cov_set_2,colors,opacities,names,boxes[-2:],pnames[-2:],dchi2,1.05,False,'equal')
-##fig2 = make_ellipse_plot(cov_set_2,colors,opacities,names,boxes[-2:],pnames[-2:],dchi2,1.05,False,'equal',2.,(4,4),0.17,0.99,0.99,0.05)
-##fig2.savefig('circle_plot_test_save.png')
-##plt.show(fig2)
-#print("main: most contaminated direction: ",of_no_mit[:,-1])
-##make_ellipse_plot(cov_set_3,colors,opacities,names,boxes[-3:],pnames[-3:],dchi2,1.05,True,'equal',2.,(4,4),0.17,0.99,0.99,0.05)
-##    a_lw = SS.multi_f.get_a_lw(destructive=True)
-##    v_db = np.diag(a_lw[0])
-##    n_exp = geo_wfirst.volumes*Dn.n_avg_bin1
-##    b_exp = Dn.b_ns1/Dn.n_avg_bin1
-##    v_db_b2 = b_exp**2*v_db
-##n_bin = zs.size
-##angles = np.zeros((n_bin,n_bin))
-##for i in range(0,n_bin):
-##    for j in range(0,n_bin):
-##            angles[i,j] = np.dot(Dn.vs[i],Dn.vs[j])/(np.linalg.norm(Dn.vs[i])*np.linalg.norm(Dn.vs[j]))
-#do_dump = False
-#if do_dump:
-#    dump_set = [SS.f_set_nopriors[0][2],SS.f_set_nopriors[1][2],SS.f_set_nopriors[2][2],SS.f_set[0][2],SS.f_set[1][2],SS.f_set[2][2],cosmo_par_list,SS.eig_set[1],SS.eig_set_ssc[1],lw_param_list,n_params_lsst,power_params,nz_params_wfirst_lens,sw_observable_list,lw_observable_list,sw_params,len_params,x_cut,l_max,zs,zs_lsst,z_fine,mf_params,basis_params,cosmo_par_eps,cosmo,poly_params,SS.f_set_nopriors[0][1],SS.f_set_nopriors[1][1],SS.f_set_nopriors[2][1]]
-#    import dill
-#    dump_f = open('dump_test.pkl','w')
-#    dill.dump(dump_set,dump_f)
-#    dump_f.close()
-#
-##f_g_nop  = SS.f_set_nopriors[0][2].get_fisher().copy()
-##f_s_nop  = SS.f_set_nopriors[1][2].get_fisher().copy()
-##f_wa_prior = np.zeros((7,7))
-##f_wa_prior[-1,-1] = 10**12
-##f_g_nowa = f_g_nop+f_wa_prior
-##f_s_nowa = f_s_nop+f_wa_prior
-##import fisher_matrix as fm
-##fm_g_nowa = fm.FisherMatrix(f_g_nowa,input_type=fm.REP_FISHER)
-##fm_s_nowa = fm.FisherMatrix(f_s_nowa,input_type=fm.REP_FISHER)
-##eigv_s_g_nowa = fm_s_nowa.get_cov_eig_metric(fm_g_nowa)[0]
-##eigv_s_g_wa = SS.eig_set[1][0][0]
-##
-##f_g_margwa = f_g_nop.copy()
-##f_g_margwa = f_g_margwa[0:6,0:6]
-##f_s_margwa = f_s_nop.copy()
-##f_s_margwa = f_s_margwa[0:6,0:6]
-##fm_g_margwa = fm.FisherMatrix(f_g_margwa,input_type=fm.REP_FISHER)
-##fm_s_margwa = fm.FisherMatrix(f_s_margwa,input_type=fm.REP_FISHER)
-##fm_g_margwa = fm.FisherMatrix(f_g_margwa,input_type=fm.REP_FISHER)
-##fm_s_margwa = fm.FisherMatrix(f_s_margwa,input_type=fm.REP_FISHER)
-##eigv_s_g_margwa = fm_s_margwa.get_cov_eig_metric(fm_g_margwa)[0]
+fig = make_standard_ellipse_plot(f_set,cosmo_par_list)
+plt.show(fig)

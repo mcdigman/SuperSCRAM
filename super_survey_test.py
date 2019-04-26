@@ -2,6 +2,7 @@
 from __future__ import print_function,division,absolute_import
 from builtins import range
 from time import time
+from warnings import warn
 
 import numpy as np
 import pytest
@@ -15,13 +16,13 @@ from sph_klim import SphBasisK
 from geo import RectGeo
 from sw_survey import SWSurvey
 from lw_survey import LWSurvey
-from warnings import warn
 import prior_fisher
 import matter_power_spectrum as mps
 import cosmopie as cp
 
 @pytest.fixture(params=['constant_w','w0wa'])
 def de_model(request):
+    """hold parameters"""
     return request.param
 
 def test_super_survey(de_model):

@@ -7,7 +7,6 @@ from polygon_geo import PolygonGeo
 from polygon_pixel_geo import PolygonPixelGeo
 from polygon_union_geo import PolygonUnionGeo
 from polygon_pixel_union_geo import PolygonPixelUnionGeo
-from geo_display_utils import display_geo
 
 class WFIRSTGeo(PolygonGeo):
     """replicate WFIRST geometry"""
@@ -187,14 +186,3 @@ class StripeGeo(PolygonGeo):
 #        mask_geo = PolygonGeo(zs,thetas_mask,phis_mask,theta_in_mask,phi_in_mask,C,z_fine,0,poly_params)
 #
 #        PolygonUnionGeo.__init__(self,np.array([poly_geo2]),np.array([mask_geo]),l_max=l_max)
-
-class WFIRSTPixelGeo(PolygonPixelGeo):
-    """replicate WFIRST geometry"""
-    def __init__(self,zs,C,z_fine,l_max,res_healpix):
-        """params as PolygonGeo"""
-        thetas_wfirst = np.array([-50.,-35.,-35.,-19.,-19.,-19.,-15.8,-15.8,-40.,-40.,-55.,-78.,-78.,-78.,-55.,-55.,-50.,-50.])*np.pi/180.+np.pi/2.
-        phis_wfirst = np.array([-19.,-19.,-11.,-11.,7.,25.,25.,43.,43.,50.,50.,50.,24.,5.,5.,7.,7.,-19.])*np.pi/180.
-        phi_in_wfirst = 7./180.*np.pi
-        theta_in_wfirst = -35.*np.pi/180.+np.pi/2.
-        print("main: begin constructing WFIRST PolygonPixelGeo")
-        PolygonPixelGeo.__init__(self,zs,thetas_wfirst,phis_wfirst,theta_in_wfirst,phi_in_wfirst,C,z_fine,l_max,res_healpix)

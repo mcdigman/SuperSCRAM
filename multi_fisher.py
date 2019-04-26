@@ -89,7 +89,7 @@ class MultiFisher(object):
             sw_cov_ssc = self.basis.project_covar(self.get_lw_to_sw_array())
             self.sw_f_ssc_no_mit = fm.FisherMatrix(sw_cov_ssc,fm.REP_COVAR,fm.REP_COVAR)
             sw_cov_ssc = None
-            if self.needs_a: 
+            if self.needs_a:
                 self.a_vals[0] = self.basis.project_covar(vs_perturb,self.project_lw_a.T)
             if do_mit:
                 print("MultiFisher: getting lw mit covariance")

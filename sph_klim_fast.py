@@ -12,7 +12,7 @@ import numpy as np
 
 from sph_functions import j_n, jn_zeros_cut
 from lw_basis import LWBasis
-from algebra_utils import cholesky_inplace,get_cholesky_inv,mirror_symmetrize
+from algebra_utils import cholesky_inplace,get_cholesky_inv
 
 import fisher_matrix as fm
 

@@ -29,7 +29,7 @@ cosmology = {   'Omegabh2':0.02227,
                 'mnu'     :0.
             }
 
-# wmap 9 year cosmology #TODO check with Chris which one
+# wmap 9 year cosmology
 cosmology_wmap = {  'Omegabh2':0.0227,
                     'Omegach2':0.1099,
                     'Omegab'  :0.04390715667311412,

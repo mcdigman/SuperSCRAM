@@ -3,10 +3,11 @@ from __future__ import division,print_function,absolute_import
 from builtins import range
 
 from mpmath import mp
-mp.dps = 15
 
 import numpy as np
 from geo import Geo
+
+mp.dps = 15
 
 class HalfSkyGeo(Geo):
     """analytic geo of entire sky"""

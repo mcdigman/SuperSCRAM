@@ -64,8 +64,8 @@ def test_pipeline_consistency():
     sw_survey_jdem = sws.SWSurvey(geo_jdem,'wfirst',C_fid_jdem,sw_params,jdem_pars,jdem_eps,sw_observable_list,len_params,nz_wfirst_lens)
     sw_survey_lihu = sws.SWSurvey(geo_lihu,'wfirst',C_fid_lihu,sw_params,lihu_pars,lihu_eps,sw_observable_list,len_params,nz_wfirst_lens)
 
-    dO_dpar_jdem = sw_survey_jdem.get_dO_I_dpar_array()
-    dO_dpar_lihu = sw_survey_lihu.get_dO_I_dpar_array()
+    #dO_dpar_jdem = sw_survey_jdem.get_dO_I_dpar_array()
+    #dO_dpar_lihu = sw_survey_lihu.get_dO_I_dpar_array()
 
     response_pars = np.array(['ns','Omegach2','Omegabh2','Omegamh2','OmegaLh2','h','LogAs','w'])
     response_derivs_jdem_pred = np.array([[1.,0.,0.,0.,0.,0.,0.,0.],[0.,1.,0.,1.,0.,1./(2.*C_fid_jdem.cosmology['h']),0.,0.],[0.,-1.,1.,0.,0.,0.,0.,0.],[0.,0.,0.,0.,1.,1./(2.*C_fid_jdem.cosmology['h']),0.,0.],[0.,0.,0.,0.,0.,0.,1.,0.],[0.,0.,0.,0.,0.,0.,0.,1.]]).T
@@ -118,7 +118,7 @@ def test_pipeline_consistency():
 
     #lihu p_space cannot currently do priors by itself
     f_p_priors_lihu = np.dot(project_jdem_to_lihu,np.dot(SS_jdem.multi_f.fisher_priors.get_fisher(),project_jdem_to_lihu.T))
-    
+
     f_set_jdem_in = np.zeros(3,dtype=object)
     f_set_lihu_in = np.zeros(3,dtype=object)
     for i in range(0,3):
@@ -240,8 +240,8 @@ def test_agreement_with_sigma8():
     basis_basi = SphBasisK(r_max_basi,C_fid_basi,k_cut_basi,basis_params,l_ceil=l_max,needs_m=True)
     SS_basi = SuperSurvey(np.array([sw_survey_basi]),np.array([]),basis_basi,C_fid_basi,prior_params,get_a=False,do_unmitigated=True,do_mitigated=False)
 
-    dO_dpar_jdem_to_basi = np.zeros_like(dO_dpar_jdem)
-    dO_dpar_basi_to_jdem = np.zeros_like(dO_dpar_basi)
+    #dO_dpar_jdem_to_basi = np.zeros_like(dO_dpar_jdem)
+    #dO_dpar_basi_to_jdem = np.zeros_like(dO_dpar_basi)
 
     project_basi_to_jdem = np.zeros((jdem_pars.size,basi_pars.size))
 

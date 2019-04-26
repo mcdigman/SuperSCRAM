@@ -81,7 +81,8 @@ class CosmoPie(object):
             self.de_object = DarkEnergyJDEM(ws_in,a_step,self.cosmology['w'])
         else:
             raise ValueError('unrecognized dark energy model \''+str(self.de_model)+'\'')
-
+        self.P_lin = None
+        self.k = None
 
         # solar mass
         #self.M_sun = 1.9885*1e30 # kg

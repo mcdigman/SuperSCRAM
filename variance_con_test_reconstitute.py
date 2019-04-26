@@ -1,6 +1,6 @@
+"""rebuild results from testing"""
 from __future__ import print_function,division,absolute_import
 from builtins import range
-import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
 import dill
 if __name__=='__main__':

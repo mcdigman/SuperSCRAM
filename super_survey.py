@@ -233,6 +233,7 @@ def make_ellipse_plot(cov_set,color_set,opacity_set,label_set,box_widths,cosmo_p
             ax.set_axisbelow(True)
             if itr2<itr1:
                 ax.axis('off')
+                #hack to put the legend in a blank area
                 if itr1==1 and itr2==0 or (not include_diag) and itr1==0 and itr2==1:
                     #ax.set_ylabel("$\\Delta$"+str(param2_pretty),fontsize=fontsize)
                     ax.legend(handles=es.tolist(),loc=2,prop={'size':fontsize_legend})

@@ -8,7 +8,7 @@ class LWBasis(object):
         """create the long wavelength basis"""
         self.C = C
 
-    def get_fisher(self,initial_state):
+    def get_fisher(self,initial_state,silent):
         """get FisherMatrix object,initial_state is initial_state for FisherMatrix"""
         raise NotImplementedError('subclasses of LWBasis must implement get_fisher')
 

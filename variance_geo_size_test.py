@@ -3,16 +3,12 @@ from __future__ import print_function,division,absolute_import
 from builtins import range
 from time import time
 import numpy as np
-from scipy.interpolate import InterpolatedUnivariateSpline
-#from polygon_geo import PolygonGeo
 from cosmopie import CosmoPie
 import defaults
 from sph_klim import SphBasisK
 import matter_power_spectrum as mps
-from premade_geos import LSSTGeoSimpl,WFIRSTGeo
 from circle_geo import CircleGeo
 from ring_pixel_geo import RingPixelGeo
-from half_sky_geo import HalfSkyGeo
 from polygon_utils import get_healpix_pixelation
 
 if __name__=='__main__':
@@ -112,13 +108,3 @@ if __name__=='__main__':
         plt.loglog(areas_res,1./areas_res*areas_res[-10]*variances_res[-10])
         plt.loglog(areas_res,variances_res)
         plt.show()
-
-#    do_dump = False
-#    if do_dump:
-#        import dill
-#        results = [z_coarse,z_fine,k_cut,l_max,camb_params,power_params,l_sw,z_max,r_max,k_tests,n_basis,variances,variance_res,r_width,theta_width,phi_width,volume,square_equiv,times]
-#        dump_f = open('dump_var_con.pkl','w')
-#        dill.dump(results,dump_f)
-#        dump_f.close()
-
-
